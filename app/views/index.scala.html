@@ -1,28 +1,28 @@
-@(tasks: List[Task], taskForm: Form[String])
+@(iris: List[IRI], iriForm: Form[String])
 
 @import helper._
 
-@main("Todo list") {
+@main("Labels4all") {
     
-    <h1>@tasks.size task(s)</h1>
+    <h1>Labels4all: IRIs: @iris.size</h1>
     
     <ul>
-        @tasks.map { task =>
+        @iris.map { iri =>
             <li>
-                @task.label
+                @iri.iriName
                 
-                @form(routes.Application.deleteTask(task.id)) {
+                @form(routes.Application.deleteIRI(iri.id)) {
                     <input type="submit" value="Delete">
                 }
             </li>
         }
     </ul>
     
-    <h2>Add a new task</h2>
+    <h2>IRI</h2>
     
-    @form(routes.Application.newTask) {
+    @form(routes.Application.newIRI) {
         
-        @inputText(taskForm("label")) 
+        @inputText(iriForm("IRI name")) 
         
         <input type="submit" value="Create">
         

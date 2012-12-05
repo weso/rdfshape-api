@@ -9,33 +9,33 @@ import models._
 object Application extends Controller {
   
   def index = Action {
-	  Redirect(routes.Application.tasks)
+	  Redirect(routes.Application.iris)
   }
   
-  def newTask = Action { implicit request =>
-  	taskForm.bindFromRequest.fold(
-    errors => BadRequest(views.html.index(Task.all(), errors)),
+  def newIRI = Action { implicit request =>
+  	iriForm.bindFromRequest.fold(
+    errors => BadRequest(views.html.index(IRI.all(), errors)),
     label => {
-      Task.create(label)
-      Redirect(routes.Application.tasks)
+      IRI.create(label)
+      Redirect(routes.Application.iris)
     }
    )
   }	  
  
- def deleteTask(id: Long) = Action {
+ def deleteIRI(id: Long) = Action {
   Task.delete(id)
-  Redirect(routes.Application.tasks)
+  Redirect(routes.Application.iris)
 }
   
   
 
-  val taskForm = Form(
-  "label" -> nonEmptyText
+  val iriForm = Form(
+  "IRI Name" -> nonEmptyText
   )
   
-  import models.Task
+  import models.IRI
 
-  def tasks = Action {
-	  Ok(views.html.index(Task.all(), taskForm))
+  def iris = Action {
+	  Ok(views.html.index(IRI.all(), iriForm))
   }
 }
