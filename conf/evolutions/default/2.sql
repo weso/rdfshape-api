@@ -1,14 +1,17 @@
-# IRIs schema
+# Translations schema
  
 # --- !Ups
 
-CREATE SEQUENCE iri_id_seq;
-CREATE TABLE iri (
-    id integer NOT NULL DEFAULT nextval('iri_id_seq'),
-    iriName varchar(255)
+CREATE SEQUENCE trans_id_seq;
+CREATE TABLE trans (
+    id integer NOT NULL DEFAULT nextval('trans_id_seq'),
+    iriId integer,
+    langId integer,
+    transLabel varchar(5000),
+    votes integer
 );
  
 # --- !Downs
  
-DROP TABLE iri;
-DROP SEQUENCE iri_id_seq;
+DROP TABLE trans;
+DROP SEQUENCE trans_id_seq;

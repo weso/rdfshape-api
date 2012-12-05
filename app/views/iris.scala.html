@@ -4,14 +4,9 @@
 
 @main("Labels4all") {
     
-    <h1>Labels4all</h1>
+    <h1>Labels4all: IRIs: @iris.size</h1>
     
-    <p>Number of IRIs translated: @iris.size</p>
-    <ul>
-    <a href="/iris">Manage IRIs</a>
-    <a href="/langs">Manage Languages</a>
-    <a href="/trans">Manage Translations</a>
-    </ul>
+    <p>Testing IRIs</p>
     <ul>
         @iris.map { iri =>
             <li>

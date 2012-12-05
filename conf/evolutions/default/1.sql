@@ -1,14 +1,14 @@
-# Tasks schema
+# IRIs schema
  
 # --- !Ups
 
-CREATE SEQUENCE task_id_seq;
-CREATE TABLE task (
-    id integer NOT NULL DEFAULT nextval('task_id_seq'),
-    label varchar(255)
+CREATE SEQUENCE iri_id_seq;
+CREATE TABLE iri (
+    id integer NOT NULL DEFAULT nextval('iri_id_seq'),
+    iriName varchar(255)
 );
  
 # --- !Downs
  
-DROP TABLE task;
-DROP SEQUENCE task_id_seq;
+DROP TABLE iri;
+DROP SEQUENCE iri_id_seq;

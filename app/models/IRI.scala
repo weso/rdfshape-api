@@ -15,8 +15,7 @@ object IRI {
 
 
   val iri = {
-	get[Long]("id") ~ 
-  	get[String]("iriName") map {
+	get[Long]("id") ~ get[String]("iriName") map {
   	  case id~iriName => IRI(id, iriName)
   	}
   }

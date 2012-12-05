@@ -11,9 +11,17 @@ GET     /                           controllers.Application.index
 # POST    /tasks/:id/delete       controllers.Application.deleteTask(id: Long)
 
 # Tasks          
-GET     /iris                  controllers.Application.iris
-POST    /iris                  controllers.Application.newIRI
-POST    /iris/:id/delete       controllers.Application.deleteIRI(id: Long)
+GET     /iris                  		controllers.Application.iris
+POST    /iris                  		controllers.Application.newIRI
+POST    /iris/:id/delete       		controllers.Application.deleteIRI(id: Long)
+
+GET     /langs                  		controllers.Application.langs
+POST    /langs                  		controllers.Application.newLang
+POST    /langs/:id/delete       		controllers.Application.deleteLang(id: Long)
+
+GET     /trans                  		controllers.Application.trans
+POST    /trans                  		controllers.Application.newTrans
+POST    /trans/:id/delete       		controllers.Application.deleteTrans(id: Long)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
