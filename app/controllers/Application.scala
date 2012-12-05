@@ -78,8 +78,8 @@ object Application extends Controller {
 	  Ok(views.html.index(IRI.all(), iriForm))
   }
 
-  def langs = Action {
-	  Ok("Langs")
+  def langs = Action { request =>
+     Ok("Languages: " + request.acceptLanguages.map(_.code).mkString(", "))  
   }
 
   def trans = Action {
