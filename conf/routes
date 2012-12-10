@@ -15,11 +15,11 @@ GET     /iris                  		controllers.Application.iris
 POST    /iris                  		controllers.Application.newIRI
 POST    /iris/:id/delete       		controllers.Application.deleteIRI(id: Long)
 
-GET     /langs                  		controllers.Application.langs
+GET     /langs                  		controllers.Application.languages
 POST    /langs                  		controllers.Application.newLang
 POST    /langs/:id/delete       		controllers.Application.deleteLang(id: Long)
 
-GET     /trans                  		controllers.Application.trans
+GET     /trans                  		controllers.Application.translations
 POST    /trans                  		controllers.Application.newTrans
 POST    /trans/:id/delete       		controllers.Application.deleteTrans(id: Long)
 

@@ -4,7 +4,8 @@
 
 @main("Labels4all") {
     
-    <h1>Labels4all: IRIs: @iris.size</h1>
+    <h1>Labels4all</h1>
+    <h2>IRIs: @iris.size</h2>
     
     <p>Testing IRIs</p>
     <ul>
@@ -23,10 +24,12 @@
     
     @form(routes.Application.newIRI) {
         
-        @inputText(iriForm("iriName")) 
+        @inputText(iriForm("iri Name")) 
         
         <input type="submit" value="Create">
         
     }
+    
+    <a href="/langs">Languages</a>
     
 }

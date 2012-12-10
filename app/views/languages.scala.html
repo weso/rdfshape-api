@@ -1,0 +1,32 @@
+@(langs: List[Language], langForm: Form[(String,String)])
+
+@import helper._
+
+@main("Labels4all") {
+    
+    <h1>Labels4all</h1>
+    <h2>Languages: @langs.size</h2>
+    
+    <ul>
+        @langs.map { lang =>
+            <li>
+                @lang.langCode, @lang.langName
+                
+                @form(routes.Application.deleteLang(lang.id)) {
+                    <input type="submit" value="Delete">
+                }
+            </li>
+        }
+    </ul>
+    
+    <h2>Language</h2>
+    
+    @form(routes.Application.newLang) {
+        
+        @inputText(langForm("langCode")) 
+        
+        <input type="submit" value="Create">
+        
+    }
+    
+}

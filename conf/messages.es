@@ -1,1 +1,2 @@
 Greeting=¡Hola!
+Lookup=Buscar

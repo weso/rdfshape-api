@@ -33,8 +33,8 @@ def create(iriName: String) {
 }
 
 def delete(id: Long) {
-		DB.withConnection { implicit c =>
-    	SQL("delete from iri where id = {id}").on(
+  DB.withConnection { implicit c =>
+    SQL("delete from iri where id = {id}").on(
     		'id -> id
     		).executeUpdate()
 		}

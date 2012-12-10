@@ -47,27 +47,32 @@ object Application extends Controller {
 
   def deleteIRI(id: Long) = Action {
 	  IRI.delete(id)
-	  Redirect(routes.Application.iris)
+	  Redirect(routes.Application.index)
   }
 
  def deleteLang(id: Long) = Action {
-  Lang.delete(id)
+  Language.delete(id)
   Ok("Deleted lang" + id)
 //   Redirect(routes.Application.langs)
 }
 
  def deleteTrans(id: Long) = Action {
-  Trans.delete(id)
+  Translation.delete(id)
   Ok("Deleted trans" + id)
 //  Redirect(routes.Application.trans)
 }
 
-  
-
   val iriForm = Form(
   "iriName" -> nonEmptyText
   )
-  
+
+  val langForm = Form(
+		  tuple(
+				  "langCode" -> text,
+				  "langName" -> text
+	 )  
+  )
+
 /*  val transForm = Form(
   "iriId" -> nonEmptyText, 
   "langId" -> nonEmptyText, 
@@ -75,15 +80,15 @@ object Application extends Controller {
   ) */
 
   def iris = Action {
-	  Ok(views.html.index(IRI.all(), iriForm))
+	  Ok(views.html.iris(IRI.all(), iriForm))
   }
 
-  def langs = Action { request =>
-     Ok("Languages: " + request.acceptLanguages.map(_.code).mkString(", "))  
+  def languages = Action { 	  
+    Ok(views.html.languages(Language.all(), langForm))
   }
 
-  def trans = Action {
-	  Ok("Trans")
+  def translations = Action {
+	  Ok("Showing translations")
   }
 
 }

@@ -4,7 +4,7 @@ import PlayProject._
 
 object ApplicationBuild extends Build {
 
-    val appName         = "todoList"
+    val appName         = "Labels4all"
     val appVersion      = "1.0-SNAPSHOT"
 
     val appDependencies = Seq(

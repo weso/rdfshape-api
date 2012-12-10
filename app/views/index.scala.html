@@ -1,4 +1,9 @@
-@(iris: List[IRI], iriForm: Form[String])
+@(iris: List[IRI], 
+//  tranlations: List[Translation], 
+//  langs : List[Language], 
+  iriForm: Form[String]
+//  langForm:Form[String] 
+ )
 
 @import helper._
 
@@ -7,7 +12,7 @@
     <h1>Labels4all</h1>
     <h2>@Messages("Greeting")(play.api.i18n.Lang("es"))</h2>
     
-    <p>Number of IRIs translated: @iris.size</p>
+    <p>Number of IRIs: @iris.size</p>
     <ul>
     <a href="/iris">Manage IRIs</a>
     <a href="/langs">Manage Languages</a>
@@ -34,5 +39,6 @@
         <input type="submit" value="Create">
         
     }
+    
     
 }
