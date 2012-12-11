@@ -10,7 +10,7 @@ import anorm._
 
 object Application extends Controller {
   
-  implicit val flash = new play.api.mvc.Flash(Map(("message",Messages("Greeting")(Lang("en"))))) 
+  implicit val flash = new play.api.mvc.Flash(Map(("message",Messages("Greeting")(play.api.i18n.Lang("en"))))) 
 
   def Home = Ok(views.html.index())
   
