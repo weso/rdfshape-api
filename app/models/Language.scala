@@ -7,16 +7,15 @@ import anorm._
 import anorm.SqlParser._
 
 case class Language(
-	id: Long, 
+	id: Pk[Long], 
 	langCode: String,
     langName: String
 )
 
 object Language {
 
-
   val lang = {
-	get[Long]("id") ~ get[String]("langCode") ~ get[String]("langName") map {
+	get[Pk[Long]]("id") ~ get[String]("langCode") ~ get[String]("langName") map {
   	  case id~langCode~langName => Language(id, langCode,langName)
   	}
   }
@@ -25,17 +24,17 @@ object Language {
   	SQL("select * from language").as(lang *)
   }
   
-  def create(langCode: String, langName: String) {
+  def insert(language : Language) {
 	  DB.withConnection { implicit c =>
 	  	SQL("insert into language (langCode,langName) values ('%s', '%s')".
-	  	     format(langCode,
-	  	            langName)).executeUpdate()
+	  	     format(language.langCode,
+	  	            language.langName)).executeUpdate()
 	  }
   }
 
-  def delete(id: Long) {
+  def delete(id: Pk[Long]) {
 		DB.withConnection { implicit c =>
-    	SQL("delete from lang where id = {id}").on(
+    	SQL("delete from language where id = {id}").on(
     		'id -> id
     		).executeUpdate()
 		}

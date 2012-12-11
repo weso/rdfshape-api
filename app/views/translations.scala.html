@@ -1,0 +1,19 @@
+@(translations: List[Translation])
+
+@import helper._
+
+@main("Labels4all") {
+    
+    <h1>Translations Labels4all</h1>
+    <h2>Translations: @translations.size</h2>
+    
+    <ul>
+        @translations.map { t =>
+            <li>
+                @t.transLabel
+            </li>
+        }
+    </ul>
+    
+    
+}

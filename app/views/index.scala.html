@@ -1,44 +1,16 @@
-@(iris: List[IRI], 
-//  tranlations: List[Translation], 
-//  langs : List[Language], 
-  iriForm: Form[String]
-//  langForm:Form[String] 
- )
+@()(implicit flash: play.api.mvc.Flash)
 
 @import helper._
 
 @main("Labels4all") {
     
-    <h1>Labels4all</h1>
-    <h2>@Messages("Greeting")(play.api.i18n.Lang("es"))</h2>
+    <h1>Index page</h1>
+
+    <h2>@flash.get("message").getOrElse(Messages("Greeting")(play.api.i18n.Lang("es")))</h2>
     
-    <p>Number of IRIs: @iris.size</p>
     <ul>
     <a href="/iris">Manage IRIs</a>
     <a href="/langs">Manage Languages</a>
     <a href="/trans">Manage Translations</a>
     </ul>
-    <ul>
-        @iris.map { iri =>
-            <li>
-                @iri.iriName
-                
-                @form(routes.Application.deleteIRI(iri.id)) {
-                    <input type="submit" value="Delete">
-                }
-            </li>
-        }
-    </ul>
-    
-    <h2>IRI</h2>
-    
-    @form(routes.Application.newIRI) {
-        
-        @inputText(iriForm("iriName")) 
-        
-        <input type="submit" value="Create">
-        
-    }
-    
-    
 }

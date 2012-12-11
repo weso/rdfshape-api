@@ -5,32 +5,40 @@ import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
 import models._
+import play.api.i18n._
+import anorm._
 
 object Application extends Controller {
   
-  def index = Action {
-	  Redirect(routes.Application.iris)
+  implicit val flash = new play.api.mvc.Flash(Map(("message",Messages("Greeting")(Lang("en"))))) 
+
+  def Home = Ok(views.html.index())
+  
+  def index = Action { 
+    Home
   }
   
   def newIRI = Action { implicit request =>
   	iriForm.bindFromRequest.fold(
-    errors => BadRequest(views.html.index(IRI.all(), errors)),
+    errors => Ok("Error " + errors.toString()),
+              // TODO, // BadRequest(views.html.index()),
     iriName => {
       IRI.create(iriName)
       Redirect(routes.Application.iris)
+//      Home.flashing("message" -> "IRI has been created")
     }
    )
   }	  
  
   def newLang = Action { implicit request =>
-/*  	langForm.bindFromRequest.fold(
-    errors => BadRequest(views.html.index(Lang.all(), errors)),
-    langName => {
-      Lang.create(langName)
-      Redirect(routes.Application.langs)
+ 	langForm.bindFromRequest.fold(
+    errors => Ok("Error " + errors.toString()), // BadRequest(views.html.index(Language.all(), errors)),
+    language => {
+      Language.insert(language)
+      Redirect(routes.Application.languages)
     }
-   )  */
-    Ok("new Language")
+   ) 
+//    Home.flashing("message" -> "new Language")
   }
   
   def newTrans = Action { 
@@ -42,18 +50,17 @@ object Application extends Controller {
         Redirect(routes.Application.iris)
         }
      ) */
-    Ok("new Trans")
+    Home.flashing("message" -> "new Translation")
   }
 
   def deleteIRI(id: Long) = Action {
 	  IRI.delete(id)
-	  Redirect(routes.Application.index)
+	  Home.flashing("message" -> ("IRI " + id.toString + " deleted") )
   }
 
  def deleteLang(id: Long) = Action {
-  Language.delete(id)
-  Ok("Deleted lang" + id)
-//   Redirect(routes.Application.langs)
+  Language.delete(Id(id))
+  Redirect(routes.Application.languages)
 }
 
  def deleteTrans(id: Long) = Action {
@@ -62,15 +69,17 @@ object Application extends Controller {
 //  Redirect(routes.Application.trans)
 }
 
-  val iriForm = Form(
+  val iriForm : Form[String] = Form(
   "iriName" -> nonEmptyText
   )
 
-  val langForm = Form(
-		  tuple(
-				  "langCode" -> text,
-				  "langName" -> text
-	 )  
+  
+  val langForm : Form[Language] = Form(
+     mapping(
+      "id" -> ignored(NotAssigned:Pk[Long]),
+      "langCode" -> text,
+      "langName" -> text
+     )(Language.apply)(Language.unapply)
   )
 
 /*  val transForm = Form(
@@ -88,7 +97,7 @@ object Application extends Controller {
   }
 
   def translations = Action {
-	  Ok("Showing translations")
+    Ok(views.html.translations(Translation.all()))
   }
 
 }

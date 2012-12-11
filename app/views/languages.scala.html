@@ -1,4 +1,4 @@
-@(langs: List[Language], langForm: Form[(String,String)])
+@(langs: List[Language], langForm: Form[Language])
 
 @import helper._
 
@@ -12,7 +12,7 @@
             <li>
                 @lang.langCode, @lang.langName
                 
-                @form(routes.Application.deleteLang(lang.id)) {
+                @form(routes.Application.deleteLang(lang.id.get)) {
                     <input type="submit" value="Delete">
                 }
             </li>
@@ -21,12 +21,19 @@
     
     <h2>Language</h2>
     
-    @form(routes.Application.newLang) {
+    @form(routes.Application.newLang()) {
         
-        @inputText(langForm("langCode")) 
+        <fieldset>
         
-        <input type="submit" value="Create">
+            @inputText(langForm("langCode"), '_label -> "Language code")
+            @inputText(langForm("langName"), '_label -> "Language name")
+        </fieldset>
         
+        <div class="actions">
+            <input type="submit" value="Create language" class="btn primary"> or 
+            <a href="@routes.Application.index()" class="btn">Cancel</a> 
+        </div>
     }
+
     
 }
