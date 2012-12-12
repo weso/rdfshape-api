@@ -1,4 +1,4 @@
-@(langs: List[Language], langForm: Form[Language])
+@(langs: List[Language], langForm: Form[Language], defaultLanguage: Lang)
 
 @import helper._
 
@@ -13,7 +13,7 @@
                 @lang.langCode, @lang.langName
                 
                 @form(routes.Application.deleteLang(lang.id.get)) {
-                    <input type="submit" value="Delete">
+                    <input type="submit" value="@Messages("Delete")(defaultLanguage)">
                 }
             </li>
         }

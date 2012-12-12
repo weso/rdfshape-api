@@ -40,4 +40,12 @@ object Language {
 		}
   }
 
+  def lookup(langCode : String) : Option[Long] = {
+    	DB.withConnection { implicit c =>
+    	SQL("select id from language where langCode = {langCode}").on(
+    		'langCode -> langCode
+    		).as(scalar[Long].singleOpt)
+		}
+  }
+  
 }

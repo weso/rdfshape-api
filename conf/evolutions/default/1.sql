@@ -2,7 +2,6 @@
  
 # --- !Ups
 
-set ignorecase true;
 
 CREATE SEQUENCE iri_id_seq start with 1000;
 
@@ -18,6 +17,6 @@ insert into iri (id,iriName) values (3,'http://xmlns.com/foaf/0.1/Project');
 
 # --- !Downs
 
-SET REFERENTIAL_INTEGRITY FALSE;
-
 DROP TABLE if exists iri;
+
+DROP SEQUENCE if exists iri_id_seq;

@@ -1,4 +1,4 @@
-@()(implicit flash: play.api.mvc.Flash)
+@(searchForm: Form[SearchField])(implicit flash: play.api.mvc.Flash)
 
 @import helper._
 
@@ -7,6 +7,15 @@
     <h1>Index page</h1>
 
     <h2>@flash.get("message").getOrElse(Messages("Greeting")(play.api.i18n.Lang("es")))</h2>
+    
+    @form(routes.Application.searchTranslation) {
+	  <fieldset>        
+        @inputText(searchForm("iriName"), '_label -> "IRI") 
+        @inputText(searchForm("langCode"), '_label -> "Language") 
+      </fieldset>  
+      <input type="submit" value="@Messages("Search") ">
+        
+    }
     
     <ul>
     <a href="/iris">Manage IRIs</a>

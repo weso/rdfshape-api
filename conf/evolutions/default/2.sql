@@ -2,7 +2,6 @@
  
 # --- !Ups
 
-set ignorecase true;
 
 CREATE SEQUENCE lang_id_seq start with 1000;
 

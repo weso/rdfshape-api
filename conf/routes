@@ -5,12 +5,9 @@
 # Home page
 GET     /                           controllers.Application.index
 
-# Tasks          
-# GET     /tasks                  controllers.Application.tasks
-# POST    /tasks                  controllers.Application.newTask
-# POST    /tasks/:id/delete       controllers.Application.deleteTask(id: Long)
+GET     /search						controllers.Application.searchTranslation
 
-# Tasks          
+
 GET     /iris                  		controllers.Application.iris
 POST    /iris                  		controllers.Application.newIRI
 POST    /iris/:id/delete       		controllers.Application.deleteIRI(id: Long)

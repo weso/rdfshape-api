@@ -3,7 +3,9 @@ project/project
 project/target
 target
 .target
+bin
 .cache
 tmp
 .history
 dist
+test*.db

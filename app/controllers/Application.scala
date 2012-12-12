@@ -7,12 +7,13 @@ import play.api.data.Forms._
 import models._
 import play.api.i18n._
 import anorm._
+import models.SearchField
 
 object Application extends Controller {
   
   implicit val flash = new play.api.mvc.Flash(Map(("message",Messages("Greeting")(play.api.i18n.Lang("en"))))) 
 
-  def Home = Ok(views.html.index())
+  def Home = Ok(views.html.index(searchForm))
   
   def index = Action { 
     Home
@@ -20,12 +21,10 @@ object Application extends Controller {
   
   def newIRI = Action { implicit request =>
   	iriForm.bindFromRequest.fold(
-    errors => Ok("Error " + errors.toString()),
-              // TODO, // BadRequest(views.html.index()),
+    errors => BadRequest(views.html.index(searchForm)),
     iriName => {
       IRI.create(iriName)
       Redirect(routes.Application.iris)
-//      Home.flashing("message" -> "IRI has been created")
     }
    )
   }	  
@@ -38,9 +37,21 @@ object Application extends Controller {
       Redirect(routes.Application.languages)
     }
    ) 
-//    Home.flashing("message" -> "new Language")
   }
   
+  def searchTranslation = Action { implicit request =>
+ 	searchForm.bindFromRequest.fold(
+    errors => Ok("Error " + errors.toString()), // BadRequest(views.html.index(Language.all(), errors)),
+    searchField => {
+      val result = Translation.lookupTranslation(searchField.iriName, searchField.langName)
+      result match { 
+        case None => Ok(views.html.index(searchForm)(Flash(Map(("message","Not found")))))
+        case Some(trans) => Ok(views.html.index(searchForm)(Flash(Map(("message",trans.transLabel)))))
+      }
+    }
+   ) 
+  }
+
   def newTrans = Action { 
     /* implicit request =>
   	 transForm.bindFromRequest.fold(
@@ -64,7 +75,7 @@ object Application extends Controller {
 }
 
  def deleteTrans(id: Long) = Action {
-  Translation.delete(id)
+  Translation.delete(Id(id))
   Ok("Deleted trans" + id)
 //  Redirect(routes.Application.trans)
 }
@@ -82,22 +93,27 @@ object Application extends Controller {
      )(Language.apply)(Language.unapply)
   )
 
-/*  val transForm = Form(
-  "iriId" -> nonEmptyText, 
-  "langId" -> nonEmptyText, 
-  "transLabel" -> nonEmptyText
-  ) */
+  
+  
+  val searchForm : Form[SearchField] = Form (
+     mapping(
+      "iriName" -> nonEmptyText,
+      "langCode" -> nonEmptyText
+     )(SearchField.apply)(SearchField.unapply)
+  )
 
   def iris = Action {
 	  Ok(views.html.iris(IRI.all(), iriForm))
   }
 
   def languages = Action { 	  
-    Ok(views.html.languages(Language.all(), langForm))
+    Ok(views.html.languages(Language.all(), langForm, Lang("es")))
   }
 
   def translations = Action {
     Ok(views.html.translations(Translation.all()))
   }
+
+  
 
 }

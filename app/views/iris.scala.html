@@ -24,12 +24,10 @@
     
     @form(routes.Application.newIRI) {
         
-        @inputText(iriForm("iriName")) 
+        @inputText(iriForm("iriName"), '_label -> "New IRI") 
         
-        <input type="submit" value="Create">
+        <input type="submit" value="@Messages("Create") ">
         
     }
-    
-    <a href="/langs">Languages</a>
     
 }

@@ -2,7 +2,6 @@
  
 # --- !Ups
 
-set ignorecase true;
 
 CREATE SEQUENCE trans_id_seq start with 1000;
 
@@ -11,7 +10,7 @@ CREATE TABLE translation (
     iriId 			bigint not null,
     langId 			bigint not null,
     transLabel 		varchar(5000) not null,
-    votes 			integer,
+    votes 			bigint,
     constraint 		pk_trans primary key (id)
 );
 

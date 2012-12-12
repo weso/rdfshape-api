@@ -32,12 +32,20 @@ def create(iriName: String) {
   }
 }
 
-def delete(id: Long) {
+ def delete(id: Long) {
   DB.withConnection { implicit c =>
     SQL("delete from iri where id = {id}").on(
     		'id -> id
     		).executeUpdate()
 		}
 	}
+
+ def lookup(iriName : String) : Option[Long] = {
+    	DB.withConnection { implicit c =>
+    	SQL("select id from iri where iriName = {iriName}").on(
+    		'iriName -> iriName
+    		).as(scalar[Long].singleOpt)
+		}
+  }
 
 }
