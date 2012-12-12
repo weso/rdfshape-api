@@ -1,4 +1,4 @@
-@(searchForm: Form[SearchField])(implicit flash: play.api.mvc.Flash)
+@(languages: Seq[Lang], searchForm: Form[SearchField])(implicit flash: play.api.mvc.Flash)
 
 @import helper._
 
@@ -6,7 +6,7 @@
     
     <h1>Labels4all</h1>
 
-    <h2>@flash.get("message").getOrElse(Messages("Greeting")(play.api.i18n.Lang("es")))</h2>
+    <h2 class="result">@flash.get("message").getOrElse("")</h2>
     
     @form(routes.Application.searchTranslation) {
 	  <fieldset>        
@@ -17,9 +17,4 @@
         
     }
     
-    <ul>
-    <a href="/iris">Manage IRIs</a>
-    <a href="/langs">Manage Languages</a>
-    <a href="/trans">Manage Translations</a>
-    </ul>
 }

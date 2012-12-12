@@ -1,1 +1,6 @@
 h1 { color: green; }
+
+h2.result { 
+	background: cyan;
+	border: 1px solid ;
+}

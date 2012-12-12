@@ -6,19 +6,21 @@
 GET     /                           controllers.Application.index
 
 GET     /search						controllers.Application.searchTranslation
+GET     /about								controllers.Application.about
 
 
-GET     /iris                  		controllers.Application.iris
-POST    /iris                  		controllers.Application.newIRI
-POST    /iris/:id/delete       		controllers.Application.deleteIRI(id: Long)
+GET     /admin								controllers.Admin.admin
+GET     /admin/iris                  		controllers.Admin.iris
+POST    /admin/iris                  		controllers.Admin.newIRI
+POST    /admin/iris/:id/delete       		controllers.Admin.deleteIRI(id: Long)
 
-GET     /langs                  		controllers.Application.languages
-POST    /langs                  		controllers.Application.newLang
-POST    /langs/:id/delete       		controllers.Application.deleteLang(id: Long)
+GET     /admin/langs                  		controllers.Admin.languages
+POST    /admin/langs                  		controllers.Admin.newLang
+POST    /admin/langs/:id/delete       		controllers.Admin.deleteLang(id: Long)
 
-GET     /trans                  		controllers.Application.translations
-POST    /trans                  		controllers.Application.newTranslation
-POST    /trans/:id/delete       		controllers.Application.deleteTrans(id: Long)
+GET     /admin/trans                  		controllers.Admin.translations
+POST    /admin/trans                  		controllers.Admin.newTranslation
+POST    /admin/trans/:id/delete       		controllers.Admin.deleteTrans(id: Long)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

@@ -13,7 +13,7 @@
             <li>
                 @iri.iriName
                 
-                @form(routes.Application.deleteIRI(iri.id)) {
+                @form(routes.Admin.deleteIRI(iri.id)) {
                     <input type="submit" value="Delete">
                 }
             </li>
@@ -22,7 +22,7 @@
     
     <h2>IRI</h2>
     
-    @form(routes.Application.newIRI) {
+    @form(routes.Admin.newIRI) {
         
         @inputText(iriForm("iriName"), '_label -> "New IRI") 
         

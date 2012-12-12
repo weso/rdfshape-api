@@ -12,7 +12,7 @@
             <li>
                 @lang.langCode, @lang.langName
                 
-                @form(routes.Application.deleteLang(lang.id.get)) {
+                @form(routes.Admin.deleteLang(lang.id.get)) {
                     <input type="submit" value="@Messages("Delete")(defaultLanguage)">
                 }
             </li>
@@ -21,7 +21,7 @@
     
     <h2>Add language</h2>
     
-    @form(routes.Application.newLang()) {
+    @form(routes.Admin.newLang()) {
         
         <fieldset>
         
