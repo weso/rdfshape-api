@@ -17,7 +17,7 @@ POST    /langs                  		controllers.Application.newLang
 POST    /langs/:id/delete       		controllers.Application.deleteLang(id: Long)
 
 GET     /trans                  		controllers.Application.translations
-POST    /trans                  		controllers.Application.newTrans
+POST    /trans                  		controllers.Application.newTranslation
 POST    /trans/:id/delete       		controllers.Application.deleteTrans(id: Long)
 
 # Map static resources from the /public folder to the /assets URL path

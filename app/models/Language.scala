@@ -41,11 +41,31 @@ object Language {
   }
 
   def lookup(langCode : String) : Option[Long] = {
-    	DB.withConnection { implicit c =>
-    	SQL("select id from language where langCode = {langCode}").on(
+    DB.withConnection { implicit c =>
+    SQL("select id from language where langCode = {langCode}").on(
     		'langCode -> langCode
     		).as(scalar[Long].singleOpt)
-		}
+	}
   }
   
+  def findLangCode(id : Long) : Option[String] = {
+    val found = DB.withConnection { implicit c =>
+    SQL("select * from language where id = {id}").on(
+    		'id -> id
+    	).as(lang *)
+	}
+    if (found.isEmpty) None
+    else Some(found.head.langCode)
+  }
+
+  def find(id : Long) : Option[Language] = {
+    val found = DB.withConnection { implicit c =>
+    SQL("select * from language where id = {id}").on(
+    		'id -> id
+    	).as(lang *)
+	}
+    if (found.isEmpty) None
+    else Some(found.head)
+  }
+
 }

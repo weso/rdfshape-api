@@ -47,5 +47,25 @@ def create(iriName: String) {
     		).as(scalar[Long].singleOpt)
 		}
   }
+ 
+   def findIRIName(id : Long) : Option[String] = {
+    val found = DB.withConnection { implicit c =>
+    SQL("select * from iri where id = {id}").on(
+    		'id -> id
+    	).as(iri *)
+	}
+    if (found.isEmpty) None
+    else Some(found.head.iriName)
+  }
+
+   def find(id : Long) : Option[IRI] = {
+    val found = DB.withConnection { implicit c =>
+    SQL("select * from iri where id = {id}").on(
+    		'id -> id
+    	).as(iri *)
+	}
+    if (found.isEmpty) None
+    else Some(found.head)
+  }
 
 }

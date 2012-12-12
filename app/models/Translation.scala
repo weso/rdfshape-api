@@ -40,11 +40,20 @@ object Translation {
   
   def create(iriId: Long, langId: Long, transLabel: String, votes : Int = 1) {
     DB.withConnection { implicit c =>
-      SQL("insert into language (iriId,langId,transLabel,votes) values (%s, %s, '%s', %s)".
+      SQL("insert into translation (iriId,langId,transLabel,votes) values (%s, %s, '%s', %s)".
 	  	     format(iriId,langId,transLabel,votes)).executeUpdate()
     }
   }
 
+  def insert(translation : Translation) {
+	  DB.withConnection { implicit c =>
+	  	SQL("insert into translation (iriId,langId,transLabel,votes) values (%s, %s,'%s',%s)".
+	  	     format(translation.iriId,
+	  	            translation.langId,
+	  	            translation.transLabel,
+	  	            translation.votes)).executeUpdate()
+	  }
+  }
   def delete(id: Pk[Long]) {
 		DB.withConnection { implicit c =>
     	SQL("delete from trans where id = {id}").on(
@@ -70,10 +79,12 @@ object Translation {
 
 
     def lookupIds(iriId : Long, langId: Long) : Option[Long] = {
-        val query = "SELECT id FROM translation WHERE { iriId = %s and langId = %s } ORDER BY votes;".format(iriId,langId)
-        DB.withConnection { implicit c =>
-    		SQL(query).as(scalar[Long].singleOpt)
+        val query = "SELECT id FROM translation WHERE { iriId = %s and langId = %s } ORDER BY votes DESC;".format(iriId,langId)
+        val ids : List[Long]= DB.withConnection { implicit c =>
+    		SQL(query).as(scalar[Long].*)
 		}
+        if (ids.isEmpty) None
+        else Some(ids.head)
   }
     
   def lookupTranslation(iriStr : String, langCode : String) : Option[Translation] = {
