@@ -2,6 +2,7 @@ package models
 
 import play.api.db._
 import play.api.Play.current
+import play.api.Logger
 
 import anorm._
 import anorm.SqlParser._
@@ -24,7 +25,18 @@ object Language {
   	SQL("select * from language").as(lang *)
   }
   
+  def create(langCode : String, langName: String) {
+    // Only creates a new language if it didn't exist
+    if (lookup(langCode) == None)
+	  DB.withConnection { implicit c =>
+	  	SQL("insert into language (langCode,langName) values ('%s', '%s')".
+	  	     format(langCode,
+	  	            langName)).executeUpdate()
+	  }
+  }
+  
   def insert(language : Language) {
+    if (lookup(language.langCode) == None)
 	  DB.withConnection { implicit c =>
 	  	SQL("insert into language (langCode,langName) values ('%s', '%s')".
 	  	     format(language.langCode,
@@ -41,11 +53,20 @@ object Language {
   }
 
   def lookup(langCode : String) : Option[Long] = {
-    DB.withConnection { implicit c =>
-    SQL("select id from language where langCode = {langCode}").on(
-    		'langCode -> langCode
-    		).as(scalar[Long].singleOpt)
-	}
+    val ids = DB.withConnection { implicit c =>
+    		  SQL("select id from language where langCode = {langCode}").on(
+    				  'langCode -> langCode
+    		  ).as(scalar[Long].*)
+    		}
+    ids.length match {
+      case 0 => None
+      case 1 => Some(ids.head)
+      case _ => {
+        Logger.warn("Lookup lang: " + langCode + ". More than one id (selected the first)")
+        println("Lookup lang: " + langCode + ". More than one id (selected the first)")
+        Some(ids.head)
+      }
+    }
   }
   
   def findLangCode(id : Long) : Option[String] = {

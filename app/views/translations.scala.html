@@ -1,11 +1,11 @@
-@(translations: List[ViewTranslation], translationForm: Form[ViewTranslation])
+@(translations: List[ViewTranslation], translationForm: Form[ViewTranslation],defaultLanguage: Lang)
 
 @import helper._
 
 @main("Labels4all") {
     
-    <h1>Translations Labels4all</h1>
-    <h2>Translations: @translations.size</h2>
+    <h2>Admin Translations</h2>
+    <p>Number of translations: @translations.size</h2>
     
     <table>
      <tr>
@@ -20,6 +20,9 @@
             <td>@t.langCode</td>
             <td>@t.label</td>
             <td>@t.votes</td>
+            <td>@form(routes.Admin.deleteTrans(t.id)) {
+                    <input type="submit" value="@Messages("Delete")(defaultLanguage)">
+                }</td>
         </tr>
         }
     </table>

@@ -1,0 +1,25 @@
+@(viewTrans: ViewTranslation, formatForm: Form[FormatField])
+
+@import helper._
+
+@main("Labels4all") {
+    
+    <h1>RESULT</h1>
+    <h2 class="result">@viewTrans.iri 
+        <a href="http://www.w3.org/2000/01/rdf-schema#label">rdfs:label</a> 
+          "@viewTrans.label"&#x040;@viewTrans.langCode</h2>
+
+    <p>Votes: @viewTrans.votes</p>    
+
+    @form(routes.Application.format) {
+	  <fieldset> 
+		<input type="hidden" name="iriName" value='@viewTrans.iri' >
+		<input type="hidden" name="langCode" value='@viewTrans.langCode' >
+		<input type="hidden" name="label" value='@viewTrans.label' >
+		<input type="hidden" name="votes" value='@viewTrans.votes' >
+        @inputText(formatForm("format"), '_label -> "Format") 
+      </fieldset>  
+      <input type="submit" value="@Messages("Search") ">
+    }
+   
+}

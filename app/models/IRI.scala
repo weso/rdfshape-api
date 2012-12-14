@@ -1,13 +1,14 @@
 package models
 
 import play.api.db._
+import play.api.Logger
 import play.api.Play.current
 
 import anorm._
 import anorm.SqlParser._
 
 case class IRI(
-	id: Long, 
+	id: Pk[Long], 
 	iriName: String
 )
 
@@ -15,7 +16,7 @@ object IRI {
 
 
   val iri = {
-	get[Long]("id") ~ get[String]("iriName") map {
+	get[Pk[Long]]("id") ~ get[String]("iriName") map {
   	  case id~iriName => IRI(id, iriName)
   	}
   }
@@ -25,14 +26,16 @@ object IRI {
   }
   
 def create(iriName: String) {
-  DB.withConnection { implicit c =>
-    SQL("insert into iri (iriName) values ({iriName})").on(
-      'iriName -> iriName
-    ).executeUpdate()
-  }
+  // Insert an IRI only if it did not exist
+  if (lookup(iriName) == None) 
+   DB.withConnection { implicit c =>
+     SQL("insert into iri (iriName) values ({iriName})").on(
+       'iriName -> iriName
+     ).executeUpdate()
+   }
 }
 
- def delete(id: Long) {
+ def delete(id: Pk[Long]) {
   DB.withConnection { implicit c =>
     SQL("delete from iri where id = {id}").on(
     		'id -> id
@@ -41,11 +44,20 @@ def create(iriName: String) {
 	}
 
  def lookup(iriName : String) : Option[Long] = {
-    	DB.withConnection { implicit c =>
+    val ids = DB.withConnection { implicit c =>
     	SQL("select id from iri where iriName = {iriName}").on(
     		'iriName -> iriName
-    		).as(scalar[Long].singleOpt)
+    		).as(scalar[Long].*)
 		}
+    ids.length match {
+      case 0 => None
+      case 1 => Some(ids.head)
+      case _ => {
+        Logger.warn("Lookup iri: " + iriName + ". More than one id (selected the first)")
+        println("Lookup iri: " + iriName + ". More than one id (selected the first)")
+        Some(ids.head)
+      }
+    }
   }
  
    def findIRIName(id : Long) : Option[String] = {

@@ -1,6 +1,21 @@
-h1 { color: green; }
+div.title h1 { 
+	color: #888;
+	font-size: 2em;
+	margin: 0;
+	text-align: center;
+	font: 'Lucida Grande', sans-serif;
+	font-weight: bold
+}
 
 h2.result { 
-	background: cyan;
-	border: 1px solid ;
+	color: #888;
+	font: 'Lucida Grande', sans-serif;
+	text-align: center;
+	font-weight: bold;
+	font-size: 1.5em;
+	margin: 0;
+}
+
+h2.result a {
+	color: green;
 }

@@ -4,8 +4,6 @@
 
 @main("Labels4all") {
     
-    <h1>Labels4all</h1>
-
     <h2 class="result">@flash.get("message").getOrElse("")</h2>
     
     @form(routes.Application.searchTranslation) {

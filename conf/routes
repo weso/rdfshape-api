@@ -3,9 +3,10 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
+GET     /                           		controllers.Application.index
 
-GET     /search						controllers.Application.searchTranslation
+GET     /search								controllers.Application.searchTranslation
+GET     /format								controllers.Application.format
 GET     /about								controllers.Application.about
 
 

@@ -55,7 +55,7 @@ object Admin extends Controller {
   }
 
   def deleteIRI(id: Long) = Action {
-	  IRI.delete(id)
+	  IRI.delete(Id(id))
 	  Redirect(routes.Admin.languages)
       // Home.flashing("message" -> ("IRI " + id.toString + " deleted") )
   }
@@ -68,11 +68,11 @@ object Admin extends Controller {
  def deleteTrans(id: Long) = Action {
   Translation.delete(Id(id))
   Ok("Deleted trans" + id)
-//  Redirect(routes.Application.trans)
+  Redirect(routes.Admin.translations)
 }
 
   val iriForm : Form[String] = Form(
-  "iriName" -> nonEmptyText
+      "iriName" -> nonEmptyText
   )
 
   
@@ -86,10 +86,11 @@ object Admin extends Controller {
 
   val translationForm : Form[ViewTranslation] = Form(
      mapping(
+      "id" -> of[Long],
       "iri" -> nonEmptyText,
       "langCode" -> nonEmptyText,
       "label" -> nonEmptyText,
-      "votes" -> of[Int]
+      "votes" -> of[Long]
      )(ViewTranslation.apply)(ViewTranslation.unapply)
   )
   
@@ -102,7 +103,7 @@ object Admin extends Controller {
   }
 
   def viewTranslations : List[ViewTranslation] = {
-    Translation.all().map(t => ViewTranslation(
+    Translation.all().map(t => ViewTranslation(t.id.get,
         IRI.findIRIName(t.iriId).getOrElse("Not found"), 
         Language.findLangCode(t.langId).getOrElse("Not found"),
         t.transLabel,
@@ -110,8 +111,9 @@ object Admin extends Controller {
     )
   }
 
-  def translations = Action {
-    Ok(views.html.translations(viewTranslations,translationForm))
+  def translations = Action { request =>
+    // TODO select default language
+    Ok(views.html.translations(viewTranslations,translationForm,Lang("es")))
   }
 
   

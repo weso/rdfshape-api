@@ -38,7 +38,7 @@ object Translation {
   	SQL("select * from translation").as(trans *)
   }
   
-  def create(iriId: Long, langId: Long, transLabel: String, votes : Int = 1) {
+  def create(iriId: Long, langId: Long, transLabel: String, votes : Long = 1) {
     DB.withConnection { implicit c =>
       SQL("insert into translation (iriId,langId,transLabel,votes) values (%s, %s, '%s', %s)".
 	  	     format(iriId,langId,transLabel,votes)).executeUpdate()
@@ -56,12 +56,13 @@ object Translation {
   }
   def delete(id: Pk[Long]) {
 		DB.withConnection { implicit c =>
-    	SQL("delete from trans where id = {id}").on(
+    	SQL("delete from translation where id = {id}").on(
     		'id -> id
     		).executeUpdate()
 		}
 	}
 
+  // TODO: This method does not work jet
   def lookup(iriName : String, langCode : String) : Option[String] = {
     	DB.withConnection { implicit c =>
     		SQL( """
@@ -69,7 +70,7 @@ object Translation {
     				FROM translation t
     				INNER JOIN language l ON l.id = t.langid
     				INNER JOIN iri i ON i.id = t.iriid
-    				WHERE (l.langCode = '{langCode}' and i.iriName='{iriName}' );""""
+    				WHERE (l.langCode = '{langCode}' and i.iriName='{iriName}' );"""
     		    ).on(
     		   'langCode -> langCode,
     		   'iriName -> iriName
@@ -78,7 +79,7 @@ object Translation {
   }
 
 
-    def lookupIds(iriId : Long, langId: Long) : Option[Long] = {
+  def lookupIds(iriId : Long, langId: Long) : Option[Long] = {
         val query = "SELECT id FROM translation WHERE { iriId = %s and langId = %s } ORDER BY votes DESC;".format(iriId,langId)
         val ids : List[Long]= DB.withConnection { implicit c =>
     		SQL(query).as(scalar[Long].*)

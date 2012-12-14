@@ -4,16 +4,15 @@
 
 @main("Labels4all") {
     
-    <h1>IRIS Labels4all</h1>
-    <h2>IRIs: @iris.size</h2>
+    <h2>Admin IRIs</h2>
     
-    <p>Testing IRIs</p>
+    <p>Number of IRIs: @iris.size</p>
     <ul>
         @iris.map { iri =>
             <li>
                 @iri.iriName
                 
-                @form(routes.Admin.deleteIRI(iri.id)) {
+                @form(routes.Admin.deleteIRI(iri.id.get)) {
                     <input type="submit" value="Delete">
                 }
             </li>
