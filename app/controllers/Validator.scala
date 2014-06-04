@@ -44,9 +44,8 @@ object Validator extends Controller {
 	            	 val rs = Schema.matchSchema(iri,rdf,schema,withIncoming)
 	            	 ValidationResult("Schema valid",rs.run,pm)
 	             } else {
-	               // val rs = Schema.matchAll(rdf,schema,withIncoming)
-	               // ValidationResult("Schema valid",rs.run,pm)
-	               ValidationResult.withMessage("Not implemented match all. Select an IRI")
+	               val rs = Schema.matchAll(rdf,schema,withIncoming)
+	               ValidationResult("Schema valid",rs.run,pm)
 	             } 
 	           }
 	           case Failure(e) => ValidationResult.failure(e)
