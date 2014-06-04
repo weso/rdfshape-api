@@ -3,25 +3,10 @@
 # ~~~~
 
 # Home page
-GET     /                           		controllers.Application.index
-
-GET     /search								controllers.Application.searchTranslation
-GET     /format								controllers.Application.format
-GET     /about								controllers.Application.about
-
-
-GET     /admin								controllers.Admin.admin
-GET     /admin/iris                  		controllers.Admin.iris
-POST    /admin/iris                  		controllers.Admin.newIRI
-POST    /admin/iris/:id/delete       		controllers.Admin.deleteIRI(id: Long)
-
-GET     /admin/langs                  		controllers.Admin.languages
-POST    /admin/langs                  		controllers.Admin.newLang
-POST    /admin/langs/:id/delete       		controllers.Admin.deleteLang(id: Long)
-
-GET     /admin/trans                  		controllers.Admin.translations
-POST    /admin/trans                  		controllers.Admin.newTranslation
-POST    /admin/trans/:id/delete       		controllers.Admin.deleteTrans(id: Long)
+GET     /                           controllers.Application.index
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+
+POST	/validator					controllers.Validator.validate

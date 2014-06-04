@@ -1,4 +1,11 @@
-Greeting=Hi from default
-Create=Create
-Delete=Delete
-Search=Search
+Name=Shape Expressions Validator
+ByURI=By URI
+ByFile=By file upload
+ByInput=By Direct input
+ByEndpoint=By SPARQL Endpoint
+ByDereference=By URI Dereference
+RDFSelect=Select RDF
+ShExSelect=Select Shape Expression
+Submit=Check
+Input=Input
+IRI=IRI 
