@@ -20,6 +20,7 @@ import es.weso.monads.Passed
 import es.weso.rdf.reader.RDFFromJenaModel
 import es.weso.utils._
 import es.weso.parser.PrefixMap
+import java.net.URI
 
 object Validator extends Controller {
   
@@ -149,7 +150,6 @@ object Validator extends Controller {
            try {
             val filename 		= f.filename
             val contentType 	= f.contentType
-            println("Contenttype: " + contentType)
             val input 			= new ByteArrayInputStream(FileUtils.readFileToByteArray(f.ref.file))
             JenaUtils.parseInputStream(input,"") match {
               case Parsed(model) => {
@@ -190,7 +190,10 @@ object Validator extends Controller {
  def parseSchema(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[(Schema,PrefixMap)] = {
    inputType match {
      case ByUri => {
-       notImplementedYet
+       for ( uri <- parseKey(mf,"schema_uri")
+           ; val str = io.Source.fromURI(new URI(uri)).getLines().mkString("\n")
+           ; (schema,pm) <- Schema.fromString(str)
+           ) yield (schema,pm)
      }
      case ByFile => {
        mf.file("schema_file") match {
@@ -199,14 +202,14 @@ object Validator extends Controller {
             val filename 		= f.filename
             val contentType 	= f.contentType
             println("Contenttype: " + contentType)
-            val input 			= new ByteArrayInputStream(FileUtils.readFileToByteArray(f.ref.file))
-            notImplementedYet
+            val str = io.Source.fromFile(f.ref.file).getLines().mkString("\n")
+            Schema.fromString(str) 
            } catch {
-            case e: Exception => Failure(e)
+            case e: Exception => failMsg("parseSchema: exception " + e.getMessage)
           }
          }
          case None => {
-           Failure(throw new Exception("Input RDF by file but no file found for key rdf_file"))
+           failMsg("Input RDF by file but no file found for key rdf_file")
        }
       }
      }
@@ -215,7 +218,7 @@ object Validator extends Controller {
            ; (schema,pm) <- Schema.fromString(cs)
            ) yield (schema,pm)
      } 
-     case _ => throw new Exception("parseSchema: non supported input type: " + inputType)
+     case _ => failMsg("parseSchema: non supported input type: " + inputType)
    }
  }
 
@@ -225,6 +228,11 @@ object Validator extends Controller {
       case Failure(e) => SchemaFailure(e.getMessage())
       case Success(v) => Passed(Stream(v))
     }
+  }
+
+  // TODO: Move this utility to other place...
+  def failMsg[A](msg:String): Try[A] = {
+    Failure(throw new Exception(msg))
   }
 
 }

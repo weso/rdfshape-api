@@ -59,7 +59,7 @@
 }
 
 [type=radio]:checked ~ label {
-  background: cyan;
+  background: yellow;
   border-bottom: 3px solid yellow;
   z-index: 2;
 }
@@ -78,5 +78,10 @@ div.submit {
 }
 
 input[type=submit] {
- z-index:1 ; 
+ font-size: xx-large;
+ background: rgb(223, 117, 20);
+}
+
+p.result {
+ font-size: xx-large;
 }

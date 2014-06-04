@@ -4,6 +4,7 @@ import es.weso.shex._
 import es.weso.monads._
 import es.weso.parser.PrefixMap
 import xml.Utility.escape
+import es.weso.rdfgraph.nodes.RDFNode
 
 case class ValidationResult(
     msg: String, 
@@ -12,24 +13,37 @@ case class ValidationResult(
 
   def typing2Html(typing: Typing): String = {
     val sb = new StringBuilder
-    sb.append("<ul>")
+    sb.append("<tr><th>Node</th><th>Shape</th></tr>")
     for ((node,ts) <- typing.map) {
-      sb.append("<li>" + escape(node.toString) + 
-          " -> " + 
-          ts.map(n => escape(n.toString).mkString(" ")))
+      sb.append("<tr><td>" + node2Html(node) + 
+    		  		 "</td><td>" + nodes2Html(ts) + "</td></tr>")
     }
-    sb.append("</ul>")
     sb.toString
   }
   
-  def toHTML(cut: Int): String = {
+   def nodes2Html(nodes: Set[RDFNode]): String = {
+     val sb = new StringBuilder
+     sb.append("<ul class=\"nodes\">")
+     for (node <- nodes) {
+       sb.append("<li>" + node2Html(node) + "</li>")
+     }
+     sb.append("</ul>")
+     sb.toString
+   }
+
+   def node2Html(node: RDFNode): String = {
+     if (node.isIRI) ("<a href=\"" + node.toIRI.str + "\">" + escape(node.toIRI.str) + "</a>")
+     else escape(node.toString)
+   }
+    
+   def toHTML(cut: Int): String = {
     val sb = new StringBuilder
-    sb.append("<p>" + msg + "</p>")
-    sb.append("<ul>")
+    sb.append("<p class=\"result\">" + msg + "</p>")
+    sb.append("<table>")
     for (t <- rs.take(cut)) {
-      sb.append("<li>" + typing2Html(t) + "</li>")
+      sb.append("<tr>" + typing2Html(t) + "</tr>")
     }
-    sb.append("</ul>") 
+    sb.append("</table>") 
     println("StringBuilder: " + sb.toString)
     sb.toString
   }
