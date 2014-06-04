@@ -1,11 +1,24 @@
-logs
-project/project
-project/target
-target
-.target
-bin
+*.class
+*.log
+
+# sbt specific
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+
+.settings
+.settings/*
+.project
+.classpath
 .cache
-tmp
-.history
-dist
-test*.db
+<<<<<<< HEAD
+.target
+=======
+>>>>>>> 2cb8b6cc3d69c60f80df9f40a773d6acac7ffd07
+/bin

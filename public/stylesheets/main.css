@@ -1,21 +1,82 @@
-div.title h1 { 
-	color: #888;
-	font-size: 2em;
-	margin: 0;
-	text-align: center;
-	font: 'Lucida Grande', sans-serif;
-	font-weight: bold
+/*Tabs inspired by: 
+  http://css-tricks.com/functional-css-tabs-revisited/ 
+  */
+
+.tabs {
+  position: relative;   
+  min-height: 180px; /* This part sucks */
+  clear: both; 
+  margin: 25px 0; 
 }
 
-h2.result { 
-	color: #888;
-	font: 'Lucida Grande', sans-serif;
-	text-align: center;
-	font-weight: bold;
-	font-size: 1.5em;
-	margin: 0;
+.tab {
+  float: left; 
 }
 
-h2.result a {
-	color: green;
+.tab label {
+  background: #eee; 
+  padding: 10px; 
+  border: 1px solid #ccc; 
+  position: relative;
+  left: 1px; 
+}
+
+.tab [type=radio] {
+  display: none;
+}
+
+.content {
+  position: absolute;
+  top: 28px; 
+  left: 0;
+  background: white;
+  right: 0;
+  bottom: 0;
+/*  padding: 40px;  */
+/*  border: 5px solid #ccc;  */
+  
+}
+
+[type=radio]:checked ~ label ~ .content > * {
+  visibility: visible; 
+  z-index: 2;
+}
+
+[type=radio]:checked ~ label ~ .content  {
+  visibility: visible; 
+  z-index: 2;
+}
+
+[type=radio]:not(:checked) ~ label ~ .content {
+ /* visibility: hidden !important;  */
+ z-index: 1;
+}
+
+[type=radio]:not(:checked) ~ label ~ .content > * {
+ /* visibility: hidden !important; */
+ display:none; 
+ z-index: 1;
+}
+
+[type=radio]:checked ~ label {
+  background: cyan;
+  border-bottom: 3px solid yellow;
+  z-index: 2;
+}
+
+textarea {
+  width: 100%;
+  height: 100%;
+  margin: 0; /* don't want to add to container size */
+}
+
+div.submit {
+ position: fixed;
+ top: 30px;
+ right: 5px;
+ z-index: 3;
+}
+
+input[type=submit] {
+ z-index:1 ; 
 }
