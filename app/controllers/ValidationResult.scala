@@ -5,10 +5,14 @@ import es.weso.monads._
 import es.weso.parser.PrefixMap
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
+import es.weso.rdfgraph.nodes.IRI
 
 case class ValidationResult(
     msg: String, 
-    rs: Stream[Typing], 
+    rs: Stream[Typing],
+    str_rdf: String,
+    str_schema: String,
+    iri: Option[IRI],
     pm: PrefixMap) {
 
   def typing2Html(typing: Typing): String = {
@@ -44,19 +48,18 @@ case class ValidationResult(
       sb.append("<tr>" + typing2Html(t) + "</tr>")
     }
     sb.append("</table>") 
-    println("StringBuilder: " + sb.toString)
     sb.toString
   }
 }
 
 object ValidationResult {
-  def empty = ValidationResult("",Stream(), PrefixMap.empty)
+  def empty = ValidationResult("",Stream(), "","", None, PrefixMap.empty)
   
-  def failure(e: Throwable) : ValidationResult = {
-    ValidationResult(e.getMessage, Stream(),PrefixMap.empty)
+  def failure(e: Throwable,str_rdf:String, str_schema: String = "") : ValidationResult = {
+    ValidationResult(e.getMessage, Stream(),str_rdf,str_schema,None,PrefixMap.empty)
   }
 
   def withMessage(msg: String) : ValidationResult = {
-    ValidationResult(msg, Stream(),PrefixMap.empty)
+    ValidationResult(msg, Stream(),"","",None,PrefixMap.empty)
   }
 }

@@ -3,17 +3,19 @@
 <!DOCTYPE html>
 
 <html>
-    <head>
-        <title>@title</title>
-        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-        <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
-        <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
-    </head>
-    <body>
-    <header><h1>RDF Validator using Shape Expressions</h1></header>
-        @content
-    <footer>
-    Developed by: <a href="http://www.weso.es">WESO Research Group</a>
-    </footer>
-    </body>
+<head>
+ <title>@title</title>
+ <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
+ <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+ <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
+</head>
+<body>
+<header>
+ <h1 id="title">RDF Validator using Shape Expressions</h1>
+</header>
+@content
+<footer>
+<div>Developed by: <a href="http://www.weso.es">WESO Research Group</a></div>
+</footer>
+</body>
 </html>

@@ -1,7 +1,141 @@
-/*Tabs inspired by: 
-  http://css-tricks.com/functional-css-tabs-revisited/ 
-  */
 
+/* Some definitions have been taken from: http://validator.w3.org/style/base */
+
+/* @group Reset */
+
+html, body, form, fieldset, p, a, ul, ol, li, div, legend, label,
+br, input, button, textarea, h1, h2, h3, h4, h5, strong {
+	font-weight: normal;
+	font-style: normal;
+	font-size: 100%;
+	font-family: Helvetica, Arial, Sans-Serif;
+	vertical-align: baseline;
+	background-color: white;
+	color: #1f2126;
+	line-height: 1;
+	text-align: left;
+}
+
+a img {
+	border: 0;
+}
+
+a:link, a:visited {
+	text-decoration: underline;
+	color: #365D95;
+}
+
+a:hover, a:active {
+	text-decoration: underline;
+	color: #1f2126;
+}
+
+ul, ol {
+	list-style: none;
+}
+
+abbr[title], acronym[title], span[title], strong[title] {
+	border-bottom: thin dotted;
+	cursor: help;
+}
+
+acronym:hover, abbr:hover {
+	cursor: help;
+}
+
+
+/* @group Basics */
+
+body {
+	padding-bottom: 6em;
+	min-width: 40em; /* for the tabs, mostly */
+}
+
+p {
+  line-height: 130%;   
+}
+
+strong { 
+  font-weight: bold;
+}
+
+h2 { 
+    color: #690;
+    font-family:Verdana,Arial,sans-serif;
+    background-color: white;
+    font-size: 1.3em;
+    margin-bottom: 1em;    
+}
+
+h3 {
+    font-family:Verdana,Arial,sans-serif;
+    color: #690;
+    background-color: white;
+    font-size: 1.1em;
+    border-bottom: 1px dotted #aaaa77;
+    text-decoration: none;
+    margin-top: 1em;
+    margin-bottom: 1em;
+} 
+
+h4 {
+    font-family:Verdana,Arial,sans-serif;
+    color: #690;
+    font-style: italic;
+    text-decoration: none;
+    font-size: .9em;
+    font-weight:600;
+    margin-top: 1.5em;
+    margin-bottom: .5em;
+}
+
+h5,h6 {
+    font-family:Verdana,Arial,sans-serif;
+    color: #690;
+    background-color: white;
+    font-weight: normal;
+    font-size: small;
+    margin-top: 1em;
+    margin-left: 1em;
+    margin-bottom: .7em;
+    }
+
+    /* tables in the documentation */
+
+    table {
+    }
+    td, th{
+    	padding: 6px;
+    }
+    
+/* @end */
+
+textarea {
+	font-family: Monaco, "Courier New", Monospace;
+	font-size: 0.9em;
+	border: 1px solid #bbb;
+	border-top: 1px solid #777;
+	border-bottom: 1px solid #ddd;
+	background: #fefefe no-repeat top left;
+	padding: 0.2em 0.2em;
+	max-width: 1000px;
+	font-variant: normal;
+	width: 98.5%;
+}
+
+h1#title {
+	font-family: "Myriad Web", "Myriad Pro", "Gill Sans", Helvetica, Arial, Sans-Serif;
+	background-color: #365D95;
+	color: #fdfdfd;
+	font-size: 1.6em;
+	padding: 0.4em;
+}
+
+
+ /* Definitions of Tabs. Inspired by: 
+  * http://css-tricks.com/functional-css-tabs-revisited/ 
+  */
+  
 .tabs {
   position: relative;   
   min-height: 180px; /* This part sucks */
@@ -13,55 +147,61 @@
   float: left; 
 }
 
-.tab label {
+.tab > [type=radio] ~ label {
   background: #eee; 
-  padding: 10px; 
-  border: 1px solid #ccc; 
+  padding: .2em; 
+  border-top: 1px solid #ccc; 
+  border-left: 1px solid #ccc; 
+  border-right: 1px solid #ccc; 
   position: relative;
   left: 1px; 
+  font-size: 0.9em;
+  padding-left: .2em;
+  padding-right: .2em;
+  cursor: pointer;
 }
 
-.tab [type=radio] {
+.tab > [type=radio] {
   display: none;
 }
 
-.content {
-  position: absolute;
-  top: 28px; 
-  left: 0;
-  background: white;
-  right: 0;
-  bottom: 0;
-/*  padding: 40px;  */
-/*  border: 5px solid #ccc;  */
-  
+.tab > [type=radio]:checked ~ label {
+   background-color: #365D95;
+   color: #fdfdfd;
 }
 
-[type=radio]:checked ~ label ~ .content > * {
+.tab > [type=radio]:checked ~ label ~ .content > * {
   visibility: visible; 
   z-index: 2;
 }
 
-[type=radio]:checked ~ label ~ .content  {
+.tab > [type=radio]:checked ~ label ~ .content  {
   visibility: visible; 
   z-index: 2;
 }
 
-[type=radio]:not(:checked) ~ label ~ .content {
+
+.tab > [type=radio]:not(:checked) ~ label ~ .content {
  /* visibility: hidden !important;  */
  z-index: 1;
 }
 
-[type=radio]:not(:checked) ~ label ~ .content > * {
+.tab > [type=radio]:not(:checked) ~ label ~ .content > * {
  /* visibility: hidden !important; */
  display:none; 
  z-index: 1;
 }
 
-[type=radio]:checked ~ label {
-  background: yellow;
-  border-bottom: 3px solid yellow;
-  z-index: 2;
+.content {
+  position: absolute;
+  top: 1.1em; 
+  left: 0;
+  /*background: #eee; */
+  right: 0;
+  bottom: 0;
+  padding: 1em;  
+  text-align: center;
+  vertical-align: center;
 }
 
 textarea {
@@ -70,18 +210,52 @@ textarea {
   margin: 0; /* don't want to add to container size */
 }
 
+div.content details {
+ text-align: left;
+ font-size: 0.9em;
+}
+
+/*
+ * Submit button
+ */
+
+footer {
+ position:fixed;
+ bottom: 1em;
+ right: 0.1em;
+ font-size: 0.5em;
+ z-index: 2;
+}
+
 div.submit {
  position: fixed;
- top: 30px;
- right: 5px;
+ bottom: 1.6em;
+ right: 0.1em;
  z-index: 3;
+ overflow: visible;
+ width: auto;
 }
 
 input[type=submit] {
- font-size: xx-large;
- background: rgb(223, 117, 20);
+ color: #365D95;
+ padding: 0.3em 0.4em 0.1em 0.3em;
+ font-size: 1.2em;
+ border-bottom: 2px solid #444;
+ border-right: 2px solid #444;
+ border-top: 1px solid #aaa;
+ border-left: 1px solid #aaa;
+ cursor: pointer;
+ background: #eee url(images/grad.png) repeat-x top left;
+}
+
+input[type=submit]:active {
+    color: #1f2126;
+	border-bottom: 1px solid #aaa;
+	border-right: 1px solid #aaa;
+	border-top: 2px solid #444;
+	border-left: 2px solid #444;
 }
 
 p.result {
- font-size: xx-large;
+ font-size: 120%;
 }

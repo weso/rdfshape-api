@@ -4,10 +4,7 @@
   schema_input:InputType = ByInput,  
   withIRI: Boolean = false,
   str_uri_rdf: String = "",
-  str_rdf: String = "",
-  str_uri_schema: String = "",
-  str_schema: String = "",
-  str_iri: String = ""
+  str_uri_schema: String = ""
   )
 
 @import play.api.i18n.Messages
@@ -44,7 +41,7 @@
 	<label for="byUri_RDF">@Messages("ByURI")</label>
 	<div class="content">
 	  <input type="url" 
-		   name="rdf_uri" 
+           name="rdf_uri" 
 		   id="rdf_uri" 
 		   size="45" 
 		   placeholder="http://..." />
@@ -78,7 +75,7 @@
    <textarea 
 		id="fragment" 
 		name="rdf_textarea" 
-		rows="12" cols="80">@str_rdf</textarea>
+		rows="12" cols="80">@validationResult.str_rdf</textarea>
   </div> <!-- content -->
 
  </div> <!-- tab -->
@@ -119,19 +116,7 @@
 
 </div> <!-- rdfPane -->
 
-<!-- Schema pane -->
-<div class="tabs">
-
-<div class="tab">
-<input type="radio"
-       id="schemaYes"
-       value="schemaYes"
-       name="withSchema" 
-       @{if (withSchema == true) "checked"}>
-<label for="schemaYes">With Schema</label>
-
-<div class="content">
-
+<!-- Schema/No schema pane -->
 <div class="tabs">
 
 <div class="tab">        
@@ -144,6 +129,18 @@
  <div class="content"></div>        
 </div> <!-- tab no schema -->
 
+<div class="tab">
+<input type="radio"
+       id="schemaYes"
+       value="schemaYes"
+       name="withSchema" 
+       @{if (withSchema == true) "checked"}>
+<label for="schemaYes">With Schema</label>
+
+<div class="content">
+
+<!-- input type tabs -->
+<div class="tabs">
 
 <!-- tab with schema -->
 <div class="tab">
@@ -160,13 +157,52 @@
 		   size="45" 
 		   placeholder="http://..." />
 
-  <!-- Options -->	
-  <p>WithIncoming:</p>
-    <input type="radio" id="withIncomingTrue" value="true" name="withIncoming">
-	<input type="radio" id="withIncomingTrue" value="false" name="withIncoming" checked>
-  
+  <!-- Options -->
+  <details>
+   <summary>More options</summary>
+   <table>	
+   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
+   <tr><td>With incoming</td><td>
+    <input type="radio" name="withIncoming" value="true"><label>true</label><br/>
+	<input type="radio" name="withIncoming" value="false" checked><label>false</label>
+    </td>
+    <td>Takes into account incoming edges</td></tr>	
+   </table>
+  </details>
+
+<!-- Select IRI/No IRI -->
+<div class="tabs">
+
+<div class="tab">
+<input type="radio"
+       id="byUri_iriNo"
+       value="false"
+       name="byUri_withIRI" 
+       @{if (withIRI == false) "checked"}>
+<label for="byUri_iriNo">No IRI (All)</label>
+<div class="content"></div> 
+</div> <!-- tab no iri -->
+
+
+<div class="tab">
+<input type="radio"
+       id="byUri_iriYes"
+       value="true"
+       name="byUri_withIRI" 
+       @{if (withIRI == true) "checked"}>
+<label for="byUri_iriYes">With IRI</label>
+<div class="content">
+  <input type="text" 
+	     name="byUri_iri"
+		 size="45" 
+		 value="@validationResult.iri.getOrElse("")"
+		 placeholder="http://...">
+</div> <!-- content with IRI -->
+</div> <!-- tab -->
+
+</div> <!-- tabs select iri --> 
 	
-    </div>
+  </div> <!-- content -->
 </div> <!-- tab -->
 
 <div class="tab">
@@ -182,10 +218,51 @@
 		   name="schema_file" 
 		   size="30" />
 
-    <!-- Options -->	
-   <p>WithIncoming:</p>
-    <input type="radio" id="withIncomingTrue" value="true" name="withIncoming">
-	<input type="radio" id="withIncomingTrue" value="false" name="withIncoming" checked>
+  <!-- Options -->
+  <details>
+   <summary>More options</summary>
+   <table>	
+   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
+   <tr><td>With incoming</td><td>
+    <input type="radio" name="withIncoming" value="true"><label>true</label><br/>
+	<input type="radio" name="withIncoming" value="false" checked><label>false</label>
+    </td>
+    <td>Takes into account incoming edges</td></tr>	
+   </table>
+  </details>
+
+<!-- Select IRI/No IRI -->
+<div class="tabs">
+
+<div class="tab">
+<input type="radio"
+       id="byFile_iriNo"
+       value="false"
+       name="byFile_withIRI" 
+       @{if (withIRI == false) "checked"}>
+<label for="byFile_iriNo">No IRI (All)</label>
+<div class="content"></div> 
+</div> <!-- tab no iri -->
+
+
+<div class="tab">
+<input type="radio"
+       id="byFile_iriYes"
+       value="true"
+       name="byFile_withIRI" 
+       @{if (withIRI == true) "checked"}>
+<label for="byFile_iriYes">With IRI</label>
+<div class="content">
+  <input type="text" 
+	     name="byFile_iri" 
+		 size="45" 
+		 value='@validationResult.iri.getOrElse("")'
+		 placeholder="http://...">
+</div> <!-- content with IRI -->
+</div> <!-- tab -->
+
+</div> <!-- tabs select iri --> 
+
   
  </div>
 </div> <!-- tab -->
@@ -197,55 +274,63 @@
      name="schema"
      @{if (schema_input == ByInput) "checked"}>
  <label for="byInput_Schema">@Messages("ByInput")</label>
- <div class="content">	
+ <div class="content">
 	<textarea 
 		id="fragment" 
 		name="schema_textarea" 
-		rows="12" cols="80">@str_schema</textarea>
+		rows="12" cols="80">@validationResult.str_schema</textarea>
 		
-	<!-- Options -->	
-    <p>WithIncoming:</p>
-    <input type="radio" id="withIncomingTrue" value="true" name="withIncoming">
-	<input type="radio" id="withIncomingTrue" value="false" name="withIncoming" checked>
-		
- </div>
+  <!-- Options -->
+  <details>
+   <summary>More options</summary>
+   <table>	
+   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
+   <tr><td>With incoming</td><td>
+    <input type="radio" name="withIncoming" value="true"><label>true</label><br/>
+	<input type="radio" name="withIncoming" value="false" checked><label>false</label>
+    </td>
+    <td>Takes into account incoming edges</td></tr>	
+   </table>
+  </details>
 
- </div> <!-- tab -->
- 
-</div> <!-- tabs --> 
-
-<!-- Select IRI -->
+<!-- Select IRI/No IRI -->
 <div class="tabs">
 
 <div class="tab">
 <input type="radio"
-       id="iriNo"
+       id="byInput_iriNo"
        value="false"
-       name="withIRI" 
+       name="byInput_withIRI" 
        @{if (withIRI == false) "checked"}>
-<label for="iriNo">No IRI (All)</label>
+<label for="byInput_iriNo">No IRI (All)</label>
 <div class="content"></div> 
 </div> <!-- tab no iri -->
 
 
 <div class="tab">
 <input type="radio"
-       id="iriYes"
+       id="byInput_iriYes"
        value="true"
-       name="withIRI" 
+       name="byInput_withIRI" 
        @{if (withIRI == true) "checked"}>
-<label for="iriYes">With IRI</label>
+<label for="byInput_iriYes">With IRI</label>
 <div class="content">
   <input type="text" 
-	     name="iri" 
+	     name="byInput_iri" 
 		 id="iri" 
 		 size="45" 
-		 value="@str_iri"
+		 value='@validationResult.iri.getOrElse("")'
 		 placeholder="http://...">
 </div> <!-- content with IRI -->
 </div> <!-- tab -->
 
 </div> <!-- tabs select iri --> 
+  		
+ </div> <!-- content -->
+
+ </div> <!-- tab -->
+ 
+</div> <!-- tabs --> 
 
 </div> <!-- content with schema -->
 

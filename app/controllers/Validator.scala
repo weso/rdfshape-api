@@ -23,46 +23,58 @@ import es.weso.parser.PrefixMap
 import java.net.URI
 
 object Validator extends Controller {
-  
+
+    // TODO: Refactor all this...
     def validate = Action { request => {
+      
 	     val result = 
 	       for ( mf <- getMultipartForm(request)
 	    	   ; input_rdf <- parseInputType(mf, "rdf")
-	    	   ; rdf <- parseRDF(mf, input_rdf)
+	    	   ; (rdf,str_rdf) <- parseRDF(mf, input_rdf)
 	    	   ; withSchema <- parseWithSchema(mf)
 	    	   ; input_shex <- parseInputType(mf, "schema")
-	    	   ; withIRI <- parseWithIRI(mf)
+	    	   ; withIRI <- parseWithIRI(mf,input_shex)
 	    	   ; withIncoming <- parseWithIncoming(mf)
-	    	   ; iri <- parseIRI(mf)
+	    	   ; iri <- parseIRI(mf,input_shex)
 	    	   ) yield {
 
-	      val vr : ValidationResult = 
-	        if (withSchema) {
-	         parseSchema(mf,input_shex) match {
-	           case Success((schema,pm)) => {
-	             if (withIRI) {
+	      val vr : ValidationResult =
+   	        if (withSchema) {
+	         parseSchemaInput(mf,input_shex) match {
+	          case Success(str_schema) => {
+	           Schema.fromString(str_schema) match {
+	             case Success((schema,pm)) => {
+	               if (withIRI) {
 	            	 val rs = Schema.matchSchema(iri,rdf,schema,withIncoming)
-	            	 ValidationResult("Schema valid",rs.run,pm)
-	             } else {
-	               val rs = Schema.matchAll(rdf,schema,withIncoming)
-	               ValidationResult("Schema valid",rs.run,pm)
-	             } 
-	           }
-	           case Failure(e) => ValidationResult.failure(e)
+	            	 if (rs.isValid) {
+	            		 ValidationResult("Shapes found",rs.run,str_rdf,str_schema,Some(iri),pm)
+	            	 } else {
+	            	   ValidationResult("No shapes found",rs.run,str_rdf,str_schema,Some(iri),pm)
+	            	 }
+	               } else {
+	                 val rs = Schema.matchAll(rdf,schema,withIncoming)
+	                 if (rs.isValid) {
+	                   ValidationResult("Shapes found",rs.run,str_rdf,str_schema,None,pm)
+	                 } else {
+	                   ValidationResult("No shapes found",rs.run,str_rdf,str_schema,None,pm)
+	                 }
+	               }     
+	             }
+	            case Failure(e) => ValidationResult.failure(e,str_rdf,str_schema)
+	          }
 	         }
-	        } else {
-	           ValidationResult.withMessage("RDF Parsed")
+	         case Failure(e) => ValidationResult.failure(e,str_rdf)
 	        }
-
+   	       } else {
+	           ValidationResult.withMessage("RDF Parsed")
+	       }
+	      
           val str_uri_rdf = parseKey(mf,"rdf_uri").getOrElse("") 
-	      val str_rdf = parseKey(mf,"rdf_textarea").getOrElse("")
-	      val str_schema = parseKey(mf,"schema_textarea").getOrElse("")
           val str_uri_schema = parseKey(mf,"schema_uri").getOrElse("") 
-	      val str_iri = parseKey(mf,"iri").getOrElse("")
 
 	      views.html.index(vr,
    		 		  	       input_rdf,withSchema,input_shex,withIRI,
-   		 		  	       str_uri_rdf,str_rdf,str_uri_schema,str_schema,str_iri)
+   		 		  	       str_uri_rdf,str_uri_schema)
 	     } 
         result match {
 	       case Success(r) => Ok(r)
@@ -90,8 +102,8 @@ object Validator extends Controller {
     }
   }
 
-  def parseWithIRI(mf: MultipartFormData[TemporaryFile]): Try[Boolean] = {
-    for (value <- parseKey(mf,"withIRI")) yield {
+  def parseWithIRI(mf: MultipartFormData[TemporaryFile], inputType: InputType): Try[Boolean] = {
+    for (value <- parseKey(mf,inputType.toString + "_withIRI")) yield {
       value match {
         case "true" => true
         case "false" => false
@@ -110,8 +122,8 @@ object Validator extends Controller {
     }
   }
 
-  def parseIRI(mf: MultipartFormData[TemporaryFile]): Try[IRI] = {
-    for (value <- parseKey(mf,"iri")) yield IRI(value)
+  def parseIRI(mf: MultipartFormData[TemporaryFile], inputType: InputType): Try[IRI] = {
+    for (value <- parseKey(mf,inputType.toString + "_iri")) yield IRI(value)
   }
 
   def parseInputType(mf: MultipartFormData[TemporaryFile], key: String): Try[InputType] = {
@@ -136,12 +148,13 @@ object Validator extends Controller {
     		" must have one value but it has = " + mf.asFormUrlEncoded(key)))
  }
 
- def parseRDF(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[RDF] = {
+ def parseRDF(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[(RDF,String)] = {
    inputType match {
      case ByUri => {
        for ( uri <- parseKey(mf,"rdf_uri")
+           ; val str = io.Source.fromURI(new URI(uri)).getLines().mkString("\n")
            ; model <- JenaUtils.parseFromURI(uri)
-           ) yield RDFFromJenaModel(model)
+           ) yield (RDFFromJenaModel(model),str)
      }
      case ByFile => {
        mf.file("rdf_file") match {
@@ -149,10 +162,11 @@ object Validator extends Controller {
            try {
             val filename 		= f.filename
             val contentType 	= f.contentType
-            val input 			= new ByteArrayInputStream(FileUtils.readFileToByteArray(f.ref.file))
+            val input = new ByteArrayInputStream(FileUtils.readFileToByteArray(f.ref.file))
+            val str = io.Source.fromFile(f.ref.file).getLines().mkString("\n")
             JenaUtils.parseInputStream(input,"") match {
               case Parsed(model) => {
-                   Success(RDFFromJenaModel(model))
+                   Success((RDFFromJenaModel(model),str))
                   }
               case NotParsed(err) => {
                    Failure(throw new Exception("Error parsing file: " + err))
@@ -170,15 +184,15 @@ object Validator extends Controller {
      case ByInput => {
        for ( cs <- parseKey(mf,"rdf_textarea")
            ; ts <- RDFTriples.parse(cs)
-           ) yield ts
+           ) yield (ts,cs)
      } 
      case ByEndpoint => {
        for ( endpoint <- parseKey(mf,"rdf_endpoint")
            )
-       yield Endpoint(endpoint)
+       yield (Endpoint(endpoint),"")
      }
      case ByDereference => {
-       Success(RDFFromWeb())
+       Success((RDFFromWeb(),""))
      }
    }
  }
@@ -186,13 +200,43 @@ object Validator extends Controller {
  def notImplementedYet[A] : Try[A] = 
    Failure(throw new Exception("Not implemented yet"))
 
- def parseSchema(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[(Schema,PrefixMap)] = {
+ def parseSchemaInput(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[String] = {
+   inputType match {
+     case ByUri => {
+       for ( uri <- parseKey(mf,"schema_uri")
+           ) yield io.Source.fromURI(new URI(uri)).getLines().mkString("\n")
+     }
+     case ByFile => {
+       mf.file("schema_file") match {
+         case Some(f) => {
+           try {
+            val filename 		= f.filename
+            val contentType 	= f.contentType
+            Success(io.Source.fromFile(f.ref.file).getLines().mkString("\n"))
+           } catch {
+            case e: Exception => failMsg("parseSchema: exception " + e.getMessage)
+          }
+         }
+         case None => {
+           failMsg("Input RDF by file but no file found for key rdf_file")
+       }
+      }
+     }
+     case ByInput => {
+       parseKey(mf,"schema_textarea")
+     } 
+     case _ => failMsg("parseSchema: non supported input type: " + inputType)
+   }
+   
+ }
+
+ def parseSchema(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[(Schema,String,PrefixMap)] = {
    inputType match {
      case ByUri => {
        for ( uri <- parseKey(mf,"schema_uri")
            ; val str = io.Source.fromURI(new URI(uri)).getLines().mkString("\n")
            ; (schema,pm) <- Schema.fromString(str)
-           ) yield (schema,pm)
+           ) yield (schema,str,pm)
      }
      case ByFile => {
        mf.file("schema_file") match {
@@ -202,7 +246,10 @@ object Validator extends Controller {
             val contentType 	= f.contentType
             println("Contenttype: " + contentType)
             val str = io.Source.fromFile(f.ref.file).getLines().mkString("\n")
-            Schema.fromString(str) 
+            Schema.fromString(str) match {
+              case Success((schema,pm)) => Success (schema,str,pm)
+              case Failure(e) => Failure(e)
+            }
            } catch {
             case e: Exception => failMsg("parseSchema: exception " + e.getMessage)
           }
@@ -215,7 +262,7 @@ object Validator extends Controller {
      case ByInput => {
        for ( cs <- parseKey(mf,"schema_textarea")
            ; (schema,pm) <- Schema.fromString(cs)
-           ) yield (schema,pm)
+           ) yield (schema,cs,pm)
      } 
      case _ => failMsg("parseSchema: non supported input type: " + inputType)
    }
