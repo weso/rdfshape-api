@@ -11,8 +11,8 @@ case class ValidationResult(
     msg: String, 
     rs: Stream[Typing],
     str_rdf: String,
-    str_schema: String,
-    iri: Option[IRI],
+    opt_schema: Option[String],
+    opt_iri: Option[String],
     pm: PrefixMap) {
 
   def typing2Html(typing: Typing): String = {
@@ -53,13 +53,13 @@ case class ValidationResult(
 }
 
 object ValidationResult {
-  def empty = ValidationResult("",Stream(), "","", None, PrefixMap.empty)
+  def empty = ValidationResult("",Stream(), "",None, None, PrefixMap.empty)
   
   def failure(e: Throwable,str_rdf:String, str_schema: String = "") : ValidationResult = {
-    ValidationResult(e.getMessage, Stream(),str_rdf,str_schema,None,PrefixMap.empty)
+    ValidationResult(e.getMessage, Stream(),str_rdf,Some(str_schema),None,PrefixMap.empty)
   }
 
   def withMessage(msg: String) : ValidationResult = {
-    ValidationResult(msg, Stream(),"","",None,PrefixMap.empty)
+    ValidationResult(msg, Stream(),"",None,None,PrefixMap.empty)
   }
 }

@@ -1,8 +1,6 @@
 @(validationResult: ValidationResult = ValidationResult.empty,
   rdf_input: InputType = ByInput, 
-  withSchema: Boolean = true, 
-  schema_input:InputType = ByInput,  
-  withIRI: Boolean = false,
+  schema_input: InputType = ByInput,  
   str_uri_rdf: String = "",
   str_uri_schema: String = ""
   )
@@ -11,9 +9,8 @@
 
 @main("") {
 
-<p>Result</p>
-
 @Html(validationResult.toHTML(1))
+<a href="@routes.Validator.validate_get(validationResult.str_rdf,validationResult.opt_schema,validationResult.opt_iri)">Generate permalink</a>
 
 <h1>@Messages("Name")</h1>
 
@@ -28,7 +25,6 @@
 </div>	   
 	  
 <div id="RDFPane">
-<p>@Messages("RDFSelect")</p>
 
 <div class="tabs">
 
@@ -124,7 +120,7 @@
        id="schemaNo"
        value="schemaNo"
        name="withSchema" 
-       @{if (withSchema == false) "checked"}>
+       @{if(validationResult.opt_schema == None) "checked"}>
  <label for="schemaNo">No schema</label>
  <div class="content"></div>        
 </div> <!-- tab no schema -->
@@ -134,7 +130,7 @@
        id="schemaYes"
        value="schemaYes"
        name="withSchema" 
-       @{if (withSchema == true) "checked"}>
+       @{if (validationResult.opt_schema != None) "checked"}>
 <label for="schemaYes">With Schema</label>
 
 <div class="content">
@@ -178,7 +174,7 @@
        id="byUri_iriNo"
        value="false"
        name="byUri_withIRI" 
-       @{if (withIRI == false) "checked"}>
+       @{if (validationResult.opt_iri == None) "checked"}>
 <label for="byUri_iriNo">No IRI (All)</label>
 <div class="content"></div> 
 </div> <!-- tab no iri -->
@@ -189,13 +185,13 @@
        id="byUri_iriYes"
        value="true"
        name="byUri_withIRI" 
-       @{if (withIRI == true) "checked"}>
+       @{if (validationResult.opt_iri != None) "checked"}>
 <label for="byUri_iriYes">With IRI</label>
 <div class="content">
   <input type="text" 
 	     name="byUri_iri"
 		 size="45" 
-		 value="@validationResult.iri.getOrElse("")"
+		 value="@validationResult.opt_iri.getOrElse("")"
 		 placeholder="http://...">
 </div> <!-- content with IRI -->
 </div> <!-- tab -->
@@ -239,7 +235,7 @@
        id="byFile_iriNo"
        value="false"
        name="byFile_withIRI" 
-       @{if (withIRI == false) "checked"}>
+       @{if (validationResult.opt_iri == None) "checked"}>
 <label for="byFile_iriNo">No IRI (All)</label>
 <div class="content"></div> 
 </div> <!-- tab no iri -->
@@ -250,13 +246,13 @@
        id="byFile_iriYes"
        value="true"
        name="byFile_withIRI" 
-       @{if (withIRI == true) "checked"}>
+       @{if (validationResult.opt_iri != None) "checked"}>
 <label for="byFile_iriYes">With IRI</label>
 <div class="content">
   <input type="text" 
 	     name="byFile_iri" 
 		 size="45" 
-		 value='@validationResult.iri.getOrElse("")'
+		 value='@validationResult.opt_iri.getOrElse("")'
 		 placeholder="http://...">
 </div> <!-- content with IRI -->
 </div> <!-- tab -->
@@ -278,7 +274,7 @@
 	<textarea 
 		id="fragment" 
 		name="schema_textarea" 
-		rows="12" cols="80">@validationResult.str_schema</textarea>
+		rows="12" cols="80">@validationResult.opt_schema.getOrElse("")</textarea>
 		
   <!-- Options -->
   <details>
@@ -301,7 +297,7 @@
        id="byInput_iriNo"
        value="false"
        name="byInput_withIRI" 
-       @{if (withIRI == false) "checked"}>
+       @{if (validationResult.opt_iri == None) "checked"}>
 <label for="byInput_iriNo">No IRI (All)</label>
 <div class="content"></div> 
 </div> <!-- tab no iri -->
@@ -312,14 +308,14 @@
        id="byInput_iriYes"
        value="true"
        name="byInput_withIRI" 
-       @{if (withIRI == true) "checked"}>
+       @{if (validationResult.opt_iri != None) "checked"}>
 <label for="byInput_iriYes">With IRI</label>
 <div class="content">
   <input type="text" 
 	     name="byInput_iri" 
 		 id="iri" 
 		 size="45" 
-		 value='@validationResult.iri.getOrElse("")'
+		 value='@validationResult.opt_iri.getOrElse("")'
 		 placeholder="http://...">
 </div> <!-- content with IRI -->
 </div> <!-- tab -->
@@ -339,5 +335,6 @@
 </div> <!-- tabs schema Pane -->
 
 </form>	
+
 
 }

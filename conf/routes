@@ -9,4 +9,5 @@ GET     /                           controllers.Application.index
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 
-POST	/validator					controllers.Validator.validate
+POST	/validator	controllers.Validator.validate
+GET		/validator	controllers.Validator.validate_get(rdf: String, schema: Option[String], iri: Option[String]) 

@@ -23,6 +23,54 @@ import es.weso.parser.PrefixMap
 import java.net.URI
 
 object Validator extends Controller {
+  
+    def validate_get(
+        str_rdf: String,
+        opt_schema: Option[String],
+        opt_iri: Option[String]
+        ) = Action { request => 
+      val vr = 
+        RDFTriples.parse(str_rdf) match {
+        	case Success(rdf) => {
+             opt_schema match {
+              case Some(str_schema) => {
+                Schema.fromString(str_schema) match {
+                  case Success((schema,pm)) => {
+                    opt_iri match {
+                      case Some(iri) => {
+                       val rs = Schema.matchSchema(IRI(iri),rdf,schema,false)
+                       if (rs.isValid) {
+                        	 ValidationResult("Shapes found",rs.run,str_rdf,Some(str_schema),Some(iri),pm)
+                         } else {
+                        	 ValidationResult("No shapes found",rs.run,str_rdf,Some(str_schema),Some(iri),pm)
+                         } 
+                      }
+                      case None => {
+	                    val rs = Schema.matchAll(rdf,schema,false)
+	                    if (rs.isValid) {
+	                      ValidationResult("Shapes found",rs.run,str_rdf,Some(str_schema),None,pm)
+	                    } else {
+	                      ValidationResult("No shapes found",rs.run,str_rdf,Some(str_schema),None,pm)
+	                    }
+                      } 
+                    }
+                  }
+                  case Failure(e) => {
+                    ValidationResult("Schema did not parse: " + e.getMessage,Stream(),str_rdf,opt_schema,opt_iri,PrefixMap.empty)
+                  }
+                }
+              }
+              case None => { 
+                ValidationResult("RDF parsed",Stream(),str_rdf,opt_schema,opt_iri,PrefixMap.empty)
+              }
+            }
+        }
+        case Failure(e) => {
+        	ValidationResult("RDF Not parsed",Stream(),str_rdf,opt_schema,opt_iri,PrefixMap.empty)
+        }
+      }
+     Ok(views.html.index(vr,ByInput,ByInput,"",""))
+	}
 
     // TODO: Refactor all this...
     def validate = Action { request => {
@@ -47,16 +95,16 @@ object Validator extends Controller {
 	               if (withIRI) {
 	            	 val rs = Schema.matchSchema(iri,rdf,schema,withIncoming)
 	            	 if (rs.isValid) {
-	            		 ValidationResult("Shapes found",rs.run,str_rdf,str_schema,Some(iri),pm)
+	            		 ValidationResult("Shapes found",rs.run,str_rdf,Some(str_schema),Some(iri.str),pm)
 	            	 } else {
-	            	   ValidationResult("No shapes found",rs.run,str_rdf,str_schema,Some(iri),pm)
+	            	   ValidationResult("No shapes found",rs.run,str_rdf,Some(str_schema),Some(iri.str),pm)
 	            	 }
 	               } else {
 	                 val rs = Schema.matchAll(rdf,schema,withIncoming)
 	                 if (rs.isValid) {
-	                   ValidationResult("Shapes found",rs.run,str_rdf,str_schema,None,pm)
+	                   ValidationResult("Shapes found",rs.run,str_rdf,Some(str_schema),None,pm)
 	                 } else {
-	                   ValidationResult("No shapes found",rs.run,str_rdf,str_schema,None,pm)
+	                   ValidationResult("No shapes found",rs.run,str_rdf,Some(str_schema),None,pm)
 	                 }
 	               }     
 	             }
@@ -72,9 +120,7 @@ object Validator extends Controller {
           val str_uri_rdf = parseKey(mf,"rdf_uri").getOrElse("") 
           val str_uri_schema = parseKey(mf,"schema_uri").getOrElse("") 
 
-	      views.html.index(vr,
-   		 		  	       input_rdf,withSchema,input_shex,withIRI,
-   		 		  	       str_uri_rdf,str_uri_schema)
+	      views.html.index(vr,input_rdf,input_shex,str_uri_rdf,str_uri_schema)
 	     } 
         result match {
 	       case Success(r) => Ok(r)
@@ -228,44 +274,6 @@ object Validator extends Controller {
      case _ => failMsg("parseSchema: non supported input type: " + inputType)
    }
    
- }
-
- def parseSchema(mf: MultipartFormData[TemporaryFile],inputType: InputType): Try[(Schema,String,PrefixMap)] = {
-   inputType match {
-     case ByUri => {
-       for ( uri <- parseKey(mf,"schema_uri")
-           ; val str = io.Source.fromURI(new URI(uri)).getLines().mkString("\n")
-           ; (schema,pm) <- Schema.fromString(str)
-           ) yield (schema,str,pm)
-     }
-     case ByFile => {
-       mf.file("schema_file") match {
-         case Some(f) => {
-           try {
-            val filename 		= f.filename
-            val contentType 	= f.contentType
-            println("Contenttype: " + contentType)
-            val str = io.Source.fromFile(f.ref.file).getLines().mkString("\n")
-            Schema.fromString(str) match {
-              case Success((schema,pm)) => Success (schema,str,pm)
-              case Failure(e) => Failure(e)
-            }
-           } catch {
-            case e: Exception => failMsg("parseSchema: exception " + e.getMessage)
-          }
-         }
-         case None => {
-           failMsg("Input RDF by file but no file found for key rdf_file")
-       }
-      }
-     }
-     case ByInput => {
-       for ( cs <- parseKey(mf,"schema_textarea")
-           ; (schema,pm) <- Schema.fromString(cs)
-           ) yield (schema,cs,pm)
-     } 
-     case _ => failMsg("parseSchema: non supported input type: " + inputType)
-   }
  }
 
   // TODO: Move this method to a es.weso.monads.Result

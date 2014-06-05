@@ -34,16 +34,6 @@ ul, ol {
 	list-style: none;
 }
 
-abbr[title], acronym[title], span[title], strong[title] {
-	border-bottom: thin dotted;
-	cursor: help;
-}
-
-acronym:hover, abbr:hover {
-	cursor: help;
-}
-
-
 /* @group Basics */
 
 body {
@@ -131,6 +121,18 @@ h1#title {
 	padding: 0.4em;
 }
 
+h1#title a {
+	background-color: #365D95;
+	text-decoration: none;
+	color: #fdfdfd;
+	cursor: pointer;
+}
+
+h1#title a:hover a:link a:visited a:active  {
+	background-color: #365D95;
+	text-decoration: none;
+	color: #fdfdfd;
+}
 
  /* Definitions of Tabs. Inspired by: 
   * http://css-tricks.com/functional-css-tabs-revisited/ 
