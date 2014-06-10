@@ -1,5 +1,5 @@
 $(function() {
-	var rdfs=["#byUri_rdf","#byFile_rdf","#byInput_rdf","#byEndpoint_rdf","#byDeref_rdf"];
+	var rdfs=["#byUri_rdf","#byFile_rdf","#byInput_rdf","#byEndpoint_rdf","#byDereference_rdf"];
 	
 	$( "#tabs-rdf" ).tabs({
     active: rdfs.indexOf($("#rdf").attr('value')),

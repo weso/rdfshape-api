@@ -65,7 +65,6 @@ object Validator extends Controller {
      }
     }
     
-
   def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
     for ( mf <- getMultipartForm(request)
         ; input_type_rdf <- parseInputType(mf,"rdf")
@@ -170,17 +169,25 @@ object Validator extends Controller {
     		" must have one value but it has = " + mf.asFormUrlEncoded(key)))
  }
 
+ def RDFParse(str: String): Try[(RDF,String)] = {
+   RDFTriples.parse(str) match {
+     case Success(rdf) => Success((rdf,str))
+     case Failure(e) => 
+       Failure(throw new Exception("Exception :" + e.getMessage + "\nParsing RDF:\n" + str))
+   }
+ }
+ 
  def getRDF(vf: ValidationForm): Try[(RDF,String)] = {
-   vf.input_type_RDF match {
+     vf.input_type_RDF match {
      case ByUri => for ( str <- getURI(vf.rdf_uri)
-                       ; rdf <- RDFTriples.parse(str)
-                       ) yield (rdf,str)
+                       ; pair <- RDFParse(str)
+                       ) yield pair
      case ByFile => for ( str <- getFileContents(vf.rdf_file)
-    		 		    ; rdf <- RDFTriples.parse(str)
-    		 		    ) yield (rdf,str)
+    		 		    ; pair <- RDFParse(str)
+    		 		    ) yield pair
      case ByInput => {
        val str = vf.rdf_textarea
-       RDFTriples.parse(str).map(rdf => (rdf,str))
+       RDFParse(str)
      } 
      case ByEndpoint => {
        Success(Endpoint(vf.rdf_endpoint),"")
