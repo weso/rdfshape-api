@@ -1,18 +1,19 @@
-@(validationResult: ValidationResult = ValidationResult.empty,
-  rdf_input: InputType = ByInput, 
-  schema_input: InputType = ByInput,  
-  str_uri_rdf: String = "",
-  str_uri_schema: String = ""
-  )
+@(vr: ValidationResult = ValidationResult.empty,
+  vf: ValidationForm = ValidationForm.empty )
 
 @import play.api.i18n.Messages
 
 @main("") {
 
-@Html(validationResult.toHTML(1))
-<a href="@routes.Validator.validate_get(validationResult.str_rdf,validationResult.opt_schema,validationResult.opt_iri)">Generate permalink</a>
+@Html(vr.toHTML(1))
+
+<a href="@routes.Validator.validate_get(
+	         vr.str_rdf,
+	         vr.opt_schema,
+	         vr.opt_iri_str)">Generate permalink</a>
 
 <h1>@Messages("Name")</h1>
+
 
 <form method="post" 
 	  enctype="multipart/form-data" 
@@ -22,317 +23,106 @@
 <input title="Submit for validation" 
 	   type="submit" 
 	   value='@Messages("Submit")' />
-</div>	   
+</div>
+
+<input id="rdf" name="rdf" type="hidden" value="#@{vf.input_type_RDF}_rdf" /> 
+<input id="schema" name="schema" type="hidden" value="#@{vf.input_type_Schema}_schema" />
+<input id="iri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
 	  
-<div id="RDFPane">
+<div class="tabs" id="tabs-rdf">
 
-<div class="tabs">
+<ul>
+ <li><a href="#byUri_rdf">@Messages("ByURI")</a></li>
+ <li><a href="#byFile_rdf">@Messages("ByFile")</a></li>
+ <li><a href="#byInput_rdf">@Messages("ByInput")</a></li>
+ <li><a href="#byEndpoint_rdf">@Messages("ByEndpoint")</a></li>
+ <li><a href="#byDeref_rdf">@Messages("ByDereference")</a></li>
+</ul>
 
-<div class="tab">
-  <input type="radio"
-         id="byUri_RDF"
-         value="byUri"
-         name="rdf"
-         @{if (rdf_input == ByUri) "checked"}>
-	<label for="byUri_RDF">@Messages("ByURI")</label>
-	<div class="content">
+<div class="content" id="byUri_rdf">
 	  <input type="url" 
            name="rdf_uri" 
 		   id="rdf_uri" 
 		   size="45" 
 		   placeholder="http://..." />
-    </div> <!-- content -->
-</div> <!-- tab -->
+  </div> <!-- content -->
 
-<div class="tab">
- <input type="radio"
-         id="byFile_RDF"
-         value="byFile"
-         name="rdf"
-         @{if (rdf_input == ByFile) "checked"}>
- <label for="byFile_RDF">@Messages("ByFile")</label>
- <div class="content">
+ <div class="content" id="byFile_rdf">
 	<input type="file" 
 		   id="rdf_file" 
 		   name="rdf_file" 
 		   size="30" >
  </div> <!-- content -->
-</div> <!-- tab -->
 
-<div class="tab">
-  <input type="radio"
-         id="byInput_RDF"
-         name="rdf"
-         value="byInput"
-         @{if (rdf_input == ByInput) "checked"}>
-	<label for="byInput_RDF">@Messages("ByInput")</label>
- <div class="content">	
+ <div class="content" id="byInput_rdf">	
    <legend>@Messages("Input")</legend>	
    <textarea 
 		id="fragment" 
 		name="rdf_textarea" 
-		rows="12" cols="80">@validationResult.str_rdf</textarea>
+		rows="12" cols="80">@vr.str_rdf</textarea>
   </div> <!-- content -->
 
- </div> <!-- tab -->
-
-<!-- By Endpoint -->
-<div class="tab">
-  <input type="radio"
-         id="byEndpoint_RDF"
-         name="rdf"
-         value="byEndpoint"
-         placeholder="http://..."
-         @{if (rdf_input == ByEndpoint) "checked"}>
-	<label for="byEndpoint_RDF">@Messages("ByEndpoint")</label>
- <div class="content">	
+ <div class="content" id="byEndpoint_rdf">	
   <input type="url" 
    	     name="rdf_endpoint" 
 		 id="rdf_endpoint" 
 		 size="45" />
  </div> <!-- content -->
 
- </div> <!-- tab endpoint -->
-
-<!-- By Deref -->
-<div class="tab">
-  <input type="radio"
-         id="byDereference_RDF"
-         name="rdf"
-         value="byDereference"
-         placeholder="http://..."
-         @{if (rdf_input == ByDereference) "checked"}>
-	<label for="byDereference_RDF">@Messages("ByDereference")</label>
- <div class="content">	
+ <div class="content" id="byDeref_rdf">	
  </div> <!-- content -->
-
- </div> <!-- tab deref -->
  
-</div> <!-- tabs -->   
+</div> <!-- rdf-tabs -->   
 
-</div> <!-- rdfPane -->
+<div class="tabs" id="tabs-schema">
 
-<!-- Schema/No schema pane -->
-<div class="tabs">
+<ul>
+<li><a href="#no_schema">No schema</a></li>
+<li><a href="#byUri_schema">@Messages("ByURI")</a></li>
+<li><a href="#byFile_schema">@Messages("ByFile")</a></li>
+<li><a href="#byInput_schema">@Messages("ByInput")</a></li>
+</ul>
 
-<div class="tab">        
-<input type="radio"
-       id="schemaNo"
-       value="schemaNo"
-       name="withSchema" 
-       @{if(validationResult.opt_schema == None) "checked"}>
- <label for="schemaNo">No schema</label>
- <div class="content"></div>        
-</div> <!-- tab no schema -->
+<div class="content" id="no_schema">
+ No schema
+</div>        
 
-<div class="tab">
-<input type="radio"
-       id="schemaYes"
-       value="schemaYes"
-       name="withSchema" 
-       @{if (validationResult.opt_schema != None) "checked"}>
-<label for="schemaYes">With Schema</label>
-
-<div class="content">
-
-<!-- input type tabs -->
-<div class="tabs">
-
-<!-- tab with schema -->
-<div class="tab">
-  <input type="radio"
-         id="byUri_Schema"
-         value="byUri"
-         name="schema"
-         @{if (schema_input == ByUri) "checked"}>
-	<label for="byUri_Schema">@Messages("ByURI")</label>
-	<div class="content">
+<div id="byUri_schema">
 	  <input type="text" 
 		   name="schema_uri" 
 		   id="schema_uri" 
 		   size="45" 
-		   placeholder="http://..." />
+		   placeholder="http://..." ></input>
 
-  <!-- Options -->
-  <details>
-   <summary>More options</summary>
-   <table>	
-   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
-   <tr><td>With incoming</td><td>
-    <input type="radio" name="withIncoming" value="true"><label>true</label><br/>
-	<input type="radio" name="withIncoming" value="false" checked><label>false</label>
-    </td>
-    <td>Takes into account incoming edges</td></tr>	
-   </table>
-  </details>
+  @incoming()
+  @iriNoIri("byUri",vr.opt_iri_str)
+  
+</div> <!-- byUri_schema -->
 
-<!-- Select IRI/No IRI -->
-<div class="tabs">
-
-<div class="tab">
-<input type="radio"
-       id="byUri_iriNo"
-       value="false"
-       name="byUri_withIRI" 
-       @{if (validationResult.opt_iri == None) "checked"}>
-<label for="byUri_iriNo">No IRI (All)</label>
-<div class="content"></div> 
-</div> <!-- tab no iri -->
-
-
-<div class="tab">
-<input type="radio"
-       id="byUri_iriYes"
-       value="true"
-       name="byUri_withIRI" 
-       @{if (validationResult.opt_iri != None) "checked"}>
-<label for="byUri_iriYes">With IRI</label>
-<div class="content">
-  <input type="text" 
-	     name="byUri_iri"
-		 size="45" 
-		 value="@validationResult.opt_iri.getOrElse("")"
-		 placeholder="http://...">
-</div> <!-- content with IRI -->
-</div> <!-- tab -->
-
-</div> <!-- tabs select iri --> 
-	
-  </div> <!-- content -->
-</div> <!-- tab -->
-
-<div class="tab">
- <input type="radio"
-         id="byFile_Schema"
-		 value="byFile"
-         name="schema"
-         @{if (schema_input == ByFile) "checked"}>
- <label for="byFile_Schema">@Messages("ByFile")</label>
- <div class="content">
+<div class="content" 
+	 id="byFile_schema">
 	<input type="file" 
 		   id="schema_file" 
 		   name="schema_file" 
-		   size="30" />
+		   size="30" ></input>
+  @incoming()
+  @iriNoIri("byFile",vr.opt_iri_str)
+</div>	
 
-  <!-- Options -->
-  <details>
-   <summary>More options</summary>
-   <table>	
-   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
-   <tr><td>With incoming</td><td>
-    <input type="radio" name="withIncoming" value="true"><label>true</label><br/>
-	<input type="radio" name="withIncoming" value="false" checked><label>false</label>
-    </td>
-    <td>Takes into account incoming edges</td></tr>	
-   </table>
-  </details>
-
-<!-- Select IRI/No IRI -->
-<div class="tabs">
-
-<div class="tab">
-<input type="radio"
-       id="byFile_iriNo"
-       value="false"
-       name="byFile_withIRI" 
-       @{if (validationResult.opt_iri == None) "checked"}>
-<label for="byFile_iriNo">No IRI (All)</label>
-<div class="content"></div> 
-</div> <!-- tab no iri -->
-
-
-<div class="tab">
-<input type="radio"
-       id="byFile_iriYes"
-       value="true"
-       name="byFile_withIRI" 
-       @{if (validationResult.opt_iri != None) "checked"}>
-<label for="byFile_iriYes">With IRI</label>
-<div class="content">
-  <input type="text" 
-	     name="byFile_iri" 
-		 size="45" 
-		 value='@validationResult.opt_iri.getOrElse("")'
-		 placeholder="http://...">
-</div> <!-- content with IRI -->
-</div> <!-- tab -->
-
-</div> <!-- tabs select iri --> 
-
-  
- </div>
-</div> <!-- tab -->
-
- <div class="tab">
- <input type="radio"
-     id="byInput_Schema"
-     value="byInput"
-     name="schema"
-     @{if (schema_input == ByInput) "checked"}>
- <label for="byInput_Schema">@Messages("ByInput")</label>
- <div class="content">
+<div class="content" 
+	 id="byInput_schema">
 	<textarea 
 		id="fragment" 
 		name="schema_textarea" 
-		rows="12" cols="80">@validationResult.opt_schema.getOrElse("")</textarea>
-		
-  <!-- Options -->
-  <details>
-   <summary>More options</summary>
-   <table>	
-   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
-   <tr><td>With incoming</td><td>
-    <input type="radio" name="withIncoming" value="true"><label>true</label><br/>
-	<input type="radio" name="withIncoming" value="false" checked><label>false</label>
-    </td>
-    <td>Takes into account incoming edges</td></tr>	
-   </table>
-  </details>
+		rows="12" cols="80">@vr.opt_schema.getOrElse("")</textarea>
 
-<!-- Select IRI/No IRI -->
-<div class="tabs">
+  @incoming()
+  @iriNoIri("byInput",vr.opt_iri_str)
 
-<div class="tab">
-<input type="radio"
-       id="byInput_iriNo"
-       value="false"
-       name="byInput_withIRI" 
-       @{if (validationResult.opt_iri == None) "checked"}>
-<label for="byInput_iriNo">No IRI (All)</label>
-<div class="content"></div> 
-</div> <!-- tab no iri -->
+</div> <!-- content -->
 
-
-<div class="tab">
-<input type="radio"
-       id="byInput_iriYes"
-       value="true"
-       name="byInput_withIRI" 
-       @{if (validationResult.opt_iri != None) "checked"}>
-<label for="byInput_iriYes">With IRI</label>
-<div class="content">
-  <input type="text" 
-	     name="byInput_iri" 
-		 id="iri" 
-		 size="45" 
-		 value='@validationResult.opt_iri.getOrElse("")'
-		 placeholder="http://...">
-</div> <!-- content with IRI -->
-</div> <!-- tab -->
-
-</div> <!-- tabs select iri --> 
-  		
- </div> <!-- content -->
-
- </div> <!-- tab -->
- 
 </div> <!-- tabs --> 
 
-</div> <!-- content with schema -->
-
-</div> <!-- tab withSchema-->
-       
-</div> <!-- tabs schema Pane -->
 
 </form>	
 

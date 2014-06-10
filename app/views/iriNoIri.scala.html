@@ -1,0 +1,22 @@
+@(input: String, opt_iri: Option[String])
+
+<div class="tabs" id="tabsIriNoIri_@{input}">
+
+ <ul>
+ <li><a href="#noIri_@{input}">No IRI (All)</a></li>
+ <li><a href="#iri_@{input}">With IRI</a></li>
+ </ul>
+
+ <div class="content" id="noIri_@{input}"> 
+ </div> <!-- tab no iri -->
+
+
+ <div class="content" id="iri_@{input}">
+  <input type="text" 
+	     name="@{input}_iri" 
+		 size="45" 
+		 value='@opt_iri.getOrElse("")'
+		 placeholder="http://..." />
+ </div> <!-- content with IRI @{input} -->
+
+</div> <!-- tabs iris @{input} -->

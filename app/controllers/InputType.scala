@@ -18,5 +18,8 @@ case object ByDereference extends InputType {
   override def toString = "byDereference"
 }
 
+case object No extends InputType {
+  override def toString = "no"
+}
 
 
