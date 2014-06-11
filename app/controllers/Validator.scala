@@ -195,6 +195,7 @@ object Validator extends Controller {
      case ByDereference => {
        Success((RDFFromWeb(),""))
      }
+     case _ => Failure(throw new Exception("getRDF: Unknown input type"))
    }
  }
  
