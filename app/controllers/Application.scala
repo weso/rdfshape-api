@@ -9,7 +9,8 @@ object Application extends Controller {
     Ok(views.html.index())
   }
 
-  def tabs = Action {
-    Ok(views.html.tabs())
+  def about = Action {
+    Ok(views.html.about())
   }
+  
 }

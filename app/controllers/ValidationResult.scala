@@ -12,12 +12,15 @@ import scala.util._
 import es.weso.rdf.RDF
 
 case class ValidationResult(
-      msg: String
+      status: Option[Boolean]
+    , msg: String
     , rs: Stream[Typing]
     , str_rdf: String
     , opt_schema: Option[String]
     , opt_iri: Option[IRI]
     , withIncoming: Boolean
+    , openClosed: Boolean
+    , withAny: Boolean
     , pm: PrefixMap
     ) {
 
@@ -50,7 +53,6 @@ case class ValidationResult(
     
    def toHTML(cut: Int): String = {
     val sb = new StringBuilder
-    sb.append("<p class=\"result_ok\">" + msg + "</p>")
     sb.append("<table>")
     for (t <- rs.take(cut)) {
       sb.append("<tr>" + typing2Html(t) + "</tr>")
@@ -61,14 +63,14 @@ case class ValidationResult(
 }
 
 object ValidationResult {
-  def empty = ValidationResult("",Stream(), "", None, None, false,PrefixMap.empty)
+  def empty = ValidationResult(None,"",Stream(), "", None, None, false,false,false,PrefixMap.empty)
   
   def failure(e: Throwable, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
-    ValidationResult(e.getMessage, Stream(),str_rdf, opt_schema, opt_iri, false,PrefixMap.empty)
+    ValidationResult(Some(false),e.getMessage, Stream(),str_rdf, opt_schema, opt_iri, false,false,false,PrefixMap.empty)
   }
 
   def withMessage(msg: String, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
-    ValidationResult(msg, Stream(),str_rdf,opt_schema,opt_iri,false,PrefixMap.empty)
+    ValidationResult(Some(false),msg, Stream(),str_rdf,opt_schema,opt_iri,false,false,false,PrefixMap.empty)
   }
 
   // TODO: Refactor the following code...
@@ -77,7 +79,10 @@ object ValidationResult {
       , str_rdf: String
       , opt_schema:Option[String] 
       , opt_iri: Option[IRI]
-      , withIncoming: Boolean = false): ValidationResult = {
+      , withIncoming: Boolean = false
+      , openClosed: Boolean = false
+      , withAny: Boolean = false
+      ): ValidationResult = {
     RDFTriples.parse(str_rdf) match {
    	case Success(rdf) => {
       opt_schema match {
@@ -88,33 +93,33 @@ object ValidationResult {
                   case Some(iri) => {
                     val rs = Schema.matchSchema(iri,rdf,schema,withIncoming)
                     if (rs.isValid) {
-                    	 ValidationResult("Shapes found",rs.run,str_rdf,Some(str_schema),Some(iri),withIncoming,pm)
+                    	 ValidationResult(Some(true),"Shapes found",rs.run,str_rdf,Some(str_schema),Some(iri),withIncoming,openClosed,withAny,pm)
                     } else {
-                       	 ValidationResult("No shapes found",rs.run,str_rdf,Some(str_schema),Some(iri),withIncoming,pm)
+                       	 ValidationResult(Some(false),"No shapes found",rs.run,str_rdf,Some(str_schema),Some(iri),withIncoming,openClosed,withAny,pm)
                     } 
                  }
                  case None => {
 	               val rs = Schema.matchAll(rdf,schema,withIncoming)
 	               if (rs.isValid) {
-	                    ValidationResult("Shapes found",rs.run,str_rdf,Some(str_schema),None,withIncoming,pm)
+	                    ValidationResult(Some(true),"Shapes found",rs.run,str_rdf,Some(str_schema),None,withIncoming,openClosed,withAny,pm)
 	               } else {
-	                    ValidationResult("No shapes found",rs.run,str_rdf,Some(str_schema),None,withIncoming,pm)
+	                    ValidationResult(Some(false),"No shapes found",rs.run,str_rdf,Some(str_schema),None,withIncoming,openClosed,withAny,pm)
 	               }
                  } 
                 }
                }
        case Failure(e) => {
-             ValidationResult("Schema did not parse: " + e.getMessage,Stream(),str_rdf,opt_schema,opt_iri,withIncoming,PrefixMap.empty)
+             ValidationResult(Some(false),"Schema did not parse: " + e.getMessage,Stream(),str_rdf,opt_schema,opt_iri,withIncoming,openClosed,withAny,PrefixMap.empty)
            } 
        } 
   } // Some(schema...)
   case None => { 
-    ValidationResult("RDF parsed",Stream(),str_rdf,opt_schema,opt_iri,withIncoming, PrefixMap.empty)
+    ValidationResult(Some(true),"RDF parsed",Stream(),str_rdf,opt_schema,opt_iri,withIncoming, openClosed, withAny, PrefixMap.empty)
  }
  } 
  }
  case Failure(e) => {
-   ValidationResult("RDF Not parsed",Stream(),str_rdf,opt_schema,opt_iri,withIncoming,PrefixMap.empty)
+   ValidationResult(Some(false),"RDF Not parsed",Stream(),str_rdf,opt_schema,opt_iri,withIncoming, openClosed, withAny, PrefixMap.empty)
   }
   }
  }

@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   , "org.scala-lang" % "scala-compiler" % "2.10.2" 
   , "org.apache.jena" % "jena-arq" % "2.10.1" excludeAll(ExclusionRule(organization = "org.slf4j"))
   , "org.scalaz" % "scalaz-core_2.10" % "7.0.6" 
-  , "es.weso" % "shexcala_2.10" % "0.0.11" excludeAll(ExclusionRule(organization = "org.slf4j"))  
+  , "es.weso" % "shexcala_2.10" % "0.0.12" excludeAll(ExclusionRule(organization = "org.slf4j"))  
   )     
 
 seq(bintraySettings:_*)

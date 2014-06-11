@@ -4,11 +4,11 @@
 
 # Home page
 GET     /                           controllers.Application.index
-GET		/tabs						controllers.Application.tabs
+GET		/about						controllers.Application.about
  
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 
 POST	/validator	controllers.Validator.validate_post
-GET		/validator	controllers.Validator.validate_get(rdf: String, schema: Option[String], iri: Option[String], withIncoming: Boolean = false) 
+GET		/validator	controllers.Validator.validate_get(rdf: String, schema: Option[String], iri: Option[String], withIncoming: Boolean = false, openClosed: Boolean = false, withAny: Boolean = false) 

@@ -3,14 +3,9 @@
 
 @import play.api.i18n.Messages
 
-@main("") {
+@main("Index") {
 
-@Html(vr.toHTML(1))
-
-<a href="@routes.Validator.validate_get(
-	         vr.str_rdf,
-	         vr.opt_schema,
-	         vr.opt_iri_str)">Generate permalink</a>
+@validationResult(vr)
 
 <h1>@Messages("Name")</h1>
 
@@ -94,7 +89,7 @@
 		   size="45" 
 		   placeholder="http://..." ></input>
 
-  @incoming()
+  @schemaOptions(vf.withIncoming,vf.openClosed,vf.withAny)
   @iriNoIri("byUri",vr.opt_iri_str)
   
 </div> <!-- byUri_schema -->
@@ -105,8 +100,10 @@
 		   id="schema_file" 
 		   name="schema_file" 
 		   size="30" ></input>
-  @incoming()
+
+  @schemaOptions(vf.withIncoming,vf.openClosed,vf.withAny)
   @iriNoIri("byFile",vr.opt_iri_str)
+
 </div>	
 
 <div class="content" 
@@ -116,7 +113,7 @@
 		name="schema_textarea" 
 		rows="12" cols="80">@vr.opt_schema.getOrElse("")</textarea>
 
-  @incoming()
+  @schemaOptions(vf.withIncoming,vf.openClosed,vf.withAny)
   @iriNoIri("byInput",vr.opt_iri_str)
 
 </div> <!-- content -->

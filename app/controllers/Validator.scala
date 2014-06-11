@@ -30,13 +30,15 @@ object Validator extends Controller {
         str_rdf: String,
         opt_schema: Option[String],
         opt_iri: Option[String],
-        withIncoming: Boolean
+        withIncoming: Boolean,
+        openClosed: Boolean,
+        withAny: Boolean
         ) = Action { request => { 
 
       val iri = opt_iri.map(str => IRI(str))
       RDFTriples.parse(str_rdf) match {
         case Success(rdf) => {
-        	val vr = ValidationResult.validate(rdf,str_rdf,opt_schema,iri,withIncoming)
+        	val vr = ValidationResult.validate(rdf,str_rdf,opt_schema,iri,withIncoming,openClosed,withAny)
         	val vf = ValidationForm.fromResult(vr)
         	Ok(views.html.index(vr,vf))
         }
@@ -76,7 +78,9 @@ object Validator extends Controller {
         ; schema_uri <- parseKey(mf,"schema_uri")
         ; schema_file <- parseFile(mf,"schema_file")
         ; schema_textarea <- parseKey(mf,"schema_textarea")
-        ; withIncoming <- parseWithIncoming(mf)
+        ; withIncoming <- parseBoolean(mf,"withIncoming")
+        ; openClosed <- parseBoolean(mf,"openClosed")
+        ; withAny <- parseBoolean(mf,"withAny")
         ; opt_iri <- parseOptIRI(mf,input_type_schema)
         )
     yield ValidationForm(
@@ -84,7 +88,7 @@ object Validator extends Controller {
         rdf_uri, rdf_file, rdf_textarea, rdf_endpoint,
         input_type_schema,
         schema_uri, schema_file, schema_textarea,
-        withIncoming,
+        withIncoming,openClosed,withAny,
         opt_iri) 
   }
   
@@ -132,12 +136,12 @@ object Validator extends Controller {
       for (value <- parseKey(mf,inputType.toString + "_iri")) yield IRI(value)
   }
 
-  def parseWithIncoming(mf: MultipartFormData[TemporaryFile]): Try[Boolean] = {
-    for (value <- parseKey(mf,"withIncoming")) yield {
+  def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {
+    for (value <- parseKey(mf,key)) yield {
       value match {
         case "true" => true
         case "false" => false
-        case _ => throw new Exception("parseWithIncoming: unknown value " + value)
+        case _ => throw new Exception("parseBoolean: unknown value " + value + " for key " + key)
       }
     }
   }

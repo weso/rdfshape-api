@@ -1,0 +1,61 @@
+@(withIncoming: Boolean, openClosed: Boolean, withAny: Boolean)
+
+<!-- Options -->
+<details>
+   <summary>More options</summary>
+   <table>	
+   <tr><th>Name</th><th>Option</th><th>Description</th></tr>
+   <tr>
+    <td>With incoming</td>
+    <td>
+    <input 
+    	type="radio" name="withIncoming" value="true"
+    	@{if(withIncoming==true) { "checked" }}>
+    	<label>true</label><br/>
+	<input 
+		type="radio" 
+		name="withIncoming" 
+		value="false" 
+		@{if(withIncoming==false) { "checked" }}>
+		<label>false</label>
+    </td>
+    <td>Takes into account incoming edges</td>
+    </tr>	
+    <tr>
+    <td>Open/Closed shapes</td>
+    <td>
+    <input 
+    	type="radio" 
+    	name="openClosed" 
+    	value="true"
+    	@{if(openClosed==true) { "checked" }}>
+    	<label>open shapes</label><br/>
+	<input 
+		type="radio" 
+		name="openClosed" 
+		value="false" 
+		@{if(openClosed==false) { "checked" }}>
+		<label>closed shapes</label>
+    </td>
+    <td>Open/Closed shapes semantics. See <a href="https://www.w3.org/2001/sw/wiki/ShEx/CurrentDiscussion#Closed.2Fopen_shapes_and_exclusion_of_matched_triples">discussion</a></td>
+    </tr>
+    <tr>
+    <td>Add <i>Any</i> shape</td>
+    <td>
+    <input 
+    	type="radio" 
+    	name="withAny" 
+    	value="true"
+    	@{if(withAny==true) { "checked" }}>
+    	<label>Add Any shape</label><br/>
+	<input 
+		type="radio" 
+		name="withAny" 
+		value="false" 
+		@{if(withAny==false) { "checked" }}>
+		<label>Only defined shapes</label>
+    </td>
+    <td>Add a shape which matches any node</td>
+    </tr>
+   </table>
+</details>

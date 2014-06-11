@@ -19,6 +19,8 @@ case class ValidationForm(
     , schema_file: Option[File]
     , schema_textarea: String
     , withIncoming: Boolean
+    , openClosed: Boolean
+    , withAny: Boolean
     , opt_iri: Option[IRI]
     ) {
  
@@ -35,14 +37,14 @@ case class ValidationForm(
 object ValidationForm {
   def empty : ValidationForm = 
     ValidationForm(ByInput, "", None, "", "",  
-        No, "", None, "", false, None)
+        No, "", None, "", false, false, false, None)
   
   
   def fromResult(vr:ValidationResult): ValidationForm = {
     ValidationForm(ByInput, 
         "", None, vr.str_rdf, "",
         ByInput,"",None,vr.opt_schema.getOrElse(""), 
-        vr.withIncoming, vr.opt_iri)  
+        vr.withIncoming, vr.openClosed, vr.withAny, vr.opt_iri)
   }
   
 }

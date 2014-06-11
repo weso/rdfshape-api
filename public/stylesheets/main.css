@@ -11,22 +11,25 @@ textarea {
 	width: 98.5%;
 }
 
-h1#title {
+header {
 	font-family: "Myriad Web", "Myriad Pro", "Gill Sans", Helvetica, Arial, Sans-Serif;
 	background-color: #365D95;
 	color: #fdfdfd;
-	font-size: 1.6em;
 	padding: 0.4em;
 }
 
-h1#title a {
+header h1#title { 
+	font-size: 2em;
+}
+
+header a {
 	background-color: #365D95;
 	text-decoration: none;
 	color: #fdfdfd;
 	cursor: pointer;
 }
 
-h1#title a:hover a:link a:visited a:active  {
+header a:hover a:link a:visited a:active  {
 	background-color: #365D95;
 	text-decoration: none;
 	color: #fdfdfd;
@@ -47,7 +50,7 @@ footer {
 
 div.submit {
  position: fixed;
- bottom: 1.6em;
+ bottom: 4em;
  right: 0.1em;
  z-index: 3;
  overflow: visible;
@@ -56,7 +59,7 @@ div.submit {
 
 input[type=submit] {
  color: #365D95;
- padding: 0.3em 0.4em 0.1em 0.3em;
+ padding: 0.5em ;
  font-size: 1.2em;
  border-bottom: 2px solid #444;
  border-right: 2px solid #444;
@@ -84,4 +87,10 @@ p.result_bad {
  font-size: 120%;
 }
 	
+ul.nodes {
+	list-style-type: none;
+}
+
+.about {
+	text-align: right;
 }
