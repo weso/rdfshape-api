@@ -9,14 +9,16 @@
 @Html(vr.toHTML(1))
 <pre>@vr.str_rdf</pre>
 
-<a href="@routes.Validator.validate_get(
-	         vr.str_rdf,
-	         vr.opt_schema,
-	         vr.opt_iri_str)">Generate permalink</a>
-
 } else { 
 
 <p class="result_bad">@vr.msg</p>
 <pre>@vr.str_rdf</pre>
 
-}}
+}
+
+<a href="@routes.Validator.validate_get(
+	         vr.str_rdf,
+	         vr.opt_schema,
+	         vr.opt_iri_str)">Generate permalink</a>
+
+}
