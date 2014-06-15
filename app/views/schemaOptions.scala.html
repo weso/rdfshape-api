@@ -1,5 +1,19 @@
-@(withIncoming: Boolean, openClosed: Boolean, withAny: Boolean)
+@(schemaOptions: SchemaOptions)
 
+@import play.api.i18n.Messages
+
+<fieldset>
+<legend>@Messages("Schema.options")</legend>
+<label for="cut">@Messages("Cut")</label>
+<input type="number"
+       id="cut" 
+	   name="cut" 
+	   min="1" 
+	   max="100" 
+	   value="@schemaOptions.cut" />
+
+@iriNoIri(schemaOptions.opt_iri.map(iri => iri.str))
+ 
 <!-- Options -->
 <details>
    <summary>More options</summary>
@@ -10,13 +24,13 @@
     <td>
     <input 
     	type="radio" name="withIncoming" value="true"
-    	@{if(withIncoming==true) { "checked" }}>
+    	@{if(schemaOptions.withIncoming==true) { "checked" }}>
     	<label>true</label><br/>
 	<input 
 		type="radio" 
 		name="withIncoming" 
 		value="false" 
-		@{if(withIncoming==false) { "checked" }}>
+		@{if(schemaOptions.withIncoming==false) { "checked" }}>
 		<label>false</label>
     </td>
     <td>Takes into account incoming edges</td>
@@ -28,13 +42,13 @@
     	type="radio" 
     	name="openClosed" 
     	value="true"
-    	@{if(openClosed==true) { "checked" }}>
+    	@{if(schemaOptions.openClosed==true) { "checked" }}>
     	<label>open shapes</label><br/>
 	<input 
 		type="radio" 
 		name="openClosed" 
 		value="false" 
-		@{if(openClosed==false) { "checked" }}>
+		@{if(schemaOptions.openClosed==false) { "checked" }}>
 		<label>closed shapes</label>
     </td>
     <td>Open/Closed shapes semantics. See <a href="https://www.w3.org/2001/sw/wiki/ShEx/CurrentDiscussion#Closed.2Fopen_shapes_and_exclusion_of_matched_triples">discussion</a></td>
@@ -46,16 +60,17 @@
     	type="radio" 
     	name="withAny" 
     	value="true"
-    	@{if(withAny==true) { "checked" }}>
+    	@{if(schemaOptions.withAny==true) { "checked" }}>
     	<label>Add Any shape</label><br/>
 	<input 
 		type="radio" 
 		name="withAny" 
 		value="false" 
-		@{if(withAny==false) { "checked" }}>
+		@{if(schemaOptions.withAny==false) { "checked" }}>
 		<label>Only defined shapes</label>
     </td>
     <td>Add a shape which matches any node</td>
     </tr>
    </table>
 </details>
+</fieldset>

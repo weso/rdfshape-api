@@ -1,22 +1,22 @@
-@(input: String, opt_iri: Option[String])
+@(opt_iri: Option[String])
 
-<div class="tabs" id="tabsIriNoIri_@{input}">
+<div class="tabs" id="tabsIriNoIri">
 
  <ul>
- <li><a href="#noIri_@{input}">No IRI (All)</a></li>
- <li><a href="#iri_@{input}">With IRI</a></li>
+ <li><a href="#noIri">No IRI (All)</a></li>
+ <li><a href="#iri">With IRI</a></li>
  </ul>
 
- <div class="content" id="noIri_@{input}"> 
+ <div class="content" id="noIri"> 
  </div> <!-- tab no iri -->
 
 
- <div class="content" id="iri_@{input}">
+ <div class="content" id="iri">
   <input type="text" 
-	     name="@{input}_iri" 
+	     name="iri" 
 		 size="45" 
 		 value='@opt_iri.getOrElse("")'
 		 placeholder="http://..." />
- </div> <!-- content with IRI @{input} -->
+ </div> <!-- content with IRI -->
 
-</div> <!-- tabs iris @{input} -->
+</div> <!-- tabs iris -->

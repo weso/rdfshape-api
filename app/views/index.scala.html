@@ -21,8 +21,9 @@
 </div>
 
 <input id="rdf" name="rdf" type="hidden" value="#@{vf.input_type_RDF}_rdf" /> 
-<input id="schema" name="schema" type="hidden" value="#@{vf.input_type_Schema}_schema" />
-<input id="iri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
+<input id="schema" name="schema" type="hidden" value="@{vf.schema_toggle}" />
+<input id="input-schema" name="input-schema" type="hidden" value="#@{vf.input_type_Schema_str}_schema" />
+<input id="iriNoIri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
 	  
 <div class="tabs" id="tabs-rdf">
 
@@ -73,25 +74,31 @@
 
 <ul>
 <li><a href="#no_schema">No schema</a></li>
-<li><a href="#byUri_schema">@Messages("ByURI")</a></li>
-<li><a href="#byFile_schema">@Messages("ByFile")</a></li>
-<li><a href="#byInput_schema">@Messages("ByInput")</a></li>
+<li><a href="#schema">With schema</a></li>
 </ul>
 
 <div class="content" id="no_schema">
  No schema
 </div>        
 
+<div class="content" id="schema">  <!-- content with Schema -->
+
+<div class="tabs" id="tabs-input-schema">
+
+<ul>
+<li><a href="#byUri_schema">@Messages("ByURI")</a></li>
+<li><a href="#byFile_schema">@Messages("ByFile")</a></li>
+<li><a href="#byInput_schema">@Messages("ByInput")</a></li>
+</ul>
+
 <div id="byUri_schema">
-	  <input type="text" 
+
+  <input type="text" 
 		   name="schema_uri" 
 		   id="schema_uri" 
 		   size="45" 
 		   placeholder="http://..." ></input>
 
-  @schemaOptions(vf.withIncoming,vf.openClosed,vf.withAny)
-  @iriNoIri("byUri",vr.opt_iri_str)
-  
 </div> <!-- byUri_schema -->
 
 <div class="content" 
@@ -101,9 +108,6 @@
 		   name="schema_file" 
 		   size="30" ></input>
 
-  @schemaOptions(vf.withIncoming,vf.openClosed,vf.withAny)
-  @iriNoIri("byFile",vr.opt_iri_str)
-
 </div>	
 
 <div class="content" 
@@ -111,12 +115,15 @@
 	<textarea class="input_src"
 		id="fragment" 
 		name="schema_textarea" 
-		rows="12" cols="80">@vr.opt_schema.getOrElse("")</textarea>
-
-  @schemaOptions(vf.withIncoming,vf.openClosed,vf.withAny)
-  @iriNoIri("byInput",vr.opt_iri_str)
+		rows="12" cols="80">@vr.str_schema</textarea>
 
 </div> <!-- content -->
+
+@schemaOptions(vf.schemaOptions)
+
+</div> <!-- input schema tabs -->
+
+</div> <!-- content with Schema -->
 
 </div> <!-- schema tabs --> 
 

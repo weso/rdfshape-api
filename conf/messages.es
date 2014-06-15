@@ -9,3 +9,5 @@ ShExSelect=Elegir esquema ShEx
 Submit=Enviar 
 Input=Entrada
 IRI=IRI
+Schema.options=Opciones de Esquema
+Cut=Nivel de corte

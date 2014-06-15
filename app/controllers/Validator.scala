@@ -1,5 +1,14 @@
 package controllers
 
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.concurrent.promise
+import akka.actor.Actor
+import akka.actor.Props
+import akka.actor.actorRef2Scala
+
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import java.io.ByteArrayInputStream
 import org.apache.commons.io.FileUtils
 import play.api._
@@ -23,49 +32,77 @@ import es.weso.parser.PrefixMap
 import java.net.URL
 import java.io.File
 import views.html.defaultpages.badRequest
+import es.weso.utils.IOUtils._
 
 object Validator extends Controller {
-  
-    def validate_get(
-        str_rdf: String,
-        opt_schema: Option[String],
-        opt_iri: Option[String],
-        withIncoming: Boolean,
-        openClosed: Boolean,
-        withAny: Boolean
-        ) = Action { request => { 
 
-      val iri = opt_iri.map(str => IRI(str))
-      RDFTriples.parse(str_rdf) match {
-        case Success(rdf) => {
-        	val vr = ValidationResult.validate(rdf,str_rdf,opt_schema,iri,withIncoming,openClosed,withAny)
-        	val vf = ValidationForm.fromResult(vr)
-        	Ok(views.html.index(vr,vf))
-        }
-        case Failure(e) => {
-          BadRequest("Cannot parse RDF\nError: " + e.getMessage + "\nRDF:\n " + str_rdf)
-        }
-      }
-	}
-  }      
+  def validate_get_Future(
+          str_rdf: String
+        , opt_schema: Option[String]
+        , opt_iri: Option[String]
+        , cut: Int
+        , withIncoming: Boolean
+        , openClosed: Boolean
+        , withAny: Boolean
+		) : Future[Try[ValidationResult]]= {
+       val withSchema = opt_schema.isDefined
+       val iri = opt_iri.map(str => IRI(str))
+       val str_schema = opt_schema.getOrElse("")
+       val opts_schema = SchemaOptions(
+            cut = cut
+          , withIncoming = withIncoming
+          , openClosed = openClosed
+          , withAny = withAny
+          , opt_iri = iri
+          )
+      RDFParse(str_rdf) match { 
+        case Success((rdf,_)) => 
+          scala.concurrent.Future(Success(ValidationResult.validate(rdf,str_rdf,withSchema,str_schema,opts_schema)))
+        case Failure(e) => 
+          scala.concurrent.Future(Failure(e))
+	 }
+  }
+  
+  def validate_get(
+          str_rdf: String
+        , opt_schema: Option[String]
+        , opt_iri: Option[String]
+        , cut: Int
+        , withIncoming: Boolean
+        , openClosed: Boolean
+        , withAny: Boolean
+        ) = Action.async {  
+      	validate_get_Future(str_rdf,opt_schema, opt_iri, cut, withIncoming,openClosed,withAny).map(vrf => {
+      	      vrf match {
+      	        case Success(vr) => {
+      	          val vf = ValidationForm.fromResult(vr)
+      	          Ok(views.html.index(vr,vf))
+      	        }
+      	        case Failure(e) => BadRequest(e.getMessage)
+      	      }
+        	})
+  }
 
     
-    def validate_post = Action { request => {
-      val res = 
-        for ( vf <- getValidationForm(request)
-            ; (rdf,str_rdf) <- getRDF(vf)
-            ; opt_schema <- getSchemaStr(vf)
-            ) 
-        yield {
-          val vr = ValidationResult.validate(rdf,str_rdf,opt_schema,vf.opt_iri,vf.withIncoming)
-          (vr,vf)
-        }
-      res match {
-        case Success((vr,vf)) => Ok(views.html.index(vr,vf))
-        case Failure(e) => BadRequest(e.getMessage)
+    def validate_post = Action.async { request => {
+      val resf : Future[Try[(ValidationResult,ValidationForm)]] = 
+        scala.concurrent.Future { 
+         for ( vf <- getValidationForm(request)
+             ; (rdf,str_rdf) <- getRDF(vf)
+             ; opt_schema <- vf.getSchemaStr
+             ; schemaOptions <- vf.getSchemaOptions
+             ) 
+         yield (ValidationResult.validate(rdf,str_rdf,opt_schema.isDefined, opt_schema.getOrElse(""), schemaOptions.getOrElse(SchemaOptions.default)),vf)
       }
-     }
+            
+      resf.map(res =>
+        res match {
+        	case Success((vr,vf)) => Ok(views.html.index(vr,vf))
+        	case Failure(e) => BadRequest(e.getMessage)
+        }
+     )
     }
+  }
     
   def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
     for ( mf <- getMultipartForm(request)
@@ -74,22 +111,25 @@ object Validator extends Controller {
         ; rdf_textarea <- parseKey(mf,"rdf_textarea")
         ; rdf_file <- parseFile(mf,"rdf_file")
         ; rdf_endpoint <- parseKey(mf,"rdf_endpoint")
-        ; input_type_schema <- parseInputType(mf,"schema")
-        ; schema_uri <- parseKey(mf,"schema_uri")
-        ; schema_file <- parseFile(mf,"schema_file")
-        ; schema_textarea <- parseKey(mf,"schema_textarea")
-        ; withIncoming <- parseBoolean(mf,"withIncoming")
-        ; openClosed <- parseBoolean(mf,"openClosed")
-        ; withAny <- parseBoolean(mf,"withAny")
-        ; opt_iri <- parseOptIRI(mf,input_type_schema)
+        ; opt_schema <- parseOptSchema(mf)
         )
-    yield ValidationForm(
+    yield {
+     val has_schema = opt_schema.isDefined
+     val input_schema = if (has_schema) 
+    					opt_schema.get._1 
+    				 else 
+    				    SchemaInput()
+    				    
+     val opts_schema = if (has_schema) 
+    					opt_schema.get._2 
+    				  else 
+    				    SchemaOptions.default
+      ValidationForm(
         input_type_rdf,
         rdf_uri, rdf_file, rdf_textarea, rdf_endpoint,
-        input_type_schema,
-        schema_uri, schema_file, schema_textarea,
-        withIncoming,openClosed,withAny,
-        opt_iri) 
+        has_schema, input_schema, opts_schema
+        )
+    }
   }
   
   def getMultipartForm(request: Request[AnyContent]): Try[MultipartFormData[TemporaryFile]] = {
@@ -108,11 +148,11 @@ object Validator extends Controller {
     }
   }
   
-  def parseOptIRI(mf: MultipartFormData[TemporaryFile], inputType: InputType): Try[Option[IRI]] = {
-    val withIRI = parseWithIRI(mf,inputType)
+  def parseOptIRI(mf: MultipartFormData[TemporaryFile]): Try[Option[IRI]] = {
+    val withIRI = parseWithIRI(mf)
     withIRI match {
       case Success(true) => {
-        parseIRI(mf,inputType) match {
+        parseIRI(mf) match {
             case Success(iri) => Success(Some(iri))
             case Failure(e) => Failure(e)
           }
@@ -122,7 +162,7 @@ object Validator extends Controller {
     }
   }
 
-  def parseWithIRI(mf: MultipartFormData[TemporaryFile], inputType: InputType): Try[Boolean] = {
+  def parseWithIRI(mf: MultipartFormData[TemporaryFile]): Try[Boolean] = {
     for (value <- parseKey(mf,"withIRI")) yield {
       if (value.startsWith("#noIri")) false
       else if (value.startsWith("#iri")) true
@@ -130,10 +170,47 @@ object Validator extends Controller {
     }
   }
 
-  def parseIRI(mf: MultipartFormData[TemporaryFile], inputType: InputType): Try[IRI] = {
-    if (inputType == No) Failure(new Exception("Cannot obtain an IRI is input is none"))
-    else
-      for (value <- parseKey(mf,inputType.toString + "_iri")) yield IRI(value)
+  def parseIRI(mf: MultipartFormData[TemporaryFile]): Try[IRI] = {
+    for (value <- parseKey(mf,"iri")) yield IRI(value)
+  }
+
+  def parseOptSchema(mf: MultipartFormData[TemporaryFile]): Try[Option[(SchemaInput,SchemaOptions)]] = {
+    for (value <- parseKey(mf,"schema")) yield {
+      value match {
+        case "#schema" => {
+          val opts = 
+            for ( input <- parseSchemaInput(mf)
+                ; options <- parseSchemaOptions(mf)
+                ) yield (input,options)
+            opts.map(pair => Some(pair)).get
+        }
+        case "#no_schema" => 
+          None
+        case _ => 
+          throw new Exception("Unknown value for key schema: " + value)
+      }
+    }
+  }
+
+  def parseSchemaInput(mf: MultipartFormData[TemporaryFile]): Try[SchemaInput] = {
+    for ( input_type_schema <- parseInputType(mf,"input-schema")
+        ; schema_uri <- parseKey(mf,"schema_uri")
+        ; schema_file <- parseFile(mf,"schema_file")
+        ; schema_textarea <- parseKey(mf,"schema_textarea")
+        )
+   yield
+     SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea)
+  }
+
+  def parseSchemaOptions(mf: MultipartFormData[TemporaryFile]): Try[SchemaOptions] = {
+    for ( cut <- parseInt(mf,"cut",0,100)
+        ; withIncoming <- parseBoolean(mf,"withIncoming")
+        ; openClosed <- parseBoolean(mf,"openClosed")
+        ; withAny <- parseBoolean(mf,"withAny")
+        ; opt_iri <- parseOptIRI(mf)
+        )
+   yield
+     SchemaOptions(cut,withIncoming,openClosed,withAny,opt_iri)
   }
 
   def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {
@@ -146,12 +223,19 @@ object Validator extends Controller {
     }
   }
 
+  def parseInt(mf: MultipartFormData[TemporaryFile], key: String, min: Int, max:Int): Try[Int] = {
+    for (value <- parseKey(mf,key)) yield {
+      val n = value.toInt
+      if (n < min || n > max) throw new Exception("parseInt, n " + n + " must be between " + min + " and " + max)
+      else n
+    }
+  }
 
   def parseInputType(mf: MultipartFormData[TemporaryFile], key: String): Try[InputType] = {
     for (value <- parseKey(mf,key))
       yield {
-      // The following code is to transform #XXX_key to XXX 
-      val pattern = ("#(.*)_" + key).r
+      // The following code is to transform #XXX_* to XXX 
+      val pattern = ("#(.*)_.*" ).r
       val extracted = pattern.findFirstMatchIn(value).map(_ group 1)
       extracted match {
     		case Some("byUri") => ByUri
@@ -159,7 +243,6 @@ object Validator extends Controller {
     		case Some("byInput") => ByInput
     		case Some("byEndpoint")  => ByEndpoint
     		case Some("byDereference") => ByDereference
-    		case Some("no") => No
     		case x => throw new Exception("Unknown value for " + key + ": " + value + ". match = " + x)
     }
    }
@@ -203,19 +286,6 @@ object Validator extends Controller {
    }
  }
  
- def notImplementedYet[A] : Try[A] = 
-   Failure(throw new Exception("Not implemented yet"))
-
- def getSchemaStr(vf: ValidationForm): Try[Option[String]] = {
-   vf.input_type_Schema match {
-     case No => Success(None)
-     case ByUri => getURI(vf.schema_uri).map(str => Some(str))
-     case ByFile => getFileContents(vf.schema_file).map(str => Some(str))
-     case ByInput => Success(Some(vf.schema_textarea))
-     case _ => failMsg("parseSchema: non supported input type: " + vf.input_type_Schema)
-   }
- }
-
   // TODO: Move this method to a es.weso.monads.Result
   def liftTry[A](t:Try[A]):SchemaResult[A] = {
     t match {
@@ -224,37 +294,5 @@ object Validator extends Controller {
     }
   }
 
-  // TODO: Move this utility to other place...
-  def failMsg[A](msg:String): Try[A] = {
-    Failure(throw new Exception(msg))
-  }
-
-  def getURI(uri:String): Try[String] = {
-    try {
-      Logger.info("Trying to reach " + uri)
-      val str = io.Source.fromURL(new URL(uri)).getLines().mkString("\n")
-      Success(str)
-    } catch {
-    case e: Exception => Failure(throw new Exception("getURI: cannot retrieve content from " + uri + "\nException: " + e.getMessage))
-    }
-  }
-
-
-  def getFileContents(opt_file: Option[File]):Try[String] = {
-     opt_file match {
-         case Some(file) => {
-           try {
-            val str = io.Source.fromFile(file).getLines().mkString("\n")
-            Success(str)
-           }
-           catch {
-             case e: Exception => Failure(throw new Exception("getFileContents: cannot retrieve content from file " + file + "\nException: " + e.getMessage))
-           }
-         } 
-     case None => {
-        Failure(new Exception("getFileContents: Input by file but no file found"))
-     }
-   }
-  }
 }
 

@@ -18,7 +18,12 @@
 
 <a href="@routes.Validator.validate_get(
 	         vr.str_rdf,
-	         vr.opt_schema,
-	         vr.opt_iri_str)">Generate permalink</a>
+	         vr.schema_param,
+	         vr.opt_iri_param,
+	         vr.opt_schema.cut,
+	         vr.opt_schema.withIncoming,
+	         vr.opt_schema.openClosed,
+	         vr.opt_schema.withAny
+	         )">Generate permalink</a>
 
 }

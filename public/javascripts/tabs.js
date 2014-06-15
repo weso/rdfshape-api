@@ -8,7 +8,7 @@ $(function() {
     } 
     });
 
-	var schemas=["#no_schema","#byUri_schema","#byFile_schema","#byInput_schema"];
+	var schemas=["#no_schema","#schema"]
 
 	$( "#tabs-schema" ).tabs({
 	active:schemas.indexOf($("#schema").attr('value')),
@@ -16,31 +16,21 @@ $(function() {
     	$("#schema").attr('value',ui.newPanel.selector)} 
     });
 
-	/* byUri iri */
-	var byUri_iris=["#noIri_byUri","#iri_byUri"];
+	var input_schemas= ["#byUri_schema","#byFile_schema","#byInput_schema"];
 	
-	$( "#tabsIriNoIri_byUri" ).tabs({ 
-	active:byUri_iris.indexOf($("#iri").attr('value')),	
+	$( "#tabs-input-schema" ).tabs({
+		active:schemas.indexOf($("#input-schema").attr('value')),
+		activate: function( event, ui ) { 
+	    	$("#input-schema").attr('value',ui.newPanel.selector)} 
+	    });
+
+	/* iri */
+	var iris=["#noIri","#iri"];
+	
+	$( "#tabsIriNoIri" ).tabs({ 
+	active: iris.indexOf($("#iriNoIri").attr('value')),	
 	activate: function( event, ui ) {
-		$("#iri").attr('value',ui.newPanel.selector) } 
-    });
-
-	/* byFile iri */
-	var byFile_iris=["#noIri_byFile","#iri_byFile"];
-
-	$( "#tabsIriNoIri_byFile" ).tabs({
-	active:byFile_iris.indexOf($("#iri").attr('value')),	
-	activate: function( event, ui ) { 
-    	$("#iri").attr('value',ui.newPanel.selector) } 
-    });
-
-	/* byInput iri */
-	var byInput_iris=["#noIri_byInput","#iri_byInput"];
-
-	$( "#tabsIriNoIri_byInput" ).tabs({ 
-	active:byInput_iris.indexOf($("#iri").attr('value')),
-	activate: function( event, ui ) { 
-    	$("#iri").attr('value',ui.newPanel.selector) } 
+		$("#iriNoIri").attr('value',ui.newPanel.selector) } 
     });
 
 });
