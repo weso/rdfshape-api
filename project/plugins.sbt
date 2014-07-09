@@ -1,25 +1,18 @@
-// Comment to get more information during initialization
-logLevel := Level.Warn
-
-// The Typesafe repository 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-// Use the Play sbt plugin for Play projects
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.2.0")
+// The Play plugin
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.3.1")
 
-addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.4.0")
+// web plugins
 
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
+addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.0")
 
-addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.0.0")
 
-resolvers += Resolver.url(
-  "bintray-sbt-plugin-releases",
-    url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
-        Resolver.ivyStylePatterns)
+addSbtPlugin("com.typesafe.sbt" % "sbt-jshint" % "1.0.0")
 
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.1")
+addSbtPlugin("com.typesafe.sbt" % "sbt-rjs" % "1.0.1")
 
-addSbtPlugin("com.lihaoyi" % "utest-js-plugin" % "0.1.2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.0.0")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.7.0-RC2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.0.0")
