@@ -10,6 +10,7 @@ import es.weso.rdf.RDFTriples
 import com.hp.hpl.jena.sparql.function.library.e
 import scala.util._
 import es.weso.rdf.RDF
+import play.Logger
 
 case class ValidationResult(
       status: Option[Boolean]
@@ -51,14 +52,14 @@ case class ValidationResult(
    def toHTML(cut: Int): String = {
     val sb = new StringBuilder
     for ((t,n) <- rs.take(cut) zip (1 to cut)) {
-      val nodesWithoutTyping = nodes.filter(n => t.hasType(n) != Set()).toSet
       sb.append("<h2 class='shapes'>Result " + n + "</h2>")
       sb.append("<table>")
       sb.append(typing2Html(t))
       sb.append("</table>")
+      val nodesWithoutTyping = nodes.filter(n => t.hasType(n).isEmpty).toSet
       if (!nodesWithoutTyping.isEmpty) {
     	  sb.append("<p>Nodes without shapes</p>")
-    	  nodes2Html(nodesWithoutTyping)
+    	  sb.append(nodes2Html(nodesWithoutTyping))
       }
     }
     sb.toString
