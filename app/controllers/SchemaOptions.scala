@@ -18,5 +18,5 @@ case class SchemaOptions(
     
 object SchemaOptions {
   def default : SchemaOptions = 
-    SchemaOptions(1, false, false, false, None)
+    SchemaOptions(10, false, true, false, None)
 }

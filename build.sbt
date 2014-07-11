@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   ws
 , "commons-io" % "commons-io" % "2.4"  
 , "org.apache.jena" % "jena-arq" % "2.10.1" excludeAll(ExclusionRule(organization = "org.slf4j"))
-, "es.weso" % "shexcala_2.11" % "0.1.4" excludeAll(ExclusionRule(organization = "org.slf4j"))  
+, "es.weso" % "shexcala_2.11" % "0.1.5" excludeAll(ExclusionRule(organization = "org.slf4j"))  
 )
 
 resolvers += "Bintray" at "http://dl.bintray.com/weso/weso-releases"
