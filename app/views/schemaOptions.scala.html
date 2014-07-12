@@ -16,11 +16,11 @@
  
 <!-- Options -->
 <details>
-   <summary>More options</summary>
+   <summary>@Messages("MoreOptions")</summary>
    <table>	
    <tr><th>Name</th><th>Option</th><th>Description</th></tr>
    <tr>
-    <td>With incoming</td>
+    <td>@Messages("WithIncoming")</td>
     <td>
     <input 
     	type="radio" name="withIncoming" value="true"
@@ -33,43 +33,61 @@
 		@{if(schemaOptions.withIncoming==false) { "checked" }}>
 		<label>false</label>
     </td>
-    <td>Takes into account incoming edges</td>
+    <td>@Messages("WithIncoming.explain")</td>
     </tr>	
     <tr>
-    <td>Open/Closed shapes</td>
+    <td>@Messages("WithOpenShapes")</td>
     <td>
     <input 
     	type="radio" 
-    	name="openClosed" 
+    	name="withOpenShapes" 
     	value="true"
-    	@{if(schemaOptions.openClosed==true) { "checked" }}>
-    	<label>open shapes</label><br/>
+    	@{if(schemaOptions.withOpenShapes==true) { "checked" }}>
+    	<label>@Messages("OpenShapes")</label><br/>
 	<input 
 		type="radio" 
-		name="openClosed" 
+		name="withOpenShapes" 
 		value="false" 
-		@{if(schemaOptions.openClosed==false) { "checked" }}>
-		<label>closed shapes</label>
+		@{if(schemaOptions.withOpenShapes==false) { "checked" }}>
+		<label>@Messages("ClosedShapes")</label>
     </td>
-    <td>Open/Closed shapes semantics. See <a href="https://www.w3.org/2001/sw/wiki/ShEx/CurrentDiscussion#Closed.2Fopen_shapes_and_exclusion_of_matched_triples">discussion</a></td>
+    <td>@Messages("withOpenShapes.explain") <a href="https://www.w3.org/2001/sw/wiki/ShEx/CurrentDiscussion#Closed.2Fopen_shapes_and_exclusion_of_matched_triples">@Messages("discussion")</a></td>
     </tr>
     <tr>
-    <td>Add <i>Any</i> shape</td>
+    <td>@Messages("Any.Shape")</td>
     <td>
     <input 
     	type="radio" 
     	name="withAny" 
     	value="true"
     	@{if(schemaOptions.withAny==true) { "checked" }}>
-    	<label>Add Any shape</label><br/>
+    	<label>@Messages("Add.any.shape")</label><br/>
 	<input 
 		type="radio" 
 		name="withAny" 
 		value="false" 
 		@{if(schemaOptions.withAny==false) { "checked" }}>
-		<label>Only defined shapes</label>
+		<label>@Messages("Only.defined.shapes")</label>
     </td>
-    <td>Add a shape which matches any node</td>
+    <td>@Messages("Add.any.explain")</td>
+    </tr>
+    <tr>
+    <td>@Messages("Show.schema")</td>
+    <td>
+    <input 
+    	type="radio" 
+    	name="showSchema" 
+    	value="true"
+    	@{if(schemaOptions.showSchema==true) { "checked" }}>
+    	<label>@Messages("Show.schema")</label><br/>
+	<input 
+		type="radio" 
+		name="withAny" 
+		value="false" 
+		@{if(schemaOptions.showSchema==false) { "checked" }}>
+		<label>@Messages("Dont.show.schema")</label>
+    </td>
+    <td>@Messages("Show.schema.explain")</td>
     </tr>
    </table>
 </details>

@@ -20,7 +20,7 @@
 	   value='@Messages("Submit")' />
 </div>
 
-<input id="rdf" name="rdf" type="hidden" value="#@{vf.input_type_RDF}_rdf" /> 
+<input id="rdf" name="rdf" type="hidden" value="#@{vf.rdfInput.input_type_RDF}_rdf" /> 
 <input id="schema" name="schema" type="hidden" value="@{vf.schema_toggle}" />
 <input id="input-schema" name="input-schema" type="hidden" value="#@{vf.input_type_Schema_str}_schema" />
 <input id="iriNoIri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
@@ -69,6 +69,8 @@
  </div> <!-- content -->
  
 </div> <!-- rdf-tabs -->   
+
+@rdfOptions(vf.rdfOptions)
 
 <div class="tabs" id="tabs-schema">
 

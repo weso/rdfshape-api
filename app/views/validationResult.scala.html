@@ -6,7 +6,7 @@
 @if(vr.status == Some(true)) {
 
 <p class="result_ok">@vr.msg</p>
-@Html(vr.toHTML(1))
+@Html(vr.toHTML())
 <pre>@vr.str_rdf</pre>
 
 } else { 
@@ -18,12 +18,15 @@
 
 <a href="@routes.Validator.validate_get(
 	         vr.str_rdf,
+	         Some(vr.opts_rdf.syntax.toString),
+	         vr.opts_rdf.showRDF,
 	         vr.schema_param,
 	         vr.opt_iri_param,
 	         vr.opt_schema.cut,
 	         vr.opt_schema.withIncoming,
-	         vr.opt_schema.openClosed,
-	         vr.opt_schema.withAny
+	         vr.opt_schema.withOpenShapes,
+	         vr.opt_schema.withAny,
+	         vr.opt_schema.showSchema
 	         )">Generate permalink</a>
 
 }

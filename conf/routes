@@ -11,4 +11,4 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 
 POST	/validator	controllers.Validator.validate_post
-GET		/validator	controllers.Validator.validate_get(rdf: String, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, openClosed: Boolean ?= false, withAny: Boolean ?= false)
+GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, openClosed: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)

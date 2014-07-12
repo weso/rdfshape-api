@@ -12,11 +12,8 @@ import scala.util.Try
 import scala.util.Success
 
 case class ValidationForm(
-      input_type_RDF: InputType
-    , rdf_uri : String
-    , rdf_file: Option[File]
-    , rdf_textarea: String
-    , rdf_endpoint: String
+      rdfInput: RDFInput
+    , rdfOptions: RDFOptions
     , withSchema : Boolean
     , schemaInput: SchemaInput
     , schemaOptions: SchemaOptions
@@ -66,11 +63,8 @@ case class ValidationForm(
 object ValidationForm {
   def empty : ValidationForm = 
     ValidationForm(
-          input_type_RDF = ByInput
-        , rdf_uri = ""
-        , rdf_file = None
-        , rdf_textarea = ""
-        , rdf_endpoint = ""
+          rdfInput = RDFInput()
+        , rdfOptions = RDFOptions.default
         , withSchema = false
         , schemaInput = SchemaInput()
         , schemaOptions = SchemaOptions.default
@@ -89,11 +83,8 @@ object ValidationForm {
     				    SchemaOptions.default
     
     ValidationForm(
-      input_type_RDF = ByInput
-    , rdf_uri = ""
-    , rdf_file = None
-    , rdf_textarea = vr.str_rdf
-    , rdf_endpoint = ""
+      rdfInput = RDFInput(vr.str_rdf)
+    , rdfOptions = vr.opts_rdf
     , withSchema = has_schema
     , schemaInput = input_schema
     , schemaOptions = opts_schema

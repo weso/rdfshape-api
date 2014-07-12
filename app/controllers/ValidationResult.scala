@@ -18,6 +18,7 @@ case class ValidationResult(
     , rs: Stream[Typing]
     , nodes: List[RDFNode]
     , str_rdf: String
+    , opts_rdf : RDFOptions
     , withSchema : Boolean
     , str_schema: String
     , opt_schema: SchemaOptions
@@ -49,9 +50,12 @@ case class ValidationResult(
      else escape(node.toString)
    }
     
-   def toHTML(cut: Int): String = {
+   def toHTML(): String = {
     val sb = new StringBuilder
-    for ((t,n) <- rs.take(cut) zip (1 to cut)) {
+    val cut = opt_schema.cut
+    Logger.info("toHTML...cut = " + cut + " rs = " + rs)
+    for ((t,n) <- rs.take(cut).toSet zip (1 to cut)) {
+      Logger.info("toHTML...sb = " + sb.toString + " n = " + n + "t = " + t)
       sb.append("<h2 class='shapes'>Result " + n + "</h2>")
       sb.append("<table>")
       sb.append(typing2Html(t))
@@ -77,48 +81,51 @@ case class ValidationResult(
 }
 
 object ValidationResult {
+  // TODO: refactor the following ugly code
   def empty = 
-    ValidationResult(None,"",Stream(), List(),"", false, "", SchemaOptions.default, PrefixMap.empty)
+    ValidationResult(None,"",Stream(), List(),"", RDFOptions.default,false, "", SchemaOptions.default, PrefixMap.empty)
   
   def failure(e: Throwable, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
-    ValidationResult(Some(false),e.getMessage, Stream(),List(),str_rdf, false, "", SchemaOptions.default, PrefixMap.empty)
+    ValidationResult(Some(false),e.getMessage, Stream(),List(),str_rdf, RDFOptions.default, false, "", SchemaOptions.default, PrefixMap.empty)
   }
 
   def withMessage(msg: String, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
-    ValidationResult(Some(false),msg, Stream(),List(),str_rdf,false,"",SchemaOptions.default,PrefixMap.empty)
+    ValidationResult(Some(false),msg, Stream(),List(),str_rdf,RDFOptions.default, false,"",SchemaOptions.default,PrefixMap.empty)
   }
 
   def validateIRI(
         iri : IRI
       , rdf: RDF
       , str_rdf: String
+      , rdfOptions: RDFOptions
       , schema: Schema
       , str_schema: String
-      , so: SchemaOptions
+      , schemaOptions: SchemaOptions
       , pm: PrefixMap
       ): ValidationResult = {
-  val rs = Schema.matchSchema(iri,rdf,schema,so.withIncoming,so.openClosed,so.withAny)
+  val rs = Schema.matchSchema(iri,rdf,schema,schemaOptions.withIncoming,schemaOptions.withOpenShapes,schemaOptions.withAny)
   if (rs.isValid) {
-   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_rdf,true, str_schema, so,pm)
+   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_rdf,rdfOptions, true, str_schema, schemaOptions,pm)
   } else {
-     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_rdf,true, str_schema,so,pm)
+     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_rdf,rdfOptions,true, str_schema,schemaOptions,pm)
   } 
  }
 
   def validateAny(
         rdf: RDF
       , str_rdf: String
+      , rdfOptions: RDFOptions
       , schema: Schema
       , str_schema: String
-      , so: SchemaOptions
+      , schemaOptions: SchemaOptions
       , pm: PrefixMap
       ): ValidationResult = {
  val nodes = rdf.subjects.toList
- val rs = Schema.matchAll(rdf,schema,so.withIncoming,so.openClosed,so.withAny)
+ val rs = Schema.matchAll(rdf,schema,schemaOptions.withIncoming,schemaOptions.withOpenShapes,schemaOptions.withAny)
  if (rs.isValid) {
-   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_rdf,true, str_schema,so,pm)
+   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_rdf,rdfOptions,true, str_schema,schemaOptions,pm)
  } else {
-   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_rdf,true,str_schema,so,pm)
+   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_rdf,rdfOptions,true,str_schema,schemaOptions,pm)
  }
 }     
 
@@ -126,24 +133,25 @@ object ValidationResult {
  def validate(
         rdf: RDF
       , str_rdf: String
+      , rdfOptions: RDFOptions
       , withSchema : Boolean
       , str_schema : String
-      , so: SchemaOptions 
+      , schemaOptions: SchemaOptions 
       ): ValidationResult = {
    if (withSchema) {
          Schema.fromString(str_schema) match {
          case Success((schema,pm)) => {
-               so.opt_iri match {
-                 case Some(iri) => validateIRI(iri,rdf,str_rdf,schema,str_schema,so,pm) 
-                 case None => validateAny(rdf,str_rdf,schema,str_schema,so,pm)
+               schemaOptions.opt_iri match {
+                 case Some(iri) => validateIRI(iri,rdf,str_rdf,rdfOptions,schema,str_schema,schemaOptions,pm) 
+                 case None => validateAny(rdf,str_rdf,rdfOptions,schema,str_schema,schemaOptions,pm)
                }
          }
          case Failure(e) => {
-             ValidationResult(Some(false),"Schema did not parse: " + e.getMessage,Stream(),List(),str_rdf,true, str_schema,so,PrefixMap.empty)
+             ValidationResult(Some(false),"Schema did not parse: " + e.getMessage,Stream(),List(),str_rdf,rdfOptions,true, str_schema,schemaOptions,PrefixMap.empty)
          } 
        } 
     } else  
-     ValidationResult(Some(true),"RDF parsed",Stream(),List(),str_rdf,false,str_schema,so,PrefixMap.empty)
+     ValidationResult(Some(true),"RDF parsed",Stream(),List(),str_rdf,rdfOptions,false,str_schema,schemaOptions,PrefixMap.empty)
  } 
 
 }
