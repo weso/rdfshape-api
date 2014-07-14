@@ -53,9 +53,9 @@ case class ValidationResult(
    def toHTML(): String = {
     val sb = new StringBuilder
     val cut = opt_schema.cut
-    Logger.info("toHTML...cut = " + cut + " rs = " + rs)
+    // Logger.info("toHTML...cut = " + cut + " rs = " + rs)
     for ((t,n) <- rs.take(cut).toSet zip (1 to cut)) {
-      Logger.info("toHTML...sb = " + sb.toString + " n = " + n + "t = " + t)
+      // Logger.info("toHTML...sb = " + sb.toString + " n = " + n + "t = " + t)
       sb.append("<h2 class='shapes'>Result " + n + "</h2>")
       sb.append("<table>")
       sb.append(typing2Html(t))
@@ -85,15 +85,15 @@ object ValidationResult {
   def empty = 
     ValidationResult(None,"",Stream(), List(),"", RDFOptions.default,false, "", SchemaOptions.default, PrefixMap.empty)
   
-  def failure(e: Throwable, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
+/*  def failure(e: Throwable, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
     ValidationResult(Some(false),e.getMessage, Stream(),List(),str_rdf, RDFOptions.default, false, "", SchemaOptions.default, PrefixMap.empty)
   }
 
-  def withMessage(msg: String, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
+  def withMessage(msg: String, str_rdf: String = "", opt_schema: Option[String] = None, opt_iri: Option[IRI] = None) : ValidationResult = {
     ValidationResult(Some(false),msg, Stream(),List(),str_rdf,RDFOptions.default, false,"",SchemaOptions.default,PrefixMap.empty)
-  }
-
-  def validateIRI(
+  } */
+  
+    def validateIRI(
         iri : IRI
       , rdf: RDF
       , str_rdf: String
@@ -139,7 +139,7 @@ object ValidationResult {
       , schemaOptions: SchemaOptions 
       ): ValidationResult = {
    if (withSchema) {
-         Schema.fromString(str_schema) match {
+         Try(Schema.fromString(str_schema).get) match {
          case Success((schema,pm)) => {
                schemaOptions.opt_iri match {
                  case Some(iri) => validateIRI(iri,rdf,str_rdf,rdfOptions,schema,str_schema,schemaOptions,pm) 
@@ -147,11 +147,19 @@ object ValidationResult {
                }
          }
          case Failure(e) => {
-             ValidationResult(Some(false),"Schema did not parse: " + e.getMessage,Stream(),List(),str_rdf,rdfOptions,true, str_schema,schemaOptions,PrefixMap.empty)
+           Logger.info("Schema did not parse..." + e.getMessage)
+           ValidationResult(Some(false),
+               "Schema did not parse: " + e.getMessage,
+               Stream(),List(),str_rdf,rdfOptions, true, 
+               str_schema,schemaOptions,
+               PrefixMap.empty)
          } 
        } 
     } else  
-     ValidationResult(Some(true),"RDF parsed",Stream(),List(),str_rdf,rdfOptions,false,str_schema,schemaOptions,PrefixMap.empty)
+     ValidationResult(Some(true),"RDF parsed",
+         Stream(),List(),str_rdf,rdfOptions,false,
+         str_schema,schemaOptions,
+         PrefixMap.empty)
  } 
 
 }

@@ -43,4 +43,13 @@ object IOUtils {
   def notImplementedYet[A] : Try[A] = 
    Failure(throw new Exception("Not implemented yet"))
 
+  /** Transform a string "a\nb\nc" to 1| a\n2| b\n3| c\n"
+   */
+  def showLineNumbers(str:String):String = {
+    val lines = str.split("\n")
+    val withNumbers = lines.zip (1 to lines.length)
+    val formatted = withNumbers.map(p => f"${p._2}%3d| ${p._1}")
+    formatted.mkString("\n")    
+  }
+
 }

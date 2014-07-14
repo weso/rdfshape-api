@@ -59,13 +59,18 @@ object RDFUtils {
   def RDFParse(str: String, syntax: RDFSyntax): Try[(RDF,String)] = {
     syntax match {
       case TURTLE => {
-         RDFTriples.parse(str) match {
-         	case Success(rdf) => Success((rdf,str))
-         	case Failure(e) => 
-         		Failure(throw new Exception("Exception :" + e.getMessage + "\nParsing RDF:\n" + str))
+        // Todo: simplify the following... 
+         Try{ 
+           RDFTriples.parse(str) match {
+         	case Success(rdf) => 
+         	  (rdf,str)
+         	case Failure(e) =>
+         	  throw new Exception("Exception :" + e.getMessage)
+           }
          }
       }
-      case _ => Failure(throw new Exception("Not implemented parser for syntax :" + syntax))
+      case _ => 
+        Failure(throw new Exception("Not implemented parser for syntax" + syntax + " yet"))
     }
  }
 

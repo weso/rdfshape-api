@@ -94,3 +94,13 @@ ul.nodes {
 .about {
 	text-align: right;
 }
+
+/* Specify that all line numbers appear:
+   http://stackoverflow.com/questions/8399547/how-to-add-line-numbers-to-all-lines-in-google-prettify
+   */
+ol.linenums { margin-top: 0; margin-bottom: 0 } /* IE indents via margin-left */
+li.L0, li.L1, li.L2, li.L3,
+li.L5, li.L6, li.L7, li.L8 { list-style-type: decimal !important }
+/* Alternate shading for lines */
+li.L1, li.L3, li.L5, li.L7, li.L9 { background: #eee }
+li.L1, li.L3, li.L5, li.L7, li.L9 { background: white }

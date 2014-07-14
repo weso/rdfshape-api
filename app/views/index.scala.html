@@ -1,5 +1,5 @@
 @(vr: ValidationResult = ValidationResult.empty,
-  vf: ValidationForm = ValidationForm.empty )
+  vf: ValidationForm = ValidationForm() )
 
 @import play.api.i18n.Messages
 
@@ -53,7 +53,7 @@
  <div class="content" id="byInput_rdf">	
    <legend>@Messages("Input")</legend>	
    <textarea class="input_src"
-		id="fragment" 
+		id="rdf_textarea" 
 		name="rdf_textarea" 
 		rows="12" cols="80">@vr.str_rdf</textarea>
   </div> <!-- content -->
@@ -115,7 +115,7 @@
 <div class="content" 
 	 id="byInput_schema">
 	<textarea class="input_src"
-		id="fragment" 
+		id="schema_textarea" 
 		name="schema_textarea" 
 		rows="12" cols="80">@vr.str_schema</textarea>
 

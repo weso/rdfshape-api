@@ -15,14 +15,10 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
 import es.weso.shex.Schema
-import scala.util.Try
-import scala.util.Failure
-import scala.util.Success
-import es.weso.rdf.RDFTriples
-import es.weso.rdf.RDF
+import scala.util._
+import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
-import es.weso.rdf.reader.Endpoint
-import es.weso.rdf.reader.RDFFromWeb
+import es.weso.rdf.reader._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
 import es.weso.shex.Typing
 import es.weso.monads.Passed
@@ -32,6 +28,8 @@ import es.weso.parser.PrefixMap
 import java.net.URL
 import java.io.File
 import es.weso.utils.IOUtils._
+import es.weso.parser.PrefixMap
+
 
 object Validator extends Controller {
 
@@ -67,7 +65,18 @@ object Validator extends Controller {
         case Success((rdf,_)) => 
           scala.concurrent.Future(Success(ValidationResult.validate(rdf,str_rdf,opts_rdf,withSchema,str_schema,opts_schema)))
         case Failure(e) => 
-          scala.concurrent.Future(Failure(e))
+          scala.concurrent.Future(Success(
+                ValidationResult(Some(false), 
+                    "Error parsing RDF with syntax " + opts_rdf.syntax + ": " + e.getMessage,
+                    Stream(), 
+                    List(), 
+                    str_rdf, 
+                    opts_rdf, 
+                    withSchema, 
+                    str_schema, 
+                    opts_schema, 
+                    PrefixMap.empty)
+                ))
 	 }
   }
   
@@ -98,22 +107,38 @@ object Validator extends Controller {
 
     
     def validate_post = Action.async { request => {
-      val resf : Future[Try[(ValidationResult,ValidationForm)]] = 
-        scala.concurrent.Future { 
-         for ( vf <- getValidationForm(request)
-             ; (rdf,str_rdf) <- getRDF(vf)
-             ; opt_schema <- vf.getSchemaStr
-             ; schemaOptions <- vf.getSchemaOptions
-             ) 
-         yield (ValidationResult.validate(rdf,str_rdf,vf.rdfOptions, opt_schema.isDefined, opt_schema.getOrElse(""), schemaOptions.getOrElse(SchemaOptions.default)),vf)
-      }
-            
-      resf.map(res =>
-        res match {
-        	case Success((vr,vf)) => Ok(views.html.index(vr,vf))
-        	case Failure(e) => BadRequest(e.getMessage)
+      val pair = for ( vf <- getValidationForm(request)
+                     ; str_rdf <- vf.rdfInput.getRDFStr
+                     ) yield (vf,str_rdf) 
+      pair match {
+        case Success((vf,str_rdf)) => {
+
+          val resf : Future[Try[ValidationResult]] = 
+        	scala.concurrent.Future { 
+        	  for ( rdf <- vf.rdfInput.getRDF(vf.rdfOptions.syntax)
+        	      ; str_schema <- vf.schemaInput.getSchemaStr
+        	      ) 
+              yield ValidationResult.validate(rdf,str_rdf,vf.rdfOptions, vf.withSchema, str_schema, vf.schemaOptions)
+            }
+           resf.map(res => {
+           	res match {
+        	case Success(vr) => {
+        	  Ok(views.html.index(vr,vf))
+        	}
+        	case Failure(e) => {
+        	  val schema_str: String = Try(vf.schemaInput.getSchemaStr.get).getOrElse("")
+        	  val vr = ValidationResult(Some(false),
+        	          e.getMessage(),Stream(), List(), 
+        	          str_rdf, vf.rdfOptions, 
+        	          vf.withSchema, schema_str, vf.schemaOptions, 
+        	          PrefixMap.empty) 
+        	  Ok(views.html.index(vr,vf))
+        	}
+           }
+           })
         }
-     )
+       case Failure(e) => scala.concurrent.Future{ BadRequest(e.getMessage) }
+      }
     }
   }
     
@@ -280,37 +305,13 @@ object Validator extends Controller {
  }
 
  
- def getRDF(vf: ValidationForm): Try[(RDF,String)] = {
-   val syntax = vf.rdfOptions.syntax
-   val input = vf.rdfInput
-     input.input_type_RDF match {
-     case ByUri => for ( str <- getURI(input.rdf_uri)
-                       ; pair <- RDFParse(str,syntax)
-                       ) yield pair
-     case ByFile => for ( str <- getFileContents(input.rdf_file)
-    		 		    ; pair <- RDFParse(str,syntax)
-    		 		    ) yield pair
-     case ByInput => {
-       val str = input.rdf_textarea
-       RDFParse(str,syntax)
-     } 
-     case ByEndpoint => {
-       Success(Endpoint(input.rdf_endpoint),"")
-     }
-     case ByDereference => {
-       Success((RDFFromWeb(),""))
-     }
-     case _ => Failure(throw new Exception("getRDF: Unknown input type"))
-   }
- }
- 
-  // TODO: Move this method to a es.weso.monads.Result
+  /* TODO: Move this method to a es.weso.monads.Result
   def liftTry[A](t:Try[A]):SchemaResult[A] = {
     t match {
       case Failure(e) => SchemaFailure(e.getMessage())
       case Success(v) => Passed(Stream(v))
     }
-  }
+  } */
 
 }
 

@@ -61,7 +61,7 @@ case class ValidationForm(
 }
     
 object ValidationForm {
-  def empty : ValidationForm = 
+  def apply(): ValidationForm = 
     ValidationForm(
           rdfInput = RDFInput()
         , rdfOptions = RDFOptions.default
@@ -71,23 +71,12 @@ object ValidationForm {
         )
         
   def fromResult(vr:ValidationResult): ValidationForm = {
-    val has_schema = vr.withSchema
-    val input_schema = if (has_schema) 
-    					SchemaInput(vr.str_schema) 
-    				 else 
-    				    SchemaInput()
-    				    
-    val opts_schema = if (has_schema) 
-    					vr.opt_schema 
-    				  else 
-    				    SchemaOptions.default
-    
     ValidationForm(
       rdfInput = RDFInput(vr.str_rdf)
     , rdfOptions = vr.opts_rdf
-    , withSchema = has_schema
-    , schemaInput = input_schema
-    , schemaOptions = opts_schema
+    , withSchema = vr.withSchema
+    , schemaInput = SchemaInput(vr.str_schema)
+    , schemaOptions = vr.opt_schema 
     )
   }
   

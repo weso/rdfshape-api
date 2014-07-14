@@ -7,12 +7,25 @@
 
 <p class="result_ok">@vr.msg</p>
 @Html(vr.toHTML())
-<pre>@vr.str_rdf</pre>
+
+<p>RDF</p>
+<pre class="prettyprint linenums lang-turtle">@vr.str_rdf</pre>
+@if(vr.withSchema) {
+	<p>Schema</p>
+	<pre class="prettyprint linenums lang-shex">@vr.str_schema</pre>
+}
 
 } else { 
 
-<p class="result_bad">@vr.msg</p>
-<pre>@vr.str_rdf</pre>
+<p class="result_bad">
+<pre>@vr.msg</pre>
+</p>
+<p>RDF</p>
+<pre class="prettyprint linenums lang-turtle">@vr.str_rdf</pre>
+@if(vr.withSchema) {
+	<p>Schema</p>
+	<pre class="prettyprint linenums lang-shex">@vr.str_schema</pre>
+}
 
 }
 
