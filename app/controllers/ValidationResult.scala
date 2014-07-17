@@ -85,15 +85,7 @@ object ValidationResult {
   def empty = 
     ValidationResult(None,"",Stream(), List(),"", RDFOptions.default,false, "", SchemaOptions.default, PrefixMap.empty)
   
-/*  def failure(e: Throwable, str_rdf: String, opt_schema: Option[String], opt_iri: Option[IRI]) : ValidationResult = {
-    ValidationResult(Some(false),e.getMessage, Stream(),List(),str_rdf, RDFOptions.default, false, "", SchemaOptions.default, PrefixMap.empty)
-  }
-
-  def withMessage(msg: String, str_rdf: String = "", opt_schema: Option[String] = None, opt_iri: Option[IRI] = None) : ValidationResult = {
-    ValidationResult(Some(false),msg, Stream(),List(),str_rdf,RDFOptions.default, false,"",SchemaOptions.default,PrefixMap.empty)
-  } */
-  
-    def validateIRI(
+  def validateIRI(
         iri : IRI
       , rdf: RDF
       , str_rdf: String

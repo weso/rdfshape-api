@@ -107,38 +107,43 @@ object Validator extends Controller {
 
     
     def validate_post = Action.async { request => {
-      val pair = for ( vf <- getValidationForm(request)
-                     ; str_rdf <- vf.rdfInput.getRDFStr
-                     ) yield (vf,str_rdf) 
-      pair match {
-        case Success((vf,str_rdf)) => {
-
-          val resf : Future[Try[ValidationResult]] = 
-        	scala.concurrent.Future { 
-        	  for ( rdf <- vf.rdfInput.getRDF(vf.rdfOptions.syntax)
-        	      ; str_schema <- vf.schemaInput.getSchemaStr
-        	      ) 
-              yield ValidationResult.validate(rdf,str_rdf,vf.rdfOptions, vf.withSchema, str_schema, vf.schemaOptions)
-            }
-           resf.map(res => {
-           	res match {
-        	case Success(vr) => {
-        	  Ok(views.html.index(vr,vf))
-        	}
-        	case Failure(e) => {
-        	  val schema_str: String = Try(vf.schemaInput.getSchemaStr.get).getOrElse("")
-        	  val vr = ValidationResult(Some(false),
-        	          e.getMessage(),Stream(), List(), 
-        	          str_rdf, vf.rdfOptions, 
-        	          vf.withSchema, schema_str, vf.schemaOptions, 
-        	          PrefixMap.empty) 
-        	  Ok(views.html.index(vr,vf))
-        	}
-           }
-           })
-        }
-       case Failure(e) => scala.concurrent.Future{ BadRequest(e.getMessage) }
+      
+     val pair = for ( vf <- getValidationForm(request)
+                    ; str_rdf <- vf.rdfInput.getRDFStr
+                    ) yield (vf,str_rdf)
+      
+     scala.concurrent.Future {
+        pair match {
+         case Success((vf,str_rdf)) => { 
+        	  val tryValidate =
+        	     for ( rdf <- vf.rdfInput.getRDF(vf.rdfOptions.syntax)
+        	         ; str_schema <- vf.schemaInput.getSchemaStr
+        	         )  
+                 yield {
+        	       ValidationResult.validate(rdf,str_rdf,vf.rdfOptions, vf.withSchema, str_schema, vf.schemaOptions)
+        	     }
+              val vr = recover(tryValidate,recoverValidationResult(str_rdf,vf))
+              Ok(views.html.index(vr,vf))
+             }
+       case Failure(e) => BadRequest(e.getMessage) 
       }
+     }
+    } 
+  }
+    
+  def recoverValidationResult(str_rdf: String, vf: ValidationForm)(e: Throwable): ValidationResult = {
+    val schema_str: String = Try(vf.schemaInput.getSchemaStr.get).getOrElse("")
+    ValidationResult(Some(false),
+        e.getMessage(),Stream(), List(), 
+        str_rdf, vf.rdfOptions, 
+        vf.withSchema, schema_str, vf.schemaOptions, 
+        PrefixMap.empty) 
+  }
+  
+ def recover[T](t : Try[T], recoverFunction: Throwable => T): T = {
+    t match {
+      case Success(_) => t.get
+      case Failure(e) => recoverFunction(e)
     }
   }
     
@@ -211,7 +216,9 @@ object Validator extends Controller {
        ; rdf_textarea <- parseKey(mf,"rdf_textarea")
        ; rdf_file <- parseFile(mf,"rdf_file")
        ; rdf_endpoint <- parseKey(mf,"rdf_endpoint")
-       ) yield RDFInput(input_type_rdf, rdf_uri, rdf_file, rdf_textarea, rdf_endpoint)
+       ) yield {
+     RDFInput(input_type_rdf, rdf_uri, rdf_file, rdf_textarea, rdf_endpoint)
+   }
   }
   
   def parseOptRDF(mf: MultipartFormData[TemporaryFile]): Try[RDFOptions] = {
@@ -303,15 +310,6 @@ object Validator extends Controller {
         Exception("parseKey: key " + key + 
     		" must have one value but it has = " + mf.asFormUrlEncoded(key)))
  }
-
  
-  /* TODO: Move this method to a es.weso.monads.Result
-  def liftTry[A](t:Try[A]):SchemaResult[A] = {
-    t match {
-      case Failure(e) => SchemaFailure(e.getMessage())
-      case Success(v) => Passed(Stream(v))
-    }
-  } */
-
 }
 
