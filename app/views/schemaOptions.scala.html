@@ -36,24 +36,6 @@
     <td>@Messages("WithIncoming.explain")</td>
     </tr>	
     <tr>
-    <td>@Messages("WithOpenShapes")</td>
-    <td>
-    <input 
-    	type="radio" 
-    	name="withOpenShapes" 
-    	value="true"
-    	@{if(schemaOptions.withOpenShapes==true) { "checked" }}>
-    	<label>@Messages("OpenShapes")</label><br/>
-	<input 
-		type="radio" 
-		name="withOpenShapes" 
-		value="false" 
-		@{if(schemaOptions.withOpenShapes==false) { "checked" }}>
-		<label>@Messages("ClosedShapes")</label>
-    </td>
-    <td>@Messages("withOpenShapes.explain") <a href="https://www.w3.org/2001/sw/wiki/ShEx/CurrentDiscussion#Closed.2Fopen_shapes_and_exclusion_of_matched_triples">@Messages("discussion")</a></td>
-    </tr>
-    <tr>
     <td>@Messages("Any.Shape")</td>
     <td>
     <input 

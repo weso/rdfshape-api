@@ -11,7 +11,6 @@ import java.io.File
 case class SchemaOptions(
       cut: Int
     , withIncoming: Boolean
-    , withOpenShapes: Boolean
     , withAny: Boolean
     , opt_iri: Option[IRI]
     , showSchema: Boolean
@@ -19,5 +18,5 @@ case class SchemaOptions(
     
 object SchemaOptions {
   def default : SchemaOptions = 
-    SchemaOptions(10, false, true, false, None,true)
+    SchemaOptions(10, false, false, None,true)
 }

@@ -41,7 +41,6 @@ object Validator extends Controller {
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
-        , withOpenShapes: Boolean
         , withAny: Boolean
         , showSchema: Boolean
 		) : Future[Try[ValidationResult]]= {
@@ -56,7 +55,6 @@ object Validator extends Controller {
        val opts_schema = SchemaOptions(
             cut = cut
           , withIncoming = withIncoming
-          , withOpenShapes = withOpenShapes
           , withAny = withAny
           , opt_iri = iri
           , showSchema
@@ -90,11 +88,10 @@ object Validator extends Controller {
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
-        , withOpenShapes: Boolean
         , withAny: Boolean
         , showSchema: Boolean
         ) = Action.async {  
-      	validate_get_Future(str_rdf,syntaxRDF, showRDF, opt_schema, opt_iri, cut, withIncoming,withOpenShapes,withAny, showSchema).map(vrf => {
+      	validate_get_Future(str_rdf,syntaxRDF, showRDF, opt_schema, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
       	      vrf match {
       	        case Success(vr) => {
       	          val vf = ValidationForm.fromResult(vr)
@@ -259,13 +256,12 @@ object Validator extends Controller {
   def parseSchemaOptions(mf: MultipartFormData[TemporaryFile]): Try[SchemaOptions] = {
     for ( cut <- parseInt(mf,"cut",0,100)
         ; withIncoming <- parseBoolean(mf,"withIncoming")
-        ; withOpenShapes <- parseBoolean(mf,"withOpenShapes")
         ; withAny <- parseBoolean(mf,"withAny")
         ; opt_iri <- parseOptIRI(mf)
         ; showSchema <- parseBoolean(mf,"showSchema")
         )
    yield
-     SchemaOptions(cut,withIncoming,withOpenShapes,withAny,opt_iri,showSchema)
+     SchemaOptions(cut,withIncoming,withAny,opt_iri,showSchema)
   }
 
   def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {

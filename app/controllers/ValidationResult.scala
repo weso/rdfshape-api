@@ -95,7 +95,8 @@ object ValidationResult {
       , schemaOptions: SchemaOptions
       , pm: PrefixMap
       ): ValidationResult = {
-  val rs = Schema.matchSchema(iri,rdf,schema,schemaOptions.withIncoming,schemaOptions.withOpenShapes,schemaOptions.withAny)
+ val matcher = Matcher(schema,rdf,schemaOptions.withIncoming,schemaOptions.withAny)
+ val rs = matcher.matchIRI_AllLabels(iri)
   if (rs.isValid) {
    	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_rdf,rdfOptions, true, str_schema, schemaOptions,pm)
   } else {
@@ -113,7 +114,8 @@ object ValidationResult {
       , pm: PrefixMap
       ): ValidationResult = {
  val nodes = rdf.subjects.toList
- val rs = Schema.matchAll(rdf,schema,schemaOptions.withIncoming,schemaOptions.withOpenShapes,schemaOptions.withAny)
+ val matcher = Matcher(schema,rdf,schemaOptions.withIncoming,schemaOptions.withAny)
+ val rs = matcher.matchAllIRIs_AllLabels()
  if (rs.isValid) {
    ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_rdf,rdfOptions,true, str_schema,schemaOptions,pm)
  } else {
