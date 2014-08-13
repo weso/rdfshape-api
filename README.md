@@ -17,3 +17,11 @@ In order to deploy RDFShape locally, the steps are:
 * Go to directory where RDFShape source code is located and execute `activator run`
 
 * After some time downloading and compiling the source code it will start the application, which can be accessed at:  http://localhost:9000
+
+# Deplyed versions of RDFShape
+
+RDFShape is already deployed in two servers:
+
+* [Our local server](http://rdfshape.weso.es): In this server it works ok with large shapes, but the server can be down sometimes given that it is located in a University laboratory and there is no good maintenance.
+
+* [heroku](http://rdfshape.herokuapp.com): In this server, it works almost always although it can take some initial time to wakeup and there are some memory limitations in Heroku free accounts that does it crash for large shapes.
