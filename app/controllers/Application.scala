@@ -11,7 +11,7 @@ object Application extends Controller {
   }
 
   def about = Action {
-    Ok(views.html.about(Schema.id))
+    Ok(views.html.about("0.1"))
   }
   
 }
