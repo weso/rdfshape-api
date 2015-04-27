@@ -21,7 +21,7 @@
 </div>
 
 <input id="data" name="data" type="hidden" value="#@{vf.dataInput.input_type_Data}_data" /> 
-<input id="schema" name="schema" type="hidden" value="@{vf.schema_toggle}" />
+<input id="schema" name="schema" type="hidden" value="#schema" />
 <input id="input-schema" name="input-schema" type="hidden" value="#@{vf.input_type_Schema_str}_schema" />
 <input id="iriNoIri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
 	  
@@ -73,17 +73,6 @@
 
 @dataOptions(vf.dataOptions)
 
-<div class="tabs" id="tabs-schema">
-
-<ul>
-<li><a href="#no_schema">No schema</a></li>
-<li><a href="#schema">With schema</a></li>
-</ul>
-
-<div class="content" id="no_schema">
- No schema
-</div>        
-
 <div class="content" id="schema">  <!-- content with Schema -->
 
 <div class="tabs" id="tabs-input-schema">
@@ -127,9 +116,6 @@
 </div> <!-- input schema tabs -->
 
 </div> <!-- content with Schema -->
-
-</div> <!-- schema tabs --> 
-
 
 </form>	
 

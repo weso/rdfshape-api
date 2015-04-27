@@ -3,20 +3,19 @@
 # --- !Ups
 
 
-CREATE SEQUENCE course_id_seq start with 1000;
+CREATE SEQUENCE data_id_seq start with 1000;
 
-CREATE TABLE course (
-    id 				bigint NOT NULL DEFAULT nextval('course_id_seq'),
-    code 			varchar(20) not null,
+CREATE TABLE data (
+    id 				bigint NOT NULL DEFAULT nextval('data_id_seq'),
     name 			varchar(200) not null,
-    starts			varchar(100),
-    ends			varchar(100),
-    constraint 		pk_course primary key (id)
+    content			text not null,
+    format			varchar(200) not null,
+    constraint 		pk_data primary key (id)
 );
 
 
 # --- !Downs
 
-DROP TABLE if exists course;
+DROP TABLE if exists data;
 
-DROP SEQUENCE if exists course_id_seq;
+DROP SEQUENCE if exists data_id_seq;
