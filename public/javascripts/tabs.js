@@ -1,10 +1,10 @@
 $(function() {
-	var rdfs=["#byUri_rdf","#byFile_rdf","#byInput_rdf","#byEndpoint_rdf","#byDereference_rdf"];
+	var datas=["#byUri_data","#byFile_data","#byInput_data","#byEndpoint_data","#byDereference_data"];
 	
-	$( "#tabs-rdf" ).tabs({
-    active: rdfs.indexOf($("#rdf").attr('value')),
+	$( "#tabs-data" ).tabs({
+    active: datas.indexOf($("#data").attr('value')),
     activate: function( event, ui ) { 
-    	$("#rdf").attr('value',ui.newPanel.selector) 
+    	$("#data").attr('value',ui.newPanel.selector) 
     } 
     });
 

@@ -2,7 +2,7 @@ package controllers
 
 import es.weso.shex._
 import es.weso.monads._
-import es.weso.parser.PrefixMap
+import es.weso.rdf._
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI

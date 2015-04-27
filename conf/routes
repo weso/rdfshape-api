@@ -4,13 +4,19 @@
 
 # Home page
 GET     /                           controllers.Application.index
+GET     /validate/onlyData          controllers.Validator.onlyData
+GET     /validate/dataSchema        controllers.Validator.dataSchema
+GET     /validate/dataSchemaNode    controllers.Validator.dataSchemaNode
+GET		/converter/schema			controllers.Converter.schema
+GET		/converter/data				controllers.Converter.data
+
 GET		/about						controllers.Application.about
  
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 
-POST	/validator	controllers.Validator.validate_post
-GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
+POST	/api/validator	controllers.Validator.validate_post
+GET		/api/validator	controllers.Validator.validate_get(data: String, syntaxData: Option[String] ?= Some("Turtle"), showData:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
 
 GET     /webjars/*file                    controllers.WebJarAssets.at(file)

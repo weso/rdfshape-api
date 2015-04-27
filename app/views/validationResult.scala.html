@@ -9,8 +9,8 @@
 @Html(vr.toHTML())
 
 <details>
-<summary>RDF</summary>
-<pre class="prettyprint linenums lang-turtle">@vr.str_rdf</pre>
+<summary>Data</summary>
+<pre class="prettyprint linenums lang-turtle">@vr.str_data</pre>
 </details>
 @if(vr.withSchema) {
 	<details>
@@ -26,8 +26,8 @@
 </p>
 
 <details>
-<summary>RDF</summary>
-<pre class="prettyprint linenums lang-turtle">@vr.str_rdf</pre>
+<summary>Data</summary>
+<pre class="prettyprint linenums lang-turtle">@vr.str_data</pre>
 </details>
 @if(vr.withSchema) {
 	<details>
@@ -39,9 +39,9 @@
 }
 
 <a href="@routes.Validator.validate_get(
-	         vr.str_rdf,
-	         Some(vr.opts_rdf.syntax.toString),
-	         vr.opts_rdf.showRDF,
+	         vr.str_data,
+	         Some(vr.opts_data.syntax.toString),
+	         vr.opts_data.showData,
 	         vr.schema_param,
 	         vr.opt_iri_param,
 	         vr.opt_schema.cut,

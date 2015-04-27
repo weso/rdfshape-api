@@ -3,7 +3,7 @@
 
 @import play.api.i18n.Messages
 
-@main("Index") {
+@main("Only Data") {
 
 @validationResult(vr)
 
@@ -72,63 +72,6 @@
 </div> <!-- data-tabs -->   
 
 @dataOptions(vf.dataOptions)
-
-<div class="tabs" id="tabs-schema">
-
-<ul>
-<li><a href="#no_schema">No schema</a></li>
-<li><a href="#schema">With schema</a></li>
-</ul>
-
-<div class="content" id="no_schema">
- No schema
-</div>        
-
-<div class="content" id="schema">  <!-- content with Schema -->
-
-<div class="tabs" id="tabs-input-schema">
-
-<ul>
-<li><a href="#byUri_schema">@Messages("ByURI")</a></li>
-<li><a href="#byFile_schema">@Messages("ByFile")</a></li>
-<li><a href="#byInput_schema">@Messages("ByInput")</a></li>
-</ul>
-
-<div id="byUri_schema">
-
-  <input type="text" 
-		   name="schema_uri" 
-		   id="schema_uri" 
-		   size="45" 
-		   placeholder="http://..." ></input>
-
-</div> <!-- byUri_schema -->
-
-<div class="content" 
-	 id="byFile_schema">
-	<input type="file" 
-		   id="schema_file" 
-		   name="schema_file" 
-		   size="30" ></input>
-
-</div>	
-
-<div class="content" 
-	 id="byInput_schema">
-	<textarea class="input_src"
-		id="schema_textarea" 
-		name="schema_textarea" 
-		rows="12" cols="80">@vr.str_schema</textarea>
-
-</div> <!-- content -->
-
-@schemaOptions(vf.schemaOptions)
-
-</div> <!-- input schema tabs -->
-
-</div> <!-- content with Schema -->
-
-</div> <!-- schema tabs --> 
 
 
 </form>	

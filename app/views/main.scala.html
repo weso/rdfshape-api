@@ -27,6 +27,16 @@
 <body onload="prettyPrint()">
 <header>
 <h1 id="title"><a href="@routes.Application.index"><i>RDFShape</i>: RDF Validator using Shape Expressions</a></h1>
+
+Valiation options:
+<ul>
+<li><a href="@routes.Validator.onlyData">RDF Data alone</a></li>
+<li><a href="@routes.Validator.dataSchema">Data + Schema</a></li>
+<li><a href="@routes.Validator.dataSchemaNode">RDF + Schema + Node</li>
+<li><a href="@routes.Converter.data">RDF Data conversions</li>
+<li><a href="@routes.Converter.schema">Shape Expression conversions</li>
+</ul>
+
 <p class="about"><a href="@routes.Application.about()">About</a></p>
 </header>
 @content

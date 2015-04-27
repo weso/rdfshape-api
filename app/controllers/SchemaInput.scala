@@ -1,7 +1,7 @@
 package controllers
 
 import es.weso.shex._
-import es.weso.parser.PrefixMap
+import es.weso.rdf._
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI
 import java.io.File

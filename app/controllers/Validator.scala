@@ -23,20 +23,31 @@ import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
 import es.weso.shex.Typing
 import es.weso.monads.Passed
 import es.weso.utils._
+import es.weso.utils.TryUtils._
 import es.weso.utils.RDFUtils._
-import es.weso.parser.PrefixMap
 import java.net.URL
 import java.io.File
 import es.weso.utils.IOUtils._
-import es.weso.parser.PrefixMap
 
 
 object Validator extends Controller {
 
+  def onlyData = Action {
+    Ok(views.html.onlyData())
+  }
+
+  def dataSchema = Action {
+    Ok(views.html.dataSchema())
+  }
+
+  def dataSchemaNode = Action {
+    Ok(views.html.dataSchemaNode())
+  }
+
   def validate_get_Future(
-          str_rdf: String
-        , syntaxRDF: Option[String]
-        , showRDF: Boolean
+          str_data: String
+        , syntaxData: Option[String]
+        , showData: Boolean
         , opt_schema: Option[String]
         , opt_iri: Option[String]
         , cut: Int
@@ -47,9 +58,9 @@ object Validator extends Controller {
        val withSchema = opt_schema.isDefined
        val iri = opt_iri.map(str => IRI(str))
        val str_schema = opt_schema.getOrElse("")
-       val opts_rdf = RDFOptions(
-             syntax = RDFSyntax(syntaxRDF)
-           , showRDF = showRDF 
+       val opts_data = DataOptions(
+             syntax = RDFSyntax(syntaxData)
+           , showData = showData 
            )
        
        val opts_schema = SchemaOptions(
@@ -59,17 +70,17 @@ object Validator extends Controller {
           , opt_iri = iri
           , showSchema
           )
-      RDFParse(str_rdf,opts_rdf.syntax) match { 
-        case Success((rdf,_)) => 
-          scala.concurrent.Future(Success(ValidationResult.validate(rdf,str_rdf,opts_rdf,withSchema,str_schema,opts_schema)))
+      RDFParse(str_data,opts_data.syntax) match { 
+        case Success((data,_)) => 
+          scala.concurrent.Future(Success(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,opts_schema)))
         case Failure(e) => 
           scala.concurrent.Future(Success(
                 ValidationResult(Some(false), 
-                    "Error parsing RDF with syntax " + opts_rdf.syntax + ": " + e.getMessage,
+                    "Error parsing Data with syntax " + opts_data.syntax + ": " + e.getMessage,
                     Stream(), 
                     List(), 
-                    str_rdf, 
-                    opts_rdf, 
+                    str_data, 
+                    opts_data, 
                     withSchema, 
                     str_schema, 
                     opts_schema, 
@@ -81,9 +92,9 @@ object Validator extends Controller {
   
   // TODO: Simplify this ugly code...long list of arguments
   def validate_get(
-          str_rdf: String
-        , syntaxRDF: Option[String]
-        , showRDF: Boolean
+          str_data: String
+        , syntaxData: Option[String]
+        , showData: Boolean
         , opt_schema: Option[String]
         , opt_iri: Option[String]
         , cut: Int
@@ -91,7 +102,7 @@ object Validator extends Controller {
         , withAny: Boolean
         , showSchema: Boolean
         ) = Action.async {  
-      	validate_get_Future(str_rdf,syntaxRDF, showRDF, opt_schema, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
+      	validate_get_Future(str_data,syntaxData, showData, opt_schema, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
       	      vrf match {
       	        case Success(vr) => {
       	          val vf = ValidationForm.fromResult(vr)
@@ -106,20 +117,20 @@ object Validator extends Controller {
     def validate_post = Action.async { request => {
       
      val pair = for ( vf <- getValidationForm(request)
-                    ; str_rdf <- vf.rdfInput.getRDFStr
-                    ) yield (vf,str_rdf)
+                    ; str_data <- vf.dataInput.getDataStr
+                    ) yield (vf,str_data)
       
      scala.concurrent.Future {
         pair match {
-         case Success((vf,str_rdf)) => { 
+         case Success((vf,str_data)) => { 
         	  val tryValidate =
-        	     for ( rdf <- vf.rdfInput.getRDF(vf.rdfOptions.syntax)
+        	     for ( data <- vf.dataInput.getData(vf.dataOptions.syntax)
         	         ; str_schema <- vf.schemaInput.getSchemaStr
         	         )  
                  yield {
-        	       ValidationResult.validate(rdf,str_rdf,vf.rdfOptions, vf.withSchema, str_schema, vf.schemaOptions)
+        	       ValidationResult.validate(data,str_data,vf.dataOptions, vf.withSchema, str_schema, vf.schemaOptions)
         	     }
-              val vr = recover(tryValidate,recoverValidationResult(str_rdf,vf))
+              val vr = recover(tryValidate,recoverValidationResult(str_data,vf))
               Ok(views.html.index(vr,vf))
              }
        case Failure(e) => BadRequest(e.getMessage) 
@@ -128,26 +139,19 @@ object Validator extends Controller {
     } 
   }
     
-  def recoverValidationResult(str_rdf: String, vf: ValidationForm)(e: Throwable): ValidationResult = {
+  def recoverValidationResult(str_data: String, vf: ValidationForm)(e: Throwable): ValidationResult = {
     val schema_str: String = Try(vf.schemaInput.getSchemaStr.get).getOrElse("")
     ValidationResult(Some(false),
         e.getMessage(),Stream(), List(), 
-        str_rdf, vf.rdfOptions, 
+        str_data, vf.dataOptions, 
         vf.withSchema, schema_str, vf.schemaOptions, 
         PrefixMap.empty) 
   }
   
- def recover[T](t : Try[T], recoverFunction: Throwable => T): T = {
-    t match {
-      case Success(_) => t.get
-      case Failure(e) => recoverFunction(e)
-    }
-  }
-    
   def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
     for ( mf <- getMultipartForm(request)
-        ; inputRDF <- parseInputRDF(mf)
-        ; opt_rdf <- parseOptRDF(mf)
+        ; inputData <- parseInputData(mf)
+        ; opt_data <- parseOptData(mf)
         ; opt_schema <- parseOptSchema(mf)
         )
     yield {
@@ -161,7 +165,7 @@ object Validator extends Controller {
     					opt_schema.get._2 
     				  else 
     				    SchemaOptions.default
-      ValidationForm(inputRDF, opt_rdf, has_schema, input_schema, opts_schema)
+      ValidationForm(inputData, opt_data, has_schema, input_schema, opts_schema)
     }
   }
   
@@ -207,22 +211,22 @@ object Validator extends Controller {
     for (value <- parseKey(mf,"iri")) yield IRI(value)
   }
 
-  def parseInputRDF(mf: MultipartFormData[TemporaryFile]): Try[RDFInput] = {
-   for ( input_type_rdf <- parseInputType(mf,"rdf")
-       ; rdf_uri <- parseKey(mf,"rdf_uri")
-       ; rdf_textarea <- parseKey(mf,"rdf_textarea")
-       ; rdf_file <- parseFile(mf,"rdf_file")
-       ; rdf_endpoint <- parseKey(mf,"rdf_endpoint")
+  def parseInputData(mf: MultipartFormData[TemporaryFile]): Try[DataInput] = {
+   for ( input_type_data <- parseInputType(mf,"data")
+       ; data_uri <- parseKey(mf,"data_uri")
+       ; data_textarea <- parseKey(mf,"data_textarea")
+       ; data_file <- parseFile(mf,"data_file")
+       ; data_endpoint <- parseKey(mf,"data_endpoint")
        ) yield {
-     RDFInput(input_type_rdf, rdf_uri, rdf_file, rdf_textarea, rdf_endpoint)
+     DataInput(input_type_data, data_uri, data_file, data_textarea, data_endpoint)
    }
   }
   
-  def parseOptRDF(mf: MultipartFormData[TemporaryFile]): Try[RDFOptions] = {
-    for ( showRDF <- parseBoolean(mf,"showRDF")
+  def parseOptData(mf: MultipartFormData[TemporaryFile]): Try[DataOptions] = {
+    for ( showData <- parseBoolean(mf,"showData")
         ; syntax <- parseKey(mf,"syntax")
         ) yield 
-        RDFOptions(syntax = RDFSyntax(syntax), showRDF = showRDF)
+        DataOptions(syntax = RDFSyntax(syntax), showData = showData)
    }
 
   def parseOptSchema(mf: MultipartFormData[TemporaryFile]): Try[Option[(SchemaInput,SchemaOptions)]] = {

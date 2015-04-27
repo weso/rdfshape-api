@@ -2,7 +2,7 @@ package controllers
 
 import es.weso.shex._
 import es.weso.monads._
-import es.weso.parser.PrefixMap
+import es.weso.rdf._
 import es.weso.utils._
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
@@ -11,17 +11,17 @@ import java.io.File
 import play.Logger
 
 
-case class RDFOptions(
+case class DataOptions(
    syntax: RDFSyntax
- , showRDF: Boolean
+ , showData: Boolean
  ) 
     
-object RDFOptions {
+object DataOptions {
   
   def availableSyntaxes : List[RDFSyntax] = {
     List(TURTLE,NTriples,RDFXML,JSONLD)
   }
 
-  def default : RDFOptions =
-    RDFOptions(TURTLE, true)
+  def default : DataOptions =
+    DataOptions(TURTLE, true)
 }

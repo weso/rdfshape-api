@@ -2,7 +2,7 @@ package controllers
 
 import es.weso.shex._
 import es.weso.monads._
-import es.weso.parser.PrefixMap
+import es.weso.rdf._
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI
@@ -12,8 +12,8 @@ import scala.util.Try
 import scala.util.Success
 
 case class ValidationForm(
-      rdfInput: RDFInput
-    , rdfOptions: RDFOptions
+      dataInput: DataInput
+    , dataOptions: DataOptions
     , withSchema : Boolean
     , schemaInput: SchemaInput
     , schemaOptions: SchemaOptions
@@ -63,8 +63,8 @@ case class ValidationForm(
 object ValidationForm {
   def apply(): ValidationForm = 
     ValidationForm(
-          rdfInput = RDFInput()
-        , rdfOptions = RDFOptions.default
+          dataInput = DataInput()
+        , dataOptions = DataOptions.default
         , withSchema = false
         , schemaInput = SchemaInput()
         , schemaOptions = SchemaOptions.default
@@ -72,8 +72,8 @@ object ValidationForm {
         
   def fromResult(vr:ValidationResult): ValidationForm = {
     ValidationForm(
-      rdfInput = RDFInput(vr.str_rdf)
-    , rdfOptions = vr.opts_rdf
+      dataInput = DataInput(vr.str_data)
+    , dataOptions = vr.opts_data
     , withSchema = vr.withSchema
     , schemaInput = SchemaInput(vr.str_schema)
     , schemaOptions = vr.opt_schema 
