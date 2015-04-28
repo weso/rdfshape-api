@@ -33,7 +33,7 @@ import es.weso.utils.IOUtils._
 object Validator extends Controller {
 
   def onlyData = Action {
-    Ok(views.html.onlyData())
+    Ok(views.html.data())
   }
 
   def dataSchema = Action {

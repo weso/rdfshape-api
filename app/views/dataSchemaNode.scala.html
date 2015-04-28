@@ -7,7 +7,7 @@
 
 @validationResult(vr)
 
-<h1>@Messages("Name")</h1>
+<h1>@Messages("DataSchemaNode")</h1>
 
 
 <form method="post" 
@@ -23,7 +23,7 @@
 <input id="data" name="data" type="hidden" value="#@{vf.dataInput.input_type_Data}_data" /> 
 <input id="schema" name="schema" type="hidden" value="#schema" />
 <input id="input-schema" name="input-schema" type="hidden" value="#@{vf.input_type_Schema_str}_schema" />
-<input id="iriNoIri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
+<input id="iriNoIri" name="withIRI" type="hidden" value="#iri" />
 	  
 <div class="tabs" id="tabs-data">
 
@@ -111,20 +111,13 @@
 
 </div> <!-- content -->
 
-@schemaOptions(vf.schemaOptions)
+@schemaOptions(vr.opt_schema)
+
+@iriNoIri(vr.opt_iri_param)
 
 </div> <!-- input schema tabs -->
 
 </div> <!-- content with Schema -->
-
-<div class="content" id="iri">
-  <input type="text" 
-	     name="iri" 
-		 size="45" 
-		 value='@vr.opt_iri_param.getOrElse("")'
-		 placeholder="http://..." />
- </div> <!-- content with IRI -->
-
 
 </form>	
 

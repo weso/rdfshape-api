@@ -26,19 +26,18 @@
 </head>
 <body onload="prettyPrint()">
 <header>
-<h1 id="title"><a href="@routes.Application.index"><i>RDFShape</i>: RDF Validator using Shape Expressions</a></h1>
+<h1 id="title"><a href="@routes.Application.index"><abbr title="RDF Validator based on Shape Expressions">RDFShape</abbr></a></h1>
 
-Valiation options:
-<ul>
-<li><a href="@routes.Validator.onlyData">RDF Data alone</a></li>
-<li><a href="@routes.Validator.dataSchema">Data + Schema</a></li>
-<li><a href="@routes.Validator.dataSchemaNode">RDF + Schema + Node</li>
-<li><a href="@routes.Converter.data">RDF Data conversions</li>
-<li><a href="@routes.Converter.schema">Shape Expression conversions</li>
-</ul>
-
-<p class="about"><a href="@routes.Application.about()">About</a></p>
+<nav>
+<a href="@routes.Validator.onlyData">Data</a>
+<a href="@routes.Validator.dataSchema">Data + Schema</a>
+<a href="@routes.Validator.dataSchemaNode">RDF + Schema + Node</a>
+<a href="@routes.Converter.data">Data Conversions</a>
+<a href="@routes.Converter.schema">Schema conversions</a>
+<a href="@routes.Application.about()">About</a>
+</nav>
 </header>
+
 @content
 <footer>
 <div>Developed by: <a href="http://www.weso.es">WESO Research Group</a></div>

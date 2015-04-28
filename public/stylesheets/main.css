@@ -15,9 +15,66 @@ header {
 	font-family: "Myriad Web", "Myriad Pro", "Gill Sans", Helvetica, Arial, Sans-Serif;
 	background-color: #365D95;
 	color: #fdfdfd;
-	padding: 0.4em;
+    height: 8em;
+    text-align: justify;
+    padding: 2em 5%;
 }
 
+
+header::after {
+    content: '';
+    display: inline-block;
+    width: 100%;
+}
+
+header > div,
+header > div::before,
+header nav,
+header > div h1 {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: left;
+}
+
+header > div {
+    height: 100%;
+}
+
+header > div::before {
+    content: '';
+    height: 100%;
+}
+
+header > div h1 {
+    font-size: 3em;
+    font-style: italic;
+}
+
+header nav a {
+    padding: 0 0.6em;
+    white-space: nowrap;
+}
+
+header nav a:last-child {
+    padding-right: 0;
+}
+
+@media screen and (max-width: 720px){
+    
+    header {
+        height: auto;
+    }
+    
+    header > div,
+    header > div h1,
+    header nav {
+        height: auto;
+        width: auto;
+        display: block;
+        text-align: center;
+    }
+    
+}
 header h1#title { 
 	font-size: 2em;
 }
