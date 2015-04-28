@@ -25,6 +25,10 @@ case class SchemaInput(
      case _ => Failure(throw new Exception("get_SchemaString: Unsupported input type"))
    }
   }
+  
+  def extract_str() : String = {
+    this.getSchemaStr.getOrElse("")
+  }
 }
     
 object SchemaInput {

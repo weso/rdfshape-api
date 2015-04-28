@@ -28,3 +28,5 @@ libraryDependencies ++= Seq(
 resolvers += "Bintray" at "http://dl.bintray.com/weso/weso-releases"
 
 herokuAppName in Compile := "rdfshape"
+
+unmanagedSourceDirectories in Compile <+= twirlCompileTemplates.target

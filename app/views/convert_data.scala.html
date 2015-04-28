@@ -3,27 +3,23 @@
 
 @import play.api.i18n.Messages
 
-@main("Only Data") {
+@main(Messages("Convert.Data"))(vf) {
 
 @validationResult(vr)
 
-<h1>@Messages("Data")</h1>
-
+<h1>@Messages("Convert.Data")</h1>
 
 <form method="post" 
 	  enctype="multipart/form-data" 
-	  action="@routes.Validator.validate_post">
+	  action="@routes.Converter.convert_post">
 
 <div class="submit">
-<input title="Submit for validation" 
+<input title="Submit for conversion" 
 	   type="submit" 
 	   value='@Messages("Submit")' />
 </div>
 
 <input id="data" name="data" type="hidden" value="#@{vf.dataInput.input_type_Data}_data" /> 
-<input id="schema" name="schema" type="hidden" value="@{vf.schema_toggle}" />
-<input id="input-schema" name="input-schema" type="hidden" value="#@{vf.input_type_Schema_str}_schema" />
-<input id="iriNoIri" name="withIRI" type="hidden" value="#@{vf.opt_iri_str}" />
 	  
 <div class="tabs" id="tabs-data">
 
@@ -31,7 +27,6 @@
  <li><a href="#byUri_data">@Messages("ByURI")</a></li>
  <li><a href="#byFile_data">@Messages("ByFile")</a></li>
  <li><a href="#byInput_data">@Messages("ByInput")</a></li>
- <li><a href="#byEndpoint_data">@Messages("ByEndpoint")</a></li>
  <li><a href="#byDereference_data">@Messages("ByDereference")</a></li>
 </ul>
 
@@ -41,29 +36,22 @@
 		   id="data_uri" 
 		   size="45" 
 		   placeholder="http://..." />
-  </div> <!-- content -->
+</div> <!-- content -->
 
  <div class="content" id="byFile_data">
 	<input type="file" 
 		   id="data_file" 
 		   name="data_file" 
 		   size="30" >
- </div> <!-- content -->
+</div> <!-- content -->
 
- <div class="content" id="byInput_data">	
+<div class="content" id="byInput_data">	
    <legend>@Messages("Input")</legend>	
    <textarea class="input_src"
 		id="data_textarea" 
 		name="data_textarea" 
 		rows="12" cols="80">@vr.str_data</textarea>
-  </div> <!-- content -->
-
- <div class="content" id="byEndpoint_data">	
-  <input type="url" 
-   	     name="data_endpoint" 
-		 id="data_endpoint" 
-		 size="45" />
- </div> <!-- content -->
+</div> <!-- content -->
 
  <div class="content" id="byDereference_data">
  

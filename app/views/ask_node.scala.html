@@ -1,0 +1,13 @@
+@(opt_node: Option[String])
+
+<div class="content" id="iri">
+<h1>Node</h1>
+<input type="text" 
+	     name="iri" 
+		 size="45" 
+		 value='@opt_node.getOrElse("")'
+		 placeholder="http://..." />
+
+</div> 
+
+

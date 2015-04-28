@@ -3,11 +3,12 @@
 
 @import play.api.i18n.Messages
 
-@main("Index")(vf) {
+@main("Validate RDF Data with Schema")(vf) {
 
 @validationResult(vr)
 
-<h1>@Messages("Name")</h1>
+<h1>@Messages("DataSchema")</h1>
+
 
 <form method="post" 
 	  enctype="multipart/form-data" 
@@ -21,8 +22,7 @@
 	  
 @tabs_data(vf)
 
-@ask_node(vf.extract_node)
-
 </form>	
+
 
 }

@@ -1,0 +1,40 @@
+@(vf: ValidationForm)
+
+@import play.api.i18n.Messages
+
+<h1>RDF Data</h1>
+
+<div class="tabs" id="tabs-data">
+
+<ul>
+ <li><a href="#byUri_data">@Messages("ByURI")</a></li>
+ <li><a href="#byFile_data">@Messages("ByFile")</a></li>
+ <li><a href="#byInput_data">@Messages("ByInput")</a></li>
+</ul>
+
+<div class="content" id="byUri_data">
+	  <input type="url" 
+           name="data_uri" 
+		   id="data_uri" 
+		   size="45" 
+		   placeholder="http://..." />
+  </div> <!-- content -->
+
+ <div class="content" id="byFile_data">
+	<input type="file" 
+		   id="data_file" 
+		   name="data_file" 
+		   size="30" >
+ </div> <!-- content -->
+
+ <div class="content" id="byInput_data">	
+   <legend>@Messages("Input")</legend>	
+   <textarea class="input_src"
+		id="data_textarea" 
+		name="data_textarea" 
+		rows="12" cols="80">@vf.dataInput.extract_str</textarea>
+  </div> <!-- content -->
+
+</div> <!-- data-tabs -->   
+
+@dataOptions(vf.dataOptions)

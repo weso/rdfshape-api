@@ -32,16 +32,22 @@ import es.weso.utils.IOUtils._
 
 object Validator extends Controller {
 
-  def onlyData = Action {
-    Ok(views.html.data())
+  def onlyData(data: String, dataFormat: String) = Action {
+    val vr = ValidationResult.empty
+    val vf = ValidationForm(DataInput(data),DataOptions.default,false,SchemaInput(),SchemaOptions.default)
+    Ok(views.html.validate_data(vr,vf))
   }
 
-  def dataSchema = Action {
-    Ok(views.html.dataSchema())
+  def dataSchema(data: String, dataFormat: String, schema: String, schemaFormat: String) = Action {
+    val vr = ValidationResult.empty
+    val vf = ValidationForm(DataInput(data),DataOptions.default,true,SchemaInput(schema),SchemaOptions.default)
+    Ok(views.html.validate_dataSchema(vr,vf))
   }
 
-  def dataSchemaNode = Action {
-    Ok(views.html.dataSchemaNode())
+  def dataSchemaNode(data: String, dataFormat: String, schema: String, schemaFormat: String, node: String) = Action {
+    val vr = ValidationResult.empty
+    val vf = ValidationForm(DataInput(data),DataOptions.default,true,SchemaInput(schema),SchemaOptions.defaultWithIri(node))
+    Ok(views.html.validate_dataSchemaNode(vr,vf))
   }
 
   def validate_get_Future(
@@ -64,7 +70,8 @@ object Validator extends Controller {
            )
        
        val opts_schema = SchemaOptions(
-            cut = cut
+            "SHEXC"
+          , cut = cut
           , withIncoming = withIncoming
           , withAny = withAny
           , opt_iri = iri
@@ -114,7 +121,7 @@ object Validator extends Controller {
   }
 
     
-    def validate_post = Action.async { request => {
+  def validate_post = Action.async { request => {
       
      val pair = for ( vf <- getValidationForm(request)
                     ; str_data <- vf.dataInput.getDataStr
@@ -216,9 +223,9 @@ object Validator extends Controller {
        ; data_uri <- parseKey(mf,"data_uri")
        ; data_textarea <- parseKey(mf,"data_textarea")
        ; data_file <- parseFile(mf,"data_file")
-       ; data_endpoint <- parseKey(mf,"data_endpoint")
+//       ; data_endpoint <- parseKey(mf,"data_endpoint")
        ) yield {
-     DataInput(input_type_data, data_uri, data_file, data_textarea, data_endpoint)
+     DataInput(input_type_data, data_uri, data_file, data_textarea)
    }
   }
   
@@ -257,6 +264,7 @@ object Validator extends Controller {
      SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea)
   }
 
+  // TODO: Parse Schema format
   def parseSchemaOptions(mf: MultipartFormData[TemporaryFile]): Try[SchemaOptions] = {
     for ( cut <- parseInt(mf,"cut",0,100)
         ; withIncoming <- parseBoolean(mf,"withIncoming")
@@ -265,7 +273,7 @@ object Validator extends Controller {
         ; showSchema <- parseBoolean(mf,"showSchema")
         )
    yield
-     SchemaOptions(cut,withIncoming,withAny,opt_iri,showSchema)
+     SchemaOptions("SHEXC",cut,withIncoming,withAny,opt_iri,showSchema)
   }
 
   def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {

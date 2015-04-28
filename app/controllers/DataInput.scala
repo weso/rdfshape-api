@@ -21,7 +21,7 @@ case class DataInput(
     , data_uri : String
     , data_file: Option[File]
     , data_textarea: String
-    , data_endpoint: String
+    , data_endpoint: String = ""
     ) {
   
   def getDataStr(): Try[String] = 
@@ -29,7 +29,7 @@ case class DataInput(
      case ByUri => getURI(data_uri)
      case ByFile => getFileContents(data_file)
      case ByInput => Success(data_textarea)
-     case ByEndpoint => Success("<<Endpoint: " + data_endpoint + ">>") 
+//     case ByEndpoint => Success("<<Endpoint: " + data_endpoint + ">>") 
      case ByDereference => Success("<<Web Dereference>>")
      case _ => throw new Exception("get_DataStr: Unknown input type")
   }
@@ -51,6 +51,10 @@ case class DataInput(
      case ByDereference => Success(RDFFromWeb())
      case _ => Failure(throw new Exception("getData: Unknown input type"))
   }
+  }
+  
+  def extract_str : String = {
+    this.getDataStr().getOrElse("")
   }
 }
     

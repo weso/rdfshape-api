@@ -11,7 +11,7 @@ object Application extends Controller {
   }
 
   def about = Action {
-    Ok(views.html.about("0.1"))
+    Ok(views.html.about("0.1")(ValidationForm()))
   }
   
 }

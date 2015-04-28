@@ -19,7 +19,7 @@ case class DataOptions(
 object DataOptions {
   
   def availableSyntaxes : List[RDFSyntax] = {
-    List(TURTLE,NTriples,RDFXML,JSONLD)
+    List(TURTLE) // ,NTriples,RDFXML,JSONLD)
   }
 
   def default : DataOptions =

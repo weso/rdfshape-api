@@ -28,6 +28,10 @@ case class ValidationForm(
     }
  }
  
+ def extract_node : Option[String] = {
+   schemaOptions.opt_iri.map(_.str)
+ }
+ 
  // this method is used in index.scala.html to show if schema is toggled or no
  // the values must match the values in tabs.js
  def schema_toggle = {
@@ -45,6 +49,10 @@ case class ValidationForm(
       }     
    }
    else Success(None)
+ }
+
+ def extract_str : String = {
+   (this.getSchemaStr().map(opt => opt.getOrElse(""))).getOrElse("")
  }
 
  def getSchemaOptions(): Try[Option[SchemaOptions]] = {

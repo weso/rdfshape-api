@@ -4,15 +4,18 @@
 
 <fieldset>
 <legend>@Messages("Data.options")</legend>
-<label for="showData">@Messages("showData")</label>
+<label for="showData" title="@{Messages("ShowData.explanation")}">@Messages("showData")</label>
+<br/>
     <input 
     	type="radio" name="showData" value="true"
     	@{if(dataOptions.showData==true) { "checked" }}>
-    	<label>true</label><br/>
+    	<label>true</label></input>
+    <br/>
 	<input 
 		type="radio" name="showData" value="false" 
 		@{if(dataOptions.showData==false) { "checked" }}>
 		<label>false</label>
+	</input>
 <br/>
 <label for="Syntax">@Messages("syntax")</label>
     <select name="syntax">

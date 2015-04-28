@@ -1,4 +1,4 @@
-@(title: String)(content: Html)
+@(title: String)(vf:ValidationForm)(content: Html)
 
 <!DOCTYPE html>
 
@@ -26,27 +26,48 @@
 </head>
 <body onload="prettyPrint()">
 <header>
-<h1 id="title"><a href="@routes.Application.index"><abbr title="RDF Validator based on Shape Expressions">RDFShape</abbr></a></h1>
+<h1 id="title">
+ <a href="@routes.Application.index"
+    title="RDF Validator based on Shape Expressions">RDFShape</a>
+</h1>
 
 <nav>
-<a href="@routes.Validator.onlyData">Data</a>
-<a href="@routes.Validator.dataSchema">Data + Schema</a>
-<a href="@routes.Validator.dataSchemaNode">RDF + Schema + Node</a>
-<a href="@routes.Converter.data">Data Conversions</a>
-<a href="@routes.Converter.schema">Schema conversions</a>
-<a href="@routes.Application.about()">About</a>
+<a href="@routes.Validator.onlyData(
+            vf.extract_str,
+            vf.dataOptions.syntax.toString)" 
+            title="Validate Well formed RDF Data (no Schema)">Data</a>
+<a href="@routes.Validator.dataSchema(vf.extract_str,
+            vf.dataOptions.syntax.toString,
+            vf.schemaInput.extract_str,
+            vf.schemaOptions.format)" 
+            title="Validate RDF Data against a Schema">Data + Schema</a>
+<a href="@routes.Validator.dataSchemaNode(vf.extract_str,
+            vf.dataOptions.syntax.toString,
+            vf.schemaInput.extract_str,
+            vf.schemaOptions.format,
+            vf.schemaOptions.extract_iri_str)" 
+            title="Validate RDf Data against a Schema selecting a Node">RDF + Schema + Node</a>
+<a href="@routes.Converter.data" 
+            title="Conversions betewen different RDF Data syntax">Data Conversions</a>
+<a href="@routes.Converter.schema" 
+            title="Conversions betewen different Shape Expression syntax">Schema conversions</a>
+<a href="@routes.Application.about()" 
+            title="About this project">About</a>
 </nav>
 </header>
 
 @content
 <footer>
-<div>Developed by: <a href="http://www.weso.es">WESO Research Group</a></div>
+<div>Developed by: <a href="http://www.weso.es" title="Web Semantics Oviedo">WESO Research Group</a></div>
 </footer>
 <script src="@routes.Assets.at("javascripts/tabs.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/lang-turtle.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/lang-shex.js")" type="text/javascript"></script>
 <script>
-
+ 
+ /* For JQuery-UI tooltip */
+ $(function() { $( document ).tooltip(); });
+  
 /* Uncomment the following to try to colorize textarea's using codemirror 
   var rdf_editor = CodeMirror.fromTextArea(document.getElementById("rdf_textarea"), {
 	   mode: "text/turtle",
