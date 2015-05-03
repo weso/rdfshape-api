@@ -3,17 +3,15 @@ package controllers
 import es.weso.shex._
 import es.weso.rdf.PrefixMap
 import xml.Utility.escape
-import es.weso.rdfgraph.nodes.RDFNode
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdfgraph.nodes._
 import java.io.File
 import util._
 import es.weso.utils.RDFUtils._
 import es.weso.utils.IOUtils._
-import es.weso.rdf.RDF
+import es.weso.rdf._
 import views.html.helper.input
-import es.weso.rdf.reader.RDFFromWeb
-import es.weso.rdf.reader.Endpoint
-import es.weso.utils.RDFSyntax
+import es.weso.rdf.jena._
+import es.weso.utils._
 
 
 case class DataInput(
@@ -34,12 +32,12 @@ case class DataInput(
      case _ => throw new Exception("get_DataStr: Unknown input type")
   }
   
-  def getData(syntax: RDFSyntax) : Try[RDF] = {
+  def getData(format: String) : Try[RDFReader] = {
    input_type_Data match {
      case ByUri | ByFile | ByInput => 
        			 for ( str <- getDataStr
-                 ; pair <- RDFParse(str,syntax)
-                 ) yield pair._1
+                 ; rdf <- RDFParse(str,format)
+                 ) yield rdf
      case ByEndpoint => 
        if (data_endpoint == "") {
          Failure(throw new Exception("Endpoint URI must be non-empty"))

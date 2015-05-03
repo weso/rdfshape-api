@@ -36,7 +36,8 @@ object SchemaInput {
     SchemaInput(ByInput, "", None, "")
     
   def apply(str: String): SchemaInput = 
-    SchemaInput( input_type_Schema = ByInput
+    SchemaInput( 
+               input_type_Schema = ByInput
         	   , schema_uri = ""
         	   , schema_file = None
         	   , schema_textarea = str

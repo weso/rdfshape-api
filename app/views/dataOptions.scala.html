@@ -17,11 +17,11 @@
 		<label>false</label>
 	</input>
 <br/>
-<label for="Syntax">@Messages("syntax")</label>
-    <select name="syntax">
-      @for(s <- DataOptions.availableSyntaxes) {
+<label for="data_format">@Messages("Data.format")</label>
+    <select name="data_format">
+      @for(s <- DataOptions.availableFormats) {
       	<option value="@s"
-      	 @{if(dataOptions.syntax==s) { "checked" }}>@s</option>
+      	 @{if(dataOptions.format==s) { "checked" }}>@s</option>
       }
     </select>
  

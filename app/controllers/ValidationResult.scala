@@ -87,7 +87,7 @@ object ValidationResult {
   
   def validateIRI(
         iri : IRI
-      , data: RDF
+      , data: RDFReader
       , str_data: String
       , dataOptions: DataOptions
       , schema: Schema
@@ -105,7 +105,7 @@ object ValidationResult {
  }
 
   def validateAny(
-        data: RDF
+        data: RDFReader
       , str_data: String
       , dataOptions: DataOptions
       , schema: Schema
@@ -125,7 +125,7 @@ object ValidationResult {
 
   // TODO: Refactor the following code...
  def validate(
-        rdf: RDF
+        rdf: RDFReader
       , str_data: String
       , dataOptions: DataOptions
       , withSchema : Boolean

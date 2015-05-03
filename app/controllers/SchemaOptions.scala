@@ -28,4 +28,6 @@ object SchemaOptions {
   def defaultWithIri(iri: String): SchemaOptions = 
     SchemaOptions("SHEXC",10, false, false, Some(IRI(iri)),true)
     
+  def defaultWithFormat(format: String): SchemaOptions = 
+    SchemaOptions(format,10, false, false, None, true)
 }

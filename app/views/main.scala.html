@@ -1,7 +1,6 @@
 @(title: String)(vf:ValidationForm)(content: Html)
 
 <!DOCTYPE html>
-
 <html>
 <head>
 <title>@title</title>
@@ -34,23 +33,26 @@
 <nav>
 <a href="@routes.Validator.onlyData(
             vf.extract_str,
-            vf.dataOptions.syntax.toString)" 
-            title="Validate Well formed RDF Data (no Schema)">Data</a>
+            vf.dataOptions.format)" 
+            title="Check RDF Data syntax (no Schema)">Data</a>
 <a href="@routes.Validator.dataSchema(vf.extract_str,
-            vf.dataOptions.syntax.toString,
+            vf.dataOptions.format,
             vf.schemaInput.extract_str,
             vf.schemaOptions.format)" 
-            title="Validate RDF Data against a Schema">Data + Schema</a>
+            title="Validate RDF Data using a Schema">Data + Schema</a>
 <a href="@routes.Validator.dataSchemaNode(vf.extract_str,
-            vf.dataOptions.syntax.toString,
+            vf.dataOptions.format,
             vf.schemaInput.extract_str,
             vf.schemaOptions.format,
             vf.schemaOptions.extract_iri_str)" 
-            title="Validate RDf Data against a Schema selecting a Node">RDF + Schema + Node</a>
-<a href="@routes.Converter.data" 
+            title="Validate a node in an RDf Data using a Schema">Data + Node + Schema</a>
+<a href="@routes.Converter.data(
+			data = vf.extract_str,
+            inputFormat = vf.dataOptions.format,
+            outputFormat = "TURTLE" 
+            )" 
             title="Conversions betewen different RDF Data syntax">Data Conversions</a>
-<a href="@routes.Converter.schema" 
-            title="Conversions betewen different Shape Expression syntax">Schema conversions</a>
+
 <a href="@routes.Application.about()" 
             title="About this project">About</a>
 </nav>

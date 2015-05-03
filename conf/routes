@@ -4,27 +4,35 @@
 
 # Home page
 GET     /                           controllers.Application.index
+GET		/about						controllers.Application.about
+
+# Validate
+
 GET     /validate/onlyData          controllers.Validator.onlyData(data : String ?= "", dataFormat: String ?= "TURTLE")
 GET     /validate/dataSchema        controllers.Validator.dataSchema(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC")
 GET     /validate/dataSchemaNode    controllers.Validator.dataSchemaNode(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", node: String ?= "")
-GET		/converter/schema			controllers.Converter.schema
-GET		/converter/data				controllers.Converter.data
 
-GET		/about						controllers.Application.about
- 
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
+# Converter
+
+# GET		/converter/schema			controllers.Converter.schema(schema:String,inputFormat: String ?= "SHEXC", outputFormat: String ?= "SHEXC")
+GET		/converter/data				controllers.Converter.data(data: String, inputFormat: String ?= "TURTLE",outputFormat: String ?= "TURTLE")
+GET		/converter/dataFormats		controllers.Converter.dataFormats()
+GET		/converter/schemaFormats	controllers.Converter.schemaFormats()
+POST	/api/converter				controllers.Converter.convert_data_post
+
+# API
 
 POST	/api/validator	controllers.Validator.validate_post
 GET		/api/validator	controllers.Validator.validate_get(data: String, dataFormat: Option[String] ?= Some("Turtle"), showData:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
 
-POST	/api/converter	controllers.Converter.convert_post
+
 
 # This route is maintained to keep backwards compatibility (should be deprecated in the future
 GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
 
-GET     /webjars/*file                    controllers.WebJarAssets.at(file)
 
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 GET     /webjars/*file                    controllers.WebJarAssets.at(file)

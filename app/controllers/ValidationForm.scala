@@ -88,4 +88,24 @@ object ValidationForm {
     )
   }
   
+  def fromDataConversion(data: String, format: String): ValidationForm = {
+    ValidationForm(
+      dataInput = DataInput(data)
+    , dataOptions = DataOptions(format,true)
+    , withSchema = false
+    , schemaInput = SchemaInput()
+    , schemaOptions = SchemaOptions.default
+    )
+  }
+  
+  def fromSchemaConversion(schema: String, format: String): ValidationForm = {
+    ValidationForm(
+      dataInput = DataInput()
+    , dataOptions = DataOptions.default
+    , withSchema = true
+    , schemaInput = SchemaInput(schema)
+    , schemaOptions = SchemaOptions.defaultWithFormat(format)
+    )
+  }
+
 }
