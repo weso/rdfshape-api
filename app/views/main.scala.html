@@ -28,6 +28,9 @@
 <h1 id="title">
  <a href="@routes.Application.index"
     title="RDF Validator based on Shape Expressions">RDFShape</a>
+<a href="@routes.Application.index">
+  <img class="logo" src="@routes.Assets.at("images/rdfshape.svg")" alt="RDFShape logo" />
+</a> 
 </h1>
 
 <nav>
@@ -51,11 +54,21 @@
             inputFormat = vf.dataOptions.format,
             outputFormat = "TURTLE" 
             )" 
-            title="Conversions betewen different RDF Data syntax">Data Conversions</a>
+            title="Conversions betewen different RDF Data formats">Data Conversions</a>
+<a href="@routes.Converter.schema(
+			schema = vf.extract_str,
+            inputFormat = vf.schemaOptions.format,
+            outputFormat = "SHEXC" 
+            )" 
+            title="Conversions between different Schema formats">Schema Conversions</a>
+
+<a href="@routes.Application.help()" 
+            title="Help & examples">Help</a>
 
 <a href="@routes.Application.about()" 
             title="About this project">About</a>
 </nav>
+
 </header>
 
 @content

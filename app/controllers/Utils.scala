@@ -23,10 +23,11 @@ import es.weso.utils.RDFUtils._
 import es.weso.utils.IOUtils._
 import java.net.URL
 import java.io.File
+import play.api.Logger
 
 object Utils {
-  
-  def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
+
+   def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
     for ( mf <- getMultipartForm(request)
         ; inputData <- parseInputData(mf)
         ; opt_data <- parseOptData(mf)
@@ -44,6 +45,16 @@ object Utils {
               else 
                 SchemaOptions.default
       ValidationForm(inputData, opt_data, has_schema, input_schema, opts_schema)
+    }
+  }
+
+  def getValidationFormSchema(request: Request[AnyContent]): Try[ValidationForm] = {
+    for ( mf <- getMultipartForm(request)
+        ; inputSchema <- parseSchemaInput(mf)
+        ; optsSchema <- parseSchemaOptions(mf)
+        )
+    yield {
+      ValidationForm(DataInput(), DataOptions.default,true, inputSchema, optsSchema)
     }
   }
   
@@ -189,6 +200,16 @@ object Utils {
    } else Failure(throw new 
         Exception("parseKey: key " + key + 
         " must have one value but it has = " + mf.asFormUrlEncoded(key)))
+ }
+
+ def parseKeyOrElse(mf: MultipartFormData[TemporaryFile],key:String,alternative: String): Try[String] = {
+   if (mf.asFormUrlEncoded(key).size == 1) {
+     Success(mf.asFormUrlEncoded(key).head)
+   } else {
+     Logger.info("parseKeyOrElse: key " + key + " not found")
+     Success(alternative)
+   } 
+     
  }
 
 }

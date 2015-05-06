@@ -9,7 +9,7 @@ import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.RDFTriples
 import com.hp.hpl.jena.sparql.function.library.e
 import scala.util._
-import es.weso.rdf.RDF
+import es.weso.rdf._
 import play.Logger
 
 case class ValidationResult(

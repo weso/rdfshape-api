@@ -15,6 +15,12 @@ case class SchemaInput(
     , schema_textarea: String
     ) {
 
+  def getSchema(format: String): Try[Schema] = {
+    for ( str <- getSchemaStr
+        ; (schema,pm) <- Schema.fromString(str,format)
+        ) yield schema
+  }
+  
   def getSchemaStr: Try[String] = {
    input_type_Schema match {
      case ByUri => if (schema_uri == "") 

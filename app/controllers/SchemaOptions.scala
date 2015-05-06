@@ -17,11 +17,15 @@ case class SchemaOptions(
     , showSchema: Boolean
     ) {
   def extract_iri_str : String = {
-    opt_iri.map(_.toString).getOrElse("")
+    opt_iri.map(_.str).getOrElse("")
   }
 }
     
 object SchemaOptions {
+  
+  lazy val availableFormats: List[String] = 
+    List("SHEXC") ++ DataFormats.toList
+
   def default : SchemaOptions = 
     SchemaOptions("SHEXC",10, false, false, None,true)
     

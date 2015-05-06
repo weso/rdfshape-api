@@ -92,6 +92,14 @@ header a:hover a:link a:visited a:active  {
 	color: #fdfdfd;
 }
 
+img.logo {
+ float:right;
+ transition: transform 0.3s ease-out; 
+}
+
+img.logo:hover {
+ transform: rotate(180deg); 
+}
 
 /*
  * Submit button

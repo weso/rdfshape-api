@@ -2,7 +2,7 @@
 
 @import play.api.i18n.Messages
 
-@main(Messages("Convert.Data"))(vf) {
+@main(Messages("Convert.Schema"))(vf) {
 
 @if(!result.isEmpty) {
 <h1>Result</h1>
@@ -11,24 +11,21 @@
 
 <form method="post" 
 	  enctype="multipart/form-data" 
-	  action="@routes.Converter.convert_data_post">
+	  action="@routes.Converter.convert_schema_post">
 
-<label for="output_format">
-<h1>@Messages("Output.data.format")</h1>
-</label>
-
-<select name="outputFormat">
-      @for(s <- DataOptions.availableFormats) {
+<label for="output_format">@Messages("Output.schema.format")</label>
+    <select name="outputFormat">
+      @for(s <- SchemaOptions.availableFormats) {
       	<option value="@s"
       	 @{if(outputFormat==s) { "checked" }}>@s</option>
       }
-</select>
+    </select>
 
 @submit()
 
 @hidden_inputs(vf)
 
-@tabs_data(vf)
+@tabs_schemaInput(vf)
 
 </form>	
 

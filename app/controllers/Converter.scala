@@ -2,17 +2,11 @@ package controllers
 
 import play.api._
 import play.api.mvc._
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.concurrent.promise
-import akka.actor.Actor
-import akka.actor.Props
-import akka.actor.actorRef2Scala
+import scala.concurrent._
+import akka.actor._
 
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import java.io.ByteArrayInputStream
-import org.apache.commons.io.FileUtils
 import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
@@ -29,8 +23,6 @@ import es.weso.utils.RDFUtils._
 import java.net.URL
 import java.io.File
 import es.weso.utils.IOUtils._
-import es.weso.shex.DataFormats
-import es.weso.shex.SchemaFormats
 import Utils._
 import play.api.libs.json._
 
@@ -48,11 +40,7 @@ object Converter extends Controller {
     }
   }
 
-  def schema = Action {
-    Ok("Schema conversions not implemented yet")
-  }
-  
-  def convert_data_post = Action { request => {
+    def convert_data_post = Action { request => {
       
      val r = for ( mf <- getMultipartForm(request)
                    ; vf <- getValidationForm(request)
@@ -64,6 +52,35 @@ object Converter extends Controller {
       r match {
        case Success((vf,outputFormat,result)) =>
              Ok(views.html.convert_data(vf,outputFormat,result))
+       case Failure(e) => BadRequest(e.getMessage) 
+      }
+    } 
+  }
+
+  def schema(schema: String, inputFormat: String, outputFormat: String) = Action {
+    val maybe = for { 
+      (schema,_) <- Schema.fromString(schema,inputFormat)
+    } yield schema.serialize(outputFormat)
+    maybe match {
+      case Success(str) => {
+       val vf = ValidationForm.fromSchemaConversion(schema,inputFormat)
+       Ok(views.html.convert_schema(vf,outputFormat,str)) 
+      }
+      case Failure(e) => Ok("Exception reading contents " + e.getMessage) 
+    }
+  }
+
+  def convert_schema_post = Action { request => {
+     val r = for ( mf <- getMultipartForm(request)
+                 ; vf <- getValidationForm(request)
+                 ; str_schema <- vf.schemaInput.getSchemaStr
+                 ; outputFormat <- parseKey(mf, "outputFormat")
+                 ; schema <- vf.schemaInput.getSchema(vf.dataOptions.format)
+                 ) yield (vf,outputFormat,schema.serialize(outputFormat))
+     
+      r match {
+       case Success((vf,outputFormat,result)) =>
+             Ok(views.html.convert_schema(vf,outputFormat,result))
        case Failure(e) => BadRequest(e.getMessage) 
       }
     } 
