@@ -6,8 +6,11 @@ import es.weso.shex.Schema
 import buildinfo._
 // import rdfBuildinfo.{ BuildInfo => RDFBuildInfo }
 
-object Application extends Controller {
-  
+// We use traits instead of objects to be able to test them
+// More info: https://www.playframework.com/documentation/2.3.x/ScalaTestingWithScalaTest
+trait Application {
+  this: Controller =>
+
   lazy val name = "RDFShape" 
   lazy val shexcalaName = BuildInfo.name + "(" + BuildInfo.version + ")" 
 
@@ -22,5 +25,7 @@ object Application extends Controller {
   def help = Action {
     Ok(views.html.help()(ValidationForm()))
   }
-  
+    
 }
+
+object Application extends Controller with Application

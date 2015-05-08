@@ -102,8 +102,8 @@ object Utils {
 
   def parseInputData(mf: MultipartFormData[TemporaryFile]): Try[DataInput] = {
    for ( input_type_data <- parseInputType(mf,"data")
-       ; data_uri <- parseKey(mf,"data_uri")
-       ; data_textarea <- parseKey(mf,"data_textarea")
+       ; data_uri <- parseKeyOrElse(mf,"data_uri","")
+       ; data_textarea <- parseKeyOrElse(mf,"data_textarea","")
        ; data_file <- parseFile(mf,"data_file")
 //       ; data_endpoint <- parseKey(mf,"data_endpoint")
        ) yield {
