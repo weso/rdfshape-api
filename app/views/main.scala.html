@@ -49,13 +49,13 @@
             vf.schemaOptions.format,
             vf.schemaOptions.extract_iri_str)" 
             title="Validate a node in an RDf Data using a Schema">Data + Node + Schema</a>
-<a href="@routes.Converter.data(
+<a href="@routes.DataConverter.convert_data_get(
 			data = vf.extract_str,
             inputFormat = vf.dataOptions.format,
             outputFormat = "TURTLE" 
             )" 
             title="Conversions betewen different RDF Data formats">Data Conversions</a>
-<a href="@routes.Converter.schema(
+<a href="@routes.SchemaConverter.convert_schema_get(
 			schema = vf.extract_str,
             inputFormat = vf.schemaOptions.format,
             outputFormat = "SHEXC" 

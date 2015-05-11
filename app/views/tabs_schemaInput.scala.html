@@ -42,6 +42,15 @@
 
 </div> <!-- content -->
 
+<label for="schema_format">@Messages("Schema.format")</label>
+<select name="schema_format">
+      @for(s <- SchemaOptions.availableFormats) {
+      	<option value="@s"
+      	 @{if(schemaOptions.format==s) { "checked" }}>@s</option>
+      }
+</select>
+
+
 @schemaOptions(vf.schemaOptions)
 
 </div> <!-- input schema tabs -->

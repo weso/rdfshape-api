@@ -11,6 +11,7 @@ import com.hp.hpl.jena.sparql.function.library.e
 import scala.util._
 import es.weso.rdf._
 import play.Logger
+import es.weso.utils.SchemaUtils
 
 case class ValidationResult(
       status: Option[Boolean]
@@ -21,6 +22,7 @@ case class ValidationResult(
     , opts_data : DataOptions
     , withSchema : Boolean
     , str_schema: String
+    , schema_format: String
     , opt_schema: SchemaOptions
     , pm: PrefixMap
     ) {
@@ -83,7 +85,7 @@ case class ValidationResult(
 object ValidationResult {
   // TODO: refactor the following ugly code
   def empty = 
-    ValidationResult(None,"",Stream(), List(),"", DataOptions.default,false, "", SchemaOptions.default, PrefixMap.empty)
+    ValidationResult(None,"",Stream(), List(),"", DataOptions.default,false, "", SchemaUtils.defaultSchemaFormat, SchemaOptions.default, PrefixMap.empty)
   
   def validateIRI(
         iri : IRI
@@ -92,15 +94,16 @@ object ValidationResult {
       , dataOptions: DataOptions
       , schema: Schema
       , str_schema: String
+      , schema_format: String
       , schemaOptions: SchemaOptions
       , pm: PrefixMap
       ): ValidationResult = {
  val matcher = Matcher(schema,data,schemaOptions.withIncoming,schemaOptions.withAny)
  val rs = matcher.matchIRI_AllLabels(iri)
   if (rs.isValid) {
-   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_data,dataOptions, true, str_schema, schemaOptions,pm)
+   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_data,dataOptions, true, str_schema, schema_format, schemaOptions,pm)
   } else {
-     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_data,dataOptions,true, str_schema,schemaOptions,pm)
+     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_data,dataOptions,true, str_schema,schema_format, schemaOptions,pm)
   } 
  }
 
@@ -110,6 +113,7 @@ object ValidationResult {
       , dataOptions: DataOptions
       , schema: Schema
       , str_schema: String
+      , schema_format: String
       , schemaOptions: SchemaOptions
       , pm: PrefixMap
       ): ValidationResult = {
@@ -117,9 +121,9 @@ object ValidationResult {
  val matcher = Matcher(schema,data,schemaOptions.withIncoming,schemaOptions.withAny)
  val rs = matcher.matchAllIRIs_AllLabels()
  if (rs.isValid) {
-   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_data,dataOptions,true, str_schema,schemaOptions,pm)
+   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_data,dataOptions,true, str_schema,schema_format,schemaOptions,pm)
  } else {
-   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_data,dataOptions,true,str_schema,schemaOptions,pm)
+   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_data,dataOptions,true,str_schema,schema_format,schemaOptions,pm)
  }
 }     
 
@@ -130,14 +134,15 @@ object ValidationResult {
       , dataOptions: DataOptions
       , withSchema : Boolean
       , str_schema : String
+      , schema_format: String
       , schemaOptions: SchemaOptions 
       ): ValidationResult = {
    if (withSchema) {
          Try(Schema.fromString(str_schema).get) match {
          case Success((schema,pm)) => {
                schemaOptions.opt_iri match {
-                 case Some(iri) => validateIRI(iri,rdf,str_data,dataOptions,schema,str_schema,schemaOptions,pm) 
-                 case None => validateAny(rdf,str_data,dataOptions,schema,str_schema,schemaOptions,pm)
+                 case Some(iri) => validateIRI(iri,rdf,str_data,dataOptions,schema,str_schema,schema_format,schemaOptions,pm) 
+                 case None => validateAny(rdf,str_data,dataOptions,schema,str_schema,schema_format,schemaOptions,pm)
                }
          }
          case Failure(e) => {
@@ -145,14 +150,14 @@ object ValidationResult {
            ValidationResult(Some(false),
                "Schema did not parse: " + e.getMessage,
                Stream(),List(),str_data,dataOptions, true, 
-               str_schema,schemaOptions,
+               str_schema,schema_format,schemaOptions,
                PrefixMap.empty)
          } 
        } 
     } else  
      ValidationResult(Some(true),"RDF parsed",
          Stream(),List(),str_data,dataOptions,false,
-         str_schema,schemaOptions,
+         str_schema,schema_format,schemaOptions,
          PrefixMap.empty)
  } 
 

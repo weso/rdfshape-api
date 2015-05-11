@@ -7,12 +7,14 @@ import es.weso.rdfgraph.nodes.IRI
 import java.io.File
 import es.weso.utils.IOUtils._
 import util._
+import es.weso.utils.SchemaUtils
 
 case class SchemaInput(
       input_type_Schema: InputType
     , schema_uri : String
     , schema_file: Option[File]
     , schema_textarea: String
+    , inputFormat: String
     ) {
 
   def getSchema(format: String): Try[Schema] = {
@@ -39,14 +41,21 @@ case class SchemaInput(
     
 object SchemaInput {
   def apply() : SchemaInput = 
-    SchemaInput(ByInput, "", None, "")
+    SchemaInput( 
+               input_type_Schema = ByInput
+             , schema_uri = ""
+             , schema_file = None
+             , schema_textarea = ""
+             , inputFormat = SchemaUtils.defaultSchemaFormat
+             )
     
-  def apply(str: String): SchemaInput = 
+  def apply(str: String, format: String): SchemaInput = 
     SchemaInput( 
                input_type_Schema = ByInput
         	   , schema_uri = ""
         	   , schema_file = None
         	   , schema_textarea = str
+             , inputFormat = format
         	   )
         	   
 }

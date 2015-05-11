@@ -1,24 +1,20 @@
 package es.weso.utils
 
+import es.weso.shex.SchemaFormats
+
 object SchemaUtils {
 
-/*  def schemaParse(str: String, syntax: SchemaSyntax): Try[(Schema,String)] = {
-    syntax match {
-/*      case SHEXC => {
-        // Todo: simplify the following... 
-         Try{ 
-           RDFTriples.parse(str) match {
-         	case Success(rdf) => 
-         	  (rdf,str)
-         	case Failure(e) =>
-         	  throw new Exception("Exception :" + e.getMessage)
-           }
-         }
-      } */
-      case _ => 
-        Failure(throw new Exception("Not implemented parser for syntax" + syntax + " yet"))
+  val defaultSchemaFormat = "SHEXC"
+  
+  def getSchemaFormat(format: Option[String]): String = {
+    format match {
+      case Some(s) => 
+        if (SchemaFormats.available(s)) s
+        else // TODO: Check a better failure... 
+          throw new Exception("Unsupported schema format " + s)
+      case None => defaultSchemaFormat
     }
- }
- */
+    
+  }
 
 }

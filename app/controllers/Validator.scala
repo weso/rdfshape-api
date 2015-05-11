@@ -25,33 +25,28 @@ import java.net.URL
 import java.io.File
 
 
-object Validator extends Controller {
-  
-  import Utils._
+trait Validator { this: Controller =>
 
-  def onlyData(data: String, dataFormat: String) = Action {
-    val vr = ValidationResult.empty
-    val vf = ValidationForm(DataInput(data),DataOptions.default,false,SchemaInput(),SchemaOptions.default)
-    Ok(views.html.validate_data(vr,vf))
+  import Multipart._
+
+  def onlyData(data: String, dataFormat: String) = { 
+    validate_get(data,Some(dataFormat),true,None,None,None,10,false,false,false)
   }
 
-  def dataSchema(data: String, dataFormat: String, schema: String, schemaFormat: String) = Action {
-    val vr = ValidationResult.empty
-    val vf = ValidationForm(DataInput(data),DataOptions.default,true,SchemaInput(schema),SchemaOptions.default)
-    Ok(views.html.validate_dataSchema(vr,vf))
+  def dataSchema(data: String, dataFormat: String, schema: String, schemaFormat: String) = {
+    validate_get(data,Some(dataFormat),true,Some(schema),Some(schemaFormat), None,10,false,false,false)
   }
 
-  def dataSchemaNode(data: String, dataFormat: String, schema: String, schemaFormat: String, node: String) = Action {
-    val vr = ValidationResult.empty
-    val vf = ValidationForm(DataInput(data),DataOptions.default,true,SchemaInput(schema),SchemaOptions.defaultWithIri(node))
-    Ok(views.html.validate_dataSchemaNode(vr,vf))
+  def dataSchemaNode(data: String, dataFormat: String, schema: String, schemaFormat: String, node: String) = {
+    validate_get(data,Some(dataFormat),true,Some(schema),Some(schemaFormat),Some(node),10,false,false,false)
   }
 
   def validate_get_Future(
           str_data: String
-        , syntaxData: Option[String]
+        , formatData: Option[String]
         , showData: Boolean
         , opt_schema: Option[String]
+        , schemaFormat: Option[String]
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
@@ -62,12 +57,12 @@ object Validator extends Controller {
        val iri = opt_iri.map(str => IRI(str))
        val str_schema = opt_schema.getOrElse("")
        val opts_data = DataOptions(
-             format = RDFUtils.getFormat(syntaxData)
+             format = RDFUtils.getFormat(formatData)
            , showData = showData 
            )
        
        val opts_schema = SchemaOptions(
-            "SHEXC"
+            SchemaUtils.getSchemaFormat(schemaFormat)
           , cut = cut
           , withIncoming = withIncoming
           , withAny = withAny
@@ -97,16 +92,17 @@ object Validator extends Controller {
   // TODO: Simplify this ugly code...long list of arguments
   def validate_get(
           str_data: String
-        , syntaxData: Option[String]
+        , dataFormat: Option[String]
         , showData: Boolean
         , opt_schema: Option[String]
+        , schemaFormat: Option[String]  
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
         , withAny: Boolean
         , showSchema: Boolean
         ) = Action.async {  
-      	validate_get_Future(str_data,syntaxData, showData, opt_schema, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
+      	validate_get_Future(str_data,dataFormat, showData, opt_schema, schemaFormat, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
       	      vrf match {
       	        case Success(vr) => {
       	          val vf = ValidationForm.fromResult(vr)
@@ -152,6 +148,7 @@ object Validator extends Controller {
         PrefixMap.empty) 
   }
   
- 
+
 }
 
+object Validator extends Controller with Validator

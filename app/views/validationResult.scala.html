@@ -1,6 +1,6 @@
 @(vr:ValidationResult)
 
-@if(vr.status == None) {
+@if(vr.status == None || vr.str_data=="") {
 } else {  
 
 @if(vr.status == Some(true)) {
@@ -43,6 +43,7 @@
 	         Some(vr.opts_data.format),
 	         vr.opts_data.showData,
 	         vr.schema_param,
+             Some(vr.opt_schema.format),
 	         vr.opt_iri_param,
 	         vr.opt_schema.cut,
 	         vr.opt_schema.withIncoming,

@@ -16,22 +16,23 @@ GET     /validate/dataSchemaNode    controllers.Validator.dataSchemaNode(data: S
 
 # Converter
 
-GET		/converter/schema			controllers.Converter.schema(schema:String,inputFormat: String ?= "SHEXC", outputFormat: String ?= "SHEXC")
-GET		/converter/data				controllers.Converter.data(data: String, inputFormat: String ?= "TURTLE",outputFormat: String ?= "TURTLE")
-GET		/converter/dataFormats		controllers.Converter.dataFormats()
-GET		/converter/schemaFormats	controllers.Converter.schemaFormats()
-POST	/api/converter/data			controllers.Converter.convert_data_post
-POST	/api/converter/schema		controllers.Converter.convert_schema_post
+GET		/converter/data				controllers.DataConverter.convert_data_get(data: String, inputFormat: String ?= "TURTLE",outputFormat: String ?= "TURTLE")
+GET		/converter/dataFormats		controllers.DataConverter.dataFormats()
+POST	/api/converter/data			controllers.DataConverter.convert_data_post
+
+GET		/converter/schema			controllers.SchemaConverter.convert_schema_get(schema:String,inputFormat: String ?= "SHEXC", outputFormat: String ?= "SHEXC")
+GET		/converter/schemaFormats	controllers.SchemaConverter.schemaFormats()
+POST	/api/converter/schema		controllers.SchemaConverter.convert_schema_post
 
 # API
 
 POST	/api/validator	controllers.Validator.validate_post
-GET		/api/validator	controllers.Validator.validate_get(data: String, dataFormat: Option[String] ?= Some("Turtle"), showData:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
+GET		/api/validator	controllers.Validator.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true,schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
 
 
 
 # This route is maintained to keep backwards compatibility (should be deprecated in the future
-GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
+GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
 
 
 # Map static resources from the /public folder to the /assets URL path

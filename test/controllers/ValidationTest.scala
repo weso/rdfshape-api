@@ -12,8 +12,10 @@ import org.scalatestplus.play.MixedFixtures
 class ValidationSpec 
   extends MixedPlaySpec {
 
+  // TODO: The following test is cancelled:
+  // 
   "Validation page" must {
-    "Testing Title" in new Chrome {
+    "Test title" in new Chrome {
       go to (s"http://localhost:$port")
       pageTitle must include("RDFShape")
     }

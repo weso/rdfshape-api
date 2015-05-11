@@ -83,7 +83,7 @@ object ValidationForm {
       dataInput = DataInput(vr.str_data)
     , dataOptions = vr.opts_data
     , withSchema = vr.withSchema
-    , schemaInput = SchemaInput(vr.str_schema)
+    , schemaInput = SchemaInput(vr.str_schema,vr.schema_format)
     , schemaOptions = vr.opt_schema 
     )
   }
@@ -98,13 +98,13 @@ object ValidationForm {
     )
   }
   
-  def fromSchemaConversion(schema: String, format: String): ValidationForm = {
+  def fromSchemaConversion(schemaInput: SchemaInput): ValidationForm = {
     ValidationForm(
       dataInput = DataInput()
     , dataOptions = DataOptions.default
     , withSchema = true
-    , schemaInput = SchemaInput(schema)
-    , schemaOptions = SchemaOptions.defaultWithFormat(format)
+    , schemaInput = schemaInput
+    , schemaOptions = SchemaOptions.default
     )
   }
 

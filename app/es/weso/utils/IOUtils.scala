@@ -31,7 +31,7 @@ object IOUtils {
            }
          } 
      case None => {
-        Failure(new Exception("getFileContents: Input by file but no file found"))
+        Failure(new Exception("getFileContents: no file found"))
      }
    }
   }

@@ -25,7 +25,7 @@ import java.net.URL
 import java.io.File
 import play.api.Logger
 
-object Utils {
+object Multipart {
 
    def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
     for ( mf <- getMultipartForm(request)
@@ -70,7 +70,10 @@ object Utils {
   def parseFile(mf: MultipartFormData[TemporaryFile], key:String) : Try[Option[File]] = {
     mf.file(key) match {
          case Some(f) => Success(Some(f.ref.file))
-         case None => Success(None)
+         case None => {
+          // Failure(throw new Exception("File " + key + " not found in multipart form data")) 
+          Success(None) 
+         }
     }
   }
   
@@ -142,9 +145,10 @@ object Utils {
         ; schema_uri <- parseKey(mf,"schema_uri")
         ; schema_file <- parseFile(mf,"schema_file")
         ; schema_textarea <- parseKey(mf,"schema_textarea")
+        ; schema_format <- parseKey(mf,"schema_format")
         )
    yield
-     SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea)
+     SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea, schema_format)
   }
 
   // TODO: Parse Schema format

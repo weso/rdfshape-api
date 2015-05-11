@@ -69,12 +69,4 @@
     <td>@Messages("Show.schema.explain")</td>
     </tr>
    </table>
-   <label for="schema_format">@Messages("Schema.format")</label>
-    <select name="data_format">
-      @for(s <- SchemaOptions.availableFormats) {
-      	<option value="@s"
-      	 @{if(schemaOptions.format==s) { "checked" }}>@s</option>
-      }
-    </select>
-   
 </fieldset>

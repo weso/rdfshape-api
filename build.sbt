@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"
 , "org.seleniumhq.selenium" % "selenium-java" % "2.35.0" % "test"
 , "org.webjars" %% "webjars-play" % "2.3.0"
-, "org.webjars" % "jquery" % "2.1.1"
+, "org.webjars" % "jquery" % "1.11.1"
 , "org.webjars" % "jquery-ui" % "1.11.4"
 , "org.webjars" % "jquery-ui-themes" % "1.11.4"
 , "org.webjars" % "jquery-ui-touch-punch" % "0.2.3-2"
