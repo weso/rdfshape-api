@@ -46,7 +46,7 @@
 <select name="schema_format">
       @for(s <- SchemaOptions.availableFormats) {
       	<option value="@s"
-      	 @{if(schemaOptions.format==s) { "checked" }}>@s</option>
+      	 @{if(vf.schemaInput.inputFormat==s) { "checked" }}>@s</option>
       }
 </select>
 

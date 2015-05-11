@@ -46,7 +46,7 @@ trait Validator { this: Controller =>
         , formatData: Option[String]
         , showData: Boolean
         , opt_schema: Option[String]
-        , schemaFormat: Option[String]
+        , maybeSchemaFormat: Option[String]
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
@@ -55,6 +55,7 @@ trait Validator { this: Controller =>
 		) : Future[Try[ValidationResult]]= {
        val withSchema = opt_schema.isDefined
        val iri = opt_iri.map(str => IRI(str))
+       val schemaFormat = maybeSchemaFormat.getOrElse(SchemaUtils.defaultSchemaFormat)
        val str_schema = opt_schema.getOrElse("")
        val opts_data = DataOptions(
              format = RDFUtils.getFormat(formatData)
@@ -62,7 +63,7 @@ trait Validator { this: Controller =>
            )
        
        val opts_schema = SchemaOptions(
-            SchemaUtils.getSchemaFormat(schemaFormat)
+            SchemaUtils.getSchemaFormat(maybeSchemaFormat)
           , cut = cut
           , withIncoming = withIncoming
           , withAny = withAny
@@ -71,7 +72,7 @@ trait Validator { this: Controller =>
           )
       RDFParse(str_data,opts_data.format) match { 
         case Success(data) => 
-          scala.concurrent.Future(Success(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,opts_schema)))
+          scala.concurrent.Future(Success(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,schemaFormat,opts_schema)))
         case Failure(e) => 
           scala.concurrent.Future(Success(
                 ValidationResult(Some(false), 
@@ -81,7 +82,8 @@ trait Validator { this: Controller =>
                     str_data, 
                     opts_data, 
                     withSchema, 
-                    str_schema, 
+                    str_schema,
+                    schemaFormat,
                     opts_schema, 
                     PrefixMap.empty)
                 ))
@@ -101,7 +103,7 @@ trait Validator { this: Controller =>
         , withIncoming: Boolean
         , withAny: Boolean
         , showSchema: Boolean
-        ) = Action.async {  
+        ) = Action.async {
       	validate_get_Future(str_data,dataFormat, showData, opt_schema, schemaFormat, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
       	      vrf match {
       	        case Success(vr) => {
@@ -128,7 +130,7 @@ trait Validator { this: Controller =>
         	         ; str_schema <- vf.schemaInput.getSchemaStr
         	         )  
                  yield {
-        	       ValidationResult.validate(data,str_data,vf.dataOptions, vf.withSchema, str_schema, vf.schemaOptions)
+        	       ValidationResult.validate(data,str_data,vf.dataOptions, vf.withSchema, str_schema, vf.schemaInput.inputFormat, vf.schemaOptions)
         	     }
               val vr = recover(tryValidate,recoverValidationResult(str_data,vf))
               Ok(views.html.index(vr,vf))
@@ -144,7 +146,7 @@ trait Validator { this: Controller =>
     ValidationResult(Some(false),
         e.getMessage(),Stream(), List(), 
         str_data, vf.dataOptions, 
-        vf.withSchema, schema_str, vf.schemaOptions, 
+        vf.withSchema, schema_str, vf.schemaInput.inputFormat, vf.schemaOptions, 
         PrefixMap.empty) 
   }
   
