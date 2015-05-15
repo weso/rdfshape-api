@@ -10,13 +10,13 @@ import java.io.ByteArrayInputStream
 import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
-import es.weso.shex.Schema
+import es.weso.shacl.Schema
 import scala.util._
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
-import es.weso.shex._
+import es.weso.shex.{Schema => ShExSchema, SchemaFormats}
 import es.weso.utils._
 import es.weso.utils.TryUtils._
 import es.weso.utils.RDFUtils._
@@ -31,21 +31,24 @@ trait SchemaConverter { this: Controller =>
  def converterSchemaFuture(
           schema: String
         , inputFormat: String
+        , schemaVersion: String
         , outputFormat: String
     ) : Future[Try[String]]= {
-       Future(Schema.fromString(schema,inputFormat).map(_._1.serialize(outputFormat)))
+       val schemaInput = SchemaInput(schema,inputFormat,schemaVersion)
+       Future(schemaInput.convertSchema(outputFormat))
   }
   
   
   def convert_schema_get(
           schema: String
         , inputFormat: String
+        , schemaVersion: String
         , outputFormat: String
         ) = Action.async {  
-        converterSchemaFuture(schema,inputFormat, outputFormat).map(output => {
+        converterSchemaFuture(schema,inputFormat, schemaVersion,outputFormat).map(output => {
               output match {
                 case Success(result) => {
-                  val schemaInput = SchemaInput(schema,inputFormat)
+                  val schemaInput = SchemaInput(schema,inputFormat,schemaVersion)
                   val vf = ValidationForm.fromSchemaConversion(schemaInput)
                   Ok(views.html.convert_schema(vf,outputFormat,result))
                 }
@@ -59,16 +62,14 @@ trait SchemaConverter { this: Controller =>
                  ; schemaInput <- parseSchemaInput(mf)
                  ; str_schema <- schemaInput.getSchemaStr
                  ; outputFormat <- parseKey(mf, "outputFormat")
-                 ; schema <- schemaInput.getSchema(schemaInput.inputFormat)
-                 ) yield (schemaInput, outputFormat,schema.serialize(outputFormat))
+                 ; outputStr <- schemaInput.convertSchema(outputFormat)
+                 ) yield (schemaInput, outputFormat,outputStr)
      
       r match {
        case Success((schemaInput, outputFormat,result)) => {
          val vf = ValidationForm.fromSchemaConversion(schemaInput)
          Ok(views.html.convert_schema(vf,outputFormat,result))
        }
-             
-             
        case Failure(e) => BadRequest(e.getMessage) 
       }
     } 

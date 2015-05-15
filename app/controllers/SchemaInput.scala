@@ -1,6 +1,7 @@
 package controllers
 
-import es.weso.shex._
+import es.weso.shex.{Schema => ShexSchema}
+import es.weso.shacl._
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI
@@ -15,11 +16,26 @@ case class SchemaInput(
     , schema_file: Option[File]
     , schema_textarea: String
     , inputFormat: String
+    , schemaVersion: SchemaVersion  
     ) {
+  
+  def convertSchema(outputFormat: String): Try[String] = {
+    schemaVersion match {
+      case SHEX_Deriv =>
+        for ( str <- getSchemaStr
+        ; (schema,pm) <- ShexSchema.fromString(str,inputFormat)
+        ) yield schema.serialize(outputFormat)
+      case SHACL_Deriv =>
+        for ( str <- getSchemaStr
+        ; (schema,pm) <- Schema.fromString(str,inputFormat)
+        ) yield schema.serialize(outputFormat)
+    }
+  }
 
-  def getSchema(format: String): Try[Schema] = {
+  // TODO: remove format parameter
+  def getSchema(format: String): Try[ShexSchema] = {
     for ( str <- getSchemaStr
-        ; (schema,pm) <- Schema.fromString(str,format)
+        ; (schema,pm) <- ShexSchema.fromString(str,format)
         ) yield schema
   }
   
@@ -47,15 +63,17 @@ object SchemaInput {
              , schema_file = None
              , schema_textarea = ""
              , inputFormat = SchemaUtils.defaultSchemaFormat
+             , schemaVersion = SchemaVersions.default
              )
     
-  def apply(str: String, format: String): SchemaInput = 
+  def apply(str: String, format: String, version: String): SchemaInput = 
     SchemaInput( 
                input_type_Schema = ByInput
         	   , schema_uri = ""
         	   , schema_file = None
         	   , schema_textarea = str
              , inputFormat = format
+             , schemaVersion = SchemaVersions.get(version)
         	   )
         	   
 }

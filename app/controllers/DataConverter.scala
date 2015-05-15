@@ -10,7 +10,7 @@ import java.io.ByteArrayInputStream
 import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
-import es.weso.shex.Schema
+import es.weso.shacl.Schema
 import scala.util._
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI

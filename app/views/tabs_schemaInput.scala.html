@@ -1,6 +1,7 @@
 @(vf: ValidationForm)
 
 @import play.api.i18n.Messages
+@import es.weso.shacl.SchemaVersions
 
 <div class="content" id="schema">  <!-- content with Schema -->
 
@@ -47,6 +48,14 @@
       @for(s <- SchemaOptions.availableFormats) {
       	<option value="@s"
       	 @{if(vf.schemaInput.inputFormat==s) { "checked" }}>@s</option>
+      }
+</select>
+
+<label for="schema_version">@Messages("Schema.Version")</label>
+<select name="schema_version">
+      @for(s <- SchemaVersions.availableVersions) {
+      	<option value="@s"
+      	 @{if(vf.schemaInput.schemaVersion==s) { "checked" }}>@s</option>
       }
 </select>
 

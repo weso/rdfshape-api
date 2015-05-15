@@ -21,6 +21,7 @@ import es.weso.utils._
 import es.weso.utils.TryUtils._
 import es.weso.utils.RDFUtils._
 import es.weso.utils.IOUtils._
+import es.weso.shacl._
 import java.net.URL
 import java.io.File
 import play.api.Logger
@@ -139,6 +140,13 @@ object Multipart {
       }
     }
   }
+  
+  def parseSchemaVersion(mf: MultipartFormData[TemporaryFile], key: String): Try[SchemaVersion] = {
+    for {
+      schema_version <- parseKey(mf,"schema_version")
+    ; schemaVersion <- SchemaVersions.lookup(schema_version)
+    } yield schemaVersion
+  }
 
   def parseSchemaInput(mf: MultipartFormData[TemporaryFile]): Try[SchemaInput] = {
     for ( input_type_schema <- parseInputType(mf,"input-schema")
@@ -146,9 +154,10 @@ object Multipart {
         ; schema_file <- parseFile(mf,"schema_file")
         ; schema_textarea <- parseKey(mf,"schema_textarea")
         ; schema_format <- parseKey(mf,"schema_format")
+        ; schema_version <- parseSchemaVersion(mf,"schema_version")
         )
    yield
-     SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea, schema_format)
+     SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea, schema_format, schema_version)
   }
 
   // TODO: Parse Schema format

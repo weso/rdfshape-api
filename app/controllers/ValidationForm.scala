@@ -83,7 +83,7 @@ object ValidationForm {
       dataInput = DataInput(vr.str_data)
     , dataOptions = vr.opts_data
     , withSchema = vr.withSchema
-    , schemaInput = SchemaInput(vr.str_schema,vr.schema_format)
+    , schemaInput = SchemaInput(vr.str_schema,vr.schema_format, vr.schema_version)
     , schemaOptions = vr.opt_schema 
     )
   }

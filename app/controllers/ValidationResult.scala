@@ -12,6 +12,7 @@ import scala.util._
 import es.weso.rdf._
 import play.Logger
 import es.weso.utils.SchemaUtils
+import es.weso.shacl.SchemaVersions._
 
 case class ValidationResult(
       status: Option[Boolean]
@@ -23,6 +24,7 @@ case class ValidationResult(
     , withSchema : Boolean
     , str_schema: String
     , schema_format: String
+    , schema_version: String
     , opt_schema: SchemaOptions
     , pm: PrefixMap
     ) {
@@ -85,7 +87,7 @@ case class ValidationResult(
 object ValidationResult {
   // TODO: refactor the following ugly code
   def empty = 
-    ValidationResult(None,"",Stream(), List(),"", DataOptions.default,false, "", SchemaUtils.defaultSchemaFormat, SchemaOptions.default, PrefixMap.empty)
+    ValidationResult(None,"",Stream(), List(),"", DataOptions.default,false, "", SchemaUtils.defaultSchemaFormat, defaultSchemaVersion, SchemaOptions.default, PrefixMap.empty)
   
   def validateIRI(
         iri : IRI
@@ -101,9 +103,9 @@ object ValidationResult {
  val matcher = Matcher(schema,data,schemaOptions.withIncoming,schemaOptions.withAny)
  val rs = matcher.matchIRI_AllLabels(iri)
   if (rs.isValid) {
-   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_data,dataOptions, true, str_schema, schema_format, schemaOptions,pm)
+   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_data,dataOptions, true, str_schema, schema_format, defaultSchemaVersion, schemaOptions,pm)
   } else {
-     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_data,dataOptions,true, str_schema,schema_format, schemaOptions,pm)
+     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_data,dataOptions,true, str_schema,schema_format, defaultSchemaVersion, schemaOptions,pm)
   } 
  }
 
@@ -121,9 +123,9 @@ object ValidationResult {
  val matcher = Matcher(schema,data,schemaOptions.withIncoming,schemaOptions.withAny)
  val rs = matcher.matchAllIRIs_AllLabels()
  if (rs.isValid) {
-   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_data,dataOptions,true, str_schema,schema_format,schemaOptions,pm)
+   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_data,dataOptions,true, str_schema,schema_format,defaultSchemaVersion,schemaOptions,pm)
  } else {
-   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_data,dataOptions,true,str_schema,schema_format,schemaOptions,pm)
+   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_data,dataOptions,true,str_schema,schema_format,defaultSchemaVersion, schemaOptions,pm)
  }
 }     
 
@@ -135,6 +137,7 @@ object ValidationResult {
       , withSchema : Boolean
       , str_schema : String
       , schema_format: String
+      , schema_version: String
       , schemaOptions: SchemaOptions 
       ): ValidationResult = {
    if (withSchema) {
@@ -150,14 +153,14 @@ object ValidationResult {
            ValidationResult(Some(false),
                "Schema did not parse: " + e.getMessage,
                Stream(),List(),str_data,dataOptions, true, 
-               str_schema,schema_format,schemaOptions,
+               str_schema,schema_format,schema_version,schemaOptions,
                PrefixMap.empty)
          } 
        } 
     } else  
      ValidationResult(Some(true),"RDF parsed",
          Stream(),List(),str_data,dataOptions,false,
-         str_schema,schema_format,schemaOptions,
+         str_schema,schema_format,schema_version,schemaOptions,
          PrefixMap.empty)
  } 
 

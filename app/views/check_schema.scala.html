@@ -1,0 +1,29 @@
+@(vf:ValidationForm, result: String)
+
+@import play.api.i18n.Messages
+
+@main(Messages("Check.Schema"))(vf) {
+
+@if(!result.isEmpty) {
+<h1>Result</h1>
+<pre class="prettyprint linenums lang-turtle">@result</pre>
+}
+
+<a href="@routes.Checker.schema(
+	         vf.extract_str,
+	         vf.schemaInput.inputFormat
+	         )">Generate permalink</a>
+
+<form method="post" 
+	  enctype="multipart/form-data" 
+	  action="@routes.Checker.schema_post">
+
+@submit()
+
+@hidden_inputs(vf)
+
+@tabs_schemaInput(vf)
+
+</form>	
+
+}

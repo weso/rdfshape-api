@@ -30,15 +30,27 @@ trait Validator { this: Controller =>
   import Multipart._
 
   def onlyData(data: String, dataFormat: String) = { 
-    validate_get(data,Some(dataFormat),true,None,None,None,10,false,false,false)
+    validate_get(data,Some(dataFormat),true,None,None,"",None,10,false,false,false)
   }
 
-  def dataSchema(data: String, dataFormat: String, schema: String, schemaFormat: String) = {
-    validate_get(data,Some(dataFormat),true,Some(schema),Some(schemaFormat), None,10,false,false,false)
+  def dataSchema(
+      data: String, 
+      dataFormat: String, 
+      schema: String, 
+      schemaFormat: String,
+      schemaVersion: String
+      ) = {
+    validate_get(data,Some(dataFormat),true,Some(schema),Some(schemaFormat), schemaVersion, None,10,false,false,false)
   }
 
-  def dataSchemaNode(data: String, dataFormat: String, schema: String, schemaFormat: String, node: String) = {
-    validate_get(data,Some(dataFormat),true,Some(schema),Some(schemaFormat),Some(node),10,false,false,false)
+  def dataSchemaNode(
+      data: String, 
+      dataFormat: String, 
+      schema: String, 
+      schemaFormat: String,         
+      schemaVersion: String,
+      node: String) = {
+    validate_get(data,Some(dataFormat),true,Some(schema),Some(schemaFormat),schemaVersion,Some(node),10,false,false,false)
   }
 
   def validate_get_Future(
@@ -47,6 +59,7 @@ trait Validator { this: Controller =>
         , showData: Boolean
         , opt_schema: Option[String]
         , maybeSchemaFormat: Option[String]
+        , schemaVersion: String  
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
@@ -72,7 +85,7 @@ trait Validator { this: Controller =>
           )
       RDFParse(str_data,opts_data.format) match { 
         case Success(data) => 
-          scala.concurrent.Future(Success(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,schemaFormat,opts_schema)))
+          scala.concurrent.Future(Success(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,schemaFormat,schemaVersion,opts_schema)))
         case Failure(e) => 
           scala.concurrent.Future(Success(
                 ValidationResult(Some(false), 
@@ -84,6 +97,7 @@ trait Validator { this: Controller =>
                     withSchema, 
                     str_schema,
                     schemaFormat,
+                    schemaVersion,
                     opts_schema, 
                     PrefixMap.empty)
                 ))
@@ -98,13 +112,14 @@ trait Validator { this: Controller =>
         , showData: Boolean
         , opt_schema: Option[String]
         , schemaFormat: Option[String]  
+        , schemaVersion: String  
         , opt_iri: Option[String]
         , cut: Int
         , withIncoming: Boolean
         , withAny: Boolean
         , showSchema: Boolean
         ) = Action.async {
-      	validate_get_Future(str_data,dataFormat, showData, opt_schema, schemaFormat, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
+      	validate_get_Future(str_data,dataFormat, showData, opt_schema, schemaFormat, schemaVersion, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
       	      vrf match {
       	        case Success(vr) => {
       	          val vf = ValidationForm.fromResult(vr)
@@ -130,7 +145,15 @@ trait Validator { this: Controller =>
         	         ; str_schema <- vf.schemaInput.getSchemaStr
         	         )  
                  yield {
-        	       ValidationResult.validate(data,str_data,vf.dataOptions, vf.withSchema, str_schema, vf.schemaInput.inputFormat, vf.schemaOptions)
+        	       ValidationResult.validate(
+                     data,
+                     str_data,
+                     vf.dataOptions, 
+                     vf.withSchema, 
+                     str_schema, 
+                     vf.schemaInput.inputFormat,
+                     vf.schemaInput.schemaVersion.versionName,
+                     vf.schemaOptions)
         	     }
               val vr = recover(tryValidate,recoverValidationResult(str_data,vf))
               Ok(views.html.index(vr,vf))
@@ -143,10 +166,18 @@ trait Validator { this: Controller =>
     
   def recoverValidationResult(str_data: String, vf: ValidationForm)(e: Throwable): ValidationResult = {
     val schema_str: String = Try(vf.schemaInput.getSchemaStr.get).getOrElse("")
-    ValidationResult(Some(false),
-        e.getMessage(),Stream(), List(), 
-        str_data, vf.dataOptions, 
-        vf.withSchema, schema_str, vf.schemaInput.inputFormat, vf.schemaOptions, 
+    ValidationResult(
+        Some(false),
+        e.getMessage(),
+        Stream(), 
+        List(), 
+        str_data, 
+        vf.dataOptions, 
+        vf.withSchema, 
+        schema_str, 
+        vf.schemaInput.inputFormat,
+        vf.schemaInput.schemaVersion.versionName,
+        vf.schemaOptions, 
         PrefixMap.empty) 
   }
   

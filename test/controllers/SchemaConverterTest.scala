@@ -30,7 +30,8 @@ class ConverterSchemaTest
       val result = SchemaConverter.convert_schema_get(
           schema = schemaStr,
           inputFormat="SHEXC", 
-          outputFormat="TURTLE").apply(FakeRequest())
+          outputFormat="TURTLE",
+          schemaVersion="SHACL_0.1").apply(FakeRequest())
       status(result) mustEqual OK    
       }
   }
