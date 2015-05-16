@@ -54,7 +54,10 @@ trait Checker { this: Controller =>
         , schemaVersion: String
         ) : Future[Try[String]]= {
     val schemaInput = SchemaInput(schema,schemaFormat,schemaVersion)
-    Future(schemaInput.convertSchema(schemaFormat))
+    println("schema_future: schemaInput: " + schemaInput)
+    val output = schemaInput.convertSchema(schemaFormat)
+    println("schema_future: output: " + output)
+    Future(output)
   }   
   
   

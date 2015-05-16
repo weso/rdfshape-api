@@ -27,7 +27,11 @@ case class SchemaInput(
         ) yield schema.serialize(outputFormat)
       case SHACL_Deriv =>
         for ( str <- getSchemaStr
-        ; (schema,pm) <- Schema.fromString(str,inputFormat)
+        ; (schema,pm) <- {
+         val result = Schema.fromString(str,inputFormat)
+         println("ConverSchema: Result = " + result)
+         result
+        }
         ) yield schema.serialize(outputFormat)
     }
   }

@@ -104,7 +104,7 @@ object ValidationForm {
     , dataOptions = DataOptions.default
     , withSchema = true
     , schemaInput = schemaInput
-    , schemaOptions = SchemaOptions.default
+    , schemaOptions = SchemaOptions.fromSchemaInput(schemaInput)
     )
   }
 

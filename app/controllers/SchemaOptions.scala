@@ -16,22 +16,44 @@ case class SchemaOptions(
     , opt_iri: Option[IRI]
     , showSchema: Boolean
     ) {
+  
   def extract_iri_str : String = {
     opt_iri.map(_.str).getOrElse("")
   }
+  
+  
 }
     
 object SchemaOptions {
+
+  // TODO: read these values from properties file
+  lazy val defaultCut = 10
+  lazy val defaultWithIncoming = false
+  lazy val defaultWithAny = false
+  lazy val defaultOptIRI = None
+  lazy val defaultShowSchema = true
   
   lazy val availableFormats: List[String] = 
     List("SHEXC") ++ DataFormats.toList
 
   def default : SchemaOptions = 
-    SchemaOptions("SHEXC",10, false, false, None,true)
+    SchemaOptions("SHEXC",
+        defaultCut, 
+        defaultWithIncoming, 
+        defaultWithAny, 
+        defaultOptIRI,
+        defaultShowSchema)
     
   def defaultWithIri(iri: String): SchemaOptions = 
-    SchemaOptions("SHEXC",10, false, false, Some(IRI(iri)),true)
+    default.copy(opt_iri = Some(IRI(iri))) 
     
   def defaultWithFormat(format: String): SchemaOptions = 
-    SchemaOptions(format,10, false, false, None, true)
+    default.copy(format = format)
+    
+  def fromSchemaInput(schemaInput: SchemaInput): SchemaOptions = {
+    default.copy(
+        format = schemaInput.inputFormat, 
+        showSchema = true 
+    )
+  }
 }

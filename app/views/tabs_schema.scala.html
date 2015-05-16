@@ -9,8 +9,15 @@
 </ul>
 
 <div class="content" id="noSchema">
-</div>
+</div> <!-- tabs-schema-noSchema -->
+
+<div class="content" id="schema">  <!-- content with Schema -->
+
+<h1>@Messages("Select.schema")</h1>
 
 @tabs_schemaInput(vf)
 
-</div> <!-- tabs-schema-noSchema -->
+@schemaOptions(vf.schemaOptions)
+
+</div> <!-- tabs-schema schema -->
+
