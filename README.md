@@ -1,5 +1,7 @@
 # Tutorial
 
+[![Join the chat at https://gitter.im/labra/rdfshape](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/labra/rdfshape?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 * [How-to](https://github.com/labra/rdfshape/wiki/Tutorial): explains how to use RDFShape to validate RDF
 
 # Deployed versions of RDFShape
