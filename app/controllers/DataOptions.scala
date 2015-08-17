@@ -7,7 +7,7 @@ import es.weso.utils._
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI
-import es.weso.shex.DataFormats._
+import es.weso.shacl.DataFormats
 import java.io.File
 import play.Logger
 

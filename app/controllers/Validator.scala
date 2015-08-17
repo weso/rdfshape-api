@@ -11,7 +11,7 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
 import es.weso.shex.Schema
-import scala.util._
+import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
@@ -84,10 +84,10 @@ trait Validator { this: Controller =>
           , showSchema
           )
       RDFParse(str_data,opts_data.format) match { 
-        case Success(data) => 
-          scala.concurrent.Future(Success(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,schemaFormat,schemaVersion,opts_schema)))
-        case Failure(e) => 
-          scala.concurrent.Future(Success(
+        case TrySuccess(data) => 
+          scala.concurrent.Future(TrySuccess(ValidationResult.validate(data,str_data,opts_data,withSchema,str_schema,schemaFormat,schemaVersion,opts_schema)))
+        case TryFailure(e) => 
+          scala.concurrent.Future(TrySuccess(
                 ValidationResult(Some(false), 
                     "Error parsing Data with syntax " + opts_data.format + ": " + e.getMessage,
                     Stream(), 
@@ -121,11 +121,11 @@ trait Validator { this: Controller =>
         ) = Action.async {
       	validate_get_Future(str_data,dataFormat, showData, opt_schema, schemaFormat, schemaVersion, opt_iri, cut, withIncoming, withAny, showSchema).map(vrf => {
       	      vrf match {
-      	        case Success(vr) => {
+      	        case TrySuccess(vr) => {
       	          val vf = ValidationForm.fromResult(vr)
       	          Ok(views.html.index(vr,vf))
       	        }
-      	        case Failure(e) => BadRequest(e.getMessage)
+      	        case TryFailure(e) => BadRequest(views.html.errorPage(e))
       	      }
         	})
   }
@@ -139,7 +139,7 @@ trait Validator { this: Controller =>
       
      scala.concurrent.Future {
         pair match {
-         case Success((vf,str_data)) => { 
+         case TrySuccess((vf,str_data)) => { 
         	  val tryValidate =
         	     for ( data <- vf.dataInput.getData(vf.dataOptions.format)
         	         ; str_schema <- vf.schemaInput.getSchemaStr
@@ -158,7 +158,7 @@ trait Validator { this: Controller =>
               val vr = recover(tryValidate,recoverValidationResult(str_data,vf))
               Ok(views.html.index(vr,vf))
              }
-       case Failure(e) => BadRequest(e.getMessage) 
+       case TryFailure(e) => BadRequest(views.html.errorPage(e)) 
       }
      }
     } 

@@ -23,7 +23,7 @@ import org.apache.jena.riot.RiotException
 import com.hp.hpl.jena.query.ResultSet
 import com.hp.hpl.jena.rdf.model.Literal
 import com.hp.hpl.jena.rdf.model.ResourceFactory
-import util._
+import util.{Try, Success => TrySuccess, Failure => TryFailure}
 import scala.collection.JavaConverters._
 
 
@@ -103,9 +103,9 @@ object JenaUtils {
       base: String = "", 
       syntax: String = Turtle) : Try[Model] = {
     uri2Model(uri,base,syntax) match {
-      case Parsed(model) => Success(model)
+      case Parsed(model) => TrySuccess(model)
       case NotParsed(err) => 
-        Failure(throw new Exception(err))
+        TryFailure(throw new Exception(err))
     }
   }
 
@@ -114,9 +114,9 @@ object JenaUtils {
       base: String = "", 
       syntax: String = Turtle) : Try[Model] = {
     str2Model(content,base,syntax) match {
-      case Parsed(model) => Success(model)
+      case Parsed(model) => TrySuccess(model)
       case NotParsed(err) => 
-        Failure(throw new Exception("Cannot parse from string: " + content + ". Error: " + err + ". Syntax: " + syntax))
+        TryFailure(throw new Exception("Cannot parse from string: " + content + ". Error: " + err + ". Syntax: " + syntax))
     }
   }
 

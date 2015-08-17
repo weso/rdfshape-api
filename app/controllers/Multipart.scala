@@ -11,7 +11,7 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
 import es.weso.shex.Schema
-import scala.util._
+import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
@@ -62,18 +62,18 @@ object Multipart {
   def getMultipartForm(request: Request[AnyContent]): Try[MultipartFormData[TemporaryFile]] = {
     val body: AnyContent = request.body
    body.asMultipartFormData match {
-      case Some(mf) => Success(mf)
-      case None => Failure(new Exception("Expecting MultiformData request body"))
+      case Some(mf) => TrySuccess(mf)
+      case None => TryFailure(new Exception("Expecting MultiformData request body"))
     }
   }
 
   
   def parseFile(mf: MultipartFormData[TemporaryFile], key:String) : Try[Option[File]] = {
     mf.file(key) match {
-         case Some(f) => Success(Some(f.ref.file))
+         case Some(f) => TrySuccess(Some(f.ref.file))
          case None => {
           // Failure(throw new Exception("File " + key + " not found in multipart form data")) 
-          Success(None) 
+          TrySuccess(None) 
          }
     }
   }
@@ -81,14 +81,14 @@ object Multipart {
   def parseOptIRI(mf: MultipartFormData[TemporaryFile]): Try[Option[IRI]] = {
     val withIRI = parseWithIRI(mf)
     withIRI match {
-      case Success(true) => {
+      case TrySuccess(true) => {
         parseIRI(mf) match {
-            case Success(iri) => Success(Some(iri))
-            case Failure(e) => Failure(e)
+            case TrySuccess(iri) => TrySuccess(Some(iri))
+            case TryFailure(e) => TryFailure(e)
           }
       }
-      case Success(false) => Success(None)
-      case Failure(e) => Failure(e)  
+      case TrySuccess(false) => TrySuccess(None)
+      case TryFailure(e) => TryFailure(e)  
     }
   }
 
@@ -209,18 +209,18 @@ object Multipart {
   
  def parseKey(mf: MultipartFormData[TemporaryFile],key:String): Try[String] = {
    if (mf.asFormUrlEncoded(key).size == 1) {
-      Success(mf.asFormUrlEncoded(key).head)
-   } else Failure(throw new 
+      TrySuccess(mf.asFormUrlEncoded(key).head)
+   } else TryFailure(throw new 
         Exception("parseKey: key " + key + 
         " must have one value but it has = " + mf.asFormUrlEncoded(key)))
  }
 
  def parseKeyOrElse(mf: MultipartFormData[TemporaryFile],key:String,alternative: String): Try[String] = {
    if (mf.asFormUrlEncoded(key).size == 1) {
-     Success(mf.asFormUrlEncoded(key).head)
+     TrySuccess(mf.asFormUrlEncoded(key).head)
    } else {
      Logger.info("parseKeyOrElse: key " + key + " not found")
-     Success(alternative)
+     TrySuccess(alternative)
    } 
      
  }

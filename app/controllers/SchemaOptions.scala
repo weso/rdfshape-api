@@ -7,6 +7,7 @@ import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI
 import java.io.File
+import es.weso.shacl.DataFormats
 
 case class SchemaOptions(
       format: String

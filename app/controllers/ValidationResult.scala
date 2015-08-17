@@ -103,9 +103,9 @@ object ValidationResult {
  val matcher = Matcher(schema,data,schemaOptions.withIncoming,schemaOptions.withAny)
  val rs = matcher.matchIRI_AllLabels(iri)
   if (rs.isValid) {
-   	 ValidationResult(Some(true),"Shapes found",rs.run,List(iri),str_data,dataOptions, true, str_schema, schema_format, defaultSchemaVersion, schemaOptions,pm)
+   	 ValidationResult(Some(true),"Shapes found",rs.run.get,List(iri),str_data,dataOptions, true, str_schema, schema_format, defaultSchemaVersion, schemaOptions,pm)
   } else {
-     ValidationResult(Some(false),"No shapes found",rs.run,List(iri),str_data,dataOptions,true, str_schema,schema_format, defaultSchemaVersion, schemaOptions,pm)
+     ValidationResult(Some(false),"No shapes found",rs.run.get,List(iri),str_data,dataOptions,true, str_schema,schema_format, defaultSchemaVersion, schemaOptions,pm)
   } 
  }
 
@@ -123,9 +123,9 @@ object ValidationResult {
  val matcher = Matcher(schema,data,schemaOptions.withIncoming,schemaOptions.withAny)
  val rs = matcher.matchAllIRIs_AllLabels()
  if (rs.isValid) {
-   ValidationResult(Some(true),"Shapes found",rs.run,nodes,str_data,dataOptions,true, str_schema,schema_format,defaultSchemaVersion,schemaOptions,pm)
+   ValidationResult(Some(true),"Shapes found",rs.run.get,nodes,str_data,dataOptions,true, str_schema,schema_format,defaultSchemaVersion,schemaOptions,pm)
  } else {
-   ValidationResult(Some(false),"No shapes found",rs.run,nodes,str_data,dataOptions,true,str_schema,schema_format,defaultSchemaVersion, schemaOptions,pm)
+   ValidationResult(Some(false),"No shapes found",rs.run.get,nodes,str_data,dataOptions,true,str_schema,schema_format,defaultSchemaVersion, schemaOptions,pm)
  }
 }     
 

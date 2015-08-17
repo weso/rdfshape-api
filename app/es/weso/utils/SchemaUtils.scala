@@ -1,6 +1,6 @@
 package es.weso.utils
 
-import es.weso.shex.SchemaFormats
+import es.weso.shacl.SchemaFormats
 
 object SchemaUtils {
 

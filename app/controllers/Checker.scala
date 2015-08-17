@@ -23,6 +23,7 @@ import es.weso.utils.RDFUtils._
 import es.weso.utils.IOUtils._
 import java.net.URL
 import java.io.File
+import scala.util.{Success => TrySuccess}
 
 
 trait Checker { this: Controller =>
@@ -37,12 +38,12 @@ trait Checker { this: Controller =>
     Action.async {  
      schema_Future(schema,schemaFormat, schemaVersion).map(result => {
                result match {
-                case Success(str) => {
+                case TrySuccess(str) => {
                   val schemaInput = SchemaInput(schema,schemaFormat,schemaVersion)
                   val vf = ValidationForm.fromSchemaConversion(schemaInput)
                   Ok(views.html.check_schema(vf,str))
                 }
-                case Failure(e) => BadRequest(e.getMessage)
+                case Failure(e) => BadRequest(views.html.errorPage(e))
               }
           })
     }
@@ -69,11 +70,11 @@ trait Checker { this: Controller =>
                  ) yield (schemaInput, outputStr)
      
       r match {
-       case Success((schemaInput, result)) => {
+       case TrySuccess((schemaInput, result)) => {
          val vf = ValidationForm.fromSchemaConversion(schemaInput)
          Ok(views.html.check_schema(vf,result))
        }
-       case Failure(e) => BadRequest(e.getMessage) 
+       case Failure(e) => BadRequest(views.html.errorPage(e)) 
       }
     } 
   }

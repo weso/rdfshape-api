@@ -5,7 +5,7 @@ import es.weso.rdf.PrefixMap
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes._
 import java.io.File
-import util._
+import util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.utils.RDFUtils._
 import es.weso.utils.IOUtils._
 import es.weso.rdf._
@@ -26,9 +26,9 @@ case class DataInput(
    input_type_Data match {
      case ByUri => getURI(data_uri)
      case ByFile => getFileContents(data_file)
-     case ByInput => Success(data_textarea)
+     case ByInput => TrySuccess(data_textarea)
 //     case ByEndpoint => Success("<<Endpoint: " + data_endpoint + ">>") 
-     case ByDereference => Success("<<Web Dereference>>")
+     case ByDereference => TrySuccess("<<Web Dereference>>")
      case _ => throw new Exception("get_DataStr: Unknown input type")
   }
   
@@ -40,14 +40,14 @@ case class DataInput(
                  ) yield rdf
      case ByEndpoint => 
        if (data_endpoint == "") {
-         Failure(throw new Exception("Endpoint URI must be non-empty"))
+         TryFailure(throw new Exception("Endpoint URI must be non-empty"))
        } else {
        // Check that it is a well formed URI before creating RDF endpoint
        val cnv = Try(new java.net.URI(data_endpoint))
        cnv.map(_ => Endpoint(data_endpoint)) 
        }
-     case ByDereference => Success(RDFFromWeb())
-     case _ => Failure(throw new Exception("getData: Unknown input type"))
+     case ByDereference => TrySuccess(RDFFromWeb())
+     case _ => TryFailure(throw new Exception("getData: Unknown input type"))
   }
   }
   

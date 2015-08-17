@@ -11,7 +11,8 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
 import es.weso.shacl.Schema
-import scala.util._
+import es.weso.shacl.DataFormats
+import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
@@ -44,11 +45,11 @@ trait DataConverter { this: Controller =>
         ) = Action.async {  
         converterDataFuture(data,dataFormat, outputFormat).map(output => {
               output match {
-                case Success(result) => {
+                case TrySuccess(result) => {
                   val vf = ValidationForm.fromDataConversion(data,dataFormat)
                   Ok(views.html.convert_data(vf,outputFormat,result))
                 }
-                case Failure(e) => BadRequest(e.getMessage)
+                case TryFailure(e) => BadRequest(views.html.errorPage(e))
               }
           })
   }
@@ -64,9 +65,9 @@ trait DataConverter { this: Controller =>
      ) yield (vf,outputFormat,data.serialize(outputFormat))
      
       r match {
-       case Success((vf,outputFormat,result)) =>
+       case TrySuccess((vf,outputFormat,result)) =>
              Ok(views.html.convert_data(vf,outputFormat,result))
-       case Failure(e) => BadRequest(e.getMessage) 
+       case TryFailure(e) => BadRequest(views.html.errorPage(e)) 
       }
     } 
   }

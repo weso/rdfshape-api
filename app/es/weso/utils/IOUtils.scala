@@ -2,19 +2,19 @@ package es.weso.utils
 
 import java.net.URL
 import play.Logger
-import scala.util.Failure
+import scala.util.{Try, 
+  Failure => TryFailure, 
+  Success => TrySuccess}
 import java.io.File
-import scala.util.Try
-import scala.util.Success
 
 object IOUtils {
     def getURI(uri:String): Try[String] = {
     try {
       Logger.info("Trying to reach " + uri)
       val str = io.Source.fromURL(new URL(uri)).getLines().mkString("\n")
-      Success(str)
+      TrySuccess(str)
     } catch {
-    case e: Exception => Failure(throw new Exception("getURI: cannot retrieve content from " + uri + "\nException: " + e.getMessage))
+    case e: Exception => TryFailure(throw new Exception("getURI: cannot retrieve content from " + uri + "\nException: " + e.getMessage))
     }
   }
 
@@ -24,24 +24,24 @@ object IOUtils {
          case Some(file) => {
            try {
             val str = io.Source.fromFile(file).getLines().mkString("\n")
-            Success(str)
+            TrySuccess(str)
            }
            catch {
-             case e: Exception => Failure(throw new Exception("getFileContents: cannot retrieve content from file " + file + "\nException: " + e.getMessage))
+             case e: Exception => TryFailure(throw new Exception("getFileContents: cannot retrieve content from file " + file + "\nException: " + e.getMessage))
            }
          } 
      case None => {
-        Failure(new Exception("getFileContents: no file found"))
+        TryFailure(new Exception("getFileContents: no file found"))
      }
    }
   }
 
   def failMsg[A](msg:String): Try[A] = {
-    Failure(throw new Exception(msg))
+    TryFailure(throw new Exception(msg))
   }
 
   def notImplementedYet[A] : Try[A] = 
-   Failure(throw new Exception("Not implemented yet"))
+   TryFailure(throw new Exception("Not implemented yet"))
 
   /** Transform a string "a\nb\nc" to 1| a\n2| b\n3| c\n"
    */

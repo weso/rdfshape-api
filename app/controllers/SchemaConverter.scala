@@ -11,12 +11,12 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
 import es.weso.shacl.Schema
-import scala.util._
+import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
-import es.weso.shex.{Schema => ShExSchema, SchemaFormats}
+import es.weso.shacl.{Schema => ShExSchema, SchemaFormats}
 import es.weso.utils._
 import es.weso.utils.TryUtils._
 import es.weso.utils.RDFUtils._
@@ -47,12 +47,12 @@ trait SchemaConverter { this: Controller =>
         ) = Action.async {  
         converterSchemaFuture(schema,inputFormat, schemaVersion,outputFormat).map(output => {
               output match {
-                case Success(result) => {
+                case TrySuccess(result) => {
                   val schemaInput = SchemaInput(schema,inputFormat,schemaVersion)
                   val vf = ValidationForm.fromSchemaConversion(schemaInput)
                   Ok(views.html.convert_schema(vf,outputFormat,result))
                 }
-                case Failure(e) => BadRequest(e.getMessage)
+                case TryFailure(e) => BadRequest(views.html.errorPage(e))
               }
           })
   }
@@ -66,11 +66,11 @@ trait SchemaConverter { this: Controller =>
                  ) yield (schemaInput, outputFormat,outputStr)
      
       r match {
-       case Success((schemaInput, outputFormat,result)) => {
+       case TrySuccess((schemaInput, outputFormat,result)) => {
          val vf = ValidationForm.fromSchemaConversion(schemaInput)
          Ok(views.html.convert_schema(vf,outputFormat,result))
        }
-       case Failure(e) => BadRequest(e.getMessage) 
+       case TryFailure(e) => BadRequest(views.html.errorPage(e)) 
       }
     } 
   }
