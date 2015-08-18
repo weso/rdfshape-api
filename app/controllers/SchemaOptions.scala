@@ -7,7 +7,7 @@ import xml.Utility.escape
 import es.weso.rdfgraph.nodes.RDFNode
 import es.weso.rdfgraph.nodes.IRI
 import java.io.File
-import es.weso.shacl.DataFormats
+import es.weso.shacl.SchemaFormats
 
 case class SchemaOptions(
       format: String
@@ -35,7 +35,7 @@ object SchemaOptions {
   lazy val defaultShowSchema = true
   
   lazy val availableFormats: List[String] = 
-    List("SHEXC") ++ DataFormats.toList
+    SchemaFormats.toList
 
   def default : SchemaOptions = 
     SchemaOptions("SHEXC",
