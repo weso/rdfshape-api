@@ -26,8 +26,8 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
 
 // Plugins for Heroku
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.8.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.3")
 
-addSbtPlugin("com.heroku" % "sbt-heroku" % "0.3.7")
+addSbtPlugin("com.heroku" % "sbt-heroku" % "0.5.1")
 
 resolvers += Classpaths.sbtPluginReleases
