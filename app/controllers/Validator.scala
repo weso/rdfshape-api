@@ -125,7 +125,7 @@ trait Validator { this: Controller =>
       	          val vf = ValidationForm.fromResult(vr)
       	          Ok(views.html.index(vr,vf))
       	        }
-      	        case TryFailure(e) => BadRequest(views.html.errorPage(e))
+      	        case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
       	      }
         	})
   }
@@ -158,7 +158,7 @@ trait Validator { this: Controller =>
               val vr = recover(tryValidate,recoverValidationResult(str_data,vf))
               Ok(views.html.index(vr,vf))
              }
-       case TryFailure(e) => BadRequest(views.html.errorPage(e)) 
+       case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage)) 
       }
      }
     } 

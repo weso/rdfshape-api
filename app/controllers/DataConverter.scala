@@ -49,7 +49,7 @@ trait DataConverter { this: Controller =>
                   val vf = ValidationForm.fromDataConversion(data,dataFormat)
                   Ok(views.html.convert_data(vf,outputFormat,result))
                 }
-                case TryFailure(e) => BadRequest(views.html.errorPage(e))
+                case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
               }
           })
   }
@@ -67,7 +67,7 @@ trait DataConverter { this: Controller =>
       r match {
        case TrySuccess((vf,outputFormat,result)) =>
              Ok(views.html.convert_data(vf,outputFormat,result))
-       case TryFailure(e) => BadRequest(views.html.errorPage(e)) 
+       case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage)) 
       }
     } 
   }

@@ -52,7 +52,7 @@ trait SchemaConverter { this: Controller =>
                   val vf = ValidationForm.fromSchemaConversion(schemaInput)
                   Ok(views.html.convert_schema(vf,outputFormat,result))
                 }
-                case TryFailure(e) => BadRequest(views.html.errorPage(e))
+                case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
               }
           })
   }
@@ -70,7 +70,10 @@ trait SchemaConverter { this: Controller =>
          val vf = ValidationForm.fromSchemaConversion(schemaInput)
          Ok(views.html.convert_schema(vf,outputFormat,result))
        }
-       case TryFailure(e) => BadRequest(views.html.errorPage(e)) 
+       case TryFailure(e) => {
+        Logger.info("Exception raised: " + e.getMessage)
+        BadRequest(views.html.errorPage(e.getMessage)) 
+       } 
       }
     } 
   }

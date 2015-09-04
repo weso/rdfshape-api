@@ -43,7 +43,7 @@ trait Checker { this: Controller =>
                   val vf = ValidationForm.fromSchemaConversion(schemaInput)
                   Ok(views.html.check_schema(vf,str))
                 }
-                case Failure(e) => BadRequest(views.html.errorPage(e))
+                case Failure(e) => BadRequest(views.html.errorPage(e.getMessage))
               }
           })
     }
@@ -74,7 +74,7 @@ trait Checker { this: Controller =>
          val vf = ValidationForm.fromSchemaConversion(schemaInput)
          Ok(views.html.check_schema(vf,result))
        }
-       case Failure(e) => BadRequest(views.html.errorPage(e)) 
+       case Failure(e) => BadRequest(views.html.errorPage(e.getMessage)) 
       }
     } 
   }

@@ -8,9 +8,9 @@ object Global extends GlobalSettings {
 
   /* Default page if there is an error */
   override def onError(request: RequestHeader, ex: Throwable) = {
-    Logger.error("Exception: " + ex.getMessage)
+    Logger.error("Exception raised: " + ex.getMessage)
     Future.successful(InternalServerError(
-      views.html.errorPage(ex)
+      views.html.errorPage(ex.getMessage)
     ))
   }
 
