@@ -9,7 +9,7 @@ sealed trait SchemaVersion {
  override def toString = versionName
 }
 
-case object SHACL_Deriv extends SchemaVersion {
+case object SHACL extends SchemaVersion {
  override def versionName = "SHACL_0.1"
 }
 
@@ -20,12 +20,12 @@ case object SHEX_Deriv extends SchemaVersion {
 object SchemaVersions {
 
   val availableVersions : List[SchemaVersion] = 
-    List(SHACL_Deriv,SHEX_Deriv)
+    List(SHACL)
     
   val availableNames : List[String]= 
     availableVersions.map(_.versionName)
 
-  lazy val default = SHACL_Deriv
+  lazy val default = SHACL
   
   lazy val defaultSchemaVersion = default.versionName
   

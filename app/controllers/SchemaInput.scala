@@ -1,6 +1,6 @@
 package controllers
 
-import es.weso.shex.{Schema => ShexSchema}
+// import es.weso.shex.{Schema => ShexSchema}
 import es.weso.shacl._
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.RDFNode
@@ -21,11 +21,7 @@ case class SchemaInput(
   
   def convertSchema(outputFormat: String): Try[String] = {
     schemaVersion match {
-      case SHEX_Deriv =>
-        for ( str <- getSchemaStr
-        ; (schema,pm) <- ShexSchema.fromString(str,inputFormat)
-        ) yield schema.serialize(outputFormat)
-      case SHACL_Deriv =>
+      case SHACL =>
         for ( str <- getSchemaStr
         ; (schema,pm) <- {
          val result = Schema.fromString(str,inputFormat)
@@ -36,12 +32,6 @@ case class SchemaInput(
     }
   }
 
-  // TODO: remove format parameter
-  def getSchema(format: String): Try[ShexSchema] = {
-    for ( str <- getSchemaStr
-        ; (schema,pm) <- ShexSchema.fromString(str,format)
-        ) yield schema
-  }
   
   def getSchemaStr: Try[String] = {
    input_type_Schema match {

@@ -24,6 +24,8 @@ import es.weso.utils.IOUtils._
 import java.net.URL
 import java.io.File
 import scala.util.{Success => TrySuccess}
+import DataOptions._
+import SchemaOptions._
 
 
 trait Checker { this: Controller =>
@@ -31,7 +33,15 @@ trait Checker { this: Controller =>
   import Multipart._
 
   def data(data: String, dataFormat: String) = { 
-    Validator.validate_get(data,Some(dataFormat),true,None,None,"",None,10,false,false,false)
+    Validator.validate_get(data,
+        Some(dataFormat),
+        DEFAULT_SHOW_DATA,
+        None,
+        None,
+        "",
+        None,
+        DEFAULT_CUT,
+        DEFAULT_ShowSchema)
   }
   
   def schema(schema: String, schemaFormat: String, schemaVersion: String) = 

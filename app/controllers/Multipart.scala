@@ -157,19 +157,21 @@ object Multipart {
         ; schema_version <- parseSchemaVersion(mf,"schema_version")
         )
    yield
-     SchemaInput(input_type_schema,schema_uri, schema_file, schema_textarea, schema_format, schema_version)
+     SchemaInput(input_type_schema,
+         schema_uri, 
+         schema_file, 
+         schema_textarea, 
+         schema_format, 
+         schema_version)
   }
 
-  // TODO: Parse Schema format
   def parseSchemaOptions(mf: MultipartFormData[TemporaryFile]): Try[SchemaOptions] = {
     for ( cut <- parseInt(mf,"cut",0,100)
-        ; withIncoming <- parseBoolean(mf,"withIncoming")
-        ; withAny <- parseBoolean(mf,"withAny")
         ; opt_iri <- parseOptIRI(mf)
         ; showSchema <- parseBoolean(mf,"showSchema")
         )
    yield
-     SchemaOptions("SHEXC",cut,withIncoming,withAny,opt_iri,showSchema)
+     SchemaOptions(cut,opt_iri,showSchema)
   }
 
   def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {

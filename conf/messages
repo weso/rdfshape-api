@@ -25,6 +25,7 @@ Name=RDFShape - Shape Expressions Validator
 Only.defined.shapes=Only defined shapes
 OpenShapes=Open shapes by default
 Output.data.format=Target RDF Data format
+Schema.Version=Schema version
 Output.schema.format=Target Schema format
 RDFSelect=Select RDF
 Schema.options=Schema options
@@ -35,7 +36,8 @@ ShExSelect=Select Shape Expression
 showData=Show Data
 ShowData.explanation=Show RDF data after validation
 Show.schema=Show schema
-Show.schema.explain=Show/Don't show schemasyntax=Data syntax
+Show.schema.explain=Show/Don't show schema
+syntax=Data syntax
 Submit=Check
 WithIncoming=With Incoming
 WithIncoming.explain=Takes into account incoming edges

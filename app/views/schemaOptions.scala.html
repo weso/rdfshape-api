@@ -16,40 +16,6 @@
    <summary>@Messages("MoreOptions")</summary>
    <table>	
    <tr><th>Name</th><th>Option</th><th>Description</th></tr>
-   <tr>
-    <td>@Messages("WithIncoming")</td>
-    <td>
-    <input 
-    	type="radio" name="withIncoming" value="true"
-    	@{if(schemaOptions.withIncoming==true) { "checked" }}>
-    	<label>true</label><br/>
-	<input 
-		type="radio" 
-		name="withIncoming" 
-		value="false" 
-		@{if(schemaOptions.withIncoming==false) { "checked" }}>
-		<label>false</label>
-    </td>
-    <td>@Messages("WithIncoming.explain")</td>
-    </tr>	
-    <tr>
-    <td>@Messages("Any.Shape")</td>
-    <td>
-    <input 
-    	type="radio" 
-    	name="withAny" 
-    	value="true"
-    	@{if(schemaOptions.withAny==true) { "checked" }}>
-    	<label>@Messages("Add.any.shape")</label><br/>
-	<input 
-		type="radio" 
-		name="withAny" 
-		value="false" 
-		@{if(schemaOptions.withAny==false) { "checked" }}>
-		<label>@Messages("Only.defined.shapes")</label>
-    </td>
-    <td>@Messages("Add.any.explain")</td>
-    </tr>
     <tr>
     <td>@Messages("Show.schema")</td>
     <td>

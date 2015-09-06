@@ -152,8 +152,29 @@ p.result_bad {
  font-size: 120%;
 }
 	
-ul.nodes {
+
+table.result {
+ border-collapse: collapse ;
+ border: border: 1px solid green;	
+}
+
+td {
+	border: border: 1px solid green;
+}
+
+th {
+	border: border: 1px solid green;
+}
+
+
+ul.positiveLabels {
 	list-style-type: none;
+	color: green;
+}
+
+ul.negativeLabels {
+	list-style-type: none;
+	color: red;
 }
 
 .about {

@@ -19,6 +19,8 @@ case class DataOptions(
     
 object DataOptions {
   
+  lazy val DEFAULT_SHOW_DATA = true
+  
   // TODO: Check why TRIG doesn't work
   lazy val availableFormats: List[String] = 
     removeList(DataFormats.toList,"TRIG") // TRIG serializer raises an exception

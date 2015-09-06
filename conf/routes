@@ -29,10 +29,10 @@ POST	/converter/schema		    controllers.SchemaConverter.convert_schema_post
 # API
 
 POST	/api/validator	controllers.Validator.validate_post
-GET		/api/validator	controllers.Validator.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true,schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "SHEX_0.1", iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
+GET		/api/validator	controllers.Validator.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true,schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "SHEX_0.1", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
 
 # This route is maintained to keep backwards compatibility (should be deprecated in the future
-GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "SHEX_0.1", iri: Option[String] ?= None, cut:Int ?= 1, withIncoming: Boolean ?= false, withAny: Boolean ?= false, showSchema: Boolean ?= true)
+GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "SHEX_0.1", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
 
 
 # Map static resources from the /public folder to the /assets URL path
