@@ -20,15 +20,19 @@ import es.weso.rdf.validator.{ ValidationResult => ShaclResult, _ }
 import es.weso.typing._
 
 case class ValidationResult(
-    status: Option[Boolean], msg: String, result: Seq[Map[RDFNode, (Seq[Label], Seq[Label])]], nodes: List[RDFNode], str_data: String, opts_data: DataOptions, withSchema: Boolean, str_schema: String, schema_format: String, schema_version: String, opt_schema: SchemaOptions, pm: PrefixMap) {
+    status: Option[Boolean], 
+    msg: String, 
+    result: Seq[Map[RDFNode, (Seq[Label], Seq[Label])]], nodes: List[RDFNode], str_data: String, opts_data: DataOptions, withSchema: Boolean, str_schema: String, schema_format: String, schema_version: String, opt_schema: SchemaOptions, pm: PrefixMap) {
 
   type Result_ = Seq[SingleResult]
   type SingleResult = Map[RDFNode, (Seq[Label], Seq[Label])]
 
   def result2Html(results: Result_): String = {
+    println("Results: " + results)
     val sb = new StringBuilder
     val cut = opt_schema.cut
-    for ((result, n) <- results.take(cut).toSet zip (1 to cut)) {
+    for ((result, n) <- results zip (1 to cut)) {
+      println("Result in looop: " + result)
       sb.append("<h2 class='result'>Result" + printNumber(n, cut) + "</h2>")
       sb.append("<table class='result'>")
       sb.append(singleResult2Html(result))
@@ -38,6 +42,7 @@ case class ValidationResult(
   }
 
   def singleResult2Html(result: SingleResult): String = {
+    println("SingleResult: " + result)
     val sb = new StringBuilder
     sb.append("<tr><th>Node</th><th>Shapes</th></tr>")
     for ((node, pairs) <- result.toSeq) {
