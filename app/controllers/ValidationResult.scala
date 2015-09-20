@@ -12,7 +12,7 @@ import es.weso.rdf._
 import play.Logger
 import es.weso.utils.SchemaUtils
 import es.weso.shacl.SchemaVersions._
-import es.weso.shacl.Shacl._
+import es.weso.shacl.Label
 import es.weso.shacl.ValidationError
 import es.weso.shacl.ShaclMatcher
 import es.weso.shacl.Schema
