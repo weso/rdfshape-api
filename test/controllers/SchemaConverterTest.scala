@@ -34,7 +34,7 @@ class ConverterSchemaTest
           schemaVersion="SHACL_0.1").apply(FakeRequest())
       
       val bodyText : String = contentAsString(result)
-      bodyText must include(":a      a            sh:OpenShape ;")
+      bodyText must include(":a      a            sh:Shape ;")
       }
   }
 
@@ -63,7 +63,7 @@ class ConverterSchemaTest
       val request = FakeRequest(POST, "/api/converter/schema").withMultipartFormDataBody(form)
       val result = converter.convert_schema_post().apply(request)
       val bodyText : String = contentAsString(result)
-      bodyText must include(":a      a            sh:OpenShape ;")
+      bodyText must include(":a      a            sh:Shape ;")
       }
     
  }

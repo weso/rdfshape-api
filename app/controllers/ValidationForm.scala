@@ -28,10 +28,6 @@ case class ValidationForm(
     }
  }
  
- def extract_node : Option[String] = {
-   schemaOptions.opt_iri.map(_.str)
- }
- 
  // this method is used in index.scala.html to show if schema is toggled or no
  // the values must match the values in tabs.js
  def schema_toggle = {
@@ -51,11 +47,12 @@ case class ValidationForm(
    else Success(None)
  }
 
- def extract_str : String = {
-   (this.getSchemaStr().map(opt => opt.getOrElse(""))).getOrElse("")
- }
+/* private def extract_str : String = {
+   // (this.getSchemaStr().map(opt => opt.getOrElse(""))).getOrElse("")
+   dataInput.extract_str
+ } */
 
- def getSchemaOptions(): Try[Option[SchemaOptions]] = {
+ private def getSchemaOptions(): Try[Option[SchemaOptions]] = {
    if (withSchema) {
      Success(Some(schemaOptions))
    } else 
@@ -66,6 +63,36 @@ case class ValidationForm(
    schemaInput.input_type_Schema.toString
  } 
 
+ // Public methods
+ 
+ def dataStr : String = {
+   dataInput.extract_str
+ }
+ 
+  def dataFormat : String = {
+   dataOptions.format
+ }
+
+ def schemaStr : String = {
+   getSchemaStr.map(opt => opt.getOrElse("")).getOrElse("")
+ }
+ 
+ def schemaFormat: String = {
+   schemaInput.inputFormat
+ }
+ 
+ def schemaVersion : String = {
+   schemaInput.schemaVersion.versionName
+ }
+
+ def focusNode : String = {
+   schemaOptions.opt_iri.map(_.str).getOrElse("")
+ }
+
+ def maybeFocusNode : Option[String] = {
+   schemaOptions.opt_iri.map(_.str)
+ }
+ 
 }
     
 object ValidationForm {
@@ -80,11 +107,11 @@ object ValidationForm {
         
   def fromResult(vr:ValidationResult): ValidationForm = {
     ValidationForm(
-      dataInput = DataInput(vr.str_data)
-    , dataOptions = vr.opts_data
+      dataInput = DataInput(vr.dataStr)
+    , dataOptions = vr.dataOptions
     , withSchema = vr.withSchema
-    , schemaInput = SchemaInput(vr.str_schema,vr.schema_format, vr.schema_version)
-    , schemaOptions = vr.opt_schema 
+    , schemaInput = SchemaInput(vr.schemaStr,vr.schemaFormat, vr.schemaVersion)
+    , schemaOptions = vr.schemaOptions
     )
   }
   

@@ -37,38 +37,42 @@
 
 <nav>
 <a href="@routes.Checker.data(
-            vf.extract_str,
-            vf.dataOptions.format)" 
+            vf.dataStr,
+            vf.dataFormat)" 
             title="Check RDF Data syntax (no Schema)">Data</a>
 <a href="@routes.Checker.schema(
-            vf.schemaInput.extract_str,
-            vf.schemaInput.inputFormat,
-            vf.schemaInput.schemaVersion.versionName)" 
+            vf.schemaStr,
+            vf.schemaFormat,
+            vf.schemaVersion)" 
             title="Check Schema syntax (no data)">Schema</a>
-<a href="@routes.Validator.dataSchema(vf.extract_str,
-            vf.dataOptions.format,
-            vf.schemaInput.extract_str,
-            vf.schemaInput.inputFormat,
-            vf.schemaInput.schemaVersion.versionName)" 
+<a href="@routes.Validator.dataSchema(vf.dataStr,
+            vf.dataFormat,
+            vf.schemaStr,
+            vf.schemaFormat,
+            vf.schemaVersion)" 
             title="Validate RDF Data using a Schema">Data + Schema</a>
-<a href="@routes.Validator.dataSchemaNode(vf.extract_str,
-            vf.dataOptions.format,
-            vf.schemaInput.extract_str,
-            vf.schemaInput.inputFormat,
-            vf.schemaInput.schemaVersion.versionName, 
-            vf.schemaOptions.extract_iri_str)" 
+<a href="@routes.Validator.dataSchemaNode(vf.dataStr,
+            vf.dataFormat,
+            vf.schemaStr,
+            vf.schemaFormat,
+            vf.schemaVersion, 
+            vf.focusNode)" 
             title="Validate a node in an RDf Data using a Schema">Data + Node + Schema</a>
+<a href="@routes.Validator.data(vf.dataStr,
+            vf.dataFormat,
+            vf.schemaVersion)" 
+            title="Validate RDf & Schema together. Checks nodeShape declarations">Data & Schema</a>
 <a href="@routes.DataConverter.convert_data_get(
-			data = vf.extract_str,
-            inputFormat = vf.dataOptions.format,
+			data = vf.dataStr,
+            inputFormat = vf.dataFormat,
             outputFormat = "TURTLE" 
             )" 
             title="Conversions betewen different RDF Data formats">Data Conversions</a>
 <a href="@routes.SchemaConverter.convert_schema_get(
-			schema = vf.extract_str,
-            inputFormat = vf.schemaInput.inputFormat,
+			schema = vf.schemaStr,
+            inputFormat = vf.schemaFormat,
             outputFormat = "SHEXC",
-            schemaVersion = vf.schemaInput.schemaVersion.versionName 
+            schemaVersion = vf.schemaVersion 
             )" 
             title="Conversions between different Schema formats">Schema Conversions</a>
 

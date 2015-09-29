@@ -29,6 +29,9 @@ case class SchemaInput(
          result
         }
         ) yield schema.serialize(outputFormat)
+      case _ => {
+        throw new Error(s"convertSchema: Unsupported schemaVersion: " + schemaVersion)
+      }
     }
   }
 

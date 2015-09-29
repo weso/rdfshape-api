@@ -1,6 +1,6 @@
 @(vr:ValidationResult)
 
-@if(vr.status == None || vr.str_data=="") {
+@if(vr.status == None || vr.dataStr=="") {
 } else {  
 
 @if(vr.status == Some(true)) {
@@ -10,12 +10,12 @@
 
 <details>
 <summary>Data</summary>
-<pre class="prettyprint linenums lang-turtle">@vr.str_data</pre>
+<pre class="prettyprint linenums lang-turtle">@vr.dataStr</pre>
 </details>
 @if(vr.withSchema) {
 	<details>
 	<summary>Schema</summary>
-	<pre class="prettyprint linenums lang-shex">@vr.str_schema</pre>
+	<pre class="prettyprint linenums lang-shex">@vr.schemaStr</pre>
     </details>
 }
 
@@ -27,27 +27,27 @@
 
 <details>
 <summary>Data</summary>
-<pre class="prettyprint linenums lang-turtle">@vr.str_data</pre>
+<pre class="prettyprint linenums lang-turtle">@vr.dataStr</pre>
 </details>
 @if(vr.withSchema) {
 	<details>
 	<summary>Schema</summary>
-	<pre class="prettyprint linenums lang-shex">@vr.str_schema</pre>
+	<pre class="prettyprint linenums lang-shex">@vr.schemaStr</pre>
 	</details>
 }
 
 }
 
 <a href="@routes.Validator.validate_get(
-	         vr.str_data,
-	         Some(vr.opts_data.format),
-	         vr.opts_data.showData,
+	         vr.dataStr,
+	         Some(vr.dataFormat),
+	         vr.showData,
 	         vr.schema_param,
-             Some(vr.schema_format),
-             vr.schema_version,
-	         vr.opt_iri_param,
-	         vr.opt_schema.cut,
-	         vr.opt_schema.showSchema
+             vr.schemaFormat_param,
+             vr.schemaVersion,
+	         vr.maybeFocusNode,
+	         vr.cut,
+	         vr.showSchema
 	         )">Generate permalink</a>
 
 }
