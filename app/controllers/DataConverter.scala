@@ -17,7 +17,6 @@ import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
-import es.weso.shex._
 import es.weso.utils._
 import es.weso.utils.TryUtils._
 import es.weso.utils.RDFUtils._

@@ -10,13 +10,11 @@ import org.apache.commons.io.FileUtils
 import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
-import es.weso.shex.Schema
 import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
 import es.weso.rdfgraph.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure, Passed}
-import es.weso.shex.Typing
 import es.weso.utils._
 import es.weso.utils.TryUtils._
 import es.weso.utils.RDFUtils._

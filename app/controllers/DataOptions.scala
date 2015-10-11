@@ -1,6 +1,5 @@
 package controllers
 
-import es.weso.shex._
 import es.weso.monads._
 import es.weso.rdf._
 import es.weso.utils._

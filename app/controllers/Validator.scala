@@ -23,7 +23,7 @@ import java.net.URL
 import java.io.File
 import DataOptions._
 import SchemaOptions._
-import es.weso.shacl._
+import es.weso.shacl.{ Action => _, _}
 import es.weso.shacl.converter.RDF2Schema
 import es.weso.shacl.converter.Schema2RDF
 
