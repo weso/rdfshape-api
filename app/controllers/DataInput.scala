@@ -1,6 +1,5 @@
 package controllers
 
-import es.weso.shex._
 import es.weso.rdf.PrefixMap
 import xml.Utility.escape
 import es.weso.rdfgraph.nodes._
