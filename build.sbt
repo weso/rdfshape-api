@@ -37,7 +37,9 @@ libraryDependencies ++= Seq(
 , "org.webjars" % "prettify" % "4-Mar-2013"
 )
 
-// resolvers += "Bintray" at "http://dl.bintray.com/weso/weso-releases"
+resolvers += "Bintray" at "http://dl.bintray.com/weso/weso-releases"
+
+resolvers += Resolver.bintrayRepo("labra", "maven")
 
 herokuAppName in Compile := "rdfshape"
 
