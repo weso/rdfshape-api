@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
 , "commons-io" % "commons-io" % "2.4"  
 , "org.apache.jena" % "jena-arq" % "2.10.1" excludeAll(ExclusionRule(organization = "org.slf4j"))
 , "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
-, "es.weso" % "shexcala_2.11" % "0.5.7" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+, "es.weso" % "shexcala_2.11" % "0.5.9" excludeAll(ExclusionRule(organization = "org.slf4j")) 
 // , "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"
 , "org.seleniumhq.selenium" % "selenium-java" % "2.35.0" % "test"
@@ -37,7 +37,7 @@ libraryDependencies ++= Seq(
 , "org.webjars" % "prettify" % "4-Mar-2013"
 )
 
-resolvers += "Bintray" at "http://dl.bintray.com/weso/weso-releases"
+// resolvers += "Bintray" at "http://dl.bintray.com/weso/weso-releases"
 
 herokuAppName in Compile := "rdfshape"
 

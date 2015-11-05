@@ -28,6 +28,8 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.3")
 
+addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
+
 addSbtPlugin("com.heroku" % "sbt-heroku" % "0.5.1")
 
 resolvers += Classpaths.sbtPluginReleases
