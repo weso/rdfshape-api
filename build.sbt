@@ -24,7 +24,10 @@ libraryDependencies ++= Seq(
 , "commons-io" % "commons-io" % "2.4"  
 , "org.apache.jena" % "jena-arq" % "2.10.1" excludeAll(ExclusionRule(organization = "org.slf4j"))
 , "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
-, "es.weso" % "shexcala_2.11" % "0.6.1" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+
+// ShExcala
+, "es.weso" % "shexcala_2.11" % "0.6.5" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+
 // , "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"
 , "org.seleniumhq.selenium" % "selenium-java" % "2.35.0" % "test"
