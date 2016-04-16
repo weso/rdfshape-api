@@ -16,7 +16,7 @@ object IOUtils {
     } catch {
     case e: Exception => TryFailure(throw new Exception("getURI: cannot retrieve content from " + uri + "\nException: " + e.getMessage))
     }
-  }
+  } 
 
 
   def getFileContents(opt_file: Option[File]):Try[String] = {

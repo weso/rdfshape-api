@@ -1,4 +1,4 @@
-package es.weso.shacl
+package es.weso.schema
 
 import scala.util._
 

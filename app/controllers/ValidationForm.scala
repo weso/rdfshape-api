@@ -3,9 +3,10 @@ package controllers
 import es.weso.monads._
 import es.weso.rdf._
 import xml.Utility.escape
-import es.weso.rdfgraph.nodes.RDFNode
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.RDFNode
+import es.weso.rdf.nodes.IRI
 import java.io.File
+//import es.weso.utils.JenaUtils._
 import es.weso.utils.IOUtils._
 import scala.util.Try
 import scala.util.Success

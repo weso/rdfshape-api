@@ -18,7 +18,7 @@ scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   jdbc,
-  anorm,
+//  anorm,
   cache,
   ws
 , "commons-io" % "commons-io" % "2.4"  
@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
 , "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
 
 // ShExcala
-, "es.weso" % "shexcala_2.11" % "0.6.7" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+, "es.weso" % "shexcala_2.11" % "0.7.8" excludeAll(ExclusionRule(organization = "org.slf4j")) 
 
 // , "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"

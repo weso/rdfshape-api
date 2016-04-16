@@ -1,14 +1,12 @@
 package controllers
 
-// import es.weso.shex.{Schema => ShexSchema}
-import es.weso.shacl._
-import es.weso.rdf._
-import es.weso.rdfgraph.nodes.RDFNode
-import es.weso.rdfgraph.nodes.IRI
 import java.io.File
+import scala.util._
+import es.weso.rdf._
+import es.weso.schema._
+import es.weso.shex._
 import es.weso.utils.IOUtils._
-import util._
-import es.weso.utils.SchemaUtils
+import es.weso.shex.SchemaFormat._
 
 case class SchemaInput(
       input_type_Schema: InputType
@@ -23,8 +21,8 @@ case class SchemaInput(
     schemaVersion match {
       case SHACL =>
         for ( str <- getSchemaStr
-        ; (schema,pm) <- {
-         val result = Schema.fromString(str,inputFormat)
+            ; (schema,pm) <- {
+                 val result = Schema.fromString(str,inputFormat)
          println("ConverSchema: Result = " + result)
          result
         }
@@ -59,7 +57,7 @@ object SchemaInput {
              , schema_uri = ""
              , schema_file = None
              , schema_textarea = ""
-             , inputFormat = SchemaUtils.defaultSchemaFormat
+             , inputFormat = SchemaFormat.default.name
              , schemaVersion = SchemaVersions.default
              )
     

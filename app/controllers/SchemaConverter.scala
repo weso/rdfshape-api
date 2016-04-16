@@ -10,16 +10,15 @@ import java.io.ByteArrayInputStream
 import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
-import es.weso.shacl.Schema
+import es.weso.shex.Schema
 import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
-import es.weso.shacl.{Schema => ShExSchema, SchemaFormats}
+import es.weso.shex.{Schema => ShExSchema, SchemaFormat}
 import es.weso.utils._
 import es.weso.utils.TryUtils._
-import es.weso.utils.RDFUtils._
 import java.net.URL
 import java.io.File
 import es.weso.utils.IOUtils._
@@ -79,7 +78,7 @@ trait SchemaConverter { this: Controller =>
   }
 
   def schemaFormats = Action {
-    Ok(Json.toJson(SchemaFormats.toList))
+    Ok(Json.toJson(SchemaFormat.toList))
   }
     
 }

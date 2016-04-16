@@ -3,10 +3,10 @@ package controllers
 import es.weso.monads._
 import es.weso.rdf._
 import xml.Utility.escape
-import es.weso.rdfgraph.nodes.RDFNode
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.RDFNode
+import es.weso.rdf.nodes.IRI
 import java.io.File
-import es.weso.shacl.SchemaFormats
+import es.weso.shex.SchemaFormat
 
 case class SchemaOptions(
       cut: Int
@@ -29,7 +29,7 @@ object SchemaOptions {
   lazy val DEFAULT_ShowSchema = true
   
   lazy val availableFormats: List[String] = 
-    SchemaFormats.toList
+    SchemaFormat.toList
 
   def default : SchemaOptions = 
     SchemaOptions(

@@ -4,9 +4,9 @@ import es.weso.monads._
 import es.weso.rdf._
 import es.weso.utils._
 import xml.Utility.escape
-import es.weso.rdfgraph.nodes.RDFNode
-import es.weso.rdfgraph.nodes.IRI
-import es.weso.shacl.DataFormats
+import es.weso.rdf.nodes.RDFNode
+import es.weso.rdf.nodes.IRI
+import es.weso.shex.DataFormat
 import java.io.File
 import play.Logger
 
@@ -22,7 +22,7 @@ object DataOptions {
   
   // TODO: Check why TRIG doesn't work
   lazy val availableFormats: List[String] = 
-    removeList(DataFormats.toList,"TRIG") // TRIG serializer raises an exception
+    removeList(DataFormat.toList,"TRIG") // TRIG serializer raises an exception
   
 
   lazy val default : DataOptions =

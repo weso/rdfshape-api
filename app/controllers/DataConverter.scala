@@ -10,11 +10,11 @@ import java.io.ByteArrayInputStream
 import play.api._
 import play.api.mvc._
 import play.api.libs.Files._
-import es.weso.shacl.Schema
-import es.weso.shacl.DataFormats
+import es.weso.shex.Schema
+import es.weso.shex.DataFormat
 import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
 import es.weso.utils._
@@ -33,7 +33,7 @@ trait DataConverter { this: Controller =>
         , dataFormat: String
         , outputFormat: String
     ) : Future[Try[String]]= {
-       Future(RDFParse(data,dataFormat).map(_.serialize(outputFormat)))
+       Future(parseStrAsRDFReader(data,dataFormat).map(_.serialize(outputFormat)))
   }
   
   
@@ -72,7 +72,7 @@ trait DataConverter { this: Controller =>
   }
   
   def dataFormats = Action {
-    Ok(Json.toJson(DataFormats.toList))
+    Ok(Json.toJson(DataFormat.toList))
   }
    
 }

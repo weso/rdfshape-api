@@ -12,14 +12,15 @@ import play.api.mvc._
 import play.api.libs.Files._
 import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.rdf._
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure, Passed}
 import es.weso.utils._
 import es.weso.utils.TryUtils._
-import es.weso.utils.RDFUtils._
+// import es.weso.utils.RDFUtils._
 import es.weso.utils.IOUtils._
-import es.weso.shacl._
+import es.weso.shex._
+import es.weso.schema._
 import java.net.URL
 import java.io.File
 import play.api.Logger

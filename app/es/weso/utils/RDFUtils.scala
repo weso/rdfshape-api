@@ -6,11 +6,11 @@ import java.io.File
 import scala.util._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf._
-import es.weso.shacl.DataFormats
+import es.weso.shex.DataFormat
 
 object RDFUtils {
 
-  def RDFParse(str: String, format: String): Try[RDFReader] = {
+  def parseStrAsRDFReader(str: String, format: String): Try[RDFReader] = {
     RDFAsJenaModel.fromChars(str,format) 
   }
 
@@ -19,7 +19,7 @@ object RDFUtils {
   def getFormat(syntax: Option[String]): String = {
     syntax match {
       case Some(s) => 
-        if (DataFormats.available(s)) s
+        if (DataFormat.available(s)) s
         else // TODO: Check a better failure... 
           throw new Exception("Unsupported syntax " + s)
       case None => defaultDataFormat

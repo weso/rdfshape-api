@@ -2,7 +2,7 @@ package controllers
 
 import es.weso.rdf.PrefixMap
 import xml.Utility.escape
-import es.weso.rdfgraph.nodes._
+import es.weso.rdf.nodes._
 import java.io.File
 import util.{Try, Success => TrySuccess, Failure => TryFailure}
 import es.weso.utils.RDFUtils._
@@ -35,7 +35,7 @@ case class DataInput(
    input_type_Data match {
      case ByUri | ByFile | ByInput => 
        			 for ( str <- getDataStr
-                 ; rdf <- RDFParse(str,format)
+                 ; rdf <- parseStrAsRDFReader(str,format)
                  ) yield rdf
      case ByEndpoint => 
        if (data_endpoint == "") {

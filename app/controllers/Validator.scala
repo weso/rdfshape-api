@@ -12,7 +12,7 @@ import play.api.mvc._
 import play.api.libs.Files._
 import scala.util.{ Try, Success => TrySuccess, Failure => TryFailure }
 import es.weso.rdf._
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.IRI
 import es.weso.rdf.jena._
 // import es.weso.monads.{ Result => SchemaResult, Failure => SchemaFailure, Passed }
 import es.weso.utils._
@@ -23,9 +23,11 @@ import java.net.URL
 import java.io.File
 import DataOptions._
 import SchemaOptions._
-import es.weso.shacl.{ Action => _, _}
-import es.weso.shacl.converter.RDF2Schema
-import es.weso.shacl.converter.Schema2RDF
+import es.weso.shex.{ Action => _, _}
+import es.weso.shex.SchemaFormat
+import es.weso.shex.converter.RDF2Schema
+import es.weso.shex.converter.Schema2RDF
+import es.weso.schema.SchemaUtils
 
 trait Validator { this: Controller =>
 
@@ -64,7 +66,7 @@ trait Validator { this: Controller =>
           DEFAULT_ShowSchema)
       }
       case TryFailure(e) =>
-        ???
+        throw new Exception("Validator Exception in data: " + e)
       }
   }
 
@@ -114,7 +116,7 @@ trait Validator { this: Controller =>
       format = RDFUtils.getFormat(formatData), showData = showData)
     val opts_schema = SchemaOptions(
       cut = cut, opt_iri = iri, showSchema)
-    RDFParse(str_data, opts_data.format) match {
+    parseStrAsRDFReader(str_data, opts_data.format) match {
       case TrySuccess(rdf) => {
         scala.concurrent.Future(
           for {
@@ -138,7 +140,7 @@ trait Validator { this: Controller =>
             opts_data,
             true,
             "",
-            SchemaFormats.default,
+            SchemaFormat.default.name,
             schemaVersion,
             opts_schema,
             PrefixMap.empty)))
@@ -164,7 +166,7 @@ trait Validator { this: Controller =>
 
     val opts_schema = SchemaOptions(
       cut = cut, opt_iri = iri, showSchema)
-    RDFParse(str_data, opts_data.format) match {
+    parseStrAsRDFReader(str_data, opts_data.format) match {
       case TrySuccess(data) =>
         scala.concurrent.Future(
           TrySuccess(

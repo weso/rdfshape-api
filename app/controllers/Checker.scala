@@ -12,7 +12,7 @@ import play.api.mvc._
 import play.api.libs.Files._
 import scala.util._
 import es.weso.rdf._
-import es.weso.rdfgraph.nodes.IRI
+import es.weso.rdf.nodes.IRI
 import es.weso.rdf.jena._
 import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure, Passed}
 import es.weso.utils._

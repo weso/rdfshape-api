@@ -3,16 +3,16 @@ package controllers
 import es.weso.monads.{ Failure => FailureMonads }
 import es.weso.rdf._
 import xml.Utility.escape
-import es.weso.rdfgraph.nodes.RDFNode
-import es.weso.rdfgraph.nodes.IRI
-import es.weso.rdf.RDFTriples
+import es.weso.rdf.nodes.RDFNode
+import es.weso.rdf.nodes.IRI
+import es.weso.rdf.triples.RDFTriple
 import com.hp.hpl.jena.sparql.function.library.e
 import scala.util._
 import es.weso.rdf._
 import play.Logger
-import es.weso.utils.SchemaUtils
-import es.weso.shacl.SchemaVersions._
-import es.weso.shacl._
+import es.weso.schema.SchemaUtils
+import es.weso.schema.SchemaVersions._
+import es.weso.shex._
 import es.weso.rdf.validator.{ ValidationResult => ShaclResult, _ }
 import es.weso.typing._
 
@@ -147,7 +147,7 @@ object ValidationResult {
     schema_format: String,
     schemaOptions: SchemaOptions,
     pm: PrefixMap): ValidationResult = {
-    val matcher = ShaclMatcher(schema, data)
+    val matcher = ShExMatcher(schema, data)
     val result = matcher.match_node_AllLabels(iri)
     val (ok, msg, next) = extractResult(result)
     ValidationResult(Some(ok), 
@@ -160,7 +160,7 @@ object ValidationResult {
   def validateAny(
     data: RDFReader, str_data: String, dataOptions: DataOptions, schema: Schema, str_schema: String, schema_format: String, schemaOptions: SchemaOptions, pm: PrefixMap): ValidationResult = {
     val nodes = data.subjects.toList
-    val validator = ShaclMatcher(schema, data)
+    val validator = ShExMatcher(schema, data)
     val result = validator.matchAllNodes_AllLabels
     val (ok, msg, next) = extractResult(result)
     ValidationResult(Some(ok), msg, next, nodes, str_data, dataOptions, true, str_schema, schema_format, defaultSchemaVersion, schemaOptions, pm)
