@@ -20,20 +20,25 @@ case class SchemaInput(
   def convertSchema(outputFormat: String): Try[String] = {
     schemaVersion match {
       case SHACL =>
-        for ( str <- getSchemaStr
-            ; (schema,pm) <- {
-                 val result = Schema.fromString(str,inputFormat)
-         println("ConverSchema: Result = " + result)
-         result
-        }
-        ) yield schema.serialize(outputFormat)
+        for { inputStr <- getSchemaStr
+            ; outStr <- ShaclConverter(inputStr, inputFormat, outputFormat)
+            } 
+        yield outStr        
       case _ => {
         throw new Error(s"convertSchema: Unsupported schemaVersion: " + schemaVersion)
       }
     }
   }
 
-  
+  def ShaclConverter(str: String, inputFormat: String, outputFormat: String): Try[String] = {
+    if (str == "") Success("")
+    else {
+      for {
+        (schema,pm) <- Schema.fromString(str,inputFormat)
+      } yield schema.serialize(outputFormat)
+    }
+  }  
+
   def getSchemaStr: Try[String] = {
    input_type_Schema match {
      case ByUri => if (schema_uri == "") 

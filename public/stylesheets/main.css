@@ -11,6 +11,41 @@ textarea.input_src {
 	width: 98.5%;
 }
 
+header nav {
+	margin: auto;  
+	text-align: center;
+}
+
+header nav ul ul {
+	display: none; 
+}
+	
+header nav ul {
+	display: table;
+    width: 100%;
+}
+
+header nav ul li:hover > ul {
+	display: block;
+}
+
+header nav ul li:hover > ul li {
+	display: block;
+	margin-top: 0px;
+	width: 20%;
+}
+
+header nav ul li {
+	display: table-cell;
+	width: 20% ;
+	text-align: center;
+	white-space: nowrap;
+}
+
+header nav ul li:hover {
+	background-color: #365D95;
+}
+
 header {
 	font-family: "Myriad Web", "Myriad Pro", "Gill Sans", Helvetica, Arial, Sans-Serif;
 	background-color: #365D95;
@@ -27,28 +62,6 @@ header::after {
     width: 100%;
 }
 
-header > div,
-header > div::before,
-header nav,
-header > div h1 {
-    display: inline-block;
-    vertical-align: middle;
-    text-align: left;
-}
-
-header > div {
-    height: 100%;
-}
-
-header > div::before {
-    content: '';
-    height: 100%;
-}
-
-header > div h1 {
-    font-size: 3em;
-    font-style: italic;
-}
 
 header nav a {
     padding: 0 0.6em;
@@ -57,6 +70,10 @@ header nav a {
 
 header nav a:last-child {
     padding-right: 0;
+}
+
+header nav ul ul li a:hover {
+	background: #4b545f; 
 }
 
 @media screen and (max-width: 720px){
