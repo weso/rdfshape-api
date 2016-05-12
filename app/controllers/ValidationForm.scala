@@ -1,15 +1,7 @@
 package controllers
 
-import es.weso.monads._
-import es.weso.rdf._
-import xml.Utility.escape
-import es.weso.rdf.nodes.RDFNode
-import es.weso.rdf.nodes.IRI
-import java.io.File
-//import es.weso.utils.JenaUtils._
-import es.weso.utils.IOUtils._
-import scala.util.Try
-import scala.util.Success
+import scala.util.{ Success, Try }
+import es.weso.utils.IOUtils.{ failMsg, getFileContents, getURI }
 
 case class ValidationForm(
       dataInput: DataInput
@@ -18,6 +10,8 @@ case class ValidationForm(
     , schemaInput: SchemaInput
     , schemaOptions: SchemaOptions
     ) {
+ 
+ def schemaName = schemaInput.schemaName
  
  // This method is used to show if form is withIRI or not in index.scala.html
  // the values must match the prefix of values in tabs.js
@@ -82,7 +76,7 @@ case class ValidationForm(
  }
  
  def schemaVersion : String = {
-   schemaInput.schemaVersion.versionName
+   schemaInput.schemaName
  }
 
  def focusNode : String = {
@@ -110,7 +104,7 @@ object ValidationForm {
       dataInput = DataInput(vr.dataStr)
     , dataOptions = vr.dataOptions
     , withSchema = vr.withSchema
-    , schemaInput = SchemaInput(vr.schemaStr,vr.schemaFormat, vr.schemaVersion)
+    , schemaInput = SchemaInput(vr.schemaStr,vr.schemaFormat, vr.schemaName)
     , schemaOptions = vr.schemaOptions
     )
   }

@@ -5,8 +5,11 @@
 
 @if(vr.status == Some(true)) {
 
-<p class="result_ok">@vr.msg</p>
-@Html(vr.toHTML())
+<div class="result_ok">
+<p class="msg_result_ok">OK</p>
+<pre>@vr.msg</pre>
+
+@Html(vr.toHTML)
 
 <details>
 <summary>Data</summary>
@@ -18,12 +21,12 @@
 	<pre class="prettyprint linenums lang-shex">@vr.schemaStr</pre>
     </details>
 }
-
+</div>
 } else { 
 
-<p class="result_bad">
-<pre>@vr.msg</pre>
-</p>
+<div class="result_bad">
+<p class="msg_result_bad">Message: @vr.msg
+<pre>@vr.toHTML</pre>
 
 <details>
 <summary>Data</summary>
@@ -35,7 +38,7 @@
 	<pre class="prettyprint linenums lang-shex">@vr.schemaStr</pre>
 	</details>
 }
-
+</div>
 }
 
 <a href="@routes.Validator.validate_get(
@@ -44,7 +47,7 @@
 	         vr.showData,
 	         vr.schema_param,
              vr.schemaFormat_param,
-             vr.schemaVersion,
+             vr.schemaName,
 	         vr.maybeFocusNode,
 	         vr.cut,
 	         vr.showSchema

@@ -14,7 +14,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala).
 
 // unmanagedSourceDirectories in Compile <+= twirlCompileTemplates.target
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
   jdbc,
@@ -26,8 +26,8 @@ libraryDependencies ++= Seq(
 , "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
 
 // ShExcala
-, "es.weso" % "shexcala_2.11" % "0.7.11" excludeAll(ExclusionRule(organization = "org.slf4j")) 
-//, "es.weso" % "shaclex_2.11" % "0.0.1" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+//, "es.weso" % "shexcala_2.11" % "0.7.11" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+, "es.weso" % "shaclex_2.11" % "0.0.1" excludeAll(ExclusionRule(organization = "org.slf4j")) 
 
 // , "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"

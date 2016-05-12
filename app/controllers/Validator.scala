@@ -1,33 +1,23 @@
 package controllers
 
-import scala.concurrent._
-import scala.concurrent.duration._
-import akka.actor._
+import scala.Stream
+import scala.concurrent.Future
+import scala.util.{ Failure => TryFailure, Success => TrySuccess, Try }
 
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import java.io.ByteArrayInputStream
-import org.apache.commons.io.FileUtils
-import play.api._
-import play.api.mvc._
-import play.api.libs.Files._
-import scala.util.{ Try, Success => TrySuccess, Failure => TryFailure }
-import es.weso.rdf._
+import DataOptions.DEFAULT_SHOW_DATA
+import SchemaOptions.{ DEFAULT_CUT, DEFAULT_ShowSchema }
+import es.weso.rdf.{ PrefixMap, RDFBuilder }
+import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
-import es.weso.rdf.jena._
-// import es.weso.monads.{ Result => SchemaResult, Failure => SchemaFailure, Passed }
-import es.weso.utils._
-import es.weso.utils.CommonUtils._
-import es.weso.utils.RDFUtils._
-import es.weso.utils.IOUtils._
-import java.net.URL
-import java.io.File
-import DataOptions._
-import SchemaOptions._
-import es.weso.shex.{ Action => _, _}
-import es.weso.shex.SchemaFormat
-import es.weso.shex.converter.RDF2Schema
-import es.weso.shex.converter.Schema2RDF
-import es.weso.schema.SchemaUtils
+// import es.weso.schema.SchemaUtils
+// import es.weso.shex.{ Schema => ShExSchema, SchemaFormat => ShExSchemaFormat}
+// import es.weso.shex.converter.RDF2Schema
+import es.weso.schema._
+import es.weso.utils.CommonUtils.getWithRecoverFunction
+import es.weso.utils.RDFUtils
+import es.weso.utils.RDFUtils.parseStrAsRDFReader
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.mvc.{ Action, AnyContent, Controller }
 
 trait Validator { this: Controller =>
 
@@ -43,7 +33,7 @@ trait Validator { this: Controller =>
   def data(
     data: String,
     dataFormat: String,
-    schemaVersion: String): Action[AnyContent] = {
+    schemaName: String): Action[AnyContent] = {
     // Create a shapes graph and join it to the RDF data
     val rdf: RDFBuilder = RDFAsJenaModel.empty
     val opts_data = DataOptions(
@@ -51,16 +41,17 @@ trait Validator { this: Controller =>
     val opts_schema = SchemaOptions.default
 
     val trySchema = for {
-      (schema, pm) <- Schema.fromString(data, dataFormat)
+      schema <- Schemas.fromString(data, dataFormat,schemaName)
     } yield (schema)
+
     trySchema match {
       case TrySuccess(schema) => {
         validate_get(data,
           Some(dataFormat),
           DEFAULT_SHOW_DATA,
-          Some(schema.serialize("SHEXC")),
-          Some("SHEXC"),
-          schemaVersion,
+          Some(data),
+          Some(dataFormat),
+          schemaName,
           None,
           DEFAULT_CUT,
           DEFAULT_ShowSchema)
@@ -75,13 +66,13 @@ trait Validator { this: Controller =>
     dataFormat: String,
     schema: String,
     schemaFormat: String,
-    schemaVersion: String): Action[AnyContent] = {
+    schemaName: String): Action[AnyContent] = {
     validate_get(data,
       Some(dataFormat),
       DEFAULT_SHOW_DATA,
       Some(schema),
       Some(schemaFormat),
-      schemaVersion,
+      schemaName,
       None,
       DEFAULT_CUT,
       DEFAULT_ShowSchema)
@@ -103,11 +94,14 @@ trait Validator { this: Controller =>
       DEFAULT_ShowSchema)
   }
 
+  /**
+   * Validate RDF only
+   */
   def validate_rdf_get_Future(
     str_data: String,
     formatData: Option[String],
     showData: Boolean,
-    schemaVersion: String,
+    schemaName: String,
     opt_iri: Option[String],
     cut: Int,
     showSchema: Boolean): Future[Try[ValidationResult]] = {
@@ -120,30 +114,28 @@ trait Validator { this: Controller =>
       case TrySuccess(rdf) => {
         scala.concurrent.Future(
           for {
-            (schema, pm) <- RDF2Schema.rdf2Schema(rdf)
-          } yield ValidationResult.validate(
+            schema <- Schemas.fromRDF(rdf,schemaName)
+          } yield 
+          ValidationResult.validate_withSchema(
             rdf,
             str_data,
             opts_data,
-            true,
-            schema.serialize("SHEXC"),
-            "SHEXC",
-            schemaVersion, opts_schema))
+            schema, 
+            opts_schema))
       }
       case TryFailure(e) =>
         scala.concurrent.Future(TrySuccess(
           ValidationResult(Some(false),
             "Error parsing Data with syntax " + opts_data.format + ": " + e.getMessage,
-            Seq(),
+            Result.empty,
             List(),
             str_data,
             opts_data,
             true,
             "",
-            SchemaFormat.default.name,
-            schemaVersion,
-            opts_schema,
-            PrefixMap.empty)))
+            opts_data.format,
+            schemaName,
+            opts_schema)))
     }
   }
 
@@ -153,7 +145,7 @@ trait Validator { this: Controller =>
     showData: Boolean,
     opt_schema: Option[String],
     maybeSchemaFormat: Option[String],
-    schemaVersion: String,
+    schemaName: String,
     opt_iri: Option[String],
     cut: Int,
     showSchema: Boolean): Future[Try[ValidationResult]] = {
@@ -166,6 +158,7 @@ trait Validator { this: Controller =>
 
     val opts_schema = SchemaOptions(
       cut = cut, opt_iri = iri, showSchema)
+      
     parseStrAsRDFReader(str_data, opts_data.format) match {
       case TrySuccess(data) =>
         scala.concurrent.Future(
@@ -176,21 +169,20 @@ trait Validator { this: Controller =>
               opts_data,
               withSchema,
               str_schema,
-              schemaFormat, schemaVersion, opts_schema)))
+              schemaFormat, schemaName, opts_schema)))
       case TryFailure(e) =>
         scala.concurrent.Future(TrySuccess(
           ValidationResult(Some(false),
             "Error parsing Data with syntax " + opts_data.format + ": " + e.getMessage,
-            Seq(),
+            Result.empty,
             List(),
             str_data,
             opts_data,
             withSchema,
             str_schema,
             schemaFormat,
-            schemaVersion,
-            opts_schema,
-            PrefixMap.empty)))
+            schemaName,
+            opts_schema)))
     }
   }
 
@@ -254,7 +246,6 @@ trait Validator { this: Controller =>
 
   def validate_post = Action.async { request =>
     {
-
       val pair = for (
         vf <- getValidationForm(request); str_data <- vf.dataInput.getDataStr
       ) yield (vf, str_data)
@@ -264,7 +255,8 @@ trait Validator { this: Controller =>
           case TrySuccess((vf, str_data)) => {
             val tryValidate =
               for (
-                data <- vf.dataInput.getData(vf.dataOptions.format); str_schema <- vf.schemaInput.getSchemaStr
+                data <- vf.dataInput.getData(vf.dataOptions.format); 
+                str_schema <- vf.schemaInput.getSchemaStr
               ) yield {
                 ValidationResult.validate(
                   data,
@@ -273,7 +265,7 @@ trait Validator { this: Controller =>
                   vf.withSchema,
                   str_schema,
                   vf.schemaInput.inputFormat,
-                  vf.schemaInput.schemaVersion.versionName,
+                  vf.schemaInput.schemaName,
                   vf.schemaOptions)
               }
             val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(str_data, vf))
@@ -290,16 +282,15 @@ trait Validator { this: Controller =>
     ValidationResult(
       Some(false),
       e.getMessage(),
-      Stream(),
+      Result.empty,
       List(),
       str_data,
       vf.dataOptions,
       vf.withSchema,
       schema_str,
       vf.schemaInput.inputFormat,
-      vf.schemaInput.schemaVersion.versionName,
-      vf.schemaOptions,
-      PrefixMap.empty)
+      vf.schemaInput.schemaName,
+      vf.schemaOptions)
   }
 
 }

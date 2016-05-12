@@ -7,16 +7,17 @@ GET     /                           controllers.Application.index
 GET		/about						controllers.Application.about
 GET		/help						controllers.Application.help
 
-# Validate
+# Syntax checker
 
 GET     /checker/data              controllers.Checker.data(data : String ?= "", dataFormat: String ?= "TURTLE")
-GET     /checker/schema            controllers.Checker.schema(schema : String ?= "", schemaFormat: String ?= "TURTLE", schemaVersion: String ?= "SHACL_0.1")
+GET     /checker/schema            controllers.Checker.schema(schema : String ?= "", schemaFormat: String ?= "TURTLE", schemaName: String ?= "ShEx")
+
 POST	/api/checker/schema		   controllers.Checker.schema_post
 
 # GET     /validate/rdf		        controllers.Validator.onlyData(data: String ?= "", dataFormat: String ?= "TURTLE", schemaVersion ?= "SHEX_0.1")
-GET     /validate/data		        controllers.Validator.data(data: String ?= "", dataFormat: String ?= "TURTLE", schemaVersion ?= "SHEX_0.1")
-GET     /validate/dataSchema        controllers.Validator.dataSchema(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", schemaVersion ?= "SHEX_0.1")
-GET     /validate/dataSchemaNode    controllers.Validator.dataSchemaNode(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", node: String ?= "", schemaVersion ?= "SHEX_0.1")
+GET     /validate/data		        controllers.Validator.data(data: String ?= "", dataFormat: String ?= "TURTLE", schemaName ?= "ShEx")
+GET     /validate/dataSchema        controllers.Validator.dataSchema(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", schemaName ?= "ShEx")
+GET     /validate/dataSchemaNode    controllers.Validator.dataSchemaNode(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", node: String ?= "", schemaName ?= "ShEx")
 
 # Converter
 
@@ -24,18 +25,18 @@ GET		/converter/data				controllers.DataConverter.convert_data_get(data: String,
 GET		/converter/dataFormats		controllers.DataConverter.dataFormats()
 POST	/converter/data			    controllers.DataConverter.convert_data_post
 
-GET		/converter/schema			controllers.SchemaConverter.convert_schema_get(schema:String,inputFormat: String ?= "SHEXC", schemaVersion : String ?= "SHACL_0.1", outputFormat: String ?= "SHEXC")
+GET		/converter/schema			controllers.SchemaConverter.convert_schema_get(schema:String,inputFormat: String ?= "SHEXC", schemaName : String ?= "ShEx", outputFormat: String ?= "SHEXC")
 GET		/converter/schemaFormats	controllers.SchemaConverter.schemaFormats()
 POST	/converter/schema		    controllers.SchemaConverter.convert_schema_post
 
 # API
 
 POST	/api/validator	controllers.Validator.validate_post
-GET		/api/validator	controllers.Validator.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true,schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "SHEX_0.1", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
-GET		/api/validator/rdf	controllers.Validator.validate_rdf_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true, schemaVersion: String ?= "SHACL_0.1", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
+GET		/api/validator	controllers.Validator.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true,schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
+GET		/api/validator/rdf	controllers.Validator.validate_rdf_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true, schemaVersion: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
 
 # This route is maintained to keep backwards compatibility (should be deprecated in the future
-GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "SHEX_0.1", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
+GET		/validator	controllers.Validator.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
 
 
 # Map static resources from the /public folder to the /assets URL path

@@ -3,7 +3,6 @@ package controllers
 import play.api._
 import play.api.mvc._
 import buildinfo._
-// import rdfBuildinfo.{ BuildInfo => RDFBuildInfo }
 
 // We use traits instead of objects to be able to test them
 // More info: https://www.playframework.com/documentation/2.3.x/ScalaTestingWithScalaTest

@@ -140,11 +140,11 @@ object Multipart {
     }
   }
   
-  def parseSchemaVersion(mf: MultipartFormData[TemporaryFile], key: String): Try[SchemaVersion] = {
+  def parseSchemaVersion(mf: MultipartFormData[TemporaryFile], key: String): Try[String] = {
     for {
       schema_version <- parseKey(mf,"schema_version")
-    ; schemaVersion <- SchemaVersions.lookup(schema_version)
-    } yield schemaVersion
+    ; schemaVersion <- Schemas.lookupSchema(schema_version)
+    } yield schemaVersion.name
   }
 
   def parseSchemaInput(mf: MultipartFormData[TemporaryFile]): Try[SchemaInput] = {
@@ -153,7 +153,7 @@ object Multipart {
         ; schema_file <- parseFile(mf,"schema_file")
         ; schema_textarea <- parseKey(mf,"schema_textarea")
         ; schema_format <- parseKey(mf,"schema_format")
-        ; schema_version <- parseSchemaVersion(mf,"schema_version")
+        ; schema_name <- parseSchemaVersion(mf,"schema_name")
         )
    yield
      SchemaInput(input_type_schema,
@@ -161,7 +161,7 @@ object Multipart {
          schema_file, 
          schema_textarea, 
          schema_format, 
-         schema_version)
+         schema_name)
   }
 
   def parseSchemaOptions(mf: MultipartFormData[TemporaryFile]): Try[SchemaOptions] = {

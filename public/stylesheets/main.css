@@ -159,14 +159,20 @@ input[type=submit]:active {
 	border-left: 2px solid #444;
 }
 
-p.result_ok {
- border: 2px solid green;
- font-size: 120%;
+p.msg_result_ok {
+ color: SeaGreen;
 }
 
-p.result_bad {
+div.result_ok {
+ border: 2px solid green;
+}
+
+div.result_bad {
  border: 2px solid red;
- font-size: 120%;
+}
+
+p.msg_result_bad {
+ color: red;
 }
 	
 

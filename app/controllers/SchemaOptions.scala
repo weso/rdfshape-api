@@ -6,7 +6,7 @@ import xml.Utility.escape
 import es.weso.rdf.nodes.RDFNode
 import es.weso.rdf.nodes.IRI
 import java.io.File
-import es.weso.shex.SchemaFormat
+import es.weso.schema._
 
 case class SchemaOptions(
       cut: Int
@@ -28,8 +28,9 @@ object SchemaOptions {
   lazy val DEFAULT_OptIRI = None
   lazy val DEFAULT_ShowSchema = true
   
+  // TODO....Change this!!!
   lazy val availableFormats: List[String] = 
-    SchemaFormat.toList
+    Schemas.availableFormats
 
   def default : SchemaOptions = 
     SchemaOptions(

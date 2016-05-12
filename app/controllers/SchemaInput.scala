@@ -4,9 +4,7 @@ import java.io.File
 import scala.util._
 import es.weso.rdf._
 import es.weso.schema._
-import es.weso.shex._
 import es.weso.utils.IOUtils._
-import es.weso.shex.SchemaFormat._
 
 case class SchemaInput(
       input_type_Schema: InputType
@@ -14,30 +12,16 @@ case class SchemaInput(
     , schema_file: Option[File]
     , schema_textarea: String
     , inputFormat: String
-    , schemaVersion: SchemaVersion  
+    , schemaName: String  
     ) {
   
   def convertSchema(outputFormat: String): Try[String] = {
-    schemaVersion match {
-      case SHACL =>
-        for { inputStr <- getSchemaStr
-            ; outStr <- ShaclConverter(inputStr, inputFormat, outputFormat)
-            } 
-        yield outStr        
-      case _ => {
-        throw new Error(s"convertSchema: Unsupported schemaVersion: " + schemaVersion)
-      }
-    }
+    for {
+      str <- getSchemaStr
+      schema <- Schemas.fromString(str,inputFormat,schemaName,None)
+      outStr <- schema.serialize(outputFormat)
+    } yield outStr
   }
-
-  def ShaclConverter(str: String, inputFormat: String, outputFormat: String): Try[String] = {
-    if (str == "") Success("")
-    else {
-      for {
-        (schema,pm) <- Schema.fromString(str,inputFormat)
-      } yield schema.serialize(outputFormat)
-    }
-  }  
 
   def getSchemaStr: Try[String] = {
    input_type_Schema match {
@@ -62,18 +46,18 @@ object SchemaInput {
              , schema_uri = ""
              , schema_file = None
              , schema_textarea = ""
-             , inputFormat = SchemaFormat.default.name
-             , schemaVersion = SchemaVersions.default
+             , inputFormat = Schemas.defaultSchemaFormat
+             , schemaName = Schemas.defaultSchemaName
              )
     
-  def apply(str: String, format: String, version: String): SchemaInput = 
+  def apply(str: String, format: String, name: String): SchemaInput = 
     SchemaInput( 
                input_type_Schema = ByInput
         	   , schema_uri = ""
         	   , schema_file = None
         	   , schema_textarea = str
              , inputFormat = format
-             , schemaVersion = SchemaVersions.get(version)
+             , schemaName = name
         	   )
         	   
 }

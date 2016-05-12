@@ -1,7 +1,5 @@
 @(title: String)(vf:ValidationForm)(content: Html)
 
-@import es.weso.schema.SchemaVersions
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -46,7 +44,7 @@
 <li><a href="@routes.Checker.schema(
             vf.schemaStr,
             vf.schemaFormat,
-            vf.schemaVersion)" 
+            vf.schemaName)" 
             title="Check Schema syntax (no data)">Schema Syntax</a></li>
 </ul></li>
 <li class="dropdown">Validation
@@ -55,19 +53,19 @@
             vf.dataFormat,
             vf.schemaStr,
             vf.schemaFormat,
-            vf.schemaVersion)" 
+            vf.schemaName)" 
             title="Validate RDF Data using a Schema">Data + Schema (separated)</a></li>
 <!-- <a href="@routes.Validator.dataSchemaNode(vf.dataStr,
             vf.dataFormat,
             vf.schemaStr,
             vf.schemaFormat,
-            vf.schemaVersion, 
+            vf.schemaName, 
             vf.focusNode)" 
             title="Validate a node in an RDf Data using a Schema">Data + Node + Schema</a> -->
 <li><a href="@routes.Validator.data(vf.dataStr,
             vf.dataFormat,
-            vf.schemaVersion)" 
-            title="Validate RDf & Schema together. Checks nodeShape declarations">Data & Schema (together)</a>
+            vf.schemaName)" 
+            title="Validate RDf & Schema together. Checks scopeNode declarations">Data & Schema (together)</a>
             </li>
 </ul></li>
 <li class="dropdown">Conversions
@@ -82,7 +80,7 @@
 			schema = vf.schemaStr,
             inputFormat = vf.schemaFormat,
             outputFormat = "SHEXC",
-            schemaVersion = vf.schemaVersion 
+            schemaName = vf.schemaName 
             )" 
             title="Conversions between different Schema formats">Schema Conversions</a></li>
 </ul></li>

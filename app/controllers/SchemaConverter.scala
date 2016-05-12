@@ -1,29 +1,14 @@
 package controllers
 
-import play.api._
-import play.api.mvc._
-import scala.concurrent._
-import akka.actor._
+import scala.concurrent.Future
+import scala.util.{ Failure => TryFailure, Success => TrySuccess, Try }
 
+import Multipart.{ getMultipartForm, parseKey, parseSchemaInput }
+import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import java.io.ByteArrayInputStream
-import play.api._
-import play.api.mvc._
-import play.api.libs.Files._
-import es.weso.shex.Schema
-import scala.util.{Try, Success => TrySuccess, Failure => TryFailure}
-import es.weso.rdf._
-import es.weso.rdf.nodes.IRI
-import es.weso.rdf.jena._
-import es.weso.monads.{Result => SchemaResult, Failure => SchemaFailure}
-import es.weso.shex.{Schema => ShExSchema, SchemaFormat}
-import es.weso.utils._
-import es.weso.utils.TryUtils._
-import java.net.URL
-import java.io.File
-import es.weso.utils.IOUtils._
-import Multipart._
-import play.api.libs.json._
+import play.api.libs.json.Json
+import play.api.mvc.{ Action, Controller }
+import es.weso.schema._
 
 trait SchemaConverter { this: Controller => 
 
@@ -78,7 +63,7 @@ trait SchemaConverter { this: Controller =>
   }
 
   def schemaFormats = Action {
-    Ok(Json.toJson(SchemaFormat.toList))
+    Ok(Json.toJson(Schemas.availableFormats))
   }
     
 }
