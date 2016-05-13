@@ -49,24 +49,19 @@
 </ul></li>
 <li class="dropdown">Validation
 <ul>
-<li><a href="@routes.Validator.dataSchema(vf.dataStr,
+<li><a href="@routes.ValidatorSchemaData.dataSchema(vf.dataStr,
             vf.dataFormat,
             vf.schemaStr,
             vf.schemaFormat,
             vf.schemaName)" 
-            title="Validate RDF Data using a Schema">Data + Schema (separated)</a></li>
-<!-- <a href="@routes.Validator.dataSchemaNode(vf.dataStr,
-            vf.dataFormat,
-            vf.schemaStr,
-            vf.schemaFormat,
-            vf.schemaName, 
-            vf.focusNode)" 
-            title="Validate a node in an RDf Data using a Schema">Data + Node + Schema</a> -->
-<li><a href="@routes.Validator.data(vf.dataStr,
+       title="Schema is separated from RDF Data">Data + Schema (separated)</a>
+</li>
+
+<li><a href="@routes.ValidatorData.data(vf.dataStr,
             vf.dataFormat,
             vf.schemaName)" 
-            title="Validate RDf & Schema together. Checks scopeNode declarations">Data & Schema (together)</a>
-            </li>
+       title="Obtains Schema from RDF data">Data & Schema (together)</a>
+</li>
 </ul></li>
 <li class="dropdown">Conversions
 <ul>           

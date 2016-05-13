@@ -31,6 +31,7 @@ object Multipart {
     for ( mf <- getMultipartForm(request)
         ; inputData <- parseInputData(mf)
         ; opt_data <- parseOptData(mf)
+        ; schemaName <- parseSchemaName(mf)
         ; opt_schema <- parseOptSchema(mf)
         )
     yield {
@@ -38,7 +39,7 @@ object Multipart {
      val input_schema = if (has_schema) 
               opt_schema.get._1 
              else 
-                SchemaInput()
+                SchemaInput(schemaName)
 
      val opts_schema = if (has_schema) 
               opt_schema.get._2 
@@ -139,12 +140,12 @@ object Multipart {
       }
     }
   }
-  
-  def parseSchemaVersion(mf: MultipartFormData[TemporaryFile], key: String): Try[String] = {
+
+  def parseSchemaName(mf: MultipartFormData[TemporaryFile]): Try[String] = {
     for {
-      schema_version <- parseKey(mf,"schema_version")
-    ; schemaVersion <- Schemas.lookupSchema(schema_version)
-    } yield schemaVersion.name
+      schema_name <- parseKey(mf,"schema_name")
+    ; schemaName <- Schemas.lookupSchema(schema_name)
+    } yield schemaName.name
   }
 
   def parseSchemaInput(mf: MultipartFormData[TemporaryFile]): Try[SchemaInput] = {
@@ -153,7 +154,7 @@ object Multipart {
         ; schema_file <- parseFile(mf,"schema_file")
         ; schema_textarea <- parseKey(mf,"schema_textarea")
         ; schema_format <- parseKey(mf,"schema_format")
-        ; schema_name <- parseSchemaVersion(mf,"schema_name")
+        ; schema_name <- parseSchemaName(mf)
         )
    yield
      SchemaInput(input_type_schema,

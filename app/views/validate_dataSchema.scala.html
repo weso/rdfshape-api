@@ -12,14 +12,12 @@
 
 <form method="post" 
 	  enctype="multipart/form-data" 
-	  action="@routes.Validator.validate_post">
+	  action="@routes.ValidatorSchemaData.validate_post">
 
 @submit()
 
 @hidden_inputs(vf)
 
-@tabs_schema(vf)
-	  
 @tabs_data(vf)
 
 </form>	

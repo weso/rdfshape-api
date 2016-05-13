@@ -8,7 +8,7 @@ import es.weso.schema.{ Result, Schema, SchemaUtils, Schemas }
 import play.Logger
 
 case class ValidationResult(
-    status: Option[Boolean],
+    status: Option[Boolean],  // 
     msg: String,
     result: Result,
     nodes: List[RDFNode],
@@ -18,7 +18,8 @@ case class ValidationResult(
     schemaStr: String,
     schemaFormat: String,
     schemaName: String,
-    schemaOptions: SchemaOptions) {
+    schemaOptions: SchemaOptions,
+    together: Boolean) {
 
   // Conversions to generate permalinks
   def showData = dataOptions.showData
@@ -46,6 +47,7 @@ case class ValidationResult(
 
 object ValidationResult {
   
+  lazy val DefaultTogether = false
   /**
    * Empty validation result
    */
@@ -61,7 +63,8 @@ object ValidationResult {
       schemaStr = "",
       schemaFormat = SchemaUtils.defaultSchemaFormat,
       schemaName = Schemas.defaultSchemaName,
-      schemaOptions = SchemaOptions.default
+      schemaOptions = SchemaOptions.default,
+      together = DefaultTogether
       )
 
   /**
@@ -75,7 +78,8 @@ object ValidationResult {
     schema: Schema,
     str_schema: String,
     schema_format: String,
-    schemaOptions: SchemaOptions
+    schemaOptions: SchemaOptions,
+    together: Boolean
     ): ValidationResult = {
     
     val result = schema.validateNodeAllLabels(iri,data)
@@ -91,7 +95,8 @@ object ValidationResult {
       str_schema, 
       schema_format, 
       schema.name, 
-      schemaOptions)
+      schemaOptions,
+      together)
   }
 
   /**
@@ -104,7 +109,8 @@ object ValidationResult {
     schema: Schema, 
     str_schema: String, 
     schema_format: String, 
-    schemaOptions: SchemaOptions 
+    schemaOptions: SchemaOptions,
+    together: Boolean
     ): ValidationResult = {
     val nodes = data.subjects.toList
     val result = schema.validateAllNodesAllLabels(data)
@@ -118,7 +124,8 @@ object ValidationResult {
         str_schema, 
         schema_format, 
         schema.name, 
-        schemaOptions)
+        schemaOptions,
+        together)
   }
 
 
@@ -133,29 +140,61 @@ object ValidationResult {
     strSchema: String, 
     schemaFormat: String, 
     schemaName: String, 
-    schemaOptions: SchemaOptions): ValidationResult = {
+    schemaOptions: SchemaOptions,
+    together: Boolean): ValidationResult = {
+    println(s"ValidationResult.validate...withSchema: $withSchema, together: $together")
 
     if (withSchema) {
       Schemas.fromString(strSchema,schemaFormat,schemaName,None) match {
         case Success(schema) => {
           schemaOptions.opt_iri match {
-            case Some(iri) => validateIRI(iri, rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions)
-            case None      => validateAny(rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions)
+            case Some(iri) => validateIRI(iri, rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,together)
+            case None      => validateAny(rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,together)
           }
         }
         case Failure(e) => {
           Logger.info("Schema did not parse..." + e.getMessage)
           ValidationResult(Some(false),
-            "Schema did not parse: " + e.getMessage,
+            s"Schema did not parse : ${e.getMessage}, name: $schemaName",
             Result.empty, List(), str_data, dataOptions, true,
-            strSchema, schemaFormat, schemaName, schemaOptions
+            strSchema, schemaFormat, schemaName, schemaOptions,together
             )
         }
       }
-    } else
+    } else if (together) {
+      println(s"validating when they are together..., schemaName: $schemaName")
+      val trySchema = Schemas.fromRDF(rdf,schemaName)
+      trySchema match {
+        case Success(schema) => {
+          val format = dataOptions.format
+          val result = schema.validateRDF(rdf)
+          val strSchema = schema.serialize(format).getOrElse("")
+          ValidationResult(
+              Some(result.isValid), 
+                   result.message, 
+                   result, 
+                   List(), 
+                   str_data, 
+                   dataOptions, 
+                   false, 
+                   strSchema, 
+                   format, 
+                   schema.name, 
+                   schemaOptions,
+                   together)
+        }
+        case Failure(e) =>
+          ValidationResult(Some(false),
+            s"Schema did not parse : ${e.getMessage}, name: $schemaName",
+            Result.empty, List(), str_data, dataOptions, true,
+            strSchema, schemaFormat, schemaName, schemaOptions,together
+            )
+      }
+    } else {
       ValidationResult(Some(true), "RDF parsed",
         Result.empty, List(), str_data, dataOptions, false,
-        strSchema, schemaFormat, schemaName, schemaOptions)
+        strSchema, schemaFormat, schemaName, schemaOptions,together)
+    }
   }
 
   /**
@@ -166,15 +205,15 @@ object ValidationResult {
     str_data: String, 
     dataOptions: DataOptions, 
     schema: Schema, 
-    schemaOptions: SchemaOptions): ValidationResult = {
+    schemaOptions: SchemaOptions,
+    together: Boolean): ValidationResult = {
+    println(s"ValidationResult.validate_withSchema...withSchema: together: $together")
     val schemaFormat = schema.defaultFormat
     val strSchema = schema.serialize(schemaFormat).getOrElse("")
     schemaOptions.opt_iri match {
-            case Some(iri) => validateIRI(iri, rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions)
-            case None      => validateAny(rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions)
+            case Some(iri) => validateIRI(iri, rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,together)
+            case None      => validateAny(rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,together)
     }
   }
 
 }
-
-

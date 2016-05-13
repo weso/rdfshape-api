@@ -48,14 +48,6 @@
       }
 </select>
 
-<label for="schema_version">@Messages("Schema.Version")</label>
-<select name="schema_version">
-      @for(s <- Schemas.availableSchemaNames) {
-      	<option value="@s"
-      	 @{if(vf.schemaInput.schemaName==s) { "checked" }}>@s</option>
-      }
-</select>
-
 </div> <!-- input schema tabs -->
 
 

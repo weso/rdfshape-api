@@ -31,7 +31,7 @@ trait Checker { this: Controller =>
   import Multipart._
 
   def data(data: String, dataFormat: String) = { 
-    Validator.validate_get(data,
+    ValidatorData.validate_get(data,
         Some(dataFormat),
         DEFAULT_SHOW_DATA,
         None,
@@ -52,7 +52,8 @@ trait Checker { this: Controller =>
                   val vf = ValidationForm.fromSchemaConversion(schemaInput)
                   Ok(views.html.check_schema(vf,str))
                 }
-                case Failure(e) => BadRequest(views.html.errorPage(e.getMessage))
+                case Failure(e) => 
+                  BadRequest(views.html.errorPage(e.getMessage))
               }
           })
     }

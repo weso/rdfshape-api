@@ -2,6 +2,7 @@ package controllers
 
 import scala.util.{ Success, Try }
 import es.weso.utils.IOUtils.{ failMsg, getFileContents, getURI }
+import es.weso.schema._
 
 case class ValidationForm(
       dataInput: DataInput
@@ -95,7 +96,7 @@ object ValidationForm {
           dataInput = DataInput()
         , dataOptions = DataOptions.default
         , withSchema = false
-        , schemaInput = SchemaInput()
+        , schemaInput = SchemaInput(Schemas.defaultSchemaName)
         , schemaOptions = SchemaOptions.default
         )
         
@@ -103,7 +104,9 @@ object ValidationForm {
     ValidationForm(
       dataInput = DataInput(vr.dataStr)
     , dataOptions = vr.dataOptions
-    , withSchema = vr.withSchema
+    , withSchema = 
+       if (vr.together) false
+       else vr.withSchema
     , schemaInput = SchemaInput(vr.schemaStr,vr.schemaFormat, vr.schemaName)
     , schemaOptions = vr.schemaOptions
     )

@@ -1,0 +1,12 @@
+@(vf: ValidationForm)
+
+@import play.api.i18n.Messages
+@import es.weso.schema._
+
+<label for="schema_name">@Messages("Schema.Version")</label>
+<select name="schema_name">
+      @for(s <- Schemas.availableSchemaNames) {
+      	<option value="@s"
+      	 @{if(vf.schemaInput.schemaName==s) { "checked" }}>@s</option>
+      }
+</select>

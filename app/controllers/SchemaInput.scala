@@ -40,6 +40,7 @@ case class SchemaInput(
 }
     
 object SchemaInput {
+  
   def apply() : SchemaInput = 
     SchemaInput( 
                input_type_Schema = ByInput
@@ -48,6 +49,16 @@ object SchemaInput {
              , schema_textarea = ""
              , inputFormat = Schemas.defaultSchemaFormat
              , schemaName = Schemas.defaultSchemaName
+             )
+
+   def apply(schemaName: String) : SchemaInput = 
+    SchemaInput( 
+               input_type_Schema = ByInput
+             , schema_uri = ""
+             , schema_file = None
+             , schema_textarea = ""
+             , inputFormat = Schemas.defaultSchemaFormat
+             , schemaName = schemaName
              )
     
   def apply(str: String, format: String, name: String): SchemaInput = 

@@ -34,7 +34,17 @@ case class Shaclex(schema: ShaclSchema) extends Schema {
   
   def checked2Result(result: Checked[ShaclSchema,ConstraintReason,ConstraintError]): Result = {
     println(result)
-    throw new Exception("Not implemented result conversion " + result + " yet")
+    val isValid = result.isOK
+    val msg = 
+      if (result.isOK) "Valid"
+      else "Not Valid" 
+    val solutions: Seq[Solution] = Seq()
+    val errors: Seq[ErrorInfo] = result.errors.map(constraintError2ErrorInfo(_))
+    Result(isValid,msg,solutions,errors)
+  }
+  
+  def constraintError2ErrorInfo(ce: ConstraintError): ErrorInfo = {
+    ErrorInfo(ce.toString)
   }
   
   override def fromString(cs: CharSequence, format: String, base: Option[String]): Try[Schema] = {
