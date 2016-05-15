@@ -10,15 +10,21 @@ import es.weso.schema._
 
 case class SchemaOptions(
       cut: Int
-    , opt_iri: Option[IRI]
+    , trigger: ValidationTrigger
     , showSchema: Boolean
     ) {
   
   def extract_iri_str : String = {
-    opt_iri.map(_.str).getOrElse("")
+    trigger.extractNode
+  }
+
+  def maybeFocusNode: Option[String] = {
+    trigger.maybeFocusNode
   }
   
-  
+  def opt_iri: Option[IRI] = {
+    maybeFocusNode.map(IRI(_))
+  }
 }
     
 object SchemaOptions {
@@ -28,25 +34,20 @@ object SchemaOptions {
   lazy val DEFAULT_OptIRI = None
   lazy val DEFAULT_ShowSchema = true
   
-  // TODO....Change this!!!
   lazy val availableFormats: List[String] = 
     Schemas.availableFormats
 
   def default : SchemaOptions = 
     SchemaOptions(
         DEFAULT_CUT, 
-        DEFAULT_OptIRI,
+        ValidationTrigger.default,
         DEFAULT_ShowSchema)
     
-  def defaultWithIri(iri: String): SchemaOptions = 
-    default.copy(opt_iri = Some(IRI(iri))) 
-    
-/*  def defaultWithFormat(format: String): SchemaOptions = 
-    default.copy(format = format) */
+  def defaultWithNode(iri: String): SchemaOptions = 
+    default.copy(trigger = ValidationTrigger.nodeAllShapes(iri)) 
     
   def fromSchemaInput(schemaInput: SchemaInput): SchemaOptions = {
     default.copy(
-        // format = schemaInput.inputFormat, 
         showSchema = true 
     )
   }

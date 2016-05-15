@@ -52,7 +52,7 @@ class SchemaSyntaxTest
       val result = checker.schema(
           schema = schemaStr,
           schemaFormat="TURTLE", 
-          schemaVersion="SHACL_0.1").apply(FakeRequest())
+          schemaName="SHACL_TQ").apply(FakeRequest())
       
       val bodyText : String = contentAsString(result)
       bodyText must include(escape(schemaStr))

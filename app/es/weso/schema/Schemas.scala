@@ -8,8 +8,9 @@ type SchemaParser = (CharSequence,String,Option[String]) => Try[Schema]
 
 lazy val shEx = ShEx3.empty
 lazy val shaclex = Shaclex.empty
+lazy val shacl_tq = Shacl_TQ.empty
 
-val availableSchemas: List[Schema] = List(shEx,shaclex)
+val availableSchemas: List[Schema] = List(shEx,shaclex,shacl_tq)
 val defaultSchema : Schema = shEx
 val defaultSchemaName: String = defaultSchema.name
 val defaultSchemaFormat: String = defaultSchema.defaultFormat

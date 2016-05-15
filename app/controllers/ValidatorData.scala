@@ -20,7 +20,6 @@ import play.api.mvc.{ Action, AnyContent, Controller }
  * Data + Schema together
  */
 trait ValidatorData { this: Controller =>
-
   
   import Multipart._
 
@@ -50,8 +49,6 @@ trait ValidatorData { this: Controller =>
         validate_get(data,
           Some(dataFormat),
           DEFAULT_SHOW_DATA,
-          Some(data),
-          Some(dataFormat),
           schemaName,
           None,
           DEFAULT_CUT,
@@ -63,73 +60,18 @@ trait ValidatorData { this: Controller =>
       }
   }
 
-  def validate_get_Future(
-    str_data: String,
-    formatData: Option[String],
-    showData: Boolean,
-    opt_schema: Option[String],
-    maybeSchemaFormat: Option[String],
-    schemaName: String,
-    opt_iri: Option[String],
-    cut: Int,
-    showSchema: Boolean): Future[Try[ValidationResult]] = {
-      val withSchema = opt_schema.isDefined
-      val iri = opt_iri.map(str => IRI(str))
-      val schemaFormat = maybeSchemaFormat.getOrElse(SchemaUtils.defaultSchemaFormat)
-      val str_schema = opt_schema.getOrElse("")
-      val opts_data = DataOptions(
-        format = RDFUtils.getFormat(formatData), showData = showData
-      )
-      val opts_schema = SchemaOptions(cut = cut, opt_iri = iri, showSchema)
-      
-      parseStrAsRDFReader(str_data, opts_data.format) match {
-        case TrySuccess(data) =>
-          scala.concurrent.Future(
-          TrySuccess(
-            ValidationResult.validate(
-              data,
-              str_data,
-              opts_data,
-              withSchema,
-              str_schema,
-              schemaFormat, 
-              schemaName, 
-              opts_schema, 
-              true)))
-        case TryFailure(e) =>
-        scala.concurrent.Future(TrySuccess(
-          ValidationResult(Some(false),
-            "Error parsing Data with syntax " + opts_data.format + ": " + e.getMessage,
-            Result.empty,
-            List(),
-            str_data,
-            opts_data,
-            withSchema,
-            str_schema,
-            schemaFormat,
-            schemaName,
-            opts_schema,
-            true)))
-    }
-  }
-
   def validate_get(
     str_data: String, 
     dataFormat: Option[String], 
     showData: Boolean, 
-    opt_schema: Option[String], 
-    schemaFormat: Option[String], 
     schemaName: String, 
     opt_iri: Option[String], 
     cut: Int, 
     showSchema: Boolean
     ): Action[AnyContent] = Action.async {
-    println("validate_get: opt_schema..." + opt_schema)
     validate_get_Future(str_data,
       dataFormat,
       showData,
-      opt_schema,
-      schemaFormat,
       schemaName,
       opt_iri,
       cut,
@@ -144,31 +86,53 @@ trait ValidatorData { this: Controller =>
       })
   }
 
-/*  def validate_rdf_get(
+  def validate_get_Future(
     str_data: String,
-    dataFormat: Option[String],
-    showData: Boolean,
-    schemaVersion: String,
-    opt_iri: Option[String], 
-    cut: Int, 
-    showSchema: Boolean): Action[AnyContent] = Action.async {
-    validate_rdf_get_Future(str_data,
-      dataFormat,
-      showData,
-      schemaVersion,
-      opt_iri,
-      cut,
-      showSchema).map(vrf => {
-        vrf match {
-          case TrySuccess(vr) => {
-            val vf = ValidationForm.fromResult(vr)
-            Ok(views.html.index(vr, vf))
-          }
-          case TryFailure(e) => 
-            BadRequest(views.html.errorPage(e.getMessage))
-        }
-      })
-  } */
+    formatData: Option[String],
+    showData:Boolean,
+    schemaName: String,
+    opt_iri: Option[String],
+    cut: Int,
+    showSchema: Boolean): Future[Try[ValidationResult]] = {
+      val iri = opt_iri.map(str => IRI(str))
+      val dataOptions = DataOptions(
+        format = RDFUtils.getFormat(formatData), showData = showData
+      )
+      val trigger = opt_iri match {
+        case None => ValidationTrigger.default
+        case Some(str) => ValidationTrigger.nodeAllShapes(str)
+      }
+      val opts_schema = SchemaOptions(cut = cut, trigger = trigger, showSchema)
+      
+      parseStrAsRDFReader(str_data, dataOptions.format) match {
+        case TrySuccess(data) =>
+          scala.concurrent.Future(
+          TrySuccess(
+            ValidationResult.validateTogether(
+              data,
+              str_data,
+              dataOptions,
+              schemaName, 
+              opts_schema)))
+        case TryFailure(e) =>
+        scala.concurrent.Future(TrySuccess(
+          ValidationResult(Some(false),
+            "Error parsing Data with syntax " + dataOptions.format + ": " + e.getMessage,
+            Result.empty,
+            List(),
+            str_data,
+            dataOptions,
+            false,
+            "",
+            Schemas.defaultSchemaFormat,
+            schemaName,
+            opts_schema,
+            true)))
+    }
+  }
+
+
+
 
   def validate_post = Action.async { request =>
     {
@@ -186,16 +150,13 @@ trait ValidatorData { this: Controller =>
                 data <- vf.dataInput.getData(vf.dataOptions.format); 
                 str_schema <- vf.schemaInput.getSchemaStr
               ) yield {
-                ValidationResult.validate(
+                println(s"validate_post: vf $vf")
+                ValidationResult.validateTogether(
                   data,
                   str_data,
                   vf.dataOptions,
-                  vf.withSchema,
-                  str_schema,
-                  vf.schemaInput.inputFormat,
                   vf.schemaInput.schemaName,
-                  vf.schemaOptions,
-                  true)
+                  vf.schemaOptions)
               }
             val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(str_data, vf))
             Ok(views.html.index(vr, vf))

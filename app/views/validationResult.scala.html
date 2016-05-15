@@ -26,7 +26,7 @@
 
 <div class="result_bad">
 <p class="msg_result_bad">Message: @vr.msg
-<pre>@vr.toHTML</pre>
+@Html(vr.toHTML)
 
 <details>
 <summary>Data</summary>
@@ -41,6 +41,17 @@
 </div>
 }
 
+@if(vr.together) {
+
+<a href="@routes.ValidatorData.data(
+	         vr.dataStr,
+	         vr.dataFormat,
+             vr.schemaName
+	         )">Generate permalink</a>
+
+	
+} else {
+ 
 <a href="@routes.ValidatorSchemaData.validate_get(
 	         vr.dataStr,
 	         Some(vr.dataFormat),
@@ -53,4 +64,5 @@
 	         vr.showSchema
 	         )">Generate permalink</a>
 
+}
 }

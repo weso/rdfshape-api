@@ -31,7 +31,7 @@ trait Checker { this: Controller =>
   import Multipart._
 
   def data(data: String, dataFormat: String) = { 
-    ValidatorData.validate_get(data,
+    ValidatorSchemaData.validate_get(data,
         Some(dataFormat),
         DEFAULT_SHOW_DATA,
         None,

@@ -1,11 +1,10 @@
 package es.weso.schema
-import es.weso.utils.ShowHTML
-import es.weso.utils.ShowHTML._
+import xml.Utility.escape
 
 case class ErrorInfo(str: String) {
   
-  implicit val eShowHTML = new ShowHTML[ErrorInfo] {
-    def toHTML(e: ErrorInfo) = code(e.str)
+  def toHTML: String = {
+    str
   }
 
 }

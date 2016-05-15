@@ -17,9 +17,13 @@ case class ValidationForm(
  // This method is used to show if form is withIRI or not in index.scala.html
  // the values must match the prefix of values in tabs.js
  def opt_iri_str = {
-   schemaOptions.opt_iri match {
-      	case Some(_) => "iri"
-      	case None => "noIri"
+   val iri = "iri"
+   val noIri = "noIri"
+   schemaOptions.trigger match {
+      	case _:NodeAllShapes  => iri
+      	case _:NodeShape => iri
+      	case ScopeDeclarations => noIri
+      	case AllNodesAllShapes => noIri  
     }
  }
  
@@ -81,11 +85,16 @@ case class ValidationForm(
  }
 
  def focusNode : String = {
-   schemaOptions.opt_iri.map(_.str).getOrElse("")
+   schemaOptions.trigger.extractNode
  }
 
  def maybeFocusNode : Option[String] = {
-   schemaOptions.opt_iri.map(_.str)
+   schemaOptions.trigger match {
+     case ScopeDeclarations => None
+     case AllNodesAllShapes => None
+     case NodeShape(node,_) => Some(node.toString)
+     case NodeAllShapes(node) => Some(node.toString)
+   }
  }
  
 }
@@ -112,12 +121,12 @@ object ValidationForm {
     )
   }
   
-  def fromDataConversion(data: String, format: String): ValidationForm = {
+  def fromDataConversion(data: String, format: String, schemaName: String): ValidationForm = {
     ValidationForm(
       dataInput = DataInput(data)
     , dataOptions = DataOptions(format,true)
     , withSchema = false
-    , schemaInput = SchemaInput()
+    , schemaInput = SchemaInput(schemaName)
     , schemaOptions = SchemaOptions.default
     )
   }

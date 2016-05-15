@@ -76,13 +76,14 @@ trait ValidatorSchemaData { this: Controller =>
       val opts_data = DataOptions(
         format = RDFUtils.getFormat(formatData), showData = showData
       )
-      val opts_schema = SchemaOptions(cut = cut, opt_iri = iri, showSchema)
+      val trigger = ValidationTrigger.fromOptIRI(opt_iri)
+      val opts_schema = SchemaOptions(cut = cut, trigger = trigger, showSchema)
       
       parseStrAsRDFReader(str_data, opts_data.format) match {
         case TrySuccess(data) =>
           scala.concurrent.Future(
           TrySuccess(
-            ValidationResult.validate(
+            ValidationResult.validateDataSchema(
               data,
               str_data,
               opts_data,
@@ -90,8 +91,7 @@ trait ValidatorSchemaData { this: Controller =>
               str_schema,
               schemaFormat, 
               schemaName, 
-              opts_schema,
-              false)))
+              opts_schema)))
         case TryFailure(e) =>
         scala.concurrent.Future(TrySuccess(
           ValidationResult(Some(false),
@@ -154,7 +154,7 @@ trait ValidatorSchemaData { this: Controller =>
                 data <- vf.dataInput.getData(vf.dataOptions.format); 
                 str_schema <- vf.schemaInput.getSchemaStr
               ) yield {
-                ValidationResult.validate(
+                ValidationResult.validateDataSchema(
                   data,
                   str_data,
                   vf.dataOptions,
@@ -162,8 +162,7 @@ trait ValidatorSchemaData { this: Controller =>
                   str_schema,
                   vf.schemaInput.inputFormat,
                   vf.schemaInput.schemaName,
-                  vf.schemaOptions,
-                  false)
+                  vf.schemaOptions)
               }
             val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(str_data, vf))
             Ok(views.html.index(vr, vf))

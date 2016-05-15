@@ -14,29 +14,29 @@ import play.api.libs.{ Files => PlayFiles }
 import java.nio.file.{Paths, Files}
 import java.nio.charset.StandardCharsets
 
-class ValidatorTest 
+class ValidatorDataTest 
   extends PlaySpec 
   with Results 
-  with OneAppPerSuite {
+  with OneAppPerSuite {  
+
   
-  class ValidatorController extends Controller with Validator
+  class ValidatorDataController() extends Controller with ValidatorData
   
   "Validator#onlyData" should {
     "validate well formed RDF" in {
-      val validator = new ValidatorController()
+      val validator = new ValidatorDataController()
       val rdfStr = """|@prefix : <http://example.org/> .
                    |:a :b :c . 
                    |""".stripMargin
-      val result = validator.data(data = rdfStr, dataFormat="TURTLE", schemaVersion="SHACL").apply(FakeRequest())
+      val result: Future[Result] = validator.data(
+          data = rdfStr, dataFormat="TURTLE", schemaName="SHACL_TQ").apply(FakeRequest())
       status(result) mustEqual OK    
-      val bodyText : String = contentAsString(result)
-      bodyText must include("@prefix : &lt;http://example.org/&gt;")
       }
   }
 
   "Validator_post" should {
     "validate well formed RDF by input" in {
-      val validator = new ValidatorController()
+      val validator = new ValidatorDataController()
       val rdfStr = """|@prefix : <http://example.org/> .
                    |:a :b :c . 
                    |""".stripMargin
@@ -50,6 +50,7 @@ class ValidatorTest
                , "showData" -> List("true")
                , "data_format" -> List("TURTLE")
                , "schema" -> List("#no_schema")
+               , "schema_name" -> List("ShEx")
                ),
            List(FilePart("file", "message", Some("Content-Type: multipart/form-data"), 
                         play.api.libs.Files.TemporaryFile(new java.io.File("/tmp/pepe.txt")))), 
@@ -58,12 +59,11 @@ class ValidatorTest
       val request = FakeRequest(POST, "/api/validator").withMultipartFormDataBody(form)
       val result = validator.validate_post().apply(request)
       val bodyText : String = contentAsString(result)
-      bodyText must include("@prefix : &lt;http://example.org/&gt;")
       bodyText must include("RDF parsed")
       }
     
     "validate bad formed RDF" in {
-      val validator = new ValidatorController()
+      val validator = new ValidatorDataController()
       val rdfStr = """|@prefix : <http://example.org/> .
                    |:a :b 
                    |""".stripMargin
@@ -82,6 +82,7 @@ class ValidatorTest
                , "showData" -> List("true")
                , "data_format" -> List("TURTLE")
                , "schema" -> List("#no_schema")
+               , "schema_name" -> List("ShEx")
                ),
            files, 
            List(), 
@@ -93,7 +94,7 @@ class ValidatorTest
       }
 
     "validate well formed RDF by File" in {
-      val validator = new ValidatorController()
+      val validator = new ValidatorDataController()
       val rdfStr = """|@prefix : <http://example.org/> .
                    |:a :b :c . 
                    |""".stripMargin
@@ -116,6 +117,7 @@ class ValidatorTest
                , "showData" -> List("true")
                , "data_format" -> List("TURTLE")
                , "schema" -> List("#no_schema")
+               , "schema_name" -> List("ShEx")
                ),
            files, 
            List(), 
@@ -130,5 +132,5 @@ class ValidatorTest
     }
     }
     
-  }
+  } 
 }

@@ -28,6 +28,7 @@ libraryDependencies ++= Seq(
 // ShExcala
 //, "es.weso" % "shexcala_2.11" % "0.7.11" excludeAll(ExclusionRule(organization = "org.slf4j")) 
 , "es.weso" % "shaclex_2.11" % "0.0.1" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+, "es.weso" % "shacl_tq_2.11" % "0.0.5" excludeAll(ExclusionRule(organization = "org.slf4j")) 
 
 // , "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"

@@ -170,8 +170,13 @@ object Multipart {
         ; opt_iri <- parseOptIRI(mf)
         ; showSchema <- parseBoolean(mf,"showSchema")
         )
-   yield
-     SchemaOptions(cut,opt_iri,showSchema)
+   yield {
+     val trigger = opt_iri match {
+       case None => ValidationTrigger.scopeDeclarations
+       case Some(iri) => ValidationTrigger.nodeAllShapes(iri.str  )
+     }
+     SchemaOptions(cut,trigger,showSchema)
+    }
   }
 
   def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {

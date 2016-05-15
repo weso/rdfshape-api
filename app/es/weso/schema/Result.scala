@@ -8,12 +8,20 @@ case class Result(
   
   def toHTML(cut: Int = 1): String = {
     val sb = new StringBuilder
-    for ((solution, n) <- solutions zip (1 to cut)) {
-      sb.append("<h2 class='result'>Result" + printNumber(n, cut) + "</h2>")
-      sb.append(solution.toHTML)
+    if (isValid) {
+     for ((solution, n) <- solutions zip (1 to cut)) {
+      sb ++= "<h2 class='result'>Result" + printNumber(n, cut) + "</h2>"
+      sb ++= solution.toHTML
+     }
+    } else {
+    sb++="<div class=\"errors\">"
+    for (error <- errors) {
+      sb ++= "<table class='error'>"
+      sb ++= error.toHTML
+     }
+    sb++="</table>"
     }
     sb.toString
-
   }
   
    def printNumber(n: Int, cut: Int): String = {

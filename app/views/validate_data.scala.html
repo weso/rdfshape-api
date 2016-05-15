@@ -14,12 +14,6 @@
 	  enctype="multipart/form-data" 
 	  action="@routes.ValidatorData.validate_post">
 
-@submit()
-
-@hidden_inputs(vf)
-
-@tabs_data(vf)
-
 <label for="schema_name">@Messages("Schema.Version")</label>
 <select name="schema_name">
       @for(s <- Schemas.availableSchemaNames) {
@@ -27,6 +21,13 @@
       	 @{if(vf.schemaInput.schemaName==s) { "checked" }}>@s</option>
       }
 </select>
+
+@submit()
+
+@hidden_inputs(vf)
+
+@tabs_data(vf)
+
 
 
 </form>	

@@ -36,7 +36,7 @@ case class Shaclex(schema: ShaclSchema) extends Schema {
     println(result)
     val isValid = result.isOK
     val msg = 
-      if (result.isOK) "Valid"
+      if (result.isOK) s"Valid. Reason: ${result.reasons}"
       else "Not Valid" 
     val solutions: Seq[Solution] = Seq()
     val errors: Seq[ErrorInfo] = result.errors.map(constraintError2ErrorInfo(_))

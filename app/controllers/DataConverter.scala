@@ -25,6 +25,7 @@ import java.io.File
 import es.weso.utils.IOUtils._
 import Multipart._
 import play.api.libs.json._
+import es.weso.schema._
 
 trait DataConverter { this: Controller => 
 
@@ -45,7 +46,7 @@ trait DataConverter { this: Controller =>
         converterDataFuture(data,dataFormat, outputFormat).map(output => {
               output match {
                 case TrySuccess(result) => {
-                  val vf = ValidationForm.fromDataConversion(data,dataFormat)
+                  val vf = ValidationForm.fromDataConversion(data,dataFormat,Schemas.defaultSchemaName)
                   Ok(views.html.convert_data(vf,outputFormat,result))
                 }
                 case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
