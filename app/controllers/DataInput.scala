@@ -53,6 +53,7 @@ case class DataInput(
   def extract_str : String = {
     this.getDataStr().getOrElse("")
   }
+  
 }
     
 object DataInput {

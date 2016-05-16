@@ -17,19 +17,32 @@ case class ShEx3(schema: ShExSchema) extends Schema {
     "<pre>" + schema.serialize(format) + "</pre>"
   }
   
-  override def validateRDF(rdf: RDFReader) : Result = {
+  override def validate(rdf: RDFReader) : Result = {
     val matcher = ShExMatcher(schema,rdf)
     val r = matcher.validate
     validationResult2Result(r)
   }
   
-  override def validateNodeAllLabels(node: RDFNode, rdf: RDFReader) : Result = {
+  override def validateNodeShape(node: IRI, shape: String, rdf: RDFReader) : Result = {
+    val matcher = ShExMatcher(schema,rdf)
+    val pm = schema.pm
+    val maybeLabel = pm.qname(shape).map(lbl => ShExLabel.mkLabel(lbl)).flatten
+    maybeLabel match {
+      case Some(lbl) => {
+        val r = matcher.match_node_label(node)(lbl)
+        validationResult2Result(r)
+      }
+      case None => Result.errStr(s"Cannot make label from shape $shape")
+    }
+  }
+  
+  override def validateNodeAllShapes(node: IRI, rdf: RDFReader) : Result = {
     val matcher = ShExMatcher(schema,rdf)
     val r = matcher.match_node_AllLabels(node)
     validationResult2Result(r)
   }
   
-  override def validateAllNodesAllLabels(rdf: RDFReader) : Result = {
+  override def validateAllNodesAllShapes(rdf: RDFReader) : Result = {
     val matcher = ShExMatcher(schema,rdf)
     val r = matcher.matchAllNodes_AllLabels
     validationResult2Result(r)
@@ -78,7 +91,14 @@ case class ShEx3(schema: ShExSchema) extends Schema {
   }
   
   override def empty: Schema = ShEx3.empty
+
+  override def shapes: List[String] = {
+    val pm = schema.pm
+    schema.labels.map(_.show(pm))
+  }
   
+  override def pm: PrefixMap = schema.pm
+
 }
 
 object ShEx3 {

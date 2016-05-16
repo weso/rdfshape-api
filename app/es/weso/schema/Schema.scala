@@ -11,11 +11,13 @@ abstract class Schema {
  
  def toHTML(format: String): String
  
- def validateRDF(rdf: RDFReader): Result
+ def validate(rdf: RDFReader): Result
  
- def validateNodeAllLabels(node: RDFNode, rdf: RDFReader): Result
+ def validateNodeShape(node: IRI, label: String, rdf: RDFReader): Result
  
- def validateAllNodesAllLabels(rdf: RDFReader): Result
+ def validateNodeAllShapes(node: IRI, rdf: RDFReader): Result
+ 
+ def validateAllNodesAllShapes(rdf: RDFReader): Result
  
  def fromString(cs: CharSequence, format: String, base: Option[String]): Try[Schema]
  
@@ -26,5 +28,9 @@ abstract class Schema {
  def defaultFormat: String = formats.head
  
  def empty: Schema
+ 
+ def shapes: List[String]
+ 
+ def pm: PrefixMap
  
 }

@@ -17,19 +17,23 @@ case class Shaclex(schema: ShaclSchema) extends Schema {
     "<pre>" + schema.serialize(format) + "</pre>"
   }
   
-  override def validateRDF(rdf: RDFReader) : Result = {
+  override def validate(rdf: RDFReader) : Result = {
     val validator = CoreValidator(schema)
     
     val r = validator.validate(rdf)
     checked2Result(r)
   }
   
-  override def validateNodeAllLabels(node: RDFNode, rdf: RDFReader) : Result = {
-    throw new Exception("Not implemented validateAllNodesAllLabels for SHACL")
+  override def validateNodeShape(node: IRI, shape: String, rdf: RDFReader) : Result = {
+    throw new Exception("Not implemented validateNodesShape for SHACLex yet")
   }
   
-  override def validateAllNodesAllLabels(rdf: RDFReader) : Result = {
-    throw new Exception("Not implemented validateAllNodesAllLabels for SHACL")
+  override def validateNodeAllShapes(node: IRI, rdf: RDFReader) : Result = {
+    throw new Exception("Not implemented validateNodesAllShapes for SHACLex yet")
+  }
+  
+  override def validateAllNodesAllShapes(rdf: RDFReader) : Result = {
+    throw new Exception("Not implemented validateAllNodesAllShapes for SHACL yet")
   }
   
   def checked2Result(result: Checked[ShaclSchema,ConstraintReason,ConstraintError]): Result = {
@@ -69,6 +73,11 @@ case class Shaclex(schema: ShaclSchema) extends Schema {
   
   override def empty: Schema = Shaclex.empty
   
+  override def shapes: List[String] = {
+    schema.shapes.map(_.id).filter(_.isDefined).map(_.get).map(_.toString).toList 
+  }
+  
+  override def pm: PrefixMap = PrefixMap.empty // TODO: Improve this to add pm to Shaclex
 }
 
 object Shaclex {

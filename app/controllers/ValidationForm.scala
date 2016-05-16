@@ -3,6 +3,7 @@ package controllers
 import scala.util.{ Success, Try }
 import es.weso.utils.IOUtils.{ failMsg, getFileContents, getURI }
 import es.weso.schema._
+import es.weso.rdf.nodes._
 
 case class ValidationForm(
       dataInput: DataInput
@@ -97,6 +98,20 @@ case class ValidationForm(
    }
  }
  
+  def nodes: List[String] = {
+    val tryNodes = for {
+      rdf <- dataInput.getData(dataFormat)
+    } yield rdf.iris().map(_.toString).toList
+    tryNodes.getOrElse(List())
+  }
+ 
+  def shapes: List[String] = {
+    val tryNodes = for {
+      schema <- schemaInput.getSchema
+    } yield schema.shapes
+    tryNodes.getOrElse(List())
+  }
+  
 }
     
 object ValidationForm {

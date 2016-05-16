@@ -1,19 +1,11 @@
-@(schemaOptions: SchemaOptions)
+@(schemaOptions: SchemaOptions, nodes:List[String], shapes: List[String])
 
 @import play.api.i18n.Messages
 
 <fieldset>
 <legend>@Messages("Schema.options")</legend>
-<label for="cut">@Messages("Cut")</label>
-<input type="number"
-       id="cut" 
-	   name="cut" 
-	   min="1" 
-	   max="100" 
-	   value="@schemaOptions.cut" />
 
 <!-- Options -->
-   <summary>@Messages("MoreOptions")</summary>
    <table>	
    <tr><th>Name</th><th>Option</th><th>Description</th></tr>
     <tr>
@@ -25,6 +17,7 @@
     	value="true"
     	@{if(schemaOptions.showSchema==true) { "checked" }}>
     	<label>@Messages("Show.schema")</label><br/>
+    	
 	<input 
 		type="radio" 
 		name="withAny" 
@@ -34,5 +27,36 @@
     </td>
     <td>@Messages("Show.schema.explain")</td>
     </tr>
+    <tr>
+    <td>Focus node selection</td>
+    <td>
+    <input type="radio" name="trigger" value="scopeNodes"><label>Scope Node declarations</label><br/>
+    <input type="radio" name="trigger" value="nodeShape"><label>Node - Shape</label><br/>
+    <input type="radio" name="trigger" value="nodeAllShapes"><label>Node - All shapes</label><br/>
+    <input type="radio" name="trigger" value="allNodesAllShapes"><label>All Nodes - All shapes</label><br/>
+	<select name="node">
+      @for(n <- nodes) {
+      	<option value="@n"
+      	 @{if(schemaOptions.node==n) { "checked" }}>@n</option>
+      }
+    </select>
+    <select name="shape">
+      @for(s <- shapes) {
+      	<option value="@s"
+      	 @{if(schemaOptions.shape==s) { "checked" }}>@s</option>
+      }
+    </select>
+    </td>
+    <td>How to select focus nodes to validate</td>
+    </tr>
+    <tr>
+    <td><label for="cut">@Messages("Cut")</label></td>
+    <td><input type="number"
+       id="cut" 
+	   name="cut" 
+	   min="1" 
+	   max="100" 
+	   value="@schemaOptions.cut" /></td>
+	 <td>Cut level in case there are more than one validation result</td>
    </table>
 </fieldset>

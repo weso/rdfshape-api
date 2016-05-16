@@ -25,6 +25,22 @@ case class SchemaOptions(
   def opt_iri: Option[IRI] = {
     maybeFocusNode.map(IRI(_))
   }
+  
+  def node: String = {
+    trigger match {
+      case NodeShape(n,s) => n.toString
+      case NodeAllShapes(n) => n.toString
+      case _ => ""
+    }
+  }
+  
+  def shape: String = {
+    trigger match {
+      case NodeShape(n,s) => s.toString
+      case _ => ""
+    }
+    
+  }
 }
     
 object SchemaOptions {

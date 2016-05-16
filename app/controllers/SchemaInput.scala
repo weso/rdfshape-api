@@ -15,6 +15,13 @@ case class SchemaInput(
     , schemaName: String  
     ) {
   
+  def getSchema: Try[Schema] = {
+    for {
+      str <- getSchemaStr
+      schema <- Schemas.fromString(str,inputFormat,schemaName,None)
+    } yield schema
+  }
+  
   def convertSchema(outputFormat: String): Try[String] = {
     for {
       str <- getSchemaStr

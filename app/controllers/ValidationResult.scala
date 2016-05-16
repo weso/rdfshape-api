@@ -1,17 +1,18 @@
 package controllers
 
-import scala.util.{ Failure, Success }
+import scala.util.{ Try, Failure, Success }
 
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.{ IRI, RDFNode }
 import es.weso.schema._
 import play.Logger
+import es.weso.rdf.PrefixMap
 
 case class ValidationResult(
     status: Option[Boolean],  // 
     msg: String,
     result: Result,
-    nodes: List[RDFNode],
+    nodes: List[RDFNode], // TODO: Can we remove this one?
     dataStr: String,
     dataOptions: DataOptions,
     withSchema: Boolean,
@@ -32,6 +33,16 @@ case class ValidationResult(
     else None
   }
 
+  def getSchema: Try[Schema] = {
+    for {
+      schema <- Schemas.fromString(schemaStr,schemaFormat,schemaName,None)
+    } yield schema
+  }
+  
+  def pm: PrefixMap = {
+    getSchema.map(_.pm).getOrElse(PrefixMap.empty)
+  }
+
   def schemaFormat_param: Option[String] = {
     Some(schemaFormat)
   }
@@ -41,7 +52,7 @@ case class ValidationResult(
   }
   
   def toHTML: String = {
-    result.toHTML(schemaOptions.cut)
+    result.toHTML(schemaOptions.cut,pm)
   }
 }
 
@@ -81,8 +92,7 @@ object ValidationResult {
     schemaOptions: SchemaOptions,
     together: Boolean
     ): ValidationResult = {
-    
-    val result = schema.validateNodeAllLabels(iri,data)
+    val result = schema.validateNodeAllShapes(iri,data)
     val ok = result.isValid
     val msg = result.message
     ValidationResult(Some(ok),
@@ -113,7 +123,7 @@ object ValidationResult {
     together: Boolean
     ): ValidationResult = {
     val nodes = data.subjects.toList
-    val result = schema.validateAllNodesAllLabels(data)
+    val result = schema.validateAllNodesAllShapes(data)
     ValidationResult(Some(result.isValid), 
         result.message, 
         result, 
@@ -142,7 +152,7 @@ object ValidationResult {
     together: Boolean
     ): ValidationResult = {
     val nodes = data.subjects.toList
-    val result = schema.validateRDF(data)
+    val result = schema.validate(data)
     ValidationResult(Some(result.isValid), 
         result.message, 
         result, 
@@ -172,7 +182,7 @@ object ValidationResult {
      trySchema match {
         case Success(schema) => {
           val format = dataOptions.format
-          val result = schema.validateRDF(rdf)
+          val result = schema.validate(rdf)
           val strSchema = schema.serialize(format).getOrElse("")
           ValidationResult(
               Some(result.isValid), 

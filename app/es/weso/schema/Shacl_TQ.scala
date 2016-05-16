@@ -1,7 +1,6 @@
 package es.weso.schema
 import es.weso.shacl.ShaclBinder
 import es.weso.schema.shacl_tq._
-
 import es.weso.shex.DataFormat
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes._
@@ -12,8 +11,10 @@ import com.hp.hpl.jena.rdf.model.Model
 import es.weso.validating.Checked._
 import es.weso.rdf.PREFIXES.{rdf_type}
 import es.weso.utils.TryUtils
+import es.weso.rdf.PrefixMap
 
-case class Shacl_TQ(binder: ShaclBinder) extends Schema {
+case class Shacl_TQ(
+    binder: ShaclBinder) extends Schema {
   
   lazy val sh = IRI("http://www.w3.org/ns/shacl#")
   lazy val sh_ValidationResult = sh + "ValidationResult"
@@ -28,7 +29,7 @@ case class Shacl_TQ(binder: ShaclBinder) extends Schema {
     "<pre>" + binder.serialize(format) + "</pre>"
   }
   
-  override def validateRDF(rdf: RDFReader) : Result = {
+  override def validate(rdf: RDFReader) : Result = {
     println("Validating RDF with SHACL_TQ")
     val result: Model = binder.validateModel(rdf)
     val checked: Checked[Boolean,ConstraintReason,ViolationError] = convertResultModel(result)
@@ -62,13 +63,16 @@ case class Shacl_TQ(binder: ShaclBinder) extends Schema {
     // Success(ViolationError.msgError(msg))
   }
 
-  
-  override def validateNodeAllLabels(node: RDFNode, rdf: RDFReader) : Result = {
-    throw new Exception("Not implemented validateAllNodesAllLabels for SHACL")
+  override def validateNodeShape(node: IRI, shape: String, rdf: RDFReader) : Result = {
+    throw new Exception("Not implemented validateNodesLabels for SHACL TQ")
   }
   
-  override def validateAllNodesAllLabels(rdf: RDFReader) : Result = {
-    throw new Exception("Not implemented validateAllNodesAllLabels for SHACL")
+  override def validateNodeAllShapes(node: IRI, rdf: RDFReader) : Result = {
+    throw new Exception("Not implemented validateAllNodesAllLabels for SHACL TQ")
+  }
+  
+  override def validateAllNodesAllShapes(rdf: RDFReader) : Result = {
+    throw new Exception("Not implemented validateAllNodesAllLabels for SHACL TQ")
   }
   
   def checked2Result(result: Checked[Boolean,ConstraintReason,ViolationError]): Result = {
@@ -108,6 +112,9 @@ case class Shacl_TQ(binder: ShaclBinder) extends Schema {
   
   override def empty: Schema = Shacl_TQ.empty
   
+  override def shapes: List[String] = List()
+  
+  override def pm: PrefixMap = PrefixMap.empty // TODO: Improve this adding pm to ShaclBinder
 }
 
 object Shacl_TQ {
