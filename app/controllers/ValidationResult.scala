@@ -52,8 +52,12 @@ case class ValidationResult(
   }
   
   def toHTML: String = {
-    result.toHTML(schemaOptions.cut,pm)
+    getSchema match {
+      case Success(schema) => result.toHTML(schemaOptions.cut,schema)
+      case Failure(e) => "Exception trying to get schema " + e.getMessage
+    }
   }
+  
 }
 
 object ValidationResult {

@@ -1,9 +1,11 @@
 package es.weso.schema.shacl_tq
 
 import es.weso.rdf.nodes._
-import es.weso.rdf.RDFReader
+import es.weso.rdf.{RDFReader, PrefixMap}
+import es.weso.utils.PrefixMapUtils
 import util._
 import xml.Utility.escape
+import es.weso.schema.Shacl_TQ._
 
 case class ViolationError(
     message: String,
@@ -27,15 +29,15 @@ case class ViolationError(
     maybe("sourceTemplate", sourceTemplate) 
   }
 
-  def toHTMLRow: String = {
-    "<tr class=\"error\"><td>" + message + "</td><td>" +
-    maybeHtml("focusNode", focusNode) + "</td><td>" +
-    maybeHtml("subject", subject) + "</td><td>" +
-    maybeHtml("predicate", predicate) + "</td><td>" +
-    maybeHtml("severity", severity) + "</td><td>" +
-    maybeHtml("sourceConstraint", sourceConstraint) + "</td><td>" +
-    maybeHtml("sourceShape", sourceShape) + "</td><td>" +
-    maybeHtml("sourceTemplate", sourceTemplate) + "</td></tr>" 
+  def toHTMLRow(pm:PrefixMap): String = {
+    "<tr class=\"error\"><td class=\"message\">" + message + "</td>" +
+    maybeNodeHtml("focusNode", focusNode,pm) + 
+    maybeNodeHtml("subject", subject,pm) + 
+    maybeNodeHtml("predicate", predicate,pm) + 
+    maybeNodeHtml("severity", severity,pm) + 
+    maybeNodeHtml("sourceConstraint", sourceConstraint,pm) + 
+    maybeNodeHtml("sourceShape", sourceShape,pm) + 
+    maybeNodeHtml("sourceTemplate", sourceTemplate,pm)  
   }
 
   private def maybe[A](name: String, m: Option[A]) = {
@@ -43,9 +45,25 @@ case class ViolationError(
     else ""
   }
 
-  private def maybeHtml[A](name: String, m: Option[A]) = {
-    if (m.isDefined) s"<p>$name: ${escape(m.get.toString)}</p>" 
+  private def maybeNodeHtml(name: String, m: Option[RDFNode],pm:PrefixMap) = {
+    val tdstart = "<td class=" + name + ">"
+    val str = if (m.isDefined) {
+      val node : RDFNode = m.get
+      if (node.isIRI) {
+        val iri = node.toIRI
+        escape(PrefixMapUtils.qualify(iri)(pm))
+      } else {
+        if (node.isBNode) {
+          val fullStr = node.getLexicalForm
+          val str = fullStr.takeRight(3)
+          s"<abbr title='${fullStr}'>...$str</abbr>"
+        } else
+          node.getLexicalForm
+      }
+    }
     else ""
+   val tdend = "</td>"
+   tdstart + str + tdend
   }
 
 }

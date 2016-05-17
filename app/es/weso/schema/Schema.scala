@@ -5,10 +5,19 @@ import util._
 
 abstract class Schema {
   
+ /**
+  * Name of this schema. Example: ShEx, Shacl_TQ, ...
+  */
  def name: String
- 
+
+ /**
+  * Supported input formats
+  */
  def formats: Seq[String]
- 
+
+ /**
+  * Convert this schema to HTML
+  */
  def toHTML(format: String): String
  
  def validate(rdf: RDFReader): Result
@@ -27,10 +36,28 @@ abstract class Schema {
  
  def defaultFormat: String = formats.head
  
+ /**
+  * Creates an empty schema
+  */
  def empty: Schema
  
+ /**
+  * List of shapes
+  */
  def shapes: List[String]
- 
+
+ /**
+  * Prefix Map of this schema
+  */
  def pm: PrefixMap
  
+ /**
+  * String to add to HTML conversion of validating solution
+  */
+ def beforeErrors: String = ""
+
+ /**
+  * String to add to HTML conversion of validation errors
+  */
+ def beforeSolution: String = ""
 }

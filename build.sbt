@@ -1,7 +1,7 @@
 
 name := """rdfshape"""
 
-version := "1.0.1"
+version := "1.0.2"
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
@@ -22,13 +22,12 @@ libraryDependencies ++= Seq(
   cache,
   ws
 , "commons-io" % "commons-io" % "2.4"  
-, "org.apache.jena" % "jena-arq" % "2.10.1" excludeAll(ExclusionRule(organization = "org.slf4j"))
 , "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
 
 // ShExcala
-//, "es.weso" % "shexcala_2.11" % "0.7.11" excludeAll(ExclusionRule(organization = "org.slf4j")) 
-, "es.weso" % "shaclex_2.11" % "0.0.1" excludeAll(ExclusionRule(organization = "org.slf4j")) 
-, "es.weso" % "shacl_tq_2.11" % "0.0.5" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+//, "es.weso" % "shexcala_2.11" % "0.7.12" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+, "es.weso" % "shaclex_2.11" % "0.0.2" excludeAll(ExclusionRule(organization = "org.slf4j")) 
+, "es.weso" % "shacl_tq_2.11" % "0.0.10" excludeAll(ExclusionRule(organization = "org.slf4j")) 
 
 // , "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 , "org.scalatestplus" %% "play" % "1.2.0" % "test"

@@ -7,17 +7,20 @@ case class Result(
     solutions: Seq[Solution],
     errors: Seq[ErrorInfo]) {
   
-  def toHTML(cut: Int = 1, pm: PrefixMap): String = {
+  def toHTML(cut: Int = 1, schema:Schema): String = {
     val sb = new StringBuilder
+    val pm = schema.pm
     if (isValid) {
      for ((solution, n) <- solutions zip (1 to cut)) {
       sb ++= "<h2 class='result'>Result" + printNumber(n, cut) + "</h2>"
+      sb ++= schema.beforeSolution
       sb ++= solution.toHTML(pm)
      }
     } else {
     sb++="<div class=\"errors\">"
+    sb ++= "<table class='error'>"
+    sb ++= schema.beforeErrors
     for (error <- errors) {
-      sb ++= "<table class='error'>"
       sb ++= error.toHTML(pm)
      }
     sb++="</table>"
