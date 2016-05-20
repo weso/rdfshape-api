@@ -93,13 +93,14 @@ trait Checker { this: Controller =>
      val r = for ( mf <- getMultipartForm(request)
                  ; dataInput <- parseDataInput(mf)
                  ; schemaName <- parseSchemaName(mf)
+                 ; rdfs <- parseBoolean(mf,"rdfs")
                  // ; str_data <- dataInput.getDataStr
                  ; outputStr <- dataInput.convertData(dataInput.dataFormat)
-                 ) yield (dataInput, outputStr, schemaName)
+                 ) yield (dataInput, outputStr, schemaName, rdfs)
      
       r match {
-       case TrySuccess((dataInput, result, schemaName)) => {
-         val vf = ValidationForm.fromDataConversion(result, dataInput.dataFormat, schemaName)
+       case TrySuccess((dataInput, result, schemaName, rdfs)) => {
+         val vf = ValidationForm.fromDataConversion(result, dataInput.dataFormat, schemaName, rdfs)
          Ok(views.html.check_data(vf,result))
        }
        case Failure(e) => BadRequest(views.html.errorPage(e.getMessage)) 

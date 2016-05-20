@@ -42,14 +42,15 @@ trait DataConverter { this: Controller =>
   def convert_data_get(
           data: String
         , dataFormat: String
-        , outputFormat: String
+        , targetFormat: String
+        , schemaName: String
         , rdfs: Boolean = false
         ) = Action.async {  
-        converterDataFuture(data,dataFormat, outputFormat,rdfs).map(output => {
+        converterDataFuture(data, dataFormat, targetFormat, rdfs).map(output => {
               output match {
                 case TrySuccess(result) => {
-                  val vf = ValidationForm.fromDataConversion(data,dataFormat,Schemas.defaultSchemaName)
-                  Ok(views.html.convert_data(vf,outputFormat,result))
+                  val vf = ValidationForm.fromDataConversion(data, dataFormat, schemaName, rdfs)
+                  Ok(views.html.convert_data(vf,targetFormat,result))
                 }
                 case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
               }

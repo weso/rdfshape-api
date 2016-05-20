@@ -4,7 +4,29 @@
 	
 <h1>Help & Examples</h1>
 
+<p>RDFShape can be used to check the syntax of RDF and to validate RDF data against shapes.</p>
+<p>It supports both:
+<ul>
+<li><a href="http://www.w3.org/TR/shacl/">SHACL (Shapes Constraint Language)</a></li>
+<li><a href="http://shex.io/">ShEx (Shape Expressions)</a></li>
+</ul>
+
 <h2>Some validation examples</h2>
+<h3>Checking RDF syntax</h3>
+<ul>
+<li><a href="http://rdfshape.herokuapp.com/api/validator?data=prefix+%3A+++++%3Chttp%3A%2F%2Fexample.org%2F%3E%0D%0Aprefix+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0Aprefix+xsd%3A++%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0A%0D%0A%3Ajohn+foaf%3Aname+%22John+Smith%22+%3B%0D%0A++++++foaf%3Aage+23+%3B%0D%0A++++++foaf%3Ambox+%3Cmailto%3Ajohn%40example.org%3E+.%0D%0A%0D%0A%3Abob+foaf%3Aname+%22Robert%22+%3B%0D%0A+++++foaf%3Aage+25+%3B%0D%0A+++++foaf%3Ambox+%3Cbob%40example.org%3E+.&schemaName="
+>Checking people in Turtle</a></li>
+</ul>
+
+<h3>Converting between different RDF syntaxes</h3>
+<ul>
+<li><a href=""
+>Converting Turtle to RDF/XML</a></li>
+<li><a href=""
+>Converting Turtle to N-Triples</a></li>
+</ul>
+
+<h3>ShEx examples</h3>
 <ul>
 <li><a href="http://rdfshape.herokuapp.com/api/validator?data=prefix+%3A+++++%3Chttp%3A%2F%2Fexample.org%2F%3E%0D%0Aprefix+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0Aprefix+xsd%3A++%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0A%0D%0A%3Ajohn+foaf%3Aname+%22John+Smith%22+%3B%0D%0A++++++foaf%3Aage+23+%3B%0D%0A++++++foaf%3Ambox+%3Cmailto%3Ajohn%40example.org%3E+.%0D%0A%0D%0A%3Abob+foaf%3Aname+%22Robert%22+%3B%0D%0A+++++foaf%3Aage+25+%3B%0D%0A+++++foaf%3Ambox+%3Cbob%40example.org%3E+.&dataFormat=TURTLE&schema=prefix+%3A+++++%3Chttp%3A%2F%2Fexample.org%2F%3E%0D%0Aprefix+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0Aprefix+xsd%3A++%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0Aprefix+shex%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2013%2FShEx%2Fns%23%3E%0D%0A%0D%0A%3CPersonShape%3E+{+%0D%0A++foaf%3Aname+xsd%3Astring+%0D%0A%2C+foaf%3Aage++xsd%3Ainteger%0D%0A%2C+foaf%3Ambox+IRI%0D%0A}&cut=10">
     People</a>
@@ -20,7 +42,9 @@
     Country</a></li>   
 </ul>
 
-<h2>More info on use cases</h2>
+<h3>SHACL examples</h3>
+
+<h2>WIKI with more info</h2>
 
 <a href="https://github.com/labra/rdfshape/wiki/RDFShape---Help">Help</a>
 

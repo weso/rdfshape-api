@@ -21,11 +21,11 @@ GET     /validate/dataSchemaNode    controllers.ValidatorSchemaData.dataSchemaNo
 
 # Converter
 
-GET		/converter/data				controllers.DataConverter.convert_data_get(data: String, inputFormat: String ?= "TURTLE",outputFormat: String ?= "TURTLE")
+GET		/converter/data				controllers.DataConverter.convert_data_get(data: String, dataFormat: String ?= "TURTLE",targetFormat: String ?= "TURTLE",schemaName: String ?= "ShEx", rdfs: Boolean = false)
 GET		/converter/dataFormats		controllers.DataConverter.dataFormats()
 POST	/converter/data			    controllers.DataConverter.convert_data_post
 
-GET		/converter/schema			controllers.SchemaConverter.convert_schema_get(schema:String,inputFormat: String ?= "SHEXC", schemaName : String ?= "ShEx", outputFormat: String ?= "SHEXC")
+GET		/converter/schema			controllers.SchemaConverter.convert_schema_get(schema:String,schemaFormat: String ?= "SHEXC", schemaName : String ?= "ShEx", targetFormat: String ?= "SHEXC")
 GET		/converter/schemaFormats	controllers.SchemaConverter.schemaFormats()
 POST	/converter/schema		    controllers.SchemaConverter.convert_schema_post
 

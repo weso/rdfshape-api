@@ -76,7 +76,7 @@ case class ValidationForm(
  def schemaName : String = schemaInput.schemaName
  def schemaFormat : String = schemaInput.inputFormat
  def schemaStr : String = schemaInput.getSchemaStr.getOrElse("")
-
+ def rdfs: Boolean = dataOptions.rdfs
  
  def focusNode : String = {
    schemaOptions.trigger.extractNode
@@ -129,11 +129,10 @@ object ValidationForm {
     )
   }
   
-  // TODO: Check rdfs
-  def fromDataConversion(data: String, format: String, schemaName: String): ValidationForm = {
+  def fromDataConversion(data: String, format: String, schemaName: String, rdfs: Boolean): ValidationForm = {
     ValidationForm(
       dataInput = DataInput(data)
-    , dataOptions = DataOptions(format,true,false)
+    , dataOptions = DataOptions(format = format,rdfs = rdfs,showData = false)
     , withSchema = false
     , schemaInput = SchemaInput(schemaName)
     , schemaOptions = SchemaOptions.default

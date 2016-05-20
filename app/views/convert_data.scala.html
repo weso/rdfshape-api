@@ -1,4 +1,4 @@
-@(vf:ValidationForm, outputFormat: String, result: String)
+@(vf:ValidationForm, targetFormat: String, result: String)
 
 @import play.api.i18n.Messages
 
@@ -7,6 +7,14 @@
 @if(!result.isEmpty) {
 <h1>Result</h1>
 <pre class="prettyprint linenums lang-turtle">@result</pre>
+
+<a href="@routes.DataConverter.convert_data_get(
+	         data = vf.dataStr,
+	         dataFormat = vf.dataFormat,
+	         targetFormat = targetFormat,
+	         schemaName = vf.schemaName
+	         )">Generate permalink</a>
+
 }
 
 <form method="post" 
@@ -20,7 +28,7 @@
 <select name="outputFormat">
       @for(s <- DataOptions.availableFormats) {
       	<option value="@s"
-      	 @{if(outputFormat==s) { "selected" }}>@s</option>
+      	 @{if(targetFormat==s) { "selected" }}>@s</option>
       }
 </select>
 

@@ -68,14 +68,14 @@
 <ul>           
 <li><a href="@routes.DataConverter.convert_data_get(
 			data = vf.dataStr,
-            inputFormat = vf.dataFormat,
-            outputFormat = "TURTLE" 
+            dataFormat = vf.dataFormat,
+            targetFormat = "TURTLE" 
             )" 
             title="Conversions betewen different RDF Data formats">RDF Conversions</a></li>
 <li><a href="@routes.SchemaConverter.convert_schema_get(
 			schema = vf.schemaStr,
-            inputFormat = vf.schemaFormat,
-            outputFormat = "SHEXC",
+            schemaFormat = vf.schemaFormat,
+            targetFormat = "SHEXC",
             schemaName = vf.schemaName 
             )" 
             title="Conversions between different Schema formats">Schema Conversions</a></li>
