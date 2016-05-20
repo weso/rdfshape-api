@@ -33,10 +33,12 @@ trait ValidatorData { this: Controller =>
   def data(
     data: String,
     dataFormat: String,
+    rdfs:Boolean = false,
     schemaName: String): Action[AnyContent] = {  
-    val opts_data = DataOptions(
+    val dataOptions = DataOptions(
       format = RDFUtils.getFormat(Some(dataFormat)), 
-      showData = true)
+      showData = true,
+      rdfs)
     val opts_schema = SchemaOptions.default
 
     val trySchema = for {
@@ -48,7 +50,8 @@ trait ValidatorData { this: Controller =>
         println("Only data?")
         validate_get(data,
           Some(dataFormat),
-          DEFAULT_SHOW_DATA,
+          dataOptions.showData,
+          dataOptions.rdfs,
           schemaName,
           None,
           DEFAULT_CUT,
@@ -63,7 +66,8 @@ trait ValidatorData { this: Controller =>
   def validate_get(
     str_data: String, 
     dataFormat: Option[String], 
-    showData: Boolean, 
+    showData: Boolean,
+    rdfs:Boolean = false,
     schemaName: String, 
     opt_iri: Option[String], 
     cut: Int, 
@@ -72,6 +76,7 @@ trait ValidatorData { this: Controller =>
     validate_get_Future(str_data,
       dataFormat,
       showData,
+      rdfs,
       schemaName,
       opt_iri,
       cut,
@@ -90,13 +95,16 @@ trait ValidatorData { this: Controller =>
     str_data: String,
     formatData: Option[String],
     showData:Boolean,
+    rdfs:Boolean,
     schemaName: String,
     opt_iri: Option[String],
     cut: Int,
     showSchema: Boolean): Future[Try[ValidationResult]] = {
       val iri = opt_iri.map(str => IRI(str))
       val dataOptions = DataOptions(
-        format = RDFUtils.getFormat(formatData), showData = showData
+        format = RDFUtils.getFormat(formatData), 
+           showData = showData, 
+           rdfs
       )
       val trigger = opt_iri match {
         case None => ValidationTrigger.default
@@ -104,7 +112,7 @@ trait ValidatorData { this: Controller =>
       }
       val opts_schema = SchemaOptions(cut = cut, trigger = trigger, showSchema)
       
-      parseStrAsRDFReader(str_data, dataOptions.format) match {
+      parseStrAsRDFReader(str_data, dataOptions.format, dataOptions.rdfs) match {
         case TrySuccess(data) =>
           scala.concurrent.Future(
           TrySuccess(
@@ -147,7 +155,7 @@ trait ValidatorData { this: Controller =>
             println(s"validate_post validation form: $vf")
             val tryValidate =
               for (
-                data <- vf.dataInput.getData(vf.dataOptions.format); 
+                data <- vf.dataInput.getData(vf.dataOptions.format, vf.dataOptions.rdfs); 
                 str_schema <- vf.schemaInput.getSchemaStr
               ) yield {
                 println(s"validate_post: vf $vf")

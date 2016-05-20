@@ -88,11 +88,12 @@ object ValidationResult {
   def validateIRI(
     iri: IRI,
     data: RDFReader,
-    str_data: String,
+    dataStr: String,
     dataOptions: DataOptions,
     schema: Schema,
-    str_schema: String,
-    schema_format: String,
+    schemaStr: String,
+    schemaFormat: String,
+    schemaName: String,
     schemaOptions: SchemaOptions,
     together: Boolean
     ): ValidationResult = {
@@ -103,12 +104,12 @@ object ValidationResult {
       msg,
       result,
       List(iri),
-      str_data, 
+      dataStr, 
       dataOptions, 
       true, 
-      str_schema, 
-      schema_format, 
-      schema.name, 
+      schemaStr, 
+      schemaFormat, 
+      schemaName, 
       schemaOptions,
       together)
   }
@@ -118,11 +119,12 @@ object ValidationResult {
    */
   def validateAny(
     data: RDFReader, 
-    str_data: String, 
+    dataStr: String, 
     dataOptions: DataOptions, 
     schema: Schema, 
-    str_schema: String, 
-    schema_format: String, 
+    schemaStr: String, 
+    schemaFormat: String,
+    schemaName: String,
     schemaOptions: SchemaOptions,
     together: Boolean
     ): ValidationResult = {
@@ -132,12 +134,12 @@ object ValidationResult {
         result.message, 
         result, 
         nodes, 
-        str_data, 
+        dataStr, 
         dataOptions, 
         true, 
-        str_schema, 
-        schema_format, 
-        schema.name, 
+        schemaStr, 
+        schemaFormat, 
+        schemaName, 
         schemaOptions,
         together)
   }
@@ -147,11 +149,12 @@ object ValidationResult {
    */
   def validateScopeNodes(
     data: RDFReader, 
-    str_data: String, 
+    dataStr: String, 
     dataOptions: DataOptions, 
     schema: Schema, 
-    str_schema: String, 
-    schema_format: String, 
+    schemaStr: String, 
+    schemaFormat: String,
+    schemaName: String,
     schemaOptions: SchemaOptions,
     together: Boolean
     ): ValidationResult = {
@@ -161,12 +164,12 @@ object ValidationResult {
         result.message, 
         result, 
         nodes, 
-        str_data, 
+        dataStr, 
         dataOptions, 
         true, 
-        str_schema, 
-        schema_format, 
-        schema.name, 
+        schemaStr, 
+        schemaFormat, 
+        schemaName, 
         schemaOptions,
         together)
   }
@@ -176,7 +179,7 @@ object ValidationResult {
    */
   def validateTogether(
     rdf: RDFReader, 
-    str_data: String, 
+    dataStr: String, 
     dataOptions: DataOptions, 
     schemaName: String, 
     schemaOptions: SchemaOptions
@@ -187,26 +190,26 @@ object ValidationResult {
         case Success(schema) => {
           val format = dataOptions.format
           val result = schema.validate(rdf)
-          val strSchema = schema.serialize(format).getOrElse("")
+          val schemaStr = schema.serialize(format).getOrElse("")
           ValidationResult(
               Some(result.isValid), 
                    result.message, 
                    result, 
                    List(), 
-                   str_data, 
+                   dataStr, 
                    dataOptions, 
                    false, 
-                   strSchema, 
+                   schemaStr, 
                    format, 
-                   schema.name, 
+                   schemaName, 
                    schemaOptions,
                    true)
         }
         case Failure(e) =>
           ValidationResult(Some(false),
             s"Schema did not parse : ${e.getMessage}, name: $schemaName",
-            Result.empty, List(), str_data, dataOptions, false,
-            "", Schemas.defaultSchemaFormat, schemaName, schemaOptions,true
+            Result.empty, List(), dataStr, dataOptions, false,
+            dataStr, dataOptions.format, schemaName, schemaOptions,true
             )
       }
   }
@@ -216,33 +219,33 @@ object ValidationResult {
    */
   def validateDataSchema(
     rdf: RDFReader, 
-    str_data: String, 
+    dataStr: String, 
     dataOptions: DataOptions, 
     withSchema: Boolean, 
-    strSchema: String, 
+    schemaStr: String, 
     schemaFormat: String, 
     schemaName: String, 
     schemaOptions: SchemaOptions): ValidationResult = {
-    println(s"ValidationResult.validate...withSchema: $withSchema")
+    println(s"ValidationResult.validate. withSchema: $withSchema schemaName: $schemaName")
 
     if (withSchema) {
-      Schemas.fromString(strSchema,schemaFormat,schemaName,None) match {
+      Schemas.fromString(schemaStr,schemaFormat,schemaName,None) match {
         case Success(schema) =>
-          validate_withSchema(rdf,str_data,dataOptions,schema,schemaOptions)
+          validate_withSchema(rdf,dataStr,dataOptions,schema,schemaStr,schemaFormat,schemaName,schemaOptions)
         case Failure(e) => {
           Logger.info("Schema did not parse..." + e.getMessage)
           ValidationResult(Some(false),
             s"Schema did not parse : ${e.getMessage}, name: $schemaName",
-            Result.empty, List(), str_data, dataOptions, true,
-            strSchema, schemaFormat, schemaName, schemaOptions,false
+            Result.empty, List(), dataStr, dataOptions, true,
+            schemaStr, schemaFormat, schemaName, schemaOptions,false
             )
         }
       }
     } 
    else {
       ValidationResult(Some(true), "RDF parsed",
-        Result.empty, List(), str_data, dataOptions, false,
-        strSchema, schemaFormat, schemaName, schemaOptions,false)
+        Result.empty, List(), dataStr, dataOptions, false,
+        schemaStr, schemaFormat, schemaName, schemaOptions,false)
     }
   }
 
@@ -251,20 +254,21 @@ object ValidationResult {
    */
   def validate_withSchema(
     rdf: RDFReader, 
-    str_data: String, 
+    dataStr: String, 
     dataOptions: DataOptions, 
     schema: Schema, 
+    schemaStr: String,
+    schemaFormat: String,
+    schemaName: String,
     schemaOptions: SchemaOptions): ValidationResult = {
-    val schemaFormat = schema.defaultFormat
-    val strSchema = schema.serialize(schemaFormat).getOrElse("")
     schemaOptions.trigger match {
-       case NodeAllShapes(node) => validateIRI(node.toIRI, rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,false)
-       case ScopeDeclarations => validateScopeNodes(rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,false)
-       case AllNodesAllShapes => validateAny(rdf, str_data, dataOptions, schema, strSchema, schemaFormat, schemaOptions,false)
+       case NodeAllShapes(node) => validateIRI(node.toIRI, rdf, dataStr, dataOptions, schema, schemaStr, schemaFormat, schemaName, schemaOptions,false)
+       case ScopeDeclarations => validateScopeNodes(rdf, dataStr, dataOptions, schema, schemaStr, schemaFormat, schemaName, schemaOptions,false)
+       case AllNodesAllShapes => validateAny(rdf, dataStr, dataOptions, schema, schemaStr, schemaFormat, schemaName, schemaOptions,false)
        case t => ValidationResult(Some(false),
             s"Unsupported validation trigger $t",
-            Result.empty, List(), str_data, dataOptions, true,
-            strSchema, schemaFormat, schema.name, schemaOptions,false
+            Result.empty, List(), dataStr, dataOptions, true,
+            schemaStr, schemaFormat, schemaName, schemaOptions, false
             )
  
     }

@@ -11,6 +11,8 @@ import es.weso.rdf._
 import views.html.helper.input
 import es.weso.rdf.jena._
 import es.weso.utils._
+import es.weso.shex.DataFormat
+import es.weso.rdf.jena.RDFAsJenaModel
 
 
 case class DataInput(
@@ -19,6 +21,7 @@ case class DataInput(
     , data_file: Option[File]
     , data_textarea: String
     , data_endpoint: String = ""
+    , dataFormat: String
     ) {
   
   def getDataStr(): Try[String] = 
@@ -26,16 +29,16 @@ case class DataInput(
      case ByUri => getURI(data_uri)
      case ByFile => getFileContents(data_file)
      case ByInput => TrySuccess(data_textarea)
-//     case ByEndpoint => Success("<<Endpoint: " + data_endpoint + ">>") 
+     case ByEndpoint => TrySuccess("<<Endpoint: " + data_endpoint + ">>") 
      case ByDereference => TrySuccess("<<Web Dereference>>")
      case _ => throw new Exception("get_DataStr: Unknown input type")
   }
   
-  def getData(format: String) : Try[RDFReader] = {
+  def getData(format: String, rdfs:Boolean) : Try[RDFReader] = {
    input_type_Data match {
      case ByUri | ByFile | ByInput => 
        			 for ( str <- getDataStr
-                 ; rdf <- parseStrAsRDFReader(str,format)
+                 ; rdf <- parseStrAsRDFReader(str,format,rdfs)
                  ) yield rdf
      case ByEndpoint => 
        if (data_endpoint == "") {
@@ -50,15 +53,20 @@ case class DataInput(
   }
   }
   
-  def extract_str : String = {
-    this.getDataStr().getOrElse("")
-  }
+  def extract_str : String = this.getDataStr().getOrElse("")
   
+  def convertData(outputFormat: String): Try[String] = {
+    for {
+      str <- getDataStr
+      rdf <- RDFAsJenaModel.fromChars(str,dataFormat)
+    } yield rdf.serialize(outputFormat)
+  }
+
 }
     
 object DataInput {
   def apply() : DataInput = 
-    DataInput(ByInput, "", None, "","")
+    DataInput(ByInput, "", None, "","",DataFormat.default.name)
     
   def apply(str: String): DataInput = 
     DataInput( input_type_Data = ByInput
@@ -66,5 +74,5 @@ object DataInput {
         	, data_file = None
         	, data_textarea = str
         	, data_endpoint = ""
-        	)
+        	, DataFormat.default.name)
 }

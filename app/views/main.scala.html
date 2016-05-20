@@ -49,11 +49,12 @@
 </ul></li>
 <li class="dropdown">Validation
 <ul>
-<li><a href="@routes.ValidatorSchemaData.dataSchema(vf.dataStr,
-            vf.dataFormat,
-            vf.schemaStr,
-            vf.schemaFormat,
-            vf.schemaName)" 
+<li><a href="@routes.ValidatorSchemaData.dataSchema(data = vf.dataStr,
+            dataFormat = vf.dataFormat,
+            rdfs = vf.dataOptions.rdfs,
+            schemaStr = vf.schemaStr,
+            schemaFormat = vf.schemaFormat,
+            schemaName = vf.schemaName)" 
        title="Schema is separated from RDF Data">Data + Schema (separated)</a>
 </li>
 

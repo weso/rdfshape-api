@@ -29,7 +29,7 @@ object Multipart {
 
    def getValidationForm(request: Request[AnyContent]): Try[ValidationForm] = {
     for ( mf <- getMultipartForm(request)
-        ; inputData <- parseInputData(mf)
+        ; inputData <- parseDataInput(mf)
         ; opt_data <- parseOptData(mf)
         ; schemaName <- parseSchemaName(mf)
         ; opt_schema <- parseOptSchema(mf)
@@ -104,23 +104,26 @@ object Multipart {
     for (value <- parseKey(mf,"iri")) yield IRI(value)
   }
 
-  def parseInputData(mf: MultipartFormData[TemporaryFile]): Try[DataInput] = {
-   for ( input_type_data <- parseInputType(mf,"data")
-       ; data_uri <- parseKeyOrElse(mf,"data_uri","")
-       ; data_textarea <- parseKeyOrElse(mf,"data_textarea","")
-       ; data_file <- parseFile(mf,"data_file")
-//       ; data_endpoint <- parseKey(mf,"data_endpoint")
+  def parseDataInput(mf: MultipartFormData[TemporaryFile]): Try[DataInput] = {
+   for ( inputTypeData <- parseInputType(mf,"data")
+       ; dataUri <- parseKeyOrElse(mf,"data_uri","")
+       ; dataTextarea <- parseKeyOrElse(mf,"data_textarea","")
+       ; dataFile <- parseFile(mf,"data_file")
+       ; dataEndpoint <- parseKey(mf,"data_endpoint")
+       ; dataFormat <- parseKey(mf,"data_format")
        ) yield {
-     DataInput(input_type_data, data_uri, data_file, data_textarea)
+     DataInput(inputTypeData, dataUri, dataFile, dataTextarea, dataEndpoint, dataFormat)
    }
   }
   
   def parseOptData(mf: MultipartFormData[TemporaryFile]): Try[DataOptions] = {
     for ( showData <- parseBoolean(mf,"showData")
         ; data_format <- parseKey(mf,"data_format")
+        ; rdfs <- parseBoolean(mf,"rdfs")
         ) yield 
         DataOptions(format = data_format, 
-                    showData = showData)
+                    showData = showData, 
+                    rdfs)
    }
 
   def parseOptSchema(mf: MultipartFormData[TemporaryFile]): Try[Option[(SchemaInput,SchemaOptions)]] = {

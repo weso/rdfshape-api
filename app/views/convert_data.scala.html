@@ -20,7 +20,7 @@
 <select name="outputFormat">
       @for(s <- DataOptions.availableFormats) {
       	<option value="@s"
-      	 @{if(outputFormat==s) { "checked" }}>@s</option>
+      	 @{if(outputFormat==s) { "selected" }}>@s</option>
       }
 </select>
 

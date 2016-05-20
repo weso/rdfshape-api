@@ -12,7 +12,7 @@
 <a href="@routes.SchemaConverter.convert_schema_get(
 	         vf.schemaStr,
 	         vf.schemaFormat,
-             vf.schemaVersion,
+             vf.schemaName,
              outputFormat
 	         )">Generate permalink</a>
 
@@ -24,14 +24,16 @@
     <select name="outputFormat">
       @for(s <- SchemaOptions.availableFormats) {
       	<option value="@s"
-      	 @{if(outputFormat==s) { "checked" }}>@s</option>
+      	 @{if(outputFormat==s) { "selected" }}>@s</option>
       }
     </select>
 
 @submit()
 
 @hidden_inputs(vf)
+
 @schemaName(vf)
+
 @tabs_schemaInput(vf)
 
 </form>	

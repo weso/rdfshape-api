@@ -4,6 +4,27 @@
 
 <fieldset>
 <legend>@Messages("Data.options")</legend>
+<label for="data_format">@Messages("Data.format")</label>
+    <select name="data_format">
+      @for(s <- DataOptions.availableFormats) {
+      	<option value="@s"
+      	 @{if(dataOptions.format==s) { "checked" }}>@s</option>
+      }
+    </select>
+<br/>    
+<label for="extend_rdfs">Add RDFS inference</label>
+<br/>
+    <input 
+    	type="radio" name="rdfs" value="true"
+    	@{if(dataOptions.rdfs==true) { "checked" }}>
+    	<label>true</label></input>
+    <br/>
+	<input 
+		type="radio" name="rdfs" value="false" 
+		@{if(dataOptions.rdfs==false) { "checked" }}>
+		<label>false</label>
+	</input>
+<br/>    
 <label for="showData" title="@{Messages("ShowData.explanation")}">@Messages("showData")</label>
 <br/>
     <input 
@@ -17,12 +38,5 @@
 		<label>false</label>
 	</input>
 <br/>
-<label for="data_format">@Messages("Data.format")</label>
-    <select name="data_format">
-      @for(s <- DataOptions.availableFormats) {
-      	<option value="@s"
-      	 @{if(dataOptions.format==s) { "checked" }}>@s</option>
-      }
-    </select>
  
 </fieldset>

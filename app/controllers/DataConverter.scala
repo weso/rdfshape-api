@@ -33,8 +33,9 @@ trait DataConverter { this: Controller =>
           data: String
         , dataFormat: String
         , outputFormat: String
+        , rdfs: Boolean
     ) : Future[Try[String]]= {
-       Future(parseStrAsRDFReader(data,dataFormat).map(_.serialize(outputFormat)))
+       Future(parseStrAsRDFReader(data,dataFormat,rdfs).map(_.serialize(outputFormat)))
   }
   
   
@@ -42,8 +43,9 @@ trait DataConverter { this: Controller =>
           data: String
         , dataFormat: String
         , outputFormat: String
+        , rdfs: Boolean = false
         ) = Action.async {  
-        converterDataFuture(data,dataFormat, outputFormat).map(output => {
+        converterDataFuture(data,dataFormat, outputFormat,rdfs).map(output => {
               output match {
                 case TrySuccess(result) => {
                   val vf = ValidationForm.fromDataConversion(data,dataFormat,Schemas.defaultSchemaName)
@@ -61,7 +63,7 @@ trait DataConverter { this: Controller =>
      ; vf <- getValidationForm(request)
      ; str_data <- vf.dataInput.getDataStr
      ; outputFormat <- parseKey(mf, "outputFormat")
-     ; data <- vf.dataInput.getData(vf.dataOptions.format)
+     ; data <- vf.dataInput.getData(vf.dataOptions.format,vf.dataOptions.rdfs)
      ) yield (vf,outputFormat,data.serialize(outputFormat))
      
       r match {

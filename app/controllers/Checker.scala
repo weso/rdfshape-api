@@ -34,6 +34,7 @@ trait Checker { this: Controller =>
     ValidatorSchemaData.validate_get(data,
         Some(dataFormat),
         DEFAULT_SHOW_DATA,
+        false,
         None,
         None,
         "",
@@ -63,9 +64,9 @@ trait Checker { this: Controller =>
   def schema_Future(
           schema: String
         , schemaFormat: String
-        , schemaVersion: String
+        , schemaName: String
         ) : Future[Try[String]]= {
-    val schemaInput = SchemaInput(schema,schemaFormat,schemaVersion)
+    val schemaInput = SchemaInput(schema,schemaFormat,schemaName)
     val output = schemaInput.convertSchema(schemaFormat)
     Future(output)
   }   
@@ -74,7 +75,7 @@ trait Checker { this: Controller =>
   def schema_post = Action { request => {
      val r = for ( mf <- getMultipartForm(request)
                  ; schemaInput <- parseSchemaInput(mf)
-                 ; str_schema <- schemaInput.getSchemaStr
+//                 ; str_schema <- schemaInput.getSchemaStr
                  ; outputStr <- schemaInput.convertSchema(schemaInput.inputFormat)
                  ) yield (schemaInput, outputStr)
      
@@ -88,6 +89,23 @@ trait Checker { this: Controller =>
     } 
   }
  
+  def data_post = Action { request => {
+     val r = for ( mf <- getMultipartForm(request)
+                 ; dataInput <- parseDataInput(mf)
+                 ; schemaName <- parseSchemaName(mf)
+                 // ; str_data <- dataInput.getDataStr
+                 ; outputStr <- dataInput.convertData(dataInput.dataFormat)
+                 ) yield (dataInput, outputStr, schemaName)
+     
+      r match {
+       case TrySuccess((dataInput, result, schemaName)) => {
+         val vf = ValidationForm.fromDataConversion(result, dataInput.dataFormat, schemaName)
+         Ok(views.html.check_data(vf,result))
+       }
+       case Failure(e) => BadRequest(views.html.errorPage(e.getMessage)) 
+      }
+    } 
+  }
 
 }
 

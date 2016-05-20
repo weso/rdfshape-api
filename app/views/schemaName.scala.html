@@ -2,11 +2,12 @@
 
 @import play.api.i18n.Messages
 @import es.weso.schema._
+@{println("schemaNameView: " + vf.schemaName)}
 
-<label for="schema_name">@Messages("Schema.Version")</label>
+<label for="schema_name">@Messages("Schema.Name")</label>
 <select name="schema_name">
       @for(s <- Schemas.availableSchemaNames) {
       	<option value="@s"
-      	 @{if(vf.schemaInput.schemaName==s) { "checked" }}>@s</option>
+      	 @{if(vf.schemaName==s) { "selected" }}>@s</option>
       }
 </select>

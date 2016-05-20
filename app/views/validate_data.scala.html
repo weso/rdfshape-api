@@ -14,13 +14,7 @@
 	  enctype="multipart/form-data" 
 	  action="@routes.ValidatorData.validate_post">
 
-<label for="schema_name">@Messages("Schema.Version")</label>
-<select name="schema_name">
-      @for(s <- Schemas.availableSchemaNames) {
-      	<option value="@s"
-      	 @{if(vf.schemaInput.schemaName==s) { "checked" }}>@s</option>
-      }
-</select>
+@schemaName(vf)
 
 @submit()
 

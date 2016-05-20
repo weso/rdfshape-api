@@ -39,7 +39,7 @@ case class SchemaInput(
      case ByInput => Success(schema_textarea)
      case _ => Failure(throw new Exception("get_SchemaString: Unsupported input type"))
    }
-  }
+  } 
   
   def extract_str() : String = {
     this.getSchemaStr.getOrElse("")

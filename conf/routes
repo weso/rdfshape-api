@@ -10,13 +10,14 @@ GET		/help						controllers.Application.help
 # Syntax checker
 
 GET     /checker/data              controllers.Checker.data(data : String ?= "", dataFormat: String ?= "TURTLE")
-GET     /checker/schema            controllers.Checker.schema(schema : String ?= "", schemaFormat: String ?= "TURTLE", schemaName: String ?= "ShEx")
+GET     /checker/schema            controllers.Checker.schema(schemaStr : String ?= "", schemaFormat: String ?= "TURTLE", schemaName: String ?= "ShEx")
 
 POST	/api/checker/schema		   controllers.Checker.schema_post
+POST	/api/checker/data		   controllers.Checker.data_post
 
-GET     /validate/data		        controllers.ValidatorData.data(data: String ?= "", dataFormat: String ?= "TURTLE", schemaName ?= "ShEx")
-GET     /validate/dataSchema        controllers.ValidatorSchemaData.dataSchema(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", schemaName ?= "ShEx")
-GET     /validate/dataSchemaNode    controllers.ValidatorSchemaData.dataSchemaNode(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat : String ?= "SHEXC", node: String ?= "", schemaName ?= "ShEx")
+GET     /validate/data		        controllers.ValidatorData.data(data: String ?= "", dataFormat: String ?= "TURTLE", rdfs: Boolean ?= false, schemaName ?= "ShEx")
+GET     /validate/dataSchema        controllers.ValidatorSchemaData.dataSchema(data: String ?= "", dataFormat: String ?= "TURTLE", rdfs: Boolean ?= false, schemaStr: String ?= "", schemaFormat : String ?= "SHEXC", schemaName ?= "ShEx")
+GET     /validate/dataSchemaNode    controllers.ValidatorSchemaData.dataSchemaNode(data: String ?= "", dataFormat: String ?= "TURTLE", rdfs: Boolean ?= false, schema: String ?= "", schemaFormat : String ?= "SHEXC", node: String ?= "", schemaName ?= "ShEx")
 
 # Converter
 
@@ -32,15 +33,15 @@ POST	/converter/schema		    controllers.SchemaConverter.convert_schema_post
 
 # Validate Schema + Data
 POST	/api/validator	controllers.ValidatorSchemaData.validate_post
-GET		/api/validator	controllers.ValidatorSchemaData.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaName: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
+GET		/api/validator	controllers.ValidatorSchemaData.validate_get(data: String,dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true, rdfs:Boolean ?= false, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaName: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
 
 # Valdate Data & Schema together
-GET		/api/validator/data	controllers.ValidatorData.data(data: String ?= "", dataFormat: String ?= "TURTLE", schemaName ?= "ShEx")
+GET		/api/validator/data	controllers.ValidatorData.data(data: String ?= "", dataFormat: String ?= "TURTLE", rdfs: Boolean ?= false, schemaName ?= "ShEx")
 POST	/api/validator/data	controllers.ValidatorData.validate_post
 
 
 # This route is maintained to keep backwards compatibility (should be deprecated in the future
-GET		/validator	controllers.ValidatorSchemaData.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
+GET		/validator	controllers.ValidatorSchemaData.validate_get(rdf: String, syntaxRDF:Option[String] ?= None, showRDF:Boolean ?= true, rdfs:Boolean ?= false, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaVersion: String ?= "ShEx", iri: Option[String] ?= None, cut:Int ?= 1, showSchema: Boolean ?= true)
 
 
 # Map static resources from the /public folder to the /assets URL path

@@ -2,30 +2,27 @@
 
 @import play.api.i18n.Messages
 
-@main(Messages("Check.Schema"))(vf) {
+@main(Messages("Check.Data"))(vf) {
 
 @if(!result.isEmpty) {
 <h1>Result</h1>
 <pre class="prettyprint linenums lang-turtle">@result</pre>
 }
 
-<a href="@routes.Checker.schema(
-	         vf.schemaStr,
-	         vf.schemaFormat,
-	         vf.schemaName
+<a href="@routes.Checker.data(
+	         vf.dataStr,
+	         vf.dataFormat
 	         )">Generate permalink</a>
 
 <form method="post" 
 	  enctype="multipart/form-data" 
-	  action="@routes.Checker.schema_post">
+	  action="@routes.Checker.data_post">
 
 @submit()
 
-@schemaName(vf)
-
 @hidden_inputs(vf)
 
-@tabs_schemaInput(vf)
+@tabs_data(vf)
 
 </form>	
 

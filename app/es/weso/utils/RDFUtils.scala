@@ -10,8 +10,13 @@ import es.weso.shex.DataFormat
 
 object RDFUtils {
 
-  def parseStrAsRDFReader(str: String, format: String): Try[RDFReader] = {
-    RDFAsJenaModel.fromChars(str,format) 
+  def parseStrAsRDFReader(str: String, format: String, rdfs: Boolean): Try[RDFReader] = {
+    val trymodel = RDFAsJenaModel.fromChars(str,format)
+    if (rdfs) {
+      val model = trymodel.get
+      Success(model.extend_rdfs)
+    }
+    else trymodel
   }
 
   def defaultDataFormat = "TURTLE"

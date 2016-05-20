@@ -13,7 +13,6 @@ case class ValidationForm(
     , schemaOptions: SchemaOptions
     ) {
  
- def schemaName = schemaInput.schemaName
  
  // This method is used to show if form is withIRI or not in index.scala.html
  // the values must match the prefix of values in tabs.js
@@ -35,6 +34,7 @@ case class ValidationForm(
    else "#no_schema"
  }
 
+ /*
  def getSchemaStr(): Try[Option[String]] = {
    if (withSchema) {
 	   schemaInput.input_type_Schema match {
@@ -45,7 +45,7 @@ case class ValidationForm(
       }     
    }
    else Success(None)
- }
+ }*/
 
 /* private def extract_str : String = {
    // (this.getSchemaStr().map(opt => opt.getOrElse(""))).getOrElse("")
@@ -73,18 +73,11 @@ case class ValidationForm(
    dataOptions.format
  }
 
- def schemaStr : String = {
-   getSchemaStr.map(opt => opt.getOrElse("")).getOrElse("")
- }
- 
- def schemaFormat: String = {
-   schemaInput.inputFormat
- }
- 
- def schemaVersion : String = {
-   schemaInput.schemaName
- }
+ def schemaName : String = schemaInput.schemaName
+ def schemaFormat : String = schemaInput.inputFormat
+ def schemaStr : String = schemaInput.getSchemaStr.getOrElse("")
 
+ 
  def focusNode : String = {
    schemaOptions.trigger.extractNode
  }
@@ -100,7 +93,7 @@ case class ValidationForm(
  
   def nodes: List[String] = {
     val tryNodes = for {
-      rdf <- dataInput.getData(dataFormat)
+      rdf <- dataInput.getData(dataFormat,dataOptions.rdfs)
     } yield rdf.iris().map(_.toString).toList
     tryNodes.getOrElse(List())
   }
@@ -136,10 +129,11 @@ object ValidationForm {
     )
   }
   
+  // TODO: Check rdfs
   def fromDataConversion(data: String, format: String, schemaName: String): ValidationForm = {
     ValidationForm(
       dataInput = DataInput(data)
-    , dataOptions = DataOptions(format,true)
+    , dataOptions = DataOptions(format,true,false)
     , withSchema = false
     , schemaInput = SchemaInput(schemaName)
     , schemaOptions = SchemaOptions.default

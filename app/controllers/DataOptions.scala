@@ -14,6 +14,7 @@ import play.Logger
 case class DataOptions(
    format: String
  , showData: Boolean
+ , rdfs: Boolean
  ) 
     
 object DataOptions {
@@ -26,7 +27,7 @@ object DataOptions {
   
 
   lazy val default : DataOptions =
-    DataOptions("TURTLE", true)
+    DataOptions("TURTLE", true,false)
 
   // TODO: Look for a more elegant way to remove an element from a list
   def removeList[A](xs:List[A],x:A): List[A] = 

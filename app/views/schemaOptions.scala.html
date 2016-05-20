@@ -37,13 +37,13 @@
 	<select name="node">
       @for(n <- nodes) {
       	<option value="@n"
-      	 @{if(schemaOptions.node==n) { "checked" }}>@n</option>
+      	 @{if(schemaOptions.node==n) { "selected" }}>@n</option>
       }
     </select>
     <select name="shape">
       @for(s <- shapes) {
       	<option value="@s"
-      	 @{if(schemaOptions.shape==s) { "checked" }}>@s</option>
+      	 @{if(schemaOptions.shape==s) { "selected" }}>@s</option>
       }
     </select>
     </td>
