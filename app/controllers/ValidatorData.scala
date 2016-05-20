@@ -125,18 +125,19 @@ trait ValidatorData { this: Controller =>
               opts_schema)))
         case TryFailure(e) =>
         scala.concurrent.Future(TrySuccess(
-          ValidationResult(Some(false),
-            "Error parsing Data with syntax " + dataOptions.format + ": " + e.getMessage,
-            Result.empty,
-            List(),
-            dataStr,
-            dataOptions,
-            false,
-            "",
-            Schemas.defaultSchemaFormat,
-            schemaName,
-            opts_schema,
-            true)))
+          ValidationResult(
+              status = Some(false),
+              msg = "Error parsing Data with syntax " + dataOptions.format + ": " + e.getMessage,
+              result = Result.empty,
+              nodes = List(),
+              dataStr = dataStr,
+              dataOptions = dataOptions,
+              withSchema = false,
+              schemaStr = "",
+              schemaFormat = Schemas.defaultSchemaFormat,
+              schemaName = schemaName,
+              schemaOptions = opts_schema,
+              together = true)))
     }
   }
 
@@ -152,7 +153,7 @@ trait ValidatorData { this: Controller =>
 
       scala.concurrent.Future {
         pair match {
-          case TrySuccess((vf, str_data)) => {
+          case TrySuccess((vf, dataStr)) => {
             println(s"validate_post validation form: $vf")
             val tryValidate =
               for (
@@ -161,14 +162,14 @@ trait ValidatorData { this: Controller =>
               ) yield {
                 println(s"validate_post: vf $vf")
                 ValidationResult.validateTogether(
-                  data,
-                  str_data,
-                  vf.dataOptions,
-                  vf.schemaInput.schemaName,
-                  vf.schemaOptions)
+                  rdf = data,
+                  dataStr = dataStr,
+                  dataOptions = vf.dataOptions,
+                  schemaName = vf.schemaName,
+                  schemaOptions = vf.schemaOptions)
               }
-            val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(str_data, vf))
-            Ok(views.html.index(vr, vf))
+            val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(dataStr, vf))
+            Ok(views.html.validate_data(vr, vf))
           }
           case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
         }

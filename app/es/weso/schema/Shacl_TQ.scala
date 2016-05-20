@@ -78,7 +78,7 @@ case class Shacl_TQ(
   def checked2Result(result: Checked[Boolean,ConstraintReason,ViolationError]): Result = {
     val isValid = result.isOK
     val msg = 
-      if (result.isOK) s"Valid. Reason: ${result.reasons}"
+      if (result.isOK) s"No errors found"
       else s"Not Valid" 
     val solutions: Seq[Solution] = Seq()
     val errors: Seq[ErrorInfo] = result.errors.map(violationError2ErrorInfo(_))

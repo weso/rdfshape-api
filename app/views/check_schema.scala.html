@@ -5,12 +5,14 @@
 @main(Messages("Check.Schema"))(vf) {
 
 @if(!result.isEmpty) {
+	
 <h1>Result</h1>
 <pre class="prettyprint linenums lang-turtle">@result</pre>
+
 }
 
 <a href="@routes.Checker.schema(
-	         vf.schemaStr,
+	         schemaStr = vf.schemaStr,
 	         vf.schemaFormat,
 	         vf.schemaName
 	         )">Generate permalink</a>
