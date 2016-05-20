@@ -38,6 +38,7 @@ libraryDependencies ++= Seq(
 , "org.webjars" % "jquery-ui-themes" % "1.11.4"
 , "org.webjars" % "jquery-ui-touch-punch" % "0.2.3-2"
 , "org.webjars" % "codemirror" % "4.3"
+, "org.webjars" % "datatables" % "1.10.11"
 , "org.webjars" % "prettify" % "4-Mar-2013"
 )
 

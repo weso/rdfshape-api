@@ -56,6 +56,8 @@ abstract class Schema {
   */
  def beforeErrors: String = ""
 
+ def afterErrors: String = ""
+ 
  /**
   * String to add to HTML conversion of validation errors
   */

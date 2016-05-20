@@ -6,9 +6,12 @@
 <title>@title</title>
 <link rel="stylesheet" media="screen" href="@routes.Assets.at("lib/jquery-ui/jquery-ui.min.css")">
 <link rel="stylesheet" media="screen" href='@routes.WebJarAssets.at(WebJarAssets.locate("prettify.css"))'></script>
+<link rel="stylesheet" media="screen" href="@routes.Assets.at("lib/datatables/css/jquerydataTables.min.css")">
 
 <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
 <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery-ui.min.js"))'></script>
+<script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery-ui.min.js"))'></script>
+<script type='text/javascript' src='@routes.WebJarAssets.at("lib/datatables/js/jquerydataTables.min.js")'></script>
 
 <!-- The following files would be for codemirror but are not used now 
 <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("codemirror.js"))'></script>
@@ -102,7 +105,12 @@
 <script>
  
  /* For JQuery-UI tooltip */
- $(function() { $( document ).tooltip(); });
+$(function() { $( document ).tooltip(); });
+
+ /* For DataTables */
+$(document).ready(function(){ 
+   $('#results').DataTable();
+}); 
   
 /* Uncomment the following to try to colorize textarea's using codemirror 
   var rdf_editor = CodeMirror.fromTextArea(document.getElementById("rdf_textarea"), {

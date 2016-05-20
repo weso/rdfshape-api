@@ -18,11 +18,12 @@ case class Result(
      }
     } else {
     sb++="<div class=\"errors\">"
-    sb ++= "<table class='error'>"
+    sb ++= "<table class='display' id='results' >"
     sb ++= schema.beforeErrors
     for (error <- errors) {
       sb ++= error.toHTML(pm)
      }
+    sb ++= schema.afterErrors
     sb++="</table>"
     }
     sb.toString
