@@ -44,9 +44,10 @@
 @if(vr.together) {
 
 <a href="@routes.ValidatorData.data(
-	         vr.dataStr,
-	         vr.dataFormat,
-             vr.schemaName
+	         data = vr.dataStr,
+	         dataFormat = vr.dataFormat,
+	         rdfs = vr.dataOptions.rdfs,
+             schemaName = vr.schemaName
 	         )">Generate permalink</a>
 
 	

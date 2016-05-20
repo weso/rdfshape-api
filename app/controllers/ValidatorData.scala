@@ -34,7 +34,8 @@ trait ValidatorData { this: Controller =>
     data: String,
     dataFormat: String,
     rdfs:Boolean = false,
-    schemaName: String): Action[AnyContent] = {  
+    schemaName: String): Action[AnyContent] = {
+    println(s"validatorData.data: schemaName: $schemaName, dataFormat: $dataFormat")  
     val dataOptions = DataOptions(
       format = RDFUtils.getFormat(Some(dataFormat)), 
       showData = true,
@@ -51,7 +52,7 @@ trait ValidatorData { this: Controller =>
         validate_get(data,
           Some(dataFormat),
           dataOptions.showData,
-          dataOptions.rdfs,
+          rdfs,
           schemaName,
           None,
           DEFAULT_CUT,
@@ -64,7 +65,7 @@ trait ValidatorData { this: Controller =>
   }
 
   def validate_get(
-    str_data: String, 
+    dataStr: String, 
     dataFormat: Option[String], 
     showData: Boolean,
     rdfs:Boolean = false,
@@ -73,7 +74,7 @@ trait ValidatorData { this: Controller =>
     cut: Int, 
     showSchema: Boolean
     ): Action[AnyContent] = Action.async {
-    validate_get_Future(str_data,
+    validate_get_Future(dataStr,
       dataFormat,
       showData,
       rdfs,
@@ -92,7 +93,7 @@ trait ValidatorData { this: Controller =>
   }
 
   def validate_get_Future(
-    str_data: String,
+    dataStr: String,
     formatData: Option[String],
     showData:Boolean,
     rdfs:Boolean,
@@ -112,13 +113,13 @@ trait ValidatorData { this: Controller =>
       }
       val opts_schema = SchemaOptions(cut = cut, trigger = trigger, showSchema)
       
-      parseStrAsRDFReader(str_data, dataOptions.format, dataOptions.rdfs) match {
+      parseStrAsRDFReader(dataStr, dataOptions.format, dataOptions.rdfs) match {
         case TrySuccess(data) =>
           scala.concurrent.Future(
           TrySuccess(
             ValidationResult.validateTogether(
               data,
-              str_data,
+              dataStr,
               dataOptions,
               schemaName, 
               opts_schema)))
@@ -128,7 +129,7 @@ trait ValidatorData { this: Controller =>
             "Error parsing Data with syntax " + dataOptions.format + ": " + e.getMessage,
             Result.empty,
             List(),
-            str_data,
+            dataStr,
             dataOptions,
             false,
             "",
