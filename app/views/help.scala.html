@@ -20,9 +20,9 @@
 
 <h3>Converting between different RDF syntaxes</h3>
 <ul>
-<li><a href=""
+<li><a href="http://rdfshape.herokuapp.com/converter/data?data=prefix+%3A+++++%3Chttp%3A%2F%2Fexample.org%2F%3E%0D%0Aprefix+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0Aprefix+xsd%3A++%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0A%0D%0A%3Ajohn+foaf%3Aname+%22John+Smith%22+%3B%0D%0A++++++foaf%3Aage+23+%3B%0D%0A++++++foaf%3Ambox+%3Cmailto%3Ajohn%40example.org%3E+.%0D%0A%0D%0A%3Abob+foaf%3Aname+%22Robert%22+%3B%0D%0A+++++foaf%3Aage+25+%3B%0D%0A+++++foaf%3Ambox+%3Cbob%40example.org%3E+.&targetFormat=RDF%2FXML"
 >Converting Turtle to RDF/XML</a></li>
-<li><a href=""
+<li><a href="http://rdfshape.herokuapp.com/converter/data?data=prefix+%3A+++++%3Chttp%3A%2F%2Fexample.org%2F%3E%0D%0Aprefix+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0Aprefix+xsd%3A++%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0D%0A%0D%0A%3Ajohn+foaf%3Aname+%22John+Smith%22+%3B%0D%0A++++++foaf%3Aage+23+%3B%0D%0A++++++foaf%3Ambox+%3Cmailto%3Ajohn%40example.org%3E+.%0D%0A%0D%0A%3Abob+foaf%3Aname+%22Robert%22+%3B%0D%0A+++++foaf%3Aage+25+%3B%0D%0A+++++foaf%3Ambox+%3Cbob%40example.org%3E+.&targetFormat=N-TRIPLES"
 >Converting Turtle to N-Triples</a></li>
 </ul>
 
@@ -43,6 +43,12 @@
 </ul>
 
 <h3>SHACL examples</h3>
+
+<ul>
+<li><a href="http://rdfshape.herokuapp.com/validate/data?data=%40prefix+ex%3A+%3Chttp%3A%2F%2Fexample.org%2F%3E+.%0D%0A%40prefix+sh%3A+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fshacl%23%3E+.%0D%0A%40prefix+xsd%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E.%0D%0A%40prefix+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E.%0D%0A%40prefix+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E.%0D%0A+++++%0D%0A++++%40prefix+ex%3A+%3Chttp%3A%2F%2Fexample.org%2F%3E+.%0D%0A++++%40prefix+sh%3A+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fshacl%23%3E+.%0D%0A++++%40prefix+xsd%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E.%0D%0A++++%40prefix+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E.%0D%0A++++%40prefix+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E.%0D%0A+++++++++%0D%0A++++ex%3APersonShape%0D%0A+++++a+sh%3AShape+%3B%0D%0A+++++sh%3AscopeClass+ex%3APerson+%3B++++%23+Applies+to+all+persons%0D%0A+++++sh%3Aproperty+[%0D%0A++++++sh%3Apredicate+ex%3Assn+%3B%0D%0A++++++sh%3AmaxCount+1+%3B%0D%0A++++++sh%3Adatatype+xsd%3Astring+%3B%0D%0A++++++sh%3Apattern+%22^\\d{3}-\\d{2}-\\d{4}%24%22+%3B%0D%0A+++++]+%3B%0D%0A+++++sh%3Aproperty+[%0D%0A++++++sh%3Apredicate+ex%3Achild+%3B%0D%0A++++++sh%3Aclass+ex%3APerson+%3B%0D%0A++++++sh%3AnodeKind+sh%3AIRI+%3B%0D%0A+++++]+%3B%0D%0A+++++sh%3AinverseProperty+[%0D%0A++++++rdfs%3Acomment+%22A+person%27s+parents+are+represented+via+ex%3Achild+used+in+the+inverse+direction.%22+%3B%0D%0A++++++sh%3Apredicate+ex%3Achild+%3B%0D%0A++++++sh%3Aname+%22parent%22+%3B%0D%0A++++++sh%3AmaxCount+2+%3B%0D%0A+++++]+%3B%0D%0A+++++sh%3Aconstraint+[%0D%0A++++++sh%3Aclosed+true+%3B%0D%0A++++++sh%3AignoredProperties+%28+rdf%3Atype+%29+%3B%0D%0A++++]+.%0D%0A++++%09%0D%0A++++ex%3AAlice%0D%0A+++++++%09a+ex%3APerson+%3B%0D%0A+++++++%09ex%3Achild+ex%3ACalvin+%3B%0D%0A+++++++%09ex%3Assn+%22987-65-432A%22+.%0D%0A+++++++++%0D%0A++++ex%3ABob%0D%0A+++++++%09a+ex%3APerson+%3B%0D%0A+++++++%09ex%3Achild+ex%3ACalvin+%3B%0D%0A+++++++%09ex%3Assn+%22123-45-6789%22+%3B%0D%0A+++++++%09ex%3Assn+%22124-35-6789%22+.%0D%0A+++++++++%0D%0A++++ex%3ACalvin%0D%0A+++++++%09a+ex%3APerson+%3B%0D%0A+++++++%09ex%3Aschool+ex%3ATrinityAnglicanSchool+.&rdfs=true&schemaName=SHACL_TQ"
+>Example from Spec</a>
+</li>
+</ul>
 
 <h2>WIKI with more info</h2>
 
