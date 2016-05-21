@@ -17,7 +17,10 @@ case class Result(
       sb ++= solution.toHTML(pm)
      }
     } else {
-    sb++="<div class=\"errors\">"
+    val numErrors = errors.size
+    val errorStr = if (numErrors == 1) "Error" else "Errors"
+    sb ++="<div class=\"errors\">"
+    sb ++= s"<p class='errorMsg'>${numErrors} $errorStr found</p>"
     sb ++= "<table class='display' id='results' >"
     sb ++= schema.beforeErrors
     for (error <- errors) {
