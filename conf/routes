@@ -33,7 +33,7 @@ POST	/converter/schema		    controllers.SchemaConverter.convert_schema_post
 
 # Validate Schema + Data
 POST	/api/validator	controllers.ValidatorSchemaData.validate_post
-GET		/api/validator	controllers.ValidatorSchemaData.validate_get(data: String, dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true, rdfs:Boolean ?= false, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaName: String ?= "ShEx", node: Option[String] ?= None, shape: Option[String] ?= None, trigger: String ?= "All", cut:Int ?= 1, showSchema: Boolean ?= true)
+GET		/api/validator	controllers.ValidatorSchemaData.validate_get(data: String, dataFormat: Option[String] ?= Some("TURTLE"),showData:Boolean ?= true, rdfs:Boolean ?= false, schema: Option[String] ?= None, schemaFormat: Option[String] ?= Some("SHEXC"), schemaName: String ?= "ShEx", node: Option[String] ?= None, shape: Option[String] ?= None, trigger: String ?= "ScopeDeclarations", cut:Int ?= 1, showSchema: Boolean ?= true)
 
 # Valdate Data & Schema together
 GET		/api/validator/data	controllers.ValidatorData.data(data: String ?= "", dataFormat: String ?= "TURTLE", rdfs: Boolean ?= false, schemaName ?= "ShEx")
