@@ -42,7 +42,7 @@ trait ValidatorSchemaData { this: Controller =>
       schemaName,
       None,
       None,
-      "All",
+      ValidationTrigger.default.name,
       DEFAULT_CUT,
       DEFAULT_ShowSchema)
   }
@@ -64,7 +64,7 @@ trait ValidatorSchemaData { this: Controller =>
       schemaVersion, 
       Some(node),
       None,
-      "All",
+      ValidationTrigger.default.name,
       DEFAULT_CUT,
       DEFAULT_ShowSchema)
   }
