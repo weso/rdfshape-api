@@ -1,6 +1,7 @@
 @(schemaOptions: SchemaOptions, nodes:List[String], shapes: List[String])
 
 @import play.api.i18n.Messages
+@import es.weso.schema.ValidationTrigger
 
 <fieldset>
 <legend>@Messages("Schema.options")</legend>
@@ -30,10 +31,11 @@
     <tr>
     <td>Focus node selection</td>
     <td>
-    <input type="radio" name="trigger" value="scopeNodes"><label>Scope Node declarations</label><br/>
-    <input type="radio" name="trigger" value="nodeShape"><label>Node - Shape</label><br/>
-    <input type="radio" name="trigger" value="nodeAllShapes"><label>Node - All shapes</label><br/>
-    <input type="radio" name="trigger" value="allNodesAllShapes"><label>All Nodes - All shapes</label><br/>
+    @for( (name,explain) <- ValidationTrigger.triggerValues) {
+     <input type="radio" name="trigger" value="@name"
+      @{if(schemaOptions.trigger.name == name) { "checked" }}
+     ><label>@explain</label><br/>
+    }
 	<select name="node">
       @for(n <- nodes) {
       	<option value="@n"

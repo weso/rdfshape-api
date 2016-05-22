@@ -13,8 +13,9 @@ case class Result(
     if (isValid) {
      for ((solution, n) <- solutions zip (1 to cut)) {
       sb ++= "<h2 class='result'>Result" + printNumber(n, cut) + "</h2>"
-      sb ++= schema.beforeSolution
+      sb ++= schema.htmlBeforeSolutions
       sb ++= solution.toHTML(pm)
+      sb ++= schema.htmlAfterSolutions
      }
     } else {
     val numErrors = errors.size
@@ -22,11 +23,11 @@ case class Result(
     sb ++="<div class=\"errors\">"
     sb ++= s"<p class='errorMsg'>${numErrors} $errorStr found</p>"
     sb ++= "<table class='display' id='results' >"
-    sb ++= schema.beforeErrors
+    sb ++= schema.htmlBeforeErrors
     for (error <- errors) {
       sb ++= error.toHTML(pm)
      }
-    sb ++= schema.afterErrors
+    sb ++= schema.htmlAfterErrors
     sb++="</table>"
     }
     sb.toString

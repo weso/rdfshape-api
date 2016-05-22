@@ -57,7 +57,9 @@ case class ShEx3(schema: ShExSchema) extends Schema {
         case Failure(e) => (s"Error $e.getMessage", Seq(), Seq(ErrorInfo(e.getMessage)))
       }
     }
-    Result(isValid, msg,solutions, errors)
+    val r = Result(isValid, msg, solutions, errors)
+    println(s"validationresult2Result result: $result, r: $r")
+    r
   }
   
   def cnvSol(rs: Map[RDFNode, (Seq[ShExLabel], Seq[ShExLabel])]): Solution = {

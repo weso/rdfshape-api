@@ -54,12 +54,14 @@ abstract class Schema {
  /**
   * String to add to HTML conversion of validating solution
   */
- def beforeErrors: String = ""
+ def htmlBeforeErrors: String = ""
 
- def afterErrors: String = ""
+ def htmlAfterErrors: String = ""
  
  /**
   * String to add to HTML conversion of validation errors
   */
- def beforeSolution: String = ""
+ def htmlBeforeSolutions: String = ""
+ 
+ def htmlAfterSolutions: String = ""
 }

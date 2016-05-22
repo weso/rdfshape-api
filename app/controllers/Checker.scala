@@ -39,6 +39,8 @@ trait Checker { this: Controller =>
         None,
         "",
         None,
+        None,
+        "All",
         DEFAULT_CUT,
         DEFAULT_ShowSchema)
   }

@@ -115,11 +115,18 @@ case class Shacl_TQ(
   
   override def pm: PrefixMap = binder.pm
   
-  override def beforeErrors = 
+  override def htmlBeforeErrors = 
     "<thead><tr><th>Message</th><th>Focus Node</th><th>Subject</th><th>Predicate</th><th>Severity</th><th>Source constraint</th><th>Source Shape</th><th>Source template</th></tr></thead><tbody>"
 
-  override def afterErrors = 
+  override def htmlAfterErrors = 
     "</tbody>"
+  
+  override def htmlBeforeSolutions = 
+    ""
+
+  override def htmlAfterSolutions = 
+    ""
+
 }
 
 object Shacl_TQ {

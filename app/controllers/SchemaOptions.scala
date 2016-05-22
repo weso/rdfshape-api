@@ -22,6 +22,11 @@ case class SchemaOptions(
     trigger.maybeFocusNode
   }
   
+  def maybeShape: Option[String] = {
+    trigger.maybeShape
+  }
+
+  
   def opt_iri: Option[IRI] = {
     maybeFocusNode.map(IRI(_))
   }

@@ -2,7 +2,7 @@ package controllers
 
 import scala.Stream
 import scala.concurrent.Future
-import scala.util.{ Failure => TryFailure, Success => TrySuccess, Try }
+import util._
 
 import DataOptions.DEFAULT_SHOW_DATA
 import SchemaOptions.{ DEFAULT_CUT, DEFAULT_ShowSchema }
@@ -41,6 +41,8 @@ trait ValidatorSchemaData { this: Controller =>
       Some(schemaFormat),
       schemaName,
       None,
+      None,
+      "All",
       DEFAULT_CUT,
       DEFAULT_ShowSchema)
   }
@@ -58,95 +60,93 @@ trait ValidatorSchemaData { this: Controller =>
       DEFAULT_SHOW_DATA,
       rdfs,
       Some(schema),
-      Some(schemaFormat), schemaVersion, Some(node),
+      Some(schemaFormat), 
+      schemaVersion, 
+      Some(node),
+      None,
+      "All",
       DEFAULT_CUT,
       DEFAULT_ShowSchema)
   }
 
-  def validate_get_Future(
-    str_data: String,
-    formatData: Option[String],
-    showData: Boolean,
-    rdfs: Boolean,
-    opt_schema: Option[String],
-    maybeSchemaFormat: Option[String],
-    schemaName: String,
-    opt_iri: Option[String],
-    cut: Int,
-    showSchema: Boolean): Future[Try[ValidationResult]] = {
-      val withSchema = opt_schema.isDefined
-      val iri = opt_iri.map(str => IRI(str))
-      val schemaFormat = maybeSchemaFormat.getOrElse(SchemaUtils.defaultSchemaFormat)
-      val str_schema = opt_schema.getOrElse("")
-      val opts_data = DataOptions(
-        format = RDFUtils.getFormat(formatData), 
-        showData = showData,
-        rdfs
-      )
-      val trigger = ValidationTrigger.fromOptIRI(opt_iri)
-      val opts_schema = SchemaOptions(cut = cut, trigger = trigger, showSchema)
-      
-      parseStrAsRDFReader(str_data, opts_data.format,rdfs) match {
-        case TrySuccess(data) =>
-          scala.concurrent.Future(
-          TrySuccess(
-            ValidationResult.validateDataSchema(
-              data,
-              str_data,
-              opts_data,
-              withSchema,
-              str_schema,
-              schemaFormat, 
-              schemaName, 
-              opts_schema)))
-        case TryFailure(e) =>
-        scala.concurrent.Future(TrySuccess(
-          ValidationResult(Some(false),
-            "Error parsing Data with syntax " + opts_data.format + ": " + e.getMessage,
-            Result.empty,
-            List(),
-            str_data,
-            opts_data,
-            withSchema,
-            str_schema,
-            schemaFormat,
-            schemaName,
-            opts_schema,
-            false)))
-    }
-  }
-
   def validate_get(
-    str_data: String, 
+    dataStr: String, 
     dataFormat: Option[String], 
     showData: Boolean,
     rdfs: Boolean = false,
-    opt_schema: Option[String], 
+    maybeSchema: Option[String], 
     schemaFormat: Option[String], 
     schemaName: String, 
-    opt_iri: Option[String], 
+    node: Option[String],
+    shape: Option[String],
+    trigger: String,
     cut: Int, 
     showSchema: Boolean
-    ) = Action.async {
-    println(s"validate_get: opt_schema $opt_schema, schemaName $schemaName, schemaFormat: $schemaFormat")
-    validate_get_Future(str_data,
+    ): Action[AnyContent] = Action.async {
+    println(s"validate_get: maybeSchema $maybeSchema, schemaName $schemaName, schemaFormat: $schemaFormat")
+    validate_get_Future(dataStr,
       dataFormat,
       showData,rdfs,
-      opt_schema,
+      maybeSchema,
       schemaFormat,
       schemaName,
-      opt_iri,
+      node,
+      shape,
+      trigger,
       cut,
       showSchema).map(vrf => {
         vrf match {
-          case TrySuccess(vr) => {
+          case Success(vr) => {
             val vf = ValidationForm.fromResult(vr)
             Ok(views.html.index(vr, vf))
           }
-          case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
+          case Failure(e) => BadRequest(views.html.errorPage(e.getMessage))
         }
       })
   }
+  
+  def validate_get_Future(
+    dataStr: String,
+    dataFormat: Option[String],
+    showData: Boolean,
+    rdfs: Boolean,
+    maybeSchema: Option[String],
+    maybeSchemaFormat: Option[String],
+    schemaName: String,
+    node: Option[String],
+    shape: Option[String], 
+    trigger: String,
+    cut: Int,
+    showSchema: Boolean): Future[Try[ValidationResult]] = {
+      val withSchema = maybeSchema.isDefined
+      val schemaStr = maybeSchema.getOrElse("")
+      val iri = node.map(str => IRI(str))
+      val schemaFormat = maybeSchemaFormat.getOrElse(SchemaUtils.defaultSchemaFormat)
+      val dataOptions = DataOptions(
+        format = RDFUtils.getFormat(dataFormat), 
+        showData = showData,
+        rdfs
+      )
+      Future{ for {
+            validationTrigger <- ValidationTrigger.findTrigger(trigger, node, shape)  
+            val schemaOptions = SchemaOptions(cut = cut, trigger = validationTrigger, showSchema)
+            rdf <- parseStrAsRDFReader(dataStr, dataOptions.format, rdfs)
+          } yield {
+            println(s"validation_get_future: Trigger: $trigger")
+            ValidationResult.validateDataSchema(
+              rdf,
+              dataStr,
+              dataOptions,
+              withSchema,
+              schemaStr,
+              schemaFormat, 
+              schemaName, 
+              schemaOptions)
+              }
+      }
+  }
+
+  
 
   def validate_post = Action.async { request =>
     {
@@ -157,7 +157,7 @@ trait ValidatorSchemaData { this: Controller =>
 
       scala.concurrent.Future {
         pair match {
-          case TrySuccess((vf, dataStr)) => {
+          case Success((vf, dataStr)) => {
             val tryValidate =
               for (
                 data <- vf.dataInput.getData(vf.dataOptions.format, 
@@ -177,7 +177,7 @@ trait ValidatorSchemaData { this: Controller =>
             val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(dataStr, vf))
             Ok(views.html.index(vr, vf))
           }
-          case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
+          case Failure(e) => BadRequest(views.html.errorPage(e.getMessage))
      }
     }
    }

@@ -27,6 +27,8 @@ case class ValidationResult(
   def dataFormat = dataOptions.format
   def cut = schemaOptions.cut
   def showSchema = schemaOptions.showSchema
+  def trigger: String = schemaOptions.trigger.name
+   
 
   def schema_param: Option[String] = {
     if (withSchema) Some(schemaStr)
@@ -50,6 +52,11 @@ case class ValidationResult(
   def maybeFocusNode: Option[String] = {
     schemaOptions.maybeFocusNode
   }
+  
+  def maybeShape: Option[String] = {
+    schemaOptions.maybeShape
+  }
+
   
   def toHTML: String = {
     getSchema match {

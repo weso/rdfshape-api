@@ -77,6 +77,13 @@ object Multipart {
          }
     }
   }
+
+  def parseOptKey(mf: MultipartFormData[TemporaryFile], key: String): Try[Option[String]] = {
+    println("Parsing opt key..." + key)
+    val x = parseKeyOrElse(mf,key,"").map(str => if (str == "") None else Some(str))
+    println("x..." + x)
+    x
+  }
   
   def parseOptIRI(mf: MultipartFormData[TemporaryFile]): Try[Option[IRI]] = {
     val withIRI = parseWithIRI(mf)
@@ -170,16 +177,13 @@ object Multipart {
 
   def parseSchemaOptions(mf: MultipartFormData[TemporaryFile]): Try[SchemaOptions] = {
     for ( cut <- parseInt(mf,"cut",0,100)
-        ; opt_iri <- parseOptIRI(mf)
+        ; triggerName <- parseKey(mf,"trigger")
+        ; node <- parseOptKey(mf,"node")
+        ; shape <- parseOptKey(mf,"shape")
         ; showSchema <- parseBoolean(mf,"showSchema")
+        ; trigger <- ValidationTrigger.findTrigger(triggerName, node, shape)
         )
-   yield {
-     val trigger = opt_iri match {
-       case None => ValidationTrigger.scopeDeclarations
-       case Some(iri) => ValidationTrigger.nodeAllShapes(iri.str  )
-     }
-     SchemaOptions(cut,trigger,showSchema)
-    }
+   yield SchemaOptions(cut,trigger,showSchema)
   }
 
   def parseBoolean(mf: MultipartFormData[TemporaryFile], key: String): Try[Boolean] = {
@@ -225,9 +229,10 @@ object Multipart {
         " must have one value but it has = " + mf.asFormUrlEncoded(key)))
  }
 
- def parseKeyOrElse(mf: MultipartFormData[TemporaryFile],key:String,alternative: String): Try[String] = {
-   if (mf.asFormUrlEncoded(key).size == 1) {
-     TrySuccess(mf.asFormUrlEncoded(key).head)
+ def parseKeyOrElse(mf: MultipartFormData[TemporaryFile], key:String, alternative: String): Try[String] = {
+   val keyMap = mf.asFormUrlEncoded
+   if (keyMap.contains(key)) {
+     TrySuccess(keyMap(key).head)
    } else {
      Logger.info("parseKeyOrElse: key " + key + " not found")
      TrySuccess(alternative)
