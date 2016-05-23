@@ -129,10 +129,9 @@ trait ValidatorSchemaData { this: Controller =>
       )
       Future{ for {
             validationTrigger <- ValidationTrigger.findTrigger(trigger, node, shape)  
-            val schemaOptions = SchemaOptions(cut = cut, trigger = validationTrigger, showSchema)
             rdf <- parseStrAsRDFReader(dataStr, dataOptions.format, rdfs)
           } yield {
-            println(s"validation_get_future: Trigger: $trigger")
+            val schemaOptions = SchemaOptions(cut = cut, trigger = validationTrigger, showSchema)
             ValidationResult.validateDataSchema(
               rdf,
               dataStr,

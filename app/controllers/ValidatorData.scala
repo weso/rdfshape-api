@@ -1,8 +1,8 @@
 package controllers
 
-import scala.Stream
-import scala.concurrent.Future
-import scala.util.{ Failure => TryFailure, Success => TrySuccess, Try }
+// import scala.Stream
+import concurrent.Future
+import util._
 
 import DataOptions.DEFAULT_SHOW_DATA
 import SchemaOptions.{ DEFAULT_CUT, DEFAULT_ShowSchema }
@@ -23,13 +23,6 @@ trait ValidatorData { this: Controller =>
   
   import Multipart._
 
-  /*  def onlyData(data: String, dataFormat: String, schemaVersion: String) = {
-    validate_get(
-        data, 
-        Some(dataFormat), 
-        DEFAULT_SHOW_DATA, None, None, schemaVersion, None, DEFAULT_CUT, false)
-  } */
-
   def data(
     data: String,
     dataFormat: String,
@@ -47,7 +40,7 @@ trait ValidatorData { this: Controller =>
     } yield (schema)
 
     trySchema match {
-      case TrySuccess(schema) => {
+      case Success(schema) => {
         println("Only data?")
         validate_get(data,
           Some(dataFormat),
@@ -55,10 +48,12 @@ trait ValidatorData { this: Controller =>
           rdfs,
           schemaName,
           None,
+          None,
+          ValidationTrigger.default.name,
           DEFAULT_CUT,
           DEFAULT_ShowSchema)
       }
-      case TryFailure(e) =>
+      case Failure(e) =>
         Action.async { _ => Future(BadRequest(views.html.errorPage(e.getMessage))) }
         // BadRequest(views.html.errorPage(e.getMessage))
       }
@@ -69,8 +64,10 @@ trait ValidatorData { this: Controller =>
     dataFormat: Option[String], 
     showData: Boolean,
     rdfs:Boolean = false,
-    schemaName: String, 
-    opt_iri: Option[String], 
+    schemaName: String,
+    node: Option[String],
+    shape: Option[String],
+    trigger: String,
     cut: Int, 
     showSchema: Boolean
     ): Action[AnyContent] = Action.async {
@@ -79,15 +76,17 @@ trait ValidatorData { this: Controller =>
       showData,
       rdfs,
       schemaName,
-      opt_iri,
+      node,
+      shape,
+      trigger,
       cut,
       showSchema).map(vrf => {
         vrf match {
-          case TrySuccess(vr) => {
+          case Success(vr) => {
             val vf = ValidationForm.fromResult(vr)
             Ok(views.html.validate_data(vr, vf))
           }
-          case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
+          case Failure(e) => BadRequest(views.html.errorPage(e.getMessage))
         }
       })
   }
@@ -98,47 +97,29 @@ trait ValidatorData { this: Controller =>
     showData:Boolean,
     rdfs:Boolean,
     schemaName: String,
-    opt_iri: Option[String],
+    node: Option[String],
+    shape: Option[String],
+    trigger: String,
     cut: Int,
     showSchema: Boolean): Future[Try[ValidationResult]] = {
-      val iri = opt_iri.map(str => IRI(str))
       val dataOptions = DataOptions(
         format = RDFUtils.getFormat(formatData), 
            showData = showData, 
            rdfs
       )
-      val trigger = opt_iri match {
-        case None => ValidationTrigger.default
-        case Some(str) => ValidationTrigger.nodeAllShapes(str)
-      }
-      val opts_schema = SchemaOptions(cut = cut, trigger = trigger, showSchema)
-      
-      parseStrAsRDFReader(dataStr, dataOptions.format, dataOptions.rdfs) match {
-        case TrySuccess(data) =>
-          scala.concurrent.Future(
-          TrySuccess(
-            ValidationResult.validateTogether(
-              data,
+      Future{for {
+        validationTrigger <- ValidationTrigger.findTrigger(trigger,node,shape)
+        rdf <- parseStrAsRDFReader(dataStr, dataOptions.format, dataOptions.rdfs)
+      } yield {
+        val schemaOptions = SchemaOptions(cut = cut, trigger = validationTrigger, showSchema)
+        ValidationResult.validateTogether(
+              rdf,
               dataStr,
               dataOptions,
               schemaName, 
-              opts_schema)))
-        case TryFailure(e) =>
-        scala.concurrent.Future(TrySuccess(
-          ValidationResult(
-              status = Some(false),
-              msg = "Error parsing Data with syntax " + dataOptions.format + ": " + e.getMessage,
-              result = Result.empty,
-              nodes = List(),
-              dataStr = dataStr,
-              dataOptions = dataOptions,
-              withSchema = false,
-              schemaStr = "",
-              schemaFormat = Schemas.defaultSchemaFormat,
-              schemaName = schemaName,
-              schemaOptions = opts_schema,
-              together = true)))
-    }
+              schemaOptions)        
+      }
+      }
   }
 
 
@@ -153,7 +134,7 @@ trait ValidatorData { this: Controller =>
 
       scala.concurrent.Future {
         pair match {
-          case TrySuccess((vf, dataStr)) => {
+          case Success((vf, dataStr)) => {
             println(s"validate_post validation form: $vf")
             val tryValidate =
               for (
@@ -171,7 +152,7 @@ trait ValidatorData { this: Controller =>
             val vr = getWithRecoverFunction(tryValidate, recoverValidationResult(dataStr, vf))
             Ok(views.html.validate_data(vr, vf))
           }
-          case TryFailure(e) => BadRequest(views.html.errorPage(e.getMessage))
+          case Failure(e) => BadRequest(views.html.errorPage(e.getMessage))
         }
       }
     }
