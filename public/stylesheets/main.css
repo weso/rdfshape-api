@@ -204,6 +204,10 @@ ul.negativeLabels {
 	text-align: right;
 }
 
+button.btn {
+	float: right;
+}
+
 /* Specify that all line numbers appear:
    http://stackoverflow.com/questions/8399547/how-to-add-line-numbers-to-all-lines-in-google-prettify
    */

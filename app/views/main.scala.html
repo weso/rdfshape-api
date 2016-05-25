@@ -8,6 +8,7 @@
 <link rel="stylesheet" media="screen" href='@routes.WebJarAssets.at(WebJarAssets.locate("prettify.css"))'>
 <!--  <link rel="stylesheet" media="screen" href="@routes.Assets.at("lib/datatables/css/jquerydataTables.min.css")"> -->
 <link rel="stylesheet" media="screen" href="/assets/datatables/datatables.1.10.12.min.css">
+<link rel="stylesheet" href="/assets/numberedTextarea/jquery.numberedtextarea.css">
 
 
 <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
@@ -15,6 +16,8 @@
 <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery-ui.min.js"))'></script>
 <!-- <script type='text/javascript' src='@routes.WebJarAssets.at("lib/datatables/js/jquerydataTables.min.js")'></script> -->
 <script type='text/javascript' src='/assets/datatables/datatables.1.10.12.min.js'></script>
+<script type='text/javascript' src='/assets/numberedTextarea/jquery.numberedtextarea.js'></script>
+<script type='text/javascript' src="/assets/javascripts/clipboard.min.js"></script>
 
 
 <!-- The following files would be for codemirror but are not used now 
@@ -115,7 +118,24 @@ $(function() { $( document ).tooltip(); });
 $(document).ready(function(){ 
    $('#results').DataTable();
 }); 
-  
+
+$('textarea').numberedtextarea();
+
+var clipboard = new Clipboard('.btn');
+
+clipboard.on('success', function(e) {
+    console.info('Action:', e.action);
+    console.info('Text:', e.text);
+    console.info('Trigger:', e.trigger);
+
+    e.clearSelection();
+});
+
+clipboard.on('error', function(e) {
+    console.error('Action:', e.action);
+    console.error('Trigger:', e.trigger);
+});
+
 /* Uncomment the following to try to colorize textarea's using codemirror 
   var rdf_editor = CodeMirror.fromTextArea(document.getElementById("rdf_textarea"), {
 	   mode: "text/turtle",

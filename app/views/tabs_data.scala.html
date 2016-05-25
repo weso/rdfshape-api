@@ -27,12 +27,18 @@
 		   size="30" >
  </div> <!-- content -->
 
+ <button class="btn" data-clipboard-target="#data_textarea" >
+   <img src="/assets/images/clippy.svg" width="13" alt="Copy to clipboard">
+ </button>
+ 
  <div class="content" id="byInput_data">	
    <legend>@Messages("Input")</legend>	
    <textarea class="input_src"
 		id="data_textarea" 
 		name="data_textarea" 
 		rows="12" cols="80">@vf.dataInput.extract_str</textarea>
+		
+   		
   </div> <!-- content -->
 
 </div> <!-- data-tabs -->   
