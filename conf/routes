@@ -7,6 +7,8 @@ GET     /                           controllers.Application.index
 GET		/about						controllers.Application.about
 GET		/help						controllers.Application.help
 
+GET    /api/shexjs					controllers.ShExJs.validate(data: String ?= "", dataFormat: String ?= "TURTLE", schema: String ?= "", schemaFormat: String ?= "")
+
 # Syntax checker
 
 GET     /checker/data              controllers.Checker.data(data : String ?= "", dataFormat: String ?= "TURTLE")

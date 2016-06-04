@@ -28,5 +28,8 @@ case class Solution(map: Map[RDFNode,InfoNode]) {
     s"<code>${escape(str)}</code>"
   }
    
+  def isEmpty : Boolean = {
+    map.isEmpty
+  }
   
 }

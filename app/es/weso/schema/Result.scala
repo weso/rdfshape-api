@@ -7,15 +7,24 @@ case class Result(
     solutions: Seq[Solution],
     errors: Seq[ErrorInfo]) {
   
+  
+  def noSolutions(sols: Seq[Solution]): Boolean = {
+    sols.size == 1 && sols.head.isEmpty
+  }
+  
   def toHTML(cut: Int = 1, schema:Schema): String = {
     val sb = new StringBuilder
     val pm = schema.pm
     if (isValid) {
+      if (noSolutions(solutions)) {
+        sb ++= "<h2>No solutions found</h2"
+      } else {
      for ((solution, n) <- solutions zip (1 to cut)) {
       sb ++= "<h2 class='result'>Result" + printNumber(n, cut) + "</h2>"
       sb ++= schema.htmlBeforeSolutions
       sb ++= solution.toHTML(pm)
       sb ++= schema.htmlAfterSolutions
+     }
      }
     } else {
     val numErrors = errors.size

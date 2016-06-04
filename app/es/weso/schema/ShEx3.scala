@@ -48,12 +48,22 @@ case class ShEx3(schema: ShExSchema) extends Schema {
     validationResult2Result(r)
   }
   
+  def hasSolutions(rs: Seq[Map[RDFNode,(Seq[ShExLabel],Seq[ShExLabel])]]): Boolean = {
+    if (rs.size == 0) false
+    else if (rs.size == 1 && rs.head.isEmpty) false
+    else true
+  }
+  
   def validationResult2Result(result: ValidationResult[RDFNode,ShExLabel,Throwable]): Result = {
     val isValid = result.isValid
     val (msg,solutions,errors): (String,Seq[Solution],Seq[ErrorInfo]) = {
       result.extract match {
-        case Success(Seq()) => ("No Results", Seq(), Seq(ErrorInfo("No results")))
-        case Success(rs) => ("Solutions found", rs.map(cnvSol(_)), Seq())
+        case Success(rs) => {
+          if (hasSolutions(rs))
+            ("Solutions found", rs.map(cnvSol(_)), Seq())
+          else
+            ("No Results", Seq(), Seq(ErrorInfo("No results")))
+        }
         case Failure(e) => (s"Error $e.getMessage", Seq(), Seq(ErrorInfo(e.getMessage)))
       }
     }
