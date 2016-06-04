@@ -29,6 +29,13 @@ trait ShExJs{ this: Controller =>
       "schema" -> schema)
     )
     
+    // TODO: It seems that eric's implementation accepts the following
+    // curent parameters for the file-upload-only interface are:
+    //  schema=<file upload>, start=<relative or prefixed URL>
+    //  data=<file upload>, focus=<relative or prefixed URL>
+    // Problem...how to specify in Play <file-upload>
+    // Postman, it is: "form-data" and has the option FILE
+    //          it is not: x-www-form-urlencoded
     
     val responseFuture = WS.url(endpoint).
                          post(data)
