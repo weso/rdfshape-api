@@ -17,8 +17,6 @@ project/plugins/project/
 .project
 .classpath
 .cache
-<<<<<<< HEAD
 .target
-=======
->>>>>>> 2cb8b6cc3d69c60f80df9f40a773d6acac7ffd07
 /bin
+.idea
