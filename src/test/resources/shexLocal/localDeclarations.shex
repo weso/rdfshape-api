@@ -1,0 +1,13 @@
+PREFIX : <http://example.org/>
+
+<Holder> {
+  $<base> (
+    a [:Authority] ;
+    a [:Other ];
+  )
+}
+
+<Topic> {
+  a [:Topic] ;
+  &<base>
+}

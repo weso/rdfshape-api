@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/rdfshape -Dhttp.port=${PORT} 
+web: target/universal/stage/bin/rdfshape --server -Dhttp.port=${PORT}

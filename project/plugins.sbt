@@ -1,35 +1,11 @@
-resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
-
-// The Play plugin
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.3.9")
-
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.4.0")
-
-
-// web plugins
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.0")
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.0.0")
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-jshint" % "1.0.0")
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-rjs" % "1.0.1")
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.0.0")
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.0.0")
-
-
-// Other plugins
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
-
-// Plugins for Heroku
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.3")
-
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
-
-addSbtPlugin("com.heroku" % "sbt-heroku" % "0.5.1")
-
-resolvers += Classpaths.sbtPluginReleases
+addSbtPlugin("com.eed3si9n"      % "sbt-unidoc"          % "0.4.1")
+addSbtPlugin("com.eed3si9n"      % "sbt-assembly"        % "0.14.6")
+addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"       % "0.7.0")
+addSbtPlugin("com.typesafe.sbt"  % "sbt-twirl"           % "1.3.13")
+addSbtPlugin("com.typesafe.sbt"  % "sbt-site"            % "1.3.1")
+addSbtPlugin("com.typesafe.sbt"  % "sbt-ghpages"         % "0.6.2")
+addSbtPlugin("com.typesafe.sbt"  % "sbt-native-packager" % "1.3.3")
+addSbtPlugin("io.spray"          % "sbt-revolver"        % "0.9.1")
+addSbtPlugin("org.lyranthe.sbt"  % "partial-unification" % "1.1.0")
+addSbtPlugin("org.foundweekends" % "sbt-bintray"         % "0.5.3")
+addSbtPlugin("com.simplytyped"   % "sbt-antlr4"          % "0.8.1")

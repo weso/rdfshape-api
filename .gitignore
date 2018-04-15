@@ -17,6 +17,26 @@ project/plugins/project/
 .project
 .classpath
 .cache
-.target
 /bin
+settings.json
+.vscode
+.ensime_cache
+.ensime
 .idea
+
+node_modules/
+.grunt
+# Logs
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+.npm
+*.tgz
+
+*~
