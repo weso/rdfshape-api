@@ -1,7 +1,4 @@
-[![Stories in Ready](https://badge.waffle.io/labra/rdfshape.png?label=ready&title=Ready)](https://waffle.io/labra/rdfshape)
-# Tutorial
-
-[![Join the chat at https://gitter.im/labra/rdfshape](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/labra/rdfshape?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# More info
 
 * [How-to](https://github.com/labra/rdfshape/wiki/Tutorial): explains how to use RDFShape to validate RDF
 
