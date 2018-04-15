@@ -1,5 +1,6 @@
 # More info
 
+* [Validating RDF data book](http://book.validatingrdf.com)
 * [How-to](https://github.com/labra/rdfshape/wiki/Tutorial): explains how to use RDFShape to validate RDF
 
 # Deployed versions of RDFShape
