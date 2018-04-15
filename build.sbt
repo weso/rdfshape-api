@@ -191,7 +191,7 @@ lazy val wixSettings = Seq(
 )
 
 lazy val ghPagesSettings = Seq(
-  git.remoteRepo := "git@github.com:labra/shaclex.git"
+  git.remoteRepo := "git@github.com:labra/rdfshape.git"
 )
 
 lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
