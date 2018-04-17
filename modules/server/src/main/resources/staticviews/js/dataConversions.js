@@ -94,12 +94,34 @@ $('.dataPanel a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
   e.preventDefault();
   console.log("click on permalink...");
   var data = codeMirrorData.getValue();
-  var dataFormat = $("#dataFormat").find(":selected").text();
+  var dataActiveTab = $("#rdfDataActiveTab").attr("value");
+  var dataPart = "";
+  var dataFormat = "";
+     switch (dataActiveTab) {
+         case "#dataTextArea":
+             dataFormat = $("#dataFormatTextArea").find(":selected").text();
+             dataPart = "data=" + encodeURIComponent(data) ;
+             break;
+         case "#dataFile":
+             dataFormat = $("#dataFormatFile").find(":selected").text();
+             dataPart = "data=" + encodeURIComponent(data) ;
+             break;
+         case "#dataUrl":
+             dataFormat = $("#dataFormatUrl").find(":selected").text();
+             var dataURL = $("#dataURL").val();
+             dataPart = "dataURL=" + encodeURIComponent(dataURL) ;
+             break;
+         default:
+             console.log("Unknown value of dataActiveTab:" + dataActiveTab);
+             dataFormat = $("#dataFormatTextArea").find(":selected").text();
+             dataPart = "data=" + encodeURIComponent(data) ;
+             break;
+     }
   var inference = $("#inference").find(":selected").text();
   var targetDataFormat = $("#targetDataFormat").find(":selected").text();
   var location = "/dataConversions?" +
-      "data=" + encodeURIComponent(data) +
-      "&dataFormat=" + encodeURIComponent(dataFormat) +
+      dataPart + "&" +
+      "dataFormat=" + encodeURIComponent(dataFormat) +
       "&targetDataFormat=" + encodeURIComponent(targetDataFormat) +
       "&inference=" + encodeURIComponent(inference) ;
     var href = urlShaclex + location

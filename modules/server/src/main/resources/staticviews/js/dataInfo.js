@@ -54,6 +54,13 @@ function showResult(result) {
         var pre = $("<pre/>").text(JSON.stringify(result,undefined,2));
         var details = $("<details/>").append(pre);
         $("#resultDiv").append(details);
+        var v = new Viz;
+        v.renderSVGElement(result.dot).then(function(svg) {
+            console.log(svg);
+            var graph = $("<svg/>").append(svg);
+            $("#resultDiv").append(graph);
+          }
+        );
     }
 }
 
@@ -90,11 +97,33 @@ function getDataFormat(element) {
   e.preventDefault();
   console.log("click on permalink...");
   var data = codeMirrorData.getValue();
-  var dataFormat = $("#dataFormat").find(":selected").text();
+  var dataActiveTab = $("#rdfDataActiveTab").attr("value");
+  var dataPart = "";
+  var dataFormat = "";
+  switch (dataActiveTab) {
+      case "#dataTextArea":
+          dataFormat = $("#dataFormatTextArea").find(":selected").text();
+          dataPart = "data=" + encodeURIComponent(data) ;
+          break;
+      case "#dataFile":
+          dataFormat = $("#dataFormatFile").find(":selected").text();
+          dataPart = "data=" + encodeURIComponent(data) ;
+          break;
+      case "#dataUrl":
+          dataFormat = $("#dataFormatUrl").find(":selected").text();
+          var dataURL = $("#dataURL").val();
+          dataPart = "dataURL=" + encodeURIComponent(dataURL) ;
+          break;
+      default:
+          console.log("Unknown value of dataActiveTab:" + dataActiveTab);
+          dataFormat = $("#dataFormatTextArea").find(":selected").text();
+          dataPart = "data=" + encodeURIComponent(data) ;
+          break;
+     }
   var inference = $("#inference").find(":selected").text();
   var location = "/dataInfo?" +
-      "data=" + encodeURIComponent(data) +
-      "&dataFormat=" + encodeURIComponent(dataFormat) +
+      dataPart +
+      "dataFormat=" + encodeURIComponent(dataFormat) +
       "&inference=" + encodeURIComponent(inference) ;
     var href = urlShaclex + location
     console.log("NewHRef: " + href)

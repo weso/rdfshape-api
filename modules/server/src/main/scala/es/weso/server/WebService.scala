@@ -17,6 +17,7 @@ import cats.effect.IO._
 import org.http4s.multipart._
 import io.circe.Json
 import Defaults._
+import es.weso.rdf.dot.RDF2Dot
 
 object WebService {
 
@@ -525,6 +526,7 @@ object WebService {
     Some(Json.fromFields(
       List(
         ("statements", Json.fromString(rdf.getNumberOfStatements().fold(identity,_.toString))),
+        ("dot",Json.fromString(RDF2Dot.rdf2dot(rdf).toString)),
         ("nodesPrefixMap", ApiHelper.prefixMap2Json(rdf.getPrefixMap()))
       )
     ))

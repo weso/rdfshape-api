@@ -40,7 +40,7 @@ lazy val scalatagsVersion      = "0.6.7"
 lazy val scallopVersion        = "3.1.1"
 lazy val seleniumVersion       = "2.35.0"
 lazy val typesafeConfigVersion = "1.3.2"
-lazy val shaclexVersion        = "0.0.70"
+lazy val shaclexVersion        = "0.0.71"
 
 // Compiler plugin dependency versions
 lazy val simulacrumVersion    = "0.11.0"
