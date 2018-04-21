@@ -8,16 +8,17 @@ import org.http4s.server.staticcontent.ResourceService.Config
 import cats.effect._
 import org.http4s._
 import org.http4s.twirl._
+import Http4sUtils._
+import org.http4s.multipart._
 import es.weso._
 import es.weso.server.QueryParams._
 import ApiHelper.{query, _}
-import Http4sUtils._
 import es.weso.rdf._
 import cats.effect.IO._
-import org.http4s.multipart._
 import io.circe.Json
 import Defaults._
 import es.weso.rdf.dot.RDF2Dot
+import ApiHelper._
 
 object WebService {
 
@@ -189,13 +190,13 @@ object WebService {
           response <- maybePair match {
            case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
            case Right((schema, sp)) => {
-             val info: Json = Json.fromString(s"Schema parsed OK")
              val sv = SchemaValue(sp.schema,
                sp.schemaURL,
                sp.schemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
                sp.schemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
                sp.activeSchemaTab.getOrElse(defaultActiveSchemaTab)
              )
+             val info = schemaInfo(schema)
              Ok(html.schemaInfo(Some(info),sv))
            }
         }
@@ -210,13 +211,25 @@ object WebService {
       SchemaEngineParam(optSchemaEngine) +&
       OptActiveSchemaTabParam(optActiveSchemaTab)
     => {
-      val info = Json.fromString(s"Schema $optSchema")
+      val baseUri = req.uri
+      val eitherSchema: Either[String, Option[String]] = optSchema match {
+        case None => optSchemaURL match {
+          case None => Right(None)
+          case Some(schemaURL) => resolveUri(baseUri, schemaURL)
+        }
+        case Some(schemaStr) => Right(Some(schemaStr))
+      }
       val sv = SchemaValue(optSchema, optSchemaURL,
         optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
         optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
         optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
       )
-      Ok(html.schemaInfo(Some(info),sv))
+      getSchema(sv).fold(
+        e => BadRequest(s"Error obtaining schema: $e"),
+        schema => {
+         val info = schemaInfo(schema)
+         Ok(html.schemaInfo(Some(info),sv))
+      })
     }
 
     case req@GET -> Root / "dataOptions" => {
@@ -484,10 +497,10 @@ object WebService {
     Left(str)
   }
 
-  private def validateResponse(result: Result,
-                               dp: DataParam,
-                               sp: SchemaParam,
-                               tp: TriggerModeParam): IO[Response[IO]] = {
+  private[server] def validateResponse(result: Result,
+                                       dp: DataParam,
+                                       sp: SchemaParam,
+                                       tp: TriggerModeParam): IO[Response[IO]] = {
     val dv = DataValue(
       dp.data, dp.dataURL,
       dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
@@ -508,27 +521,11 @@ object WebService {
       tp.activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
     )
     Ok(html.validate(Some(result), dv, sv,
-      availableTriggerModes, tp.triggerMode.getOrElse(defaultTriggerMode),
+      availableTriggerModes,
+      tp.triggerMode.getOrElse(defaultTriggerMode),
       smv,
       getSchemaEmbedded(sp)
     ))
   }
 
-  private def getSchemaEmbedded(sp: SchemaParam): Boolean = {
-    sp.schemaEmbedded match {
-      case Some(true) => true
-      case Some(false) => false
-      case None => defaultSchemaEmbedded
-    }
-  }
-
-  private def dataInfo(rdf: RDFReasoner): Option[Json] = {
-    Some(Json.fromFields(
-      List(
-        ("statements", Json.fromString(rdf.getNumberOfStatements().fold(identity,_.toString))),
-        ("dot",Json.fromString(RDF2Dot.rdf2dot(rdf).toString)),
-        ("nodesPrefixMap", ApiHelper.prefixMap2Json(rdf.getPrefixMap()))
-      )
-    ))
-  }
 }

@@ -2,13 +2,23 @@ package es.weso.server
 
 import cats.implicits._
 import cats.effect.IO
-import es.weso.rdf.{PrefixMap}
+import es.weso.html
+import es.weso.rdf.PrefixMap
 import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.schema.{DataFormats, Result, Schemas, ValidationTrigger}
+import es.weso.schema._
+import es.weso.server.Defaults._
 import es.weso.utils.FileUtils
+import es.weso.rdf.RDFReasoner
 import io.circe._
-import org.http4s.Uri
+import org.http4s._
 import org.http4s.client.blaze.PooledHttp1Client
+import org.http4s.dsl.io.Ok
+import org.http4s.twirl._
+import Http4sUtils._
+import org.http4s.multipart._
+import es.weso.rdf.dot.RDF2Dot
+
+
 import scala.util.Try
 
 object ApiHelper {
@@ -17,13 +27,13 @@ object ApiHelper {
     * Get base URI
     * @return default URI obtained from current folder
     */
-  def getBase: Option[String] = Some(FileUtils.currentFolderURL)
+  private[server] def getBase: Option[String] = Some(FileUtils.currentFolderURL)
 
-  def prefixMap2Json(pm: PrefixMap): Json = {
+  private[server] def prefixMap2Json(pm: PrefixMap): Json = {
     Json.fromFields(pm.pm.map { case (prefix, iri) => (prefix.str, Json.fromString(iri.getLexicalForm)) })
   }
 
-  def resolveUri(baseUri: Uri, urlStr: String): Either[String, Option[String]] = {
+  private[server] def resolveUri(baseUri: Uri, urlStr: String): Either[String, Option[String]] = {
     // TODO: handle timeouts
     Uri.fromString(urlStr).fold(
       fail => {
@@ -39,7 +49,7 @@ object ApiHelper {
     )
   }
 
-  def dataConvert(optData: Option[String],
+  private[server] def dataConvert(optData: Option[String],
                   optDataFormat: Option[String],
                   optTargetDataFormat: Option[String]): Either[String, Option[String]] = optData match {
     case None => Right(None)
@@ -53,7 +63,7 @@ object ApiHelper {
     }
   }
 
-  def schemaConvert(optSchema: Option[String],
+  private[server] def schemaConvert(optSchema: Option[String],
                   optSchemaFormat: Option[String],
                   optSchemaEngine: Option[String],
                   optTargetSchemaFormat: Option[String],
@@ -70,7 +80,7 @@ object ApiHelper {
     }
   }
 
-  def validate(data: String,
+  private[server] def validate(data: String,
                optDataFormat: Option[String],
                optSchema: Option[String],
                optSchemaFormat: Option[String],
@@ -127,7 +137,7 @@ object ApiHelper {
   }
 
 
-  def query(data: String,
+  private[server] def query(data: String,
             optDataFormat: Option[String],
             optQuery: Option[String],
             optInference: Option[String]
@@ -146,5 +156,47 @@ object ApiHelper {
     }
 
   }
+
+  private[server] def dataInfo(rdf: RDFReasoner): Option[Json] = {
+    Some(Json.fromFields(
+      List(
+        ("statements", Json.fromString(rdf.getNumberOfStatements().fold(identity,_.toString))),
+        ("dot",Json.fromString(RDF2Dot.rdf2dot(rdf).toString)),
+        ("nodesPrefixMap", ApiHelper.prefixMap2Json(rdf.getPrefixMap()))
+      )
+    ))
+  }
+
+  private[server] def getSchema(sv: SchemaValue): Either[String,Schema] = {
+    val schemaEngine = sv.currentSchemaEngine
+    val schemaFormat = sv.currentSchemaFormat
+    val schemaStr = sv.schema.getOrElse("")
+    val base = Some(FileUtils.currentFolderURL)
+    Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
+  }
+
+  private[server] def schemaInfo(schema:Schema): Json = {
+    val svg: String =
+      schema.serialize("SVG").fold(
+        e => s"Error converting to SVG: $e",
+        identity
+      )
+    val fields: List[(String,Json)] =
+      List(
+        ("parsed", Json.fromString("Parsed OK")),
+        ("svg", Json.fromString(svg))
+      )
+    Json.fromFields(fields)
+  }
+
+
+  private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
+    sp.schemaEmbedded match {
+      case Some(true) => true
+      case Some(false) => false
+      case None => defaultSchemaEmbedded
+    }
+  }
+
 
 }

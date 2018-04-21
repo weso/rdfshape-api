@@ -122,7 +122,7 @@ function getDataFormat(element) {
      }
   var inference = $("#inference").find(":selected").text();
   var location = "/dataInfo?" +
-      dataPart +
+      dataPart + "&" +
       "dataFormat=" + encodeURIComponent(dataFormat) +
       "&inference=" + encodeURIComponent(inference) ;
     var href = urlShaclex + location
