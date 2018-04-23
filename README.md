@@ -5,30 +5,31 @@
 
 # Deployed versions of RDFShape
 
-RDFShape is already deployed in two servers:
-
-* [Our local server](http://rdfshape.weso.es): In this server it works ok with large shapes, but the server can be down sometimes given that it is located in a University laboratory and there is no good maintenance.
-
-* [heroku](http://rdfshape.herokuapp.com): In this server, it works almost always although it can take some initial time to wakeup and there are some memory limitations in Heroku free accounts that does it crash for large shapes.
-
+RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 # Installation and Local Deployment 
 
-RDFShape is implemented as a [Play!](https://playframework.com/) application. 
-The only requirements are:
-
-* JDK 1.7 or above (It does not work on JDK 1.6)
-
-* [Play! framework](https://playframework.com/)
-
+RDFShape is implemented in Scala using [SBT](https://www.scala-sbt.org/).
 
 In order to deploy RDFShape locally, the steps are:
 
-* Install Play activator which is available [here](http://playframework.com/download)
-
 * Clone the github repository which is available [here](https://github.com/labra/rdfshape)
 
-* Go to directory where RDFShape source code is located and execute `activator run`
+* Go to directory where RDFShape source code is located and execute `sbt "run --server"`
 
-* After some time downloading and compiling the source code it will start the application, which can be accessed at:  http://localhost:9000
+* After some time downloading and compiling the source code it will start the application, which can be accessed at:  http://localhost:8080
 
+# Dependencies
+
+RDFShape depends on:
+
+* [SHACLex](https://github.com/labra/shaclex), a Scala implementation of ShEx and SHACL.
+* [http4s](https://http4s.org/) a purely functional library for http.
+* [cats](https://typelevel.org/cats/) a library for functional programming in Scala.
+
+# Contribution and issues
+
+Contributions are greatly appreciated. Please fork this repository and open a pull request to add more features or submit issues:
+
+* [Issues about RDFShape online demo](https://github.com/labra/rdfshape/issues)
+* [Issues about SHACLex validation library](https://github.com/labra/shaclex/issues)
