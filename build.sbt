@@ -24,6 +24,8 @@ scalafmt: {
 }
  */
 
+lazy val shaclexVersion        = "0.0.75"
+
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
 lazy val commonsTextVersion    = "1.2"
@@ -40,7 +42,6 @@ lazy val scalatagsVersion      = "0.6.7"
 lazy val scallopVersion        = "3.1.1"
 lazy val seleniumVersion       = "2.35.0"
 lazy val typesafeConfigVersion = "1.3.2"
-lazy val shaclexVersion        = "0.0.74"
 
 // Compiler plugin dependency versions
 lazy val simulacrumVersion    = "0.11.0"

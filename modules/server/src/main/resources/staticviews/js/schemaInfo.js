@@ -62,6 +62,24 @@ function showResult(result) {
     result = $("#resultDiv").data("result");
     console.log("Show result: " + JSON.stringify(result));
     if(result) {
+        if (result.schemaName && result.schemaEngine) {
+            var schemaName = $("<p/>").append("Schema: " + result.schemaName + ", " + result.schemaEngine);
+            $("#resultDiv").append(schemaName);
+        }
+        if (result.wellFormed) {
+            var wellFormed = $("<p/>").append("Wellformed: " + result.wellFormed);
+            $("#resultDiv").append(wellFormed);
+        } else {
+            var wellFormed = $("<p/>").append("Wellformed: " + result.wellFormed);
+            $("#resultDiv").append(wellFormed);
+            if (result.errors) {
+                console.log(result.errors);
+                result.errors.forEach(function (e) {
+                    var errorMsg = $("<p/>").text(JSON.stringify(e));
+                    $("#resultDiv").append(errorMsg);
+                })
+            }
+        }
         if (result.svg) {
             console.log(result.svg);
             var svgDiv = $("<div/>").append(result.svg);

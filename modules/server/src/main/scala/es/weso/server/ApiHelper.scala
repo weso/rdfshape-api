@@ -181,8 +181,13 @@ object ApiHelper {
         e => s"Error converting to SVG: $e",
         identity
       )
+    val info = schema.info
     val fields: List[(String,Json)] =
       List(
+        ("schemaName", Json.fromString(info.schemaName)),
+        ("schemaEngine", Json.fromString(info.schemaEngine)),
+        ("wellFormed", Json.fromBoolean(info.isWellFormed)),
+        ("errors", Json.fromValues(info.errors.map(Json.fromString(_)))),
         ("parsed", Json.fromString("Parsed OK")),
         ("svg", Json.fromString(svg))
       )
