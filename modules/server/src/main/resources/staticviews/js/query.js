@@ -142,11 +142,55 @@ function showResult(result,nodesPrefixMap) {
   var query = codeMirrorQuery.getValue();
   var dataFormat = $("#dataFormat").find(":selected").text();
   var inference = $("#inference").find(":selected").text();
-  var location = "/query?" +
-      "data=" + encodeURIComponent(data) +
-      "&dataFormat=" + encodeURIComponent(dataFormat) +
-      "&query=" + encodeURIComponent(query) +
-      "&inference=" + encodeURIComponent(inference);
+  var dataActiveTab = $("#rdfDataActiveTab").attr("value");
+  var dataFormat = "";
+  var dataPart="";
+  switch (dataActiveTab) {
+         case "#dataTextArea":
+             dataFormat = $("#dataFormatTextArea").find(":selected").text();
+             dataPart = "data=" + encodeURIComponent(data) ;
+             break;
+         case "#dataFile":
+             dataFormat = $("#dataFormatFile").find(":selected").text();
+             dataPart = "data=" + encodeURIComponent(data) ;
+             break;
+         case "#dataUrl":
+             dataFormat = $("#dataFormatUrl").find(":selected").text();
+             var dataURL = $("#dataURL").val();
+             dataPart = "dataURL=" + encodeURIComponent(dataURL) ;
+             break;
+         default:
+             console.log("Unknown value of dataActiveTab:" + dataActiveTab);
+             dataFormat = $("#dataFormatTextArea").find(":selected").text();
+             dataPart = "data=" + encodeURIComponent(data) ;
+             break;
+     }
+     var queryPart = "";
+     var activeQueryTab = $("#activeQueryTab").attr("value");
+     switch (activeQueryTab) {
+         case "#queryTextArea":
+             queryPart = "query=" + encodeURIComponent(query) ;
+             break;
+         case "#queryFile":
+             queryPart = "query=" + encodeURIComponent(query) ;
+             break;
+         case "#queryUrl":
+             var queryURL = $("#queryURL").val();
+             queryPart = "queryURL=" + encodeURIComponent(queryURL) ;
+             break;
+         default:
+             console.log("Unknown value of activeQueryTab:" + activeQueryTab);
+             queryPart = "query=" + encodeURIComponent(query) ;
+             break;
+     }
+     var location = "/query?" +
+      dataPart + "&" +
+      "dataFormat=" + encodeURIComponent(dataFormat) + "&" +
+      queryPart + "&" +
+      "&inference=" + encodeURIComponent(inference) + "&" +
+      "activeDataTab=" + encodeURIComponent(dataActiveTab) + "&" +
+      "activeQueryTab=" + encodeURIComponent(activeQueryTab)
+      ;
     var href = urlShaclex + location
     console.log("NewHRef: " + href)
     window.location.assign(href) ;
