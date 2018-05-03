@@ -6,6 +6,7 @@
 @import es.weso.server.ShapeMapValue
 
 @(result: Option[Result],
+  validationReport: Option[Either[String,String]],
   dv: DataValue,
   sv:SchemaValue,
   availableTriggerModes: List[String],
@@ -19,7 +20,10 @@
 <body>
 @navBar()
 <div class="container">
-<div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.map(_.toJson).getOrElse(Json.Null)))}'></div>
+<div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.map(_.toJson).getOrElse(Json.Null)))}'
+    data-validationreport='@{validationReport.getOrElse(Left("")).fold(e=> s"Error: $e", vr => vr)}'
+    data-validationreportactive='@{if (validationReport.isDefined && validationReport.get.isRight) "true" else "false"}'
+></div>
 <form action="/validate" method="POST" enctype="multipart/form-data" id="validate">
     <fieldset>
         @selectSchemaEngine("validate", sv.availableSchemaEngines,sv.currentSchemaEngine)

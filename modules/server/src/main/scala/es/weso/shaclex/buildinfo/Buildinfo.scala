@@ -9,5 +9,6 @@ case object BuildInfo {
   val version: String = "0.0.75"
   val scalaVersion: String = "2.12.5"
   val sbtVersion: String = "1.0.3"
+  val rdfshapeVersion: String = "0.1.0"
   override val toString: String = "name: %s, version: %s, scalaVersion: %s, sbtVersion: %s" format (name, version, scalaVersion, sbtVersion)
 }
