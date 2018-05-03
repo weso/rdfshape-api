@@ -1,7 +1,7 @@
 var codeMirrorData ;
 var codeMirrorSchema ;
 var codeMirrorShapeMap ;
-var codeMirrorTargetData ;
+var codeMirrorVrTextArea;
 
 function changeMode(element,syntax) {
     var mode = "turtle";
@@ -30,6 +30,7 @@ function changeTheme(theme) {
     codeMirrorData.setOption("theme",theme);
     codeMirrorSchema.setOption("theme",theme);
     codeMirrorShapeMap.setOption("theme",theme);
+    codeMirrorVrTextArea.setOption("theme",theme);
 }
 
 function hideShowSchema(show) {
@@ -90,14 +91,17 @@ function resetResult(result) {
 
 
 function showResult(result) {
-    result = $("#resultDiv").data("result");
-    console.log("Show result: " + JSON.stringify(result));
+    var result = $("#resultDiv").data("result");
+    var validationReport = $("#resultDiv").data("validationreport");
+    var validationReportActive = $("#resultDiv").data("validationreportactive");
+    console.log(validationReportActive);
     if(result) {
-        console.log("Result.nodesPrefixMap: " + JSON.stringify(result.nodesPrefixMap));
+        if (validationReport && validationReportActive) {
+            var vrTextarea = $("<textarea/>").attr("id","vrTextArea").text(validationReport);
+            $("#resultDiv").append(vrTextarea);
+        }
         var nodesPrefixMap = result.nodesPrefixMap ;
         var shapesPrefixMap = result.shapesPrefixMap ;
-        console.log("nodesPrefixMap: " + JSON.stringify(nodesPrefixMap));
-        console.log("shapesPrefixMap: " + JSON.stringify(shapesPrefixMap));
         if (result.isValid || result.valid) {
             $("#resultDiv").removeClass("notValid").addClass("valid");
             showShapeMap(result.shapeMap,nodesPrefixMap,shapesPrefixMap);
@@ -192,27 +196,17 @@ if (rdfData) {
   });
 }
 
-var targetDataArea = document.getElementById("targetDataArea");
-  if (targetDataArea) {
-      codeMirrorTargetData = CodeMirror.fromTextArea(targetDataArea, {
-      lineNumbers: true,
-      mode: "turtle",
-      viewportMargin: Infinity,
-       matchBrackets: true,
-      });
-    }
-
-    var schema = document.getElementById("schema")
-    if (schema) {
+var schema = document.getElementById("schema");
+if (schema) {
         codeMirrorSchema = CodeMirror.fromTextArea(schema, {
             lineNumbers: true,
             mode: "shex",
             viewportMargin: Infinity,
             matchBrackets: true
         });
-    }
+}
 
-    var shapeMap = document.getElementById("shapeMap")
+var shapeMap = document.getElementById("shapeMap");
     if (shapeMap) {
         codeMirrorShapeMap = CodeMirror.fromTextArea(shapeMap, {
             lineNumbers: true,
@@ -222,6 +216,17 @@ var targetDataArea = document.getElementById("targetDataArea");
         });
         codeMirrorShapeMap.setSize(null,"5em");
     }
+
+var validationReport = document.getElementById("vrTextArea");
+if (validationReport) {
+    codeMirrorVrTextArea = CodeMirror.fromTextArea(validationReport, {
+            lineNumbers: true,
+            mode: "turtle",
+            viewportMargin: Infinity,
+            matchBrackets: true
+        });
+}
+
 
  /** The following lines associate events to the panel tabs, when a user clicks on a panel,
   *  the corresponding xxxActiveTab is changed
