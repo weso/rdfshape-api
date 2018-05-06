@@ -278,16 +278,8 @@ object WebService {
                 response <- maybePair match {
                   case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
                   case Right((schema, sp)) => for {
-                    tp <- {
-                      println(s">>>>>>>>>>>>>>>> Data: ${rdf.serialize()}\ndata string:${dp.data}")
-                      println(s">>>>>>>>>>>>>>>> Data URL: ${dp.dataURL}")
-                      println(s">>>>>>>>>>>>>>>> Schema: $schema")
-                      TriggerModeParam.mkTriggerModeParam(partsMap)
-                    }
-                    schemaEmbedded = {
-                      println(s">>>> Trigger: $tp")
-                      getSchemaEmbedded(sp)
-                    }
+                    tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
+                    schemaEmbedded = getSchemaEmbedded(sp)
                     (result, maybeTriggerMode) = validate(dp.data.getOrElse(""), dp.dataFormat,
                       sp.schema, sp.schemaFormat, sp.schemaEngine, tp,
                       None, None, dp.inference)
@@ -401,8 +393,13 @@ object WebService {
               availableShapeMapFormats,
               optActiveShapeMapTab.getOrElse(defaultActiveShapeMapTab)
             )
+            val r = result.map(_._1)
+            val validationReport: Option[Either[String,String]] =
+              r.map(_.validationReport.flatMap(_.serialize("TURTLE")))
+
+
             Ok(html.validate(
-              result.map(_._1),
+              r, validationReport,
               dv,
               sv,
               availableTriggerModes,
@@ -520,7 +517,15 @@ object WebService {
       availableShapeMapFormats,
       tp.activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
     )
-    Ok(html.validate(Some(result), dv, sv,
+    
+    val validationReport: Option[Either[String,String]] =
+      Some(result.validationReport.flatMap(_.serialize("TURTLE")))
+
+    println(s"Validation report: $validationReport")
+
+    Ok(html.validate(Some(result),
+      validationReport,
+      dv, sv,
       availableTriggerModes,
       tp.triggerMode.getOrElse(defaultTriggerMode),
       smv,
