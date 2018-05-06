@@ -304,7 +304,8 @@ object WebService {
       OptTriggerModeParam(optTriggerMode) +&
       NodeParam(optNode) +&
       ShapeParam(optShape) +&
-      ShapeMapParameter(optShapeMap) +&
+      ShapeMapParameter(optShapeMapFirst) +&
+      ShapeMapParameterAlt(optShapeMapAlt) +&
       ShapeMapURLParameter(optShapeMapURL) +&
       ShapeMapFileParameter(optShapeMapFile) +&
       ShapeMapFormatParam(optShapeMapFormat) +&
@@ -336,6 +337,19 @@ object WebService {
             case Some(schemaURL) => resolveUri(baseUri, schemaURL)
           }
           case Some(schemaStr) => Right(Some(schemaStr))
+        }
+
+        val optShapeMap = (optShapeMapFirst,optShapeMapAlt) match {
+          case (Some(s1),Some(s2)) if s1 == s2 => {
+            Some(s1)
+          }
+          case (Some(s1), Some(s2)) => {
+            println(s"Two values for shapeMap param, using $s1 and omitting $s2")
+            Some(s1)
+          }
+          case (Some(s1),None) => Some(s1)
+          case (None,Some(s2)) => Some(s2)
+          case (None,None) => None
         }
 
         val tp = TriggerModeParam(

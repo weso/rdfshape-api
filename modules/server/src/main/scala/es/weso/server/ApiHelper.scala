@@ -120,7 +120,7 @@ object ApiHelper {
                 val triggerMode = tp.triggerMode // optTriggerMode.getOrElse(ValidationTrigger.default.name)
                 // val shapeMap = optShapeMap.getOrElse("")
                 val (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(rdf.getPrefixMap,schema.pm)
-                ValidationTrigger.findTrigger(triggerMode.getOrElse(ValidationTrigger.default.name),
+                ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
                   optShapeMapStr.getOrElse(""),
                   base, optNode, optShape, rdf.getPrefixMap, schema.pm) match {
                   case Left(msg) => (
