@@ -7,34 +7,39 @@ import org.scalatest._
 import selenium._
 
 /*
-class WebService extends FunSpec with Matchers with EitherValues with Chrome with BeforeAndAfter {
+class WebServiceTest extends FunSpec
+  with Matchers
+  with EitherValues
+  with BeforeAndAfter
+  with Firefox {
   val ip = "0.0.0.0"
   val port = 8080
-//  val shaclexServer = new ShaclexServer(ip, port)
-//  var server: Server[IO] = null
+  val shaclexServer = new ShaclexServer(ip, port)
+  var server: Server[IO] = null
 
   before {
     println(s"Before tests...starting server...")
-//    val builder = BlazeBuilder[IO].bindHttp(port,"localhost").mountService(shaclexServer.service).start
-//    server = builder.unsafeRunSync
+    val builder = BlazeBuilder[IO].bindHttp(port,"localhost").mountService(shaclexServer.service).start
+    server = builder.unsafeRunSync
   }
 
   after {
-    println(s"After tests...closing server and firefox...")
-//    server.shutdown.unsafeRunSync
-    quit()
+    println(s"After tests...closing server and browser...")
+    server.shutdown.unsafeRunSync
+    close
+    quit
   }
 
-  // val host = s"http://localhost:$port"
-  val host = s"http://shaclex.validatingrdf.com"
+  val host = s"http://localhost:$port"
+  // val host = s"http://shaclex.validatingrdf.com"
 
 
-  describe(s"Home page") {
+/*  describe(s"Home page") {
 
     it(s"Should contain SHACLex") {
       go to (host)
       pageTitle should contain("SHACLex")
     }
 
-  }
-}*/
+  } */
+} */
