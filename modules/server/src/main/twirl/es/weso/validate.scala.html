@@ -5,7 +5,7 @@
 @import es.weso.server.SchemaValue
 @import es.weso.server.ShapeMapValue
 
-@(result: Option[Result],
+@(result: Option[Result], time: Long,
   validationReport: Option[Either[String,String]],
   dv: DataValue,
   sv:SchemaValue,
@@ -50,6 +50,7 @@
         <input type="submit" value="validate" id="validateButton"/>
     </div>
 
+    <p>Validation time: @time</p>
 </form>
 @otherOptions()
 </div>

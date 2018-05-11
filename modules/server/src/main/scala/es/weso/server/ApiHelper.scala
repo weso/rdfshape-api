@@ -90,7 +90,9 @@ object ApiHelper {
                optShape: Option[String],
                // optShapeMap: Option[String],
                optInference: Option[String]
-              ): (Result, Option[ValidationTrigger]) = {
+              ): (Result, Option[ValidationTrigger], Long) = {
+
+    val startTime = System.nanoTime()
 
     val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
     val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
@@ -108,14 +110,14 @@ object ApiHelper {
 
     Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base) match {
       case Left(e) =>
-        (Result.errStr(s"Error reading schema: $e\nschemaFormat: $schemaFormat, schemaEngine: $schemaEngine\nschema:\n$schemaStr"), None)
+        (Result.errStr(s"Error reading schema: $e\nschemaFormat: $schemaFormat, schemaEngine: $schemaEngine\nschema:\n$schemaStr"), None, 0)
       case Right(schema) => {
         RDFAsJenaModel.fromChars(data, dataFormat, base) match {
           case Left(e) =>
-            (Result.errStr(s"Error reading rdf data: $e\ndataFormat: $dataFormat\nRDF Data:\n$data"), None)
+            (Result.errStr(s"Error reading rdf data: $e\ndataFormat: $dataFormat\nRDF Data:\n$data"), None, 0)
           case Right(rdf) => {
             rdf.applyInference(optInference.getOrElse("None")) match {
-              case Left(msg) => (Result.errStr(s"Error applying inference to RDF: $msg"), None)
+              case Left(msg) => (Result.errStr(s"Error applying inference to RDF: $msg"), None, 0)
               case Right(newRdf) => {
                 val triggerMode = tp.triggerMode // optTriggerMode.getOrElse(ValidationTrigger.default.name)
                 // val shapeMap = optShapeMap.getOrElse("")
@@ -125,8 +127,13 @@ object ApiHelper {
                   base, optNode, optShape, rdf.getPrefixMap, schema.pm) match {
                   case Left(msg) => (
                     Result.errStr(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg"),
-                    None)
-                  case Right(trigger) => (schema.validate(newRdf, trigger), Some(trigger))
+                    None, 0)
+                  case Right(trigger) => {
+                    val result = schema.validate(newRdf, trigger)
+                    val endTime = System.nanoTime()
+                    val time: Long = endTime - startTime
+                    (result,Some(trigger),time)
+                  }
                 }
               }
             }

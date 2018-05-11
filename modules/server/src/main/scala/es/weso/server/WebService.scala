@@ -280,10 +280,10 @@ object WebService {
                   case Right((schema, sp)) => for {
                     tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
                     schemaEmbedded = getSchemaEmbedded(sp)
-                    (result, maybeTriggerMode) = validate(dp.data.getOrElse(""), dp.dataFormat,
+                    (result, maybeTriggerMode, time) = validate(dp.data.getOrElse(""), dp.dataFormat,
                       sp.schema, sp.schemaFormat, sp.schemaEngine, tp,
                       None, None, dp.inference)
-                    r <- validateResponse(result,dp,sp,tp)
+                    r <- validateResponse(result,time,dp,sp,tp)
                   } yield r
                 }
           } yield response
@@ -411,9 +411,11 @@ object WebService {
             val validationReport: Option[Either[String,String]] =
               r.map(_.validationReport.flatMap(_.serialize("TURTLE")))
 
+            val time : Long = result.map(_._3).getOrElse(0)
 
             Ok(html.validate(
-              r, validationReport,
+              r, time,
+              validationReport,
               dv,
               sv,
               availableTriggerModes,
@@ -509,6 +511,7 @@ object WebService {
   }
 
   private[server] def validateResponse(result: Result,
+                                       time: Long,
                                        dp: DataParam,
                                        sp: SchemaParam,
                                        tp: TriggerModeParam): IO[Response[IO]] = {
@@ -537,7 +540,7 @@ object WebService {
 
     println(s"Validation report: $validationReport")
 
-    Ok(html.validate(Some(result),
+    Ok(html.validate(Some(result),time,
       validationReport,
       dv, sv,
       availableTriggerModes,
