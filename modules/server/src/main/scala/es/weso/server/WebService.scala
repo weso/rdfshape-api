@@ -13,19 +13,24 @@ import org.http4s.multipart._
 import es.weso._
 import es.weso.server.QueryParams._
 import ApiHelper.{query, _}
-import es.weso.rdf._
 import cats.effect.IO._
-import io.circe.Json
 import Defaults._
-import es.weso.rdf.dot.RDF2Dot
 import ApiHelper._
+// import cats._
+// import cats.data._
+// import cats.implicits._
+import org.log4s.getLogger
 
 object WebService {
 
   // Get the static content
-  private val static: HttpService[IO] = staticResource[IO](Config("/static", "/static"))
-  private val views: HttpService[IO] = staticResource(Config("/staticviews", "/"))
+  private val static: HttpService[IO] =
+    staticResource[IO](Config("/static", "/static"))
 
+  private val views: HttpService[IO] =
+    staticResource(Config("/staticviews", "/"))
+
+  private val logger = getLogger
 
   val webService: HttpService[IO] = HttpService[IO] {
 
@@ -60,7 +65,7 @@ object WebService {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap)
+          maybeData <- DataParam.mkData(partsMap).value
           response <- maybeData match {
             case Left(msg) => BadRequest(s"Error obtaining data: $msg")
             case Right((rdf,dp)) => {
@@ -109,7 +114,7 @@ object WebService {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap)
+          maybeData <- DataParam.mkData(partsMap).value
           response <- maybeData match {
             case Left(str) => BadRequest (s"Error obtaining data: $str")
             case Right((rdf,dp)) => {
@@ -131,7 +136,7 @@ object WebService {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
-          maybePair <- SchemaParam.mkSchema(partsMap, None)
+          maybePair <- SchemaParam.mkSchema(partsMap, None).value
           optTargetSchemaFormat <- partsMap.optPartValue("targetSchemaFormat")
           optTargetSchemaEngine <- partsMap.optPartValue("targetSchemaEngine")
           response <- maybePair match {
@@ -186,7 +191,7 @@ object WebService {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
-          maybePair <- SchemaParam.mkSchema(partsMap, None)
+          maybePair <- SchemaParam.mkSchema(partsMap, None).value
           response <- maybePair match {
            case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
            case Right((schema, sp)) => {
@@ -211,14 +216,6 @@ object WebService {
       SchemaEngineParam(optSchemaEngine) +&
       OptActiveSchemaTabParam(optActiveSchemaTab)
     => {
-      val baseUri = req.uri
-      val eitherSchema: Either[String, Option[String]] = optSchema match {
-        case None => optSchemaURL match {
-          case None => Right(None)
-          case Some(schemaURL) => resolveUri(baseUri, schemaURL)
-        }
-        case Some(schemaStr) => Right(Some(schemaStr))
-      }
       val sv = SchemaValue(optSchema, optSchemaURL,
         optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
         optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
@@ -266,33 +263,24 @@ object WebService {
 
     case req@POST -> Root / "validate" =>
       req.decode[Multipart[IO]] { m => {
-        println(s"POST validate")
         val partsMap = PartsMap(m.parts)
-        println(s"POST validate partsMap. $partsMap")
-        for {
-          maybeData <- DataParam.mkData(partsMap)
-          response <- maybeData match {
-            case Left(msg) => BadRequest(s"Error obtaining data: $msg")
-            case Right((rdf, dp)) => for {
-                maybePair <- SchemaParam.mkSchema(partsMap, Some(rdf))
-                response <- maybePair match {
-                  case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
-                  case Right((schema, sp)) => for {
-                    tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
-                    schemaEmbedded = getSchemaEmbedded(sp)
-                    (result, maybeTriggerMode, time) = validate(dp.data.getOrElse(""), dp.dataFormat,
-                      sp.schema, sp.schemaFormat, sp.schemaEngine, tp,
-                      None, None, dp.inference)
-                    r <- validateResponse(result,time,dp,sp,tp)
-                  } yield r
-                }
-          } yield response
+        logger.info(s"POST validate partsMap. $partsMap")
+        val r = for {
+          dataPair <- DataParam.mkData(partsMap)
+          (rdf, dp) = dataPair
+          schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
+          (schema, sp) = schemaPair
+          tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
+        } yield {
+          // val schemaEmbedded = getSchemaEmbedded(sp)
+          val (result, maybeTriggerMode, time) = validate(rdf,dp, schema, sp, tp)
+          validateResponse(result, time, dp, sp, tp)
         }
-      } yield response
+      r.value.unsafeRunSync.fold(e => BadRequest(e), identity)
     }
   }
 
-    case req@GET -> Root / "validate" :?
+  case req@GET -> Root / "validate" :?
       OptExamplesParam(optExamples) +&
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
@@ -320,38 +308,22 @@ object WebService {
         Ok(html.load(optExamples.get))
       } else {
         val baseUri = req.uri
-
-        println(s"BaseURI: $baseUri")
-
-        val eitherData: Either[String, Option[String]] = optData match {
-          case None => optDataURL match {
-            case None => Right(None)
-            case Some(dataURL) => resolveUri(baseUri, dataURL)
-          }
-          case Some(dataStr) => Right(Some(dataStr))
-        }
-
-        val eitherSchema: Either[String, Option[String]] = optSchema match {
-          case None => optSchemaURL match {
-            case None => Right(None)
-            case Some(schemaURL) => resolveUri(baseUri, schemaURL)
-          }
-          case Some(schemaStr) => Right(Some(schemaStr))
-        }
-
-        val optShapeMap = (optShapeMapFirst,optShapeMapAlt) match {
-          case (Some(s1),Some(s2)) if s1 == s2 => {
+        logger.info(s"BaseURI: $baseUri")
+        logger.info(s"Endpoint: $optEndpoint")
+        val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+        val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, optActiveSchemaTab)
+        val optShapeMap = (optShapeMapFirst, optShapeMapAlt) match {
+          case (Some(s1), Some(s2)) if s1 == s2 => {
             Some(s1)
           }
           case (Some(s1), Some(s2)) => {
-            println(s"Two values for shapeMap param, using $s1 and omitting $s2")
+            logger.info(s"Two values for shapeMap param, using $s1 and omitting $s2")
             Some(s1)
           }
-          case (Some(s1),None) => Some(s1)
-          case (None,Some(s2)) => Some(s2)
-          case (None,None) => None
+          case (Some(s1), None) => Some(s1)
+          case (None, Some(s2)) => Some(s2)
+          case (None, None) => None
         }
-
         val tp = TriggerModeParam(
           optTriggerMode,
           optShapeMap,
@@ -362,71 +334,24 @@ object WebService {
           optShapeMapFormat, // TODO: Maybe a more specific param for File format?
           optActiveShapeMapTab
         )
+        logger.info(s"OptSchema: $optSchema")
+        logger.info(s"OptSchemaFormat: $optSchemaFormat")
 
-        println(s"Either schema: $eitherSchema")
-        println(s"OptSchema: $optSchema")
-        println(s"OptSchemaFormat: $optSchemaFormat")
+        val (dataStr, eitherRDF) = dp.getData
 
-        val eitherResult = for {
-          data <- eitherData
+        val eitherResult: Either[String,IO[Response[IO]]] = for {
+          rdf <- eitherRDF
+          (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
           schema <- eitherSchema
         } yield {
-          data.map(validate(_, optDataFormat,
-            schema, optSchemaFormat, optSchemaEngine,
-            tp,
-            optNode, optShape, optInference))
+          val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp)
+          validateResponse(result, time, dp, sp, tp)
         }
-        eitherResult match {
-          case Left(msg) => BadRequest(msg)
-          case Right(result) => {
-            val triggerMode: ValidationTrigger = result.
-              map(_._2.getOrElse(ValidationTrigger.default)).
-              getOrElse(ValidationTrigger.default)
 
-            val shapeMap = triggerMode match {
-              case TargetDeclarations => None
-              case ShapeMapTrigger(sm) => Some(sm.toString)
-            }
-            val dv = DataValue(optData,
-              optDataURL,
-              optDataFormat.getOrElse(defaultDataFormat),
-              availableDataFormats,
-              optInference.getOrElse(defaultInference),
-              availableInferenceEngines,
-              optEndpoint,
-              optActiveDataTab.getOrElse(defaultActiveDataTab)
-            )
-            val sv = SchemaValue(optSchema, optSchemaURL,
-              optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
-              optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
-              optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
-            )
-            val smv = ShapeMapValue(
-              shapeMap, optShapeMapURL,
-              optShapeMapFormat.getOrElse(defaultShapeMapFormat),
-              availableShapeMapFormats,
-              optActiveShapeMapTab.getOrElse(defaultActiveShapeMapTab)
-            )
-            val r = result.map(_._1)
-            val validationReport: Option[Either[String,String]] =
-              r.map(_.validationReport.flatMap(_.serialize("TURTLE")))
-
-            val time : Long = result.map(_._3).getOrElse(0)
-
-            Ok(html.validate(
-              r, time,
-              validationReport,
-              dv,
-              sv,
-              availableTriggerModes,
-              triggerMode.name,
-              smv,
-              optSchemaEmbedded.getOrElse(defaultSchemaEmbedded)
-            ))
-          }
-        }
+        eitherResult.fold(e => BadRequest(s"Error: $e"),identity)
       }
     }
+
     case req@GET -> Root / "query" :?
       OptDataParam(optData) +&
         OptDataURLParam(optDataURL) +&
@@ -459,7 +384,7 @@ object WebService {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap)
+          maybeData <- DataParam.mkData(partsMap).value
           response <- maybeData match {
             case Left(msg) => BadRequest(s"Error obtaining data: $msg")
             case Right((rdf, dp)) => for {
@@ -469,7 +394,7 @@ object WebService {
                 case Right((queryStr, qp)) => {
                   val optQueryStr = qp.query.map(_.str)
                   val result = rdf.queryAsJson(optQueryStr.getOrElse(""))
-                  println(s"Result: ${result}")
+                  logger.info(s"Result: ${result}")
                   val dv = DataValue(
                     dp.data, dp.dataURL,
                     dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
@@ -538,7 +463,7 @@ object WebService {
     val validationReport: Option[Either[String,String]] =
       Some(result.validationReport.flatMap(_.serialize("TURTLE")))
 
-    println(s"Validation report: $validationReport")
+    logger.info(s"Validation report: $validationReport")
 
     Ok(html.validate(Some(result),time,
       validationReport,

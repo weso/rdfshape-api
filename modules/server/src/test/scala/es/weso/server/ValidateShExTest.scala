@@ -10,11 +10,11 @@ import org.http4s.{Query => HQuery}
 import org.scalatest._
 import org.http4s.dsl.io._
 
-class ValidateShEx extends FunSpec with Matchers with EitherValues {
+class ValidateShExTest extends FunSpec with Matchers with EitherValues {
 
   val ip = "0.0.0.0"
   val port = 8080
-  val server = new ShaclexServer(ip, port)
+  val server = new RDFShapeServer(ip, port)
 
   def serve(req: Request[IO]): Response[IO] =
     server.service.orNotFound(req).unsafeRunSync

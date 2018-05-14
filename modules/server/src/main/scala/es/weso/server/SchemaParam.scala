@@ -1,11 +1,14 @@
 package es.weso.server
 
 import Defaults._
+import cats.data.EitherT
 import cats.effect.IO
 import es.weso.rdf.RDFReasoner
 import es.weso.schema.{Schema, Schemas}
+
 import scala.io.Source
 import scala.util.Try
+import org.log4s.getLogger
 
 case class SchemaParam(schema: Option[String],
                        schemaURL: Option[String],
@@ -18,6 +21,8 @@ case class SchemaParam(schema: Option[String],
                        targetSchemaFormat: Option[String],
                        activeSchemaTab: Option[String]
                       ) {
+  private val logger = getLogger
+  
   sealed abstract class SchemaInputType {
     val id: String
   }
@@ -48,7 +53,7 @@ case class SchemaParam(schema: Option[String],
     }
 
   def getSchema(data: Option[RDFReasoner]): (Option[String], Either[String, Schema]) = {
-    println(s"SchemaEmbedded: ${schemaEmbedded}")
+    logger.info(s"SchemaEmbedded: ${schemaEmbedded}")
     schemaEmbedded match {
       case Some(true) => data match {
         case None => (None, Left(s"Schema embedded but no data found"))
@@ -61,10 +66,10 @@ case class SchemaParam(schema: Option[String],
         }
       }
       case _ => {
-        println(s"######## Schema not embedded...Active schema tab: ${activeSchemaTab}")
+        logger.info(s"######## Schema not embedded...Active schema tab: ${activeSchemaTab}")
         parseSchemaTab(activeSchemaTab.getOrElse(defaultActiveSchemaTab)) match {
           case Right(`SchemaUrlType`) => {
-            println(s"######## SchemaUrl: ${schemaURL}")
+            logger.info(s"######## SchemaUrl: ${schemaURL}")
             schemaURL match {
               case None => (None, Left(s"Non value for dataURL"))
               case Some(schemaUrl) => Try {
@@ -95,16 +100,13 @@ case class SchemaParam(schema: Option[String],
             }
           }
           case Right(`SchemaTextAreaType`) => {
-            schema match {
-              case None => (None, Left(s"No value for schema in textArea"))
-              case Some(schemaStr) =>
-                Schemas.fromString(schemaStr,
-                  schemaFormat.getOrElse(defaultSchemaFormat),
-                  schemaEngine.getOrElse(defaultSchemaEngine),
-                  ApiHelper.getBase) match {
-                  case Left(msg) => (Some(schemaStr), Left(msg))
-                  case Right(schema) => (Some(schemaStr), Right(schema))
-                }
+            val schemaStr = schema.getOrElse("")
+            Schemas.fromString(schemaStr,
+              schemaFormat.getOrElse(defaultSchemaFormat),
+              schemaEngine.getOrElse(defaultSchemaEngine),
+              ApiHelper.getBase) match {
+                case Left(msg) => (Some(schemaStr), Left(msg))
+                case Right(schema) => (Some(schemaStr), Right(schema))
             }
           }
           case Right(other) => (None, Left(s"Unknown value for activeSchemaTab: $other"))
@@ -117,20 +119,25 @@ case class SchemaParam(schema: Option[String],
 
 object SchemaParam {
 
+  private val logger = getLogger
+
   private[server] def mkSchema(partsMap: PartsMap,
                                data: Option[RDFReasoner]
-                      ): IO[Either[String, (Schema, SchemaParam)]] = for {
-    sp <- {
-       println(s"PartsMap: $partsMap")
-       mkSchemaParam(partsMap)
+                      ): EitherT[IO, String, (Schema, SchemaParam)] = {
+    val r = for {
+      sp <- {
+        logger.info(s"PartsMap: $partsMap")
+        mkSchemaParam(partsMap)
       }
-  } yield {
-    println(s"SchemaParam: $sp")
-    val (maybeStr, maybeSchema) = sp.getSchema(data)
-    maybeSchema match {
-      case Left(str) => Left(str)
-      case Right(schema) => Right((schema, sp.copy(schema = maybeStr)))
+    } yield {
+      logger.info(s"SchemaParam: $sp")
+      val (maybeStr, maybeSchema) = sp.getSchema(data)
+      maybeSchema match {
+        case Left(str) => Left(str)
+        case Right(schema) => Right((schema, sp.copy(schema = maybeStr)))
+      }
     }
+    EitherT(r)
   }
 
   private[server] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {

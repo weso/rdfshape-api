@@ -1,9 +1,12 @@
 package es.weso.server
 
 import Defaults._
+import cats.data.EitherT
 import cats.effect.IO
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
+import org.log4s.getLogger
+
 
 case class DataParam(data: Option[String],
                      dataURL: Option[String],
@@ -16,6 +19,8 @@ case class DataParam(data: Option[String],
                      targetDataFormat: Option[String],
                      activeDataTab: Option[String]
                     ) {
+  private[this] val logger = getLogger
+  
   sealed abstract class DataInputType {
     val id: String
   }
@@ -33,7 +38,7 @@ case class DataParam(data: Option[String],
   }
 
   def parseDataTab(tab: String): Either[String, DataInputType] = {
-    println(s"parseDataTab: tab = $tab")
+    logger.debug(s"parseDataTab: tab = $tab")
     val inputTypes = List(dataUrlType,dataFileType,dataEndpointType,dataTextAreaType)
     inputTypes.find(_.id == tab) match {
       case Some(x) => Right(x)
@@ -58,15 +63,21 @@ case class DataParam(data: Option[String],
   private def extendWithInference(rdf: RDFReasoner,
                                   optInference: Option[String]
                                  ): Either[String,RDFReasoner] = {
-    println(s"############# Applying inference $optInference")
+    logger.debug(s"############# Applying inference $optInference")
     rdf.applyInference(optInference.getOrElse("None")).fold(
       msg => Left(s"Error applying inference to RDF: $msg"),
       (newRdf: RDFReasoner) => Right(newRdf)
     )
   }
 
+  /**
+    * get RDF data from data parameters
+    * @return a pair where the first value can be Some(string)
+    *         if it has string representation and the second parameter
+    *         is the RDF data
+    */
   def getData: (Option[String], Either[String,RDFReasoner]) = {
-    println(s"ActiveDataTab: $activeDataTab")
+    logger.debug(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case None => {
         if (endpoint.isDefined) Right(dataEndpointType)
@@ -74,7 +85,7 @@ case class DataParam(data: Option[String],
       }
       case Some(a) => parseDataTab(a)
     }
-    println(s"Input type: $inputType")
+    logger.debug(s"Input type: $inputType")
     inputType match {
       case Right(`dataUrlType`) => {
         dataURL match {
@@ -142,17 +153,22 @@ case class DataParam(data: Option[String],
 }
 
 object DataParam {
+  private[this] val logger = getLogger
 
-  private[server] def mkData(partsMap: PartsMap): IO[Either[String, (RDFReasoner, DataParam)]] = for {
-    dp <- mkDataParam(partsMap)
-  } yield {
-    val (maybeStr, maybeData) = dp.getData
-    maybeData match {
-      case Left(str) => Left(str)
-      case Right(data) => Right((data, dp.copy(data = maybeStr)))
+  private[server] def mkData(partsMap: PartsMap
+                            ): EitherT[IO,String,(RDFReasoner,DataParam)] = {
+
+    val r = for {
+      dp <- mkDataParam(partsMap)
+    } yield {
+      val (maybeStr, maybeData) = dp.getData
+      maybeData match {
+        case Left(str) => Left(str)
+        case Right(data) => Right((data, dp.copy(data = maybeStr)))
+      }
     }
+    EitherT(r)
   }
-
 
   private[server] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
     data <- partsMap.optPartValue("data")
@@ -166,13 +182,13 @@ object DataParam {
     targetDataFormat <- partsMap.optPartValue("targetDataFormat")
     activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
   } yield {
-    println(s"<<<***Data: $data")
-    println(s"<<<***Data Format TextArea: $dataFormatTextArea")
-    println(s"<<<***Data Format Url: $dataFormatUrl")
-    println(s"<<<***Data Format File: $dataFormatFile")
-    println(s"<<<***Data URL: $dataURL")
-    println(s"<<<***Endpoint: $endpoint")
-    println(s"<<<***ActiveDataTab: $activeDataTab")
+    logger.debug(s"<<<***Data: $data")
+    logger.debug(s"<<<***Data Format TextArea: $dataFormatTextArea")
+    logger.debug(s"<<<***Data Format Url: $dataFormatUrl")
+    logger.debug(s"<<<***Data Format File: $dataFormatFile")
+    logger.debug(s"<<<***Data URL: $dataURL")
+    logger.debug(s"<<<***Endpoint: $endpoint")
+    logger.debug(s"<<<***ActiveDataTab: $activeDataTab")
     val endpointRegex = "Endpoint: (.+)".r
     val finalEndpoint = endpoint.fold(data match {
       case None => None
@@ -187,7 +203,7 @@ object DataParam {
         else activeDataTab
       case None => activeDataTab
     } */
-    println(s"<<<***Endpoint: $finalEndpoint")
+    logger.debug(s"<<<***Endpoint: $finalEndpoint")
 
     DataParam(data,dataURL,dataFile,finalEndpoint,
       dataFormatTextArea,dataFormatUrl,dataFormatFile,

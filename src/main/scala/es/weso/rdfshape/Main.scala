@@ -26,7 +26,7 @@ object Main extends App with LazyLogging {
     opts.verify()
 
     if (opts.server()) {
-      ShaclexServer.main(args)
+      RDFShapeServer.main(args)
     }
 
     val baseFolder: Path = if (opts.baseFolder.isDefined) {

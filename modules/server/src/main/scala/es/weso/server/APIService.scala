@@ -7,10 +7,10 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s.{HttpService, _}
 import org.http4s.dsl.io._
-import org.http4s.client.blaze.PooledHttp1Client
+import org.http4s.client.blaze._
 import org.http4s.server.staticcontent.ResourceService.Config
-
-import cats.effect._, org.http4s._
+import cats.effect._
+import org.http4s._
 import org.http4s.headers._
 import org.http4s.circe._
 import org.http4s.MediaType._
@@ -92,7 +92,7 @@ object APIService {
       OptDataURLParam(optDataUrl) +&
       DataFormatParam(optDataFormat) => {
       val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-      val httpClient = PooledHttp1Client[IO]()
+      val httpClient = Http1Client[IO]().unsafeRunSync
       optDataUrl match {
         case None => BadRequest(s"Must provide a dataUrl")
         case Some(dataUrl) => {
@@ -114,8 +114,6 @@ object APIService {
           })
         }
       }
-/*
-      } */
     }
 
     case req @ GET -> Root / `api` / "data" / "info" :?
@@ -246,8 +244,6 @@ object APIService {
       SchemaFormatParam(optSchemaFormat) +&
       SchemaEngineParam(optSchemaEngine) +&
       OptTriggerModeParam(optTriggerMode) +&
-      NodeParam(optNode) +&
-      ShapeParam(optShape) +&
       ShapeMapParameter(optShapeMap) +&
       ShapeMapURLParameter(optShapeMapURL) +&
       ShapeMapFileParameter(optShapeMapFile) +&
@@ -264,23 +260,10 @@ object APIService {
         optShapeMapFormat, // TODO: Maybe a more specific param for File format?
         optActiveShapeMapTab
       )
-      val result = validate(data, optDataFormat,
+      val result = validateStr(data, optDataFormat,
         optSchema, optSchemaFormat, optSchemaEngine,
-        tp, optNode, optShape, optInference)
-      val default = Ok(result._1.toJson)
-        // .withContentType(Some(`Content-Type`(`application/json`)))
-      /*              req.headers.get(`Accept`) match {
-                      case Some(ah) => {
-                        logger.info(s"Accept header: $ah")
-                        val hasHTML : Boolean = ah.values.exists(mr => mr.mediaRange.satisfiedBy(`text/html`))
-                        if (hasHTML) {
-                          val htmlStr = validationResult.toHTML
-                          Ok(htmlStr).withContentType(Some(`Content-Type`(`text/html`)))
-                        } else default
-                      }
-                      case None => default
-                    } */
-      default
+        tp, optInference)
+      Ok(result._1.toJson)
     }
 
     // Contents on /swagger are directly mapped to /swagger

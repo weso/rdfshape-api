@@ -2,6 +2,8 @@ package es.weso.server
 
 import cats.effect.IO
 import Defaults._
+import cats.data._
+import cats.implicits._
 import es.weso.rdf.PrefixMap
 import es.weso.shapeMaps.ShapeMap
 
@@ -90,23 +92,27 @@ case class TriggerModeParam(triggerMode: Option[String],
 
 object TriggerModeParam {
 
-  def mkTriggerModeParam(partsMap: PartsMap): IO[TriggerModeParam] = for {
-    optTriggerMode <- partsMap.optPartValue("triggerMode")
-    optShapeMap <- partsMap.optPartValue("shapeMap")
-    optShapeMapURL <- partsMap.optPartValue("shapeMapURL")
-    optShapeMapFile <- partsMap.optPartValue("shapeMapFile")
-    optShapeMapFormatTextArea <- partsMap.optPartValue("shapeMapFormatTextArea")
-    optShapeMapFormatUrl <- partsMap.optPartValue("shapeMapFormatURL")
-    optShapeMapFormatFile <- partsMap.optPartValue("shapeMapFormatFile")
-    optActiveShapeMapTab <- partsMap.optPartValue("shapeMapActiveTab")
-  } yield
-    TriggerModeParam(
-      optTriggerMode,
-      optShapeMap,
-      optShapeMapFormatTextArea,
-      optShapeMapURL,
-      optShapeMapFormatUrl,
-      optShapeMapFile,
-      optShapeMapFormatFile,
-      optActiveShapeMapTab)
+  def mkTriggerModeParam(partsMap: PartsMap): EitherT[IO,String,TriggerModeParam] = {
+    val tp: IO[TriggerModeParam] = for {
+      optTriggerMode <- partsMap.optPartValue("triggerMode")
+      optShapeMap <- partsMap.optPartValue("shapeMap")
+      optShapeMapURL <- partsMap.optPartValue("shapeMapURL")
+      optShapeMapFile <- partsMap.optPartValue("shapeMapFile")
+      optShapeMapFormatTextArea <- partsMap.optPartValue("shapeMapFormatTextArea")
+      optShapeMapFormatUrl <- partsMap.optPartValue("shapeMapFormatURL")
+      optShapeMapFormatFile <- partsMap.optPartValue("shapeMapFormatFile")
+      optActiveShapeMapTab <- partsMap.optPartValue("shapeMapActiveTab")
+    } yield
+      TriggerModeParam(
+        optTriggerMode,
+        optShapeMap,
+        optShapeMapFormatTextArea,
+        optShapeMapURL,
+        optShapeMapFormatUrl,
+        optShapeMapFile,
+        optShapeMapFormatFile,
+        optActiveShapeMapTab)
+    val r: IO[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
+    EitherT(r)
+  }
 }

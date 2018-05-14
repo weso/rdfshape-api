@@ -2,7 +2,7 @@ package es.weso.server
 
 import cats.implicits._
 import cats.effect.IO
-import es.weso.html
+import org.http4s.client.blaze.Http1Client
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
@@ -11,17 +11,16 @@ import es.weso.utils.FileUtils
 import es.weso.rdf.RDFReasoner
 import io.circe._
 import org.http4s._
-import org.http4s.client.blaze.PooledHttp1Client
-import org.http4s.dsl.io.Ok
-import org.http4s.twirl._
-import Http4sUtils._
-import org.http4s.multipart._
 import es.weso.rdf.dot.RDF2Dot
+import org.log4s.getLogger
 
 
 import scala.util.Try
 
 object ApiHelper {
+
+  private val logger = getLogger
+  private val NoTime = 0L
 
   /**
     * Get base URI
@@ -37,21 +36,23 @@ object ApiHelper {
     // TODO: handle timeouts
     Uri.fromString(urlStr).fold(
       fail => {
-        println(s"Error parsing $urlStr")
+        logger.info(s"Error parsing $urlStr")
         Left(fail.message)
       },
       uri => Try {
-        val httpClient = PooledHttp1Client[IO]()
+        val httpClient = Http1Client[IO]().unsafeRunSync
         val resolvedUri = baseUri.resolve(uri)
-        println(s"Resolved: $resolvedUri")
+        logger.info(s"Resolved: $resolvedUri")
         httpClient.expect[String](resolvedUri).unsafeRunSync()
       }.toEither.leftMap(_.getMessage).map(Some(_))
     )
   }
 
-  private[server] def dataConvert(optData: Option[String],
-                  optDataFormat: Option[String],
-                  optTargetDataFormat: Option[String]): Either[String, Option[String]] = optData match {
+  private[server] def dataConvert(
+     optData: Option[String],
+     optDataFormat: Option[String],
+     optTargetDataFormat: Option[String]): Either[String, Option[String]] =
+   optData match {
     case None => Right(None)
     case Some(data) => {
       val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
@@ -68,7 +69,8 @@ object ApiHelper {
                   optSchemaEngine: Option[String],
                   optTargetSchemaFormat: Option[String],
                   optTargetSchemaEngine: Option[String],
-                  base: Option[String]): Either[String, Option[String]] = optSchema match {
+                  base: Option[String]): Either[String, Option[String]] =
+   optSchema match {
     case None => Right(None)
     case Some(schemaStr) => {
       val schemaFormat = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
@@ -80,69 +82,54 @@ object ApiHelper {
     }
   }
 
-  private[server] def validate(data: String,
-               optDataFormat: Option[String],
-               optSchema: Option[String],
-               optSchemaFormat: Option[String],
-               optSchemaEngine: Option[String],
-               tp: TriggerModeParam,
-               optNode: Option[String],
-               optShape: Option[String],
-               // optShapeMap: Option[String],
-               optInference: Option[String]
+  private[server] def validate(rdf: RDFReasoner,
+                               dp:DataParam,
+                               schema: Schema,
+                               sp: SchemaParam,
+                               tp: TriggerModeParam
               ): (Result, Option[ValidationTrigger], Long) = {
-
-    val startTime = System.nanoTime()
-
-    val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-    val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
-    val schemaFormat = optSchema match {
-      case None => dataFormat
-      case Some(_) => optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
-    }
-
-    val schemaStr = optSchema match {
-      case None => data
-      case Some(schema) => schema
-    }
-
+    logger.debug(s"APIHelper: validate")
     val base = Some(FileUtils.currentFolderURL)
+    val triggerMode = tp.triggerMode
+    val (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(rdf.getPrefixMap,schema.pm)
+    ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
+         optShapeMapStr.getOrElse(""),base, None, None,
+         rdf.getPrefixMap, schema.pm) match {
+         case Left(msg) =>
+            err(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg")
+         case Right(trigger) => {
+             val startTime = System.nanoTime()
+             val result = schema.validate(rdf, trigger)
+             val endTime = System.nanoTime()
+             val time: Long = endTime - startTime
+             (result,Some(trigger),time)
+           }
+    }
+  }
 
-    Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base) match {
-      case Left(e) =>
-        (Result.errStr(s"Error reading schema: $e\nschemaFormat: $schemaFormat, schemaEngine: $schemaEngine\nschema:\n$schemaStr"), None, 0)
-      case Right(schema) => {
-        RDFAsJenaModel.fromChars(data, dataFormat, base) match {
-          case Left(e) =>
-            (Result.errStr(s"Error reading rdf data: $e\ndataFormat: $dataFormat\nRDF Data:\n$data"), None, 0)
-          case Right(rdf) => {
-            rdf.applyInference(optInference.getOrElse("None")) match {
-              case Left(msg) => (Result.errStr(s"Error applying inference to RDF: $msg"), None, 0)
-              case Right(newRdf) => {
-                val triggerMode = tp.triggerMode // optTriggerMode.getOrElse(ValidationTrigger.default.name)
-                // val shapeMap = optShapeMap.getOrElse("")
-                val (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(rdf.getPrefixMap,schema.pm)
-                ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
-                  optShapeMapStr.getOrElse(""),
-                  base, optNode, optShape, rdf.getPrefixMap, schema.pm) match {
-                  case Left(msg) => (
-                    Result.errStr(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg"),
-                    None, 0)
-                  case Right(trigger) => {
-                    val result = schema.validate(newRdf, trigger)
-                    val endTime = System.nanoTime()
-                    val time: Long = endTime - startTime
-                    (result,Some(trigger),time)
-                  }
-                }
-              }
-            }
-          }
-        }
+  private[server] def validateStr(data: String,
+                                  optDataFormat: Option[String],
+                                  optSchema: Option[String],
+                                  optSchemaFormat: Option[String],
+                                  optSchemaEngine: Option[String],
+                                  tp: TriggerModeParam,
+                                  optInference: Option[String]
+                                 ): (Result, Option[ValidationTrigger], Long) = {
+    val dp = DataParam(Some(data),None,None,None,optDataFormat,None,None,optInference,None,None)
+    val sp = SchemaParam(optSchema,None,None,optSchemaFormat,None,None,optSchemaEngine,None,None,None)
+    dp.getData._2 match {
+      case Left(s) => err(s)
+      case Right(rdf) => sp.getSchema(Some(rdf))._2 match {
+        case Left(s) => err(s)
+        case Right(schema) => validate(rdf,dp,schema,sp,tp)
       }
     }
   }
 
+  private def err(msg: String) =
+    (Result.errStr(s"Error: $msg"),
+      None, NoTime
+    )
 
   private[server] def query(data: String,
             optDataFormat: Option[String],

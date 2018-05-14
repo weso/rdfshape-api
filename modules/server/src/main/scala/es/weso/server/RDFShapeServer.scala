@@ -17,7 +17,7 @@ import scala.util.Properties.envOrNone
 import cats.implicits._
 import cats.effect.IO
 
-class ShaclexServer(host: String, port: Int) {
+class RDFShapeServer(host: String, port: Int) {
   private val logger = getLogger
   // private val pool = Executors.newCachedThreadPool()
 
@@ -28,7 +28,7 @@ class ShaclexServer(host: String, port: Int) {
 
   val service: HttpService[IO] = routesService.local { req =>
     val path = req.uri.path
-    logger.info(s"Request with path: ${req.remoteAddr.getOrElse("null")} -> ${req.method}: $path")
+    logger.debug(s"Request with path: ${req.remoteAddr.getOrElse("null")} -> ${req.method}: $path")
     req
   }
 
@@ -39,14 +39,15 @@ class ShaclexServer(host: String, port: Int) {
       serve
 }
 
-object ShaclexServer extends StreamApp[IO] {
+object RDFShapeServer extends StreamApp[IO] {
   val ip = "0.0.0.0"
   val port = envOrNone("PORT") map (_.toInt) getOrElse (8080)
+  private[this] val logger = getLogger
 
-  override def stream(args: List[String], 
+  override def stream(args: List[String],
                       requestShutdown: IO[Unit]) = {
-    println(s"Before starting ShaclexServer on port $port and IP $ip")
-    new ShaclexServer(ip, port).build()
+    logger.info(s"Starting ShaclexServer on port $port and IP $ip")
+    new RDFShapeServer(ip, port).build()
   }
 
 }
