@@ -23,6 +23,6 @@
     <!-- for production -->
     <root level="info">
         <appender-ref ref="FILE"/>
-    </root> 
+    </root>
 
 </configuration>
