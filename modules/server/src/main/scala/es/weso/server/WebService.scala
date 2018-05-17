@@ -94,7 +94,10 @@ object WebService {
       InferenceParam(optInference) +&
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) => {
-      RDFAsJenaModel.fromChars(optData.getOrElse(""), optDataFormat.getOrElse(defaultDataFormat)).fold(
+
+      val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+      val (maybeStr, eitherRDF) = dp.getData
+      eitherRDF.fold(
         str => BadRequest(str),
         rdf => {
           val dv = DataValue(optData,
@@ -216,12 +219,20 @@ object WebService {
       SchemaEngineParam(optSchemaEngine) +&
       OptActiveSchemaTabParam(optActiveSchemaTab)
     => {
+      logger.info(s"GET schemaInfo: schema=$optSchema\nschemaURL: $optSchemaURL")
+
+      val sp = SchemaParam(optSchema, optSchemaURL, None,
+        optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine,
+        None, None, optActiveSchemaTab)
+
       val sv = SchemaValue(optSchema, optSchemaURL,
         optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
         optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
         optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
       )
-      getSchema(sv).fold(
+      val (maybeStr, eitherSchema) = sp.getSchema(None)
+
+      eitherSchema.fold(
         e => BadRequest(s"Error obtaining schema: $e"),
         schema => {
          val info = schemaInfo(schema)

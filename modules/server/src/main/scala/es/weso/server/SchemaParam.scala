@@ -52,6 +52,15 @@ case class SchemaParam(schema: Option[String],
       case _ => None
     }
 
+  private def chooseSchemaTab: String = {
+    (schema, schemaURL) match {
+      case (Some(_),None) => SchemaTextAreaType.id
+      case (None,Some(_)) => SchemaUrlType.id
+      case (None,None) => defaultActiveSchemaTab
+      case (Some(_),Some(_)) => defaultActiveSchemaTab
+    }
+  }
+
   def getSchema(data: Option[RDFReasoner]): (Option[String], Either[String, Schema]) = {
     logger.info(s"SchemaEmbedded: ${schemaEmbedded}")
     schemaEmbedded match {
@@ -67,7 +76,7 @@ case class SchemaParam(schema: Option[String],
       }
       case _ => {
         logger.info(s"######## Schema not embedded...Active schema tab: ${activeSchemaTab}")
-        parseSchemaTab(activeSchemaTab.getOrElse(defaultActiveSchemaTab)) match {
+        parseSchemaTab(activeSchemaTab.getOrElse(chooseSchemaTab)) match {
           case Right(`SchemaUrlType`) => {
             logger.info(s"######## SchemaUrl: ${schemaURL}")
             schemaURL match {
