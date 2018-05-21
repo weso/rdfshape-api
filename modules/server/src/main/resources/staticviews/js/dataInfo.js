@@ -29,18 +29,10 @@ function changeTheme(theme) {
 
 $(document).ready(function(){
 
-function resetResult(result) {
-    console.log("Reset result: " + JSON.stringify(result));
-    $("#resultDiv").empty();
-    $("#resultDiv").data("result", result);
-}
-
 function showResult(result) {
     result = $("#resultDiv").data("result");
-    console.log("Show result: " + JSON.stringify(result));
     if(result) {
         console.log("Result.nodesPrefixMap: " + JSON.stringify(result.nodesPrefixMap));
-        var nodesPrefixMap = result.nodesPrefixMap ;
         var tableHead = "<thead><tr>" +
                 "<th data-sortable=\"true\">Name</th>" +
                 "<th data-sortable=\"true\">Value</th>" +
@@ -64,14 +56,7 @@ function showResult(result) {
     }
 }
 
-function getDataFormat(element) {
-    var format = element.options[element.selectedIndex].value;
-    window.alert("Data format of " + element + " format: " + format);
-}
-
   var urlShaclex = getHost();
-  console.log("urlShaclex: " + urlShaclex);
-
     // When loading document get result from data-result attribute and show it
     var result = $("#resultDiv").data("result");
     showResult(result);
@@ -82,7 +67,7 @@ function getDataFormat(element) {
             lineNumbers: true,
             mode: "turtle",
             viewportMargin: Infinity,
-            matchBrackets: true,
+            matchBrackets: true
         });
   }
 
@@ -90,7 +75,7 @@ function getDataFormat(element) {
    var name = $(e.target).attr("href");
    console.log("New tab: " + name); // newly activated tab
    $('#rdfDataActiveTab').val(name);
- })
+ });
 
 
  $("#permalink").click(function(e) {
@@ -114,6 +99,10 @@ function getDataFormat(element) {
           var dataURL = $("#dataURL").val();
           dataPart = "dataURL=" + encodeURIComponent(dataURL) ;
           break;
+      case "#dataEndpoint":
+          var endpoint = $("#inputDataEndpoint").val();
+          dataPart = "endpoint=" + encodeURIComponent(endpoint) ;
+          break;
       default:
           console.log("Unknown value of dataActiveTab:" + dataActiveTab);
           dataFormat = $("#dataFormatTextArea").find(":selected").text();
@@ -125,8 +114,8 @@ function getDataFormat(element) {
       dataPart + "&" +
       "dataFormat=" + encodeURIComponent(dataFormat) +
       "&inference=" + encodeURIComponent(inference) ;
-    var href = urlShaclex + location
-    console.log("NewHRef: " + href)
+    var href = urlShaclex + location;
+    console.log("NewHRef: " + href);
     window.location.assign(href) ;
   });
 

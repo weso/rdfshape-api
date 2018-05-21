@@ -31,12 +31,6 @@ function changeTheme(theme) {
 
 $(document).ready(function(){
 
-function resetResult(result) {
-    console.log("Reset result: " + JSON.stringify(result));
-    $("#resultDiv").empty();
-    $("#resultDiv").data("result", result);
-}
-
 function showNodeQualified(node, prefix) {
  console.log("showQualify node)");
  console.log(node);
@@ -159,6 +153,10 @@ function showResult(result,nodesPrefixMap) {
              var dataURL = $("#dataURL").val();
              dataPart = "dataURL=" + encodeURIComponent(dataURL) ;
              break;
+          case "#dataEndpoint":
+            var endpoint = $("#inputDataEndpoint").val();
+            dataPart = "endpoint=" + encodeURIComponent(endpoint) ;
+            break;
          default:
              console.log("Unknown value of dataActiveTab:" + dataActiveTab);
              dataFormat = $("#dataFormatTextArea").find(":selected").text();
