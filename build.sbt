@@ -24,7 +24,8 @@ scalafmt: {
 }
  */
 
-lazy val shaclexVersion        = "0.0.85"
+lazy val shaclexVersion        = "0.0.87"
+lazy val umlShaclexVersion     = "0.0.02"
 
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
@@ -70,6 +71,7 @@ lazy val scalatags         = "com.lihaoyi"                %% "scalatags"        
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
 lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
 lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
+lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.12"      % umlShaclexVersion
 
 
 // Compiler plugin modules
@@ -115,7 +117,8 @@ lazy val server = project
       http4sCirce,
       http4sTwirl,
       scalatags,
-      selenium
+      selenium,
+      umlShaclex
     )
   )
 

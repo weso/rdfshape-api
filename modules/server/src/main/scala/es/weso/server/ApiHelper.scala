@@ -13,6 +13,7 @@ import io.circe._
 import org.http4s._
 import es.weso.rdf.dot.RDF2Dot
 import org.log4s.getLogger
+import es.weso.uml._
 
 
 import scala.util.Try
@@ -170,10 +171,9 @@ object ApiHelper {
   }
 
   private[server] def schemaInfo(schema:Schema): Json = {
-    val svg: String =
-      schema.serialize("SVG").fold(
-        e => s"Error converting to SVG: $e",
-        identity
+    val svg: String = Schema2UML.schema2UML(schema).fold(
+        e => s"SVG conversion: $e",
+        _.toSVG
       )
     val info = schema.info
     val fields: List[(String,Json)] =
