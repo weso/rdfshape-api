@@ -24,7 +24,11 @@ class RDFShapeServer(host: String, port: Int) {
   logger.info(s"Starting Http4s-blaze example on '$host:$port'")
 
   val routesService: HttpService[IO] =
-    CORS(APIService.apiService <+> WebService.webService)
+    CORS(
+      LinksService.linksService <+>
+      APIService.apiService <+>
+      WebService.webService
+    )
 
   val service: HttpService[IO] = routesService.local { req =>
     val path = req.uri.path

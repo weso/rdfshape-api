@@ -43,7 +43,7 @@
         </div>
         <div class='@{if (dv.activeDataTab=="#dataEndpoint") "tab-pane fade show active" else "tab-pane fade"}'
              id="dataEndpoint" role="tabpanel" aria-labelledby="dataEndpoint-tab">
-            <input type="url" name="endpoint" placeholder="endpoint" value='@{dv.endpoint.getOrElse("")}'>
+            <input type="url" name="endpoint" id="inputDataEndpoint" placeholder="endpoint" value='@{dv.endpoint.getOrElse("")}'>
         </div>
         <input id="rdfDataActiveTab" type="hidden" name="rdfDataActiveTab" value="@{dv.activeDataTab}">
     </div>

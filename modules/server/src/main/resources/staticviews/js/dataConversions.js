@@ -111,6 +111,10 @@ $('.dataPanel a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
              var dataURL = $("#dataURL").val();
              dataPart = "dataURL=" + encodeURIComponent(dataURL) ;
              break;
+         case "#dataEndpoint":
+             var endpoint = $("#inputDataEndpoint").val();
+             dataPart = "endpoint=" + encodeURIComponent(endpoint) ;
+             break;
          default:
              console.log("Unknown value of dataActiveTab:" + dataActiveTab);
              dataFormat = $("#dataFormatTextArea").find(":selected").text();

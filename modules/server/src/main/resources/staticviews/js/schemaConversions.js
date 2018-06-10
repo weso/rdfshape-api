@@ -258,27 +258,40 @@ function prepareShapeMap() {
  $("#permalink").click(function(e) {
   e.preventDefault();
   console.log("click on permalink...");
-  var data = codeMirrorData.getValue();
-  var schema = codeMirrorSchema.getValue();
-  var dataFormat = $("#dataFormat").find(":selected").text();
-  var schemaFormat = $("#schemaFormat").find(":selected").text();
-  var schemaEngine = $("#schemaEngine").find(":selected").text();
-  var triggerMode = $("#triggerMode").find(":selected").text();
-  var inference = $("#inference").find(":selected").text();
-  var shapeMap = codeMirrorShapeMap.getValue(); // prepareShapeMap();
-  var schemaEmbedded = $("#schemaEmbedded").is(":checked");
-  if (schemaEmbedded) {  schema = ""; }
-    console.log("Trigger mode in AJAX query:" + triggerMode);
-    var location = "/validate?" +
-      "data=" + encodeURIComponent(data) +
-      "&dataFormat=" + encodeURIComponent(dataFormat) +
-      "&schema=" + encodeURIComponent(schema) +
-      "&schemaFormat=" + encodeURIComponent(schemaFormat) +
-      "&schemaEngine=" + encodeURIComponent(schemaEngine) +
-      "&triggerMode=" + encodeURIComponent(triggerMode) +
-      "&schemaEmbedded=" + encodeURIComponent(schemaEmbedded) +
-      "&inference=" + encodeURIComponent(inference) +
-      "&shapeMap=" + encodeURIComponent(shapeMap);
+     var schema = codeMirrorSchema.getValue();
+     var schemaFormat = "";
+     var schemaPart = "";
+     var activeSchemaTab = $("#activeSchemaTab").attr("value");
+     switch (activeSchemaTab) {
+         case "#schemaTextArea":
+             schemaFormat = $("#schemaFormatTextArea").find(":selected").text();
+             schemaPart = "schema=" + encodeURIComponent(schema) ;
+             break;
+         case "#schemaFile":
+             schemaFormat = $("#schemaFormatFile").find(":selected").text();
+             schemaPart = "schema=" + encodeURIComponent(schema) ;
+             break;
+         case "#schemaUrl":
+             schemaFormat = $("#schemaFormatUrl").find(":selected").text();
+             var schemaURL = $("#schemaURL").val();
+             schemaPart = "schemaURL=" + encodeURIComponent(schemaURL) ;
+             break;
+         default:
+             console.log("Unknown value of activeSchemaTab:" + activeSchemaTab);
+             schemaFormat = $("#schemaFormatTextArea").find(":selected").text();
+             schemaPart = "schema=" + encodeURIComponent(schema) ;
+             break;
+     }
+    var schemaEngine = $("#schemaEngine").find(":selected").text();
+    var targetSchemaFormat = $("#targetSchemaFormat").find(":selected").text();
+    var targetSchemaEngine = $("#targetSchemaEngine").find(":selected").text();
+    var location = "/schemaConversions?" +
+        schemaPart + "&" +
+        "schemaFormat=" + encodeURIComponent(schemaFormat) + "&" +
+        "&schemaEngine=" + encodeURIComponent(schemaEngine) + "&" +
+        "&targetSchemaFormat" + encodeURIComponent(targetSchemaFormat) + "&" +
+        "&targetSchemaEngine" + encodeURIComponent(targetSchemaEngine)
+    ;
     var href = urlShaclex + location
     console.log("NewHRef: " + href)
     window.location.assign(href) ;
