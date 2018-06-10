@@ -173,7 +173,10 @@ object ApiHelper {
   private[server] def schemaInfo(schema:Schema): Json = {
     val svg: String = Schema2UML.schema2UML(schema).fold(
         e => s"SVG conversion: $e",
-        _.toSVG
+        uml => {
+          println(s"UML converted: $uml")
+          uml.toSVG
+        }
       )
     val info = schema.info
     val fields: List[(String,Json)] =

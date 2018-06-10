@@ -25,7 +25,7 @@ scalafmt: {
  */
 
 lazy val shaclexVersion        = "0.0.87"
-lazy val umlShaclexVersion     = "0.0.02"
+lazy val umlShaclexVersion     = "0.0.04"
 
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
@@ -35,6 +35,7 @@ lazy val http4sVersion         = "0.18.5"
 lazy val jgraphtVersion        = "1.1.0"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.7.2"
+lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
 lazy val scalacticVersion      = "3.0.4"
 lazy val scalaGraphVersion     = "1.11.5"
@@ -43,6 +44,7 @@ lazy val scalatagsVersion      = "0.6.7"
 lazy val scallopVersion        = "3.1.1"
 lazy val seleniumVersion       = "2.35.0"
 lazy val typesafeConfigVersion = "1.3.2"
+
 
 // Compiler plugin dependency versions
 lazy val simulacrumVersion    = "0.11.0"
@@ -62,6 +64,7 @@ lazy val http4sBlazeClient = "org.http4s"                 %% "http4s-blaze-clien
 lazy val http4sCirce       = "org.http4s"                 %% "http4s-circe"        % http4sVersion
 lazy val http4sTwirl       = "org.http4s"                 %% "http4s-twirl"        % http4sVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
+lazy val plantuml          = "net.sourceforge.plantuml"   % "plantuml"             % plantumlVersion
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
 lazy val scalactic         = "org.scalactic"              %% "scalactic"           % scalacticVersion
@@ -72,6 +75,7 @@ lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"     
 lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
 lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
 lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.12"      % umlShaclexVersion
+
 
 
 // Compiler plugin modules
@@ -118,7 +122,8 @@ lazy val server = project
       http4sTwirl,
       scalatags,
       selenium,
-      umlShaclex
+      umlShaclex,
+      plantuml
     )
   )
 
