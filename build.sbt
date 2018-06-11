@@ -24,13 +24,14 @@ scalafmt: {
 }
  */
 
-lazy val shaclexVersion        = "0.0.87"
+lazy val shaclexVersion        = "0.0.88"
 lazy val umlShaclexVersion     = "0.0.04"
 
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
 lazy val commonsTextVersion    = "1.2"
 lazy val circeVersion          = "0.9.0"
+lazy val graphvizJavaVersion   = "0.5.2"
 lazy val http4sVersion         = "0.18.5"
 lazy val jgraphtVersion        = "1.1.0"
 lazy val logbackVersion        = "1.2.3"
@@ -58,6 +59,7 @@ lazy val catsMacros        = "org.typelevel"              %% "cats-macros"      
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
+lazy val graphvizJava      = "guru.nidi"                  % "graphviz-java"       % graphvizJavaVersion
 lazy val http4sDsl         = "org.http4s"                 %% "http4s-dsl"          % http4sVersion
 lazy val http4sBlazeServer = "org.http4s"                 %% "http4s-blaze-server" % http4sVersion
 lazy val http4sBlazeClient = "org.http4s"                 %% "http4s-blaze-client" % http4sVersion
@@ -123,7 +125,8 @@ lazy val server = project
       scalatags,
       selenium,
       umlShaclex,
-      plantuml
+      plantuml,
+      graphvizJava
     )
   )
 

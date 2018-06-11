@@ -6,7 +6,8 @@ case class DataConversionResult(
   data: String,
   dataFormat: String,
   resultFormat: String,
-  result: String) {
+  result: String
+) {
 
   def toHTML: String = {
     val sb = new StringBuilder
