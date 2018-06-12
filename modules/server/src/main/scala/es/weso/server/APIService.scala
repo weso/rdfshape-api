@@ -1,5 +1,7 @@
 package es.weso.server
 
+import java.io.ByteArrayOutputStream
+
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
 import io.circe._
@@ -18,9 +20,11 @@ import org.log4s.getLogger
 import QueryParams._
 import Http4sUtils._
 import ApiHelper._
-import guru.nidi.graphviz.engine.{Format, Graphviz}
+import guru.nidi.graphviz.engine.{Format, Graphviz, Rasterizer}
 import guru.nidi.graphviz.model.{Graph, MutableGraph}
 import guru.nidi.graphviz.parse.Parser
+import javax.imageio.ImageIO
+import javax.xml.bind.DatatypeConverter
 
 import scala.util.Try
 
@@ -168,13 +172,13 @@ object APIService {
       DataParameter(data) +&
       DataFormatParam(optDataFormat) +&
       TargetDataFormatParam(optResultDataFormat) => {
-      dataConvert(data,optDataFormat,optResultDataFormat).fold(
+      DataConverter.dataConvert(data,optDataFormat,optResultDataFormat).fold(
         e => BadRequest(s"Error: $e"),
         result => result.resultFormat match {
           case "SVG" => {
             Ok(result.result).map(_.withContentType(`Content-Type`(`image/svg+xml`)))
           }
-          case "PNG" => Ok(result.result).map(_.withContentType(`Content-Type`(`image/png`)))
+          case "PNG" => Ok(result.result).map(_.withContentType(`Content-Type`(`text/html`)))
           case _ => {
           val default = Ok(result.asJson)
             .map(_.withContentType(`Content-Type`(`application/json`)))
@@ -273,58 +277,7 @@ object APIService {
 
   }
 
-  lazy val dataFormats = RDFAsJenaModel.availableFormats.map(_.toUpperCase)
-  lazy val availableGraphFormats = List(
-    GraphFormat("SVG","application/svg",Format.SVG),
-    GraphFormat("PNG","application/png",Format.PNG),
-    GraphFormat("PS","application/ps",Format.PS)
-  )
-  lazy val availableFormats = availableGraphFormats.map(_.name)
 
-  case class GraphFormat(name: String, mime: String, fmt: Format)
-
-
-  private def dataConvert(data: String,
-                          optDataFormat: Option[String],
-                          optTargetFormat: Option[String]
-                         ): Either[String,DataConversionResult] = {
-    val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-    val targetFormat = optTargetFormat.getOrElse(DataFormats.defaultFormatName)
-    logger.info(s"Converting $data with format $dataFormat to $targetFormat")
-    for {
-      rdf <- RDFAsJenaModel.fromChars(data,dataFormat,None)
-      result <- targetFormat.toUpperCase match {
-        case t if dataFormats.contains(t) => rdf.serialize(t)
-        case t if availableFormats.contains(t) => for {
-          fmt <- getTargetFormat(t)
-          dot <- rdf.serialize("DOT")
-          outstr <- dotConverter(dot,fmt)
-        } yield outstr
-        case _ => Left(s"Unsupported conversion to $targetFormat yet. Available formats: ${rdf.availableSerializeFormats.mkString(",")}")
-      }
-    } yield DataConversionResult(data,dataFormat,targetFormat,result)
-  }
-
-  private[server] def dotConverter(dot: String, targetFormat: Format): Either[String,String] = {
-    logger.info(s"dotConverter to $targetFormat. dot\n$dot")
-    println(s"targetFormat: $targetFormat")
-    Try {
-      val g: MutableGraph = Parser.read(dot)
-      val renderer = Graphviz.fromGraph(g) //.width(200)
-        .render(targetFormat)
-      renderer.toString
-    }.fold(
-      e => Left(e.getMessage),
-      s => Right(s)
-    )
-  }
-
-  private def getTargetFormat(str: String): Either[String,Format] = str.toUpperCase match {
-    case "SVG" => Right(Format.SVG)
-    case "PNG" => Right(Format.PNG)
-    case "PS" => Right(Format.PS)
-    case _ => Left(s"Unsupported format $str")
-  }
 
 
 }

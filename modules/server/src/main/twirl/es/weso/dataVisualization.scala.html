@@ -1,0 +1,26 @@
+@import es.weso.json.JsonTwirl
+@import es.weso.server.DataValue
+@import io.circe._
+
+@(dv: DataValue, targetDataFormat: String)
+<html lang="en">
+<head>
+@head("RDFShape: Data visualization")
+</head>
+<body>
+@navBar()
+<div class="container">
+<h1>Info about RDF Data</h1>
+<form action="/dataVisualization" method="POST" enctype="multipart/form-data" id="info">
+    @dataPanel("info",dv,false)
+    <select id="targetDataFormat" form="info" name="targetDataFormat" >
+        <option value="SVG" @{if (targetDataFormat == "SVG") {"selected"}}>SVG</option>
+        <option value="PNG" @{if (targetDataFormat == "PNG") {"selected"}}>PNG</option>
+    </select>
+    <button type="submit">Data visualization</button>
+</form>
+@otherOptions()
+</div>
+@scripts("dataVisualization")
+</body>
+</html>

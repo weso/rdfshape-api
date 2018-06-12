@@ -16,6 +16,8 @@ import ApiHelper.{query, _}
 import cats.effect.IO._
 import Defaults._
 import ApiHelper._
+import org.http4s.MediaType._
+import org.http4s.headers.`Content-Type`
 // import cats._
 // import cats.data._
 // import cats.implicits._
@@ -129,6 +131,64 @@ object WebService {
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
               Ok(html.dataInfo(dataInfo(rdf),dv))
+            }
+          }
+        } yield response
+      }
+    }
+
+    case req@GET -> Root / "dataVisualization" :?
+      OptDataParam(optData) +&
+        OptDataURLParam(optDataURL) +&
+        DataFormatParam(optDataFormat) +&
+        InferenceParam(optInference) +&
+        OptEndpointParam(optEndpoint) +&
+        OptActiveDataTabParam(optActiveDataTab) +&
+        TargetDataFormatParam(optTargetDataFormat) => {
+
+      val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+      val (maybeStr, eitherRDF) = dp.getData
+      eitherRDF.fold(
+        str => BadRequest(str),
+        rdf => {
+          val dv = DataValue(optData,
+            optDataURL,
+            optDataFormat.getOrElse(defaultDataFormat),
+            availableDataFormats,
+            optInference.getOrElse(defaultInference),
+            availableInferenceEngines,
+            optEndpoint,
+            optActiveDataTab.getOrElse(defaultActiveDataTab)
+          )
+          val targetDataFormat = optTargetDataFormat.getOrElse("SVG")
+          Ok(html.dataVisualization(dv,targetDataFormat))
+        })
+    }
+
+
+    case req@POST -> Root / "dataVisualization" => {
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+        for {
+          maybeData <- DataParam.mkData(partsMap).value
+          response <- maybeData match {
+            case Left(str) => BadRequest (s"Error obtaining data: $str")
+            case Right((rdf,dp)) => {
+              val dv = DataValue(
+                dp.data, dp.dataURL,
+                dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
+                dp.inference.getOrElse(defaultInference), availableInferenceEngines,
+                dp.endpoint,
+                dp.activeDataTab.getOrElse(defaultActiveDataTab)
+              )
+              val targetFormat = dp.targetDataFormat.getOrElse("SVG")
+              DataConverter.rdfConvert(rdf,targetFormat).
+                fold(e => BadRequest(s"Error: $e"),
+                  result => targetFormat match {
+                    case "SVG" => Ok(result).map(_.withContentType(`Content-Type`(`image/svg+xml`)))
+                    case "PNG" => Ok(result).map(_.withContentType(`Content-Type`(`text/html`)))
+                  }
+                )
             }
           }
         } yield response
