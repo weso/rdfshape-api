@@ -1,5 +1,5 @@
 /*
-Viz.js 2.0.0 (Graphviz 2.40.1, Expat 2.2.5, Emscripten 1.37.36)
+Viz.js 2.0.0-pre.4 (Graphviz 2.40.1, Expat 2.2.5, Emscripten 1.37.36)
 Copyright (c) 2014-2018 Michael Daines
 Licensed under MIT license
 
@@ -20,10 +20,23 @@ Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
 http://www.zlib.net/zlib_license.html
 */
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global.Viz = factory());
-}(this, (function () { 'use strict';
+  if (typeof define === "function" && define.amd) {
+    define(['module', 'exports'], factory);
+  } else if (typeof exports !== "undefined") {
+    factory(module, exports);
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod, mod.exports);
+    global.Viz = mod.exports;
+  }
+})(this, function (module, exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
 
   var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
     return typeof obj;
@@ -31,13 +44,27 @@ http://www.zlib.net/zlib_license.html
     return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
   };
 
-  var classCallCheck = function (instance, Constructor) {
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
     }
-  };
+  }
 
-  var createClass = function () {
+  var _createClass = function () {
     function defineProperties(target, props) {
       for (var i = 0; i < props.length; i++) {
         var descriptor = props[i];
@@ -55,27 +82,13 @@ http://www.zlib.net/zlib_license.html
     };
   }();
 
-  var _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
-        }
-      }
-    }
-
-    return target;
-  };
-
   var WorkerWrapper = function () {
-    function WorkerWrapper(worker) {
+    function WorkerWrapper(url) {
       var _this = this;
 
-      classCallCheck(this, WorkerWrapper);
+      _classCallCheck(this, WorkerWrapper);
 
-      this.worker = worker;
+      this.worker = new Worker(url);
       this.listeners = [];
       this.nextId = 0;
 
@@ -89,7 +102,7 @@ http://www.zlib.net/zlib_license.html
       });
     }
 
-    createClass(WorkerWrapper, [{
+    _createClass(WorkerWrapper, [{
       key: 'render',
       value: function render(src, options) {
         var _this2 = this;
@@ -109,27 +122,11 @@ http://www.zlib.net/zlib_license.html
         });
       }
     }]);
+
     return WorkerWrapper;
   }();
 
-  var ModuleWrapper = function ModuleWrapper(module, render) {
-    classCallCheck(this, ModuleWrapper);
-
-    var instance = module();
-    this.render = function (src, options) {
-      return new Promise(function (resolve, reject) {
-        try {
-          resolve(render(instance, src, options));
-        } catch (error) {
-          reject(error);
-        }
-      });
-    };
-  };
-
   // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
-
-
   function b64EncodeUnicode(str) {
     return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (match, p1) {
       return String.fromCharCode('0x' + p1);
@@ -233,30 +230,40 @@ http://www.zlib.net/zlib_license.html
     });
   }
 
+  function wrapRender(fn) {
+    return {
+      render: function render(src, options) {
+        return new Promise(function (resolve, reject) {
+          try {
+            resolve(fn(src, options));
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+    };
+  }
+
   var Viz = function () {
     function Viz() {
       var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          workerURL = _ref3.workerURL,
           worker = _ref3.worker,
-          Module = _ref3.Module,
           render = _ref3.render;
 
-      classCallCheck(this, Viz);
+      _classCallCheck(this, Viz);
 
-      if (typeof workerURL !== 'undefined') {
-        this.wrapper = new WorkerWrapper(new Worker(workerURL));
-      } else if (typeof worker !== 'undefined') {
+      if (typeof worker !== 'undefined') {
         this.wrapper = new WorkerWrapper(worker);
-      } else if (typeof Module !== 'undefined' && typeof render !== 'undefined') {
-        this.wrapper = new ModuleWrapper(Module, render);
-      } else if (typeof Viz.Module !== 'undefined' && typeof Viz.render !== 'undefined') {
-        this.wrapper = new ModuleWrapper(Viz.Module, Viz.render);
+      } else if (typeof render !== 'undefined') {
+        this.wrapper = wrapRender(render);
+      } else if (typeof Viz.render !== 'undefined') {
+        this.wrapper = wrapRender(Viz.render);
       } else {
-        throw new Error('Must specify workerURL or worker option, Module and render options, or include one of full.render.js or lite.render.js after viz.js.');
+        throw new Error('Must specify worker or render options, or include one of full.module or lite.module after viz.js.');
       }
     }
 
-    createClass(Viz, [{
+    _createClass(Viz, [{
       key: 'renderString',
       value: function renderString(src) {
         var _ref4 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
@@ -323,9 +330,10 @@ http://www.zlib.net/zlib_license.html
         });
       }
     }]);
+
     return Viz;
   }();
 
-  return Viz;
-
-})));
+  exports.default = Viz;
+  module.exports = exports['default'];
+});

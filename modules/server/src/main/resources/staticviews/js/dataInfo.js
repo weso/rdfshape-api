@@ -36,7 +36,7 @@ function showDot(dot, idName) {
                 $("#graph").empty();
                 console.log("Showing SVG");
                 var v = new Viz(); // {workerUrl: 'vizjs/full.render.js'});
-                var opts = { engine: "dot" };
+                var opts = { engine: "twopi" };
                 v.renderSVGElement(dot, opts).then(function(svg) {
                     console.log(svg);
                     var graph = $("<svg/>").append(svg);

@@ -37,7 +37,7 @@
     </style>
 
     <script src="vizjs/viz.js"></script>
-    <script src="vizjs/lite.module"></script>
+    <script src="vizjs/full.render.js"></script>
 </head>
 <body>
 
@@ -123,34 +123,19 @@
     "foaf" : "http://xmlns.com/foaf/0.1/"
   }
 }'></div>
-    <div class="dropdown">
-        <button class="btn btn-info btn-sm dropdown-toggle"
-                type="button" id="GraphFormatMenu"
-                data-toggle="dropdown"
-                aria-haspopup="true" aria-expanded="false">
-            Visualize RDF as...
-        </button>
-        <div class="dropdown-menu" aria-labelledby="ImageFormat">
-            <a class="dropdown-item" href="#">SVG</a>
-            <a class="dropdown-item" href="#">Image</a>
-        </div>
-    </div>
-    <div class="dropdown">
-        <button class="btn btn-info btn-sm dropdown-toggle"
-                type="button" id="GraphEngine"
-                data-toggle="dropdown"
-                aria-haspopup="true" aria-expanded="false">
-            Engine
-        </button>
-        <div class="dropdown-menu" aria-labelledby="ImageFormat">
-            <a class="dropdown-item" href="#">dot</a>
-            <a class="dropdown-item" href="#">Circo</a>
-            <a class="dropdown-item" href="#">fdp</a>
-            <a class="dropdown-item" href="#">neato</a>
-            <a class="dropdown-item" href="#">osage</a>
-            <a class="dropdown-item" href="#">twopi</a>
-        </div>
-    </div>
+
+    <select class="custom-select" aria-label="Format">
+        <option value="SVG" selected>SVG</option>
+        <option value="PNG">PNG</option>
+     </select>
+    <select class="custom-select" aria-label="Engine">
+        <option value="dot" selected>dot</option>
+        <option value="circo">circo</option>
+        <option value="neato">neato</option>
+        <option value="fdp">fdp</option>
+        <option value="osage">osage</option>
+        <option value="twopi">twopi</option>
+    </select>
     <form action="/dataInfo" method="POST" enctype="multipart/form-data" id="info">
 
         <fieldset class='dataPanel'>
