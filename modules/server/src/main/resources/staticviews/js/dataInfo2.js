@@ -29,28 +29,32 @@ function changeTheme(theme) {
 
 function showDot(dot, idName) {
     $(idName).append("<div id='graph'></div>");
-    var format=$("#SelectFormat option:selected").text();
-    console.log("Selected format " + format);
-    var engine=$("#SelectEngine option:selected").text();
-    console.log("Selected engine " + engine);
-    $("#graph").empty();
-    var v = new Viz();
-    var opts = { engine: engine };
-    switch (format) {
-       case "SVG":
-           v.renderSVGElement(dot, opts).then(function(svg) {
-           console.log(svg);
-           var graph = $("<svg/>").append(svg);
-           $("#graph").append(graph);
-          });
-          break;
-       case "PNG":
-         v.renderImageElement(dot,opts).then(function(element) {
-          $("#graph").append(element);
-         });
-         break;
-    }
-    v.render;
+
+    $('.dropdown-menu a').click(function(e){
+        switch (e.target.text) {
+            case "SVG":
+                $("#graph").empty();
+                console.log("Showing SVG");
+                var v = new Viz(); // {workerUrl: 'vizjs/full.render.js'});
+                var opts = { engine: "dot" };
+                v.renderSVGElement(dot, opts).then(function(svg) {
+                    console.log(svg);
+                    var graph = $("<svg/>").append(svg);
+                    $("#graph").append(graph);
+                });
+                v.render;
+                break;
+            case "Image":
+                console.log("Showing PNG");
+                $("#graph").empty();
+                var v = new Viz;
+                v.renderImageElement(dot).then(function(element) {
+                        $("#graph").append(element);
+                    }
+                );
+                v.render;
+        }
+    });
 }
 
 $(document).ready(function(){
@@ -73,12 +77,6 @@ function showResult(result) {
         var details = $("<details/>").append(pre);
         $("#resultDiv").append(details);
         showDot(result.dot, "#resultDiv");
-        $("#SelectFormat").change(function() {
-            showDot(result.dot, "#resultDiv");
-        });
-        $("#SelectEngine").change(function() {
-            showDot(result.dot, "#resultDiv");
-        });
     }
 }
 
@@ -102,7 +100,6 @@ function showResult(result) {
    console.log("New tab: " + name); // newly activated tab
    $('#rdfDataActiveTab').val(name);
  });
-
 
 
  $("#permalink").click(function(e) {
