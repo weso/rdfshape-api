@@ -124,11 +124,14 @@
   }
 }'></div>
 
-    <select class="custom-select" aria-label="Format">
+    <fieldset>
+    <label>Format</label>
+    <select class="custom-select" aria-label="Format" name="Format" id="SelectFormat">
         <option value="SVG" selected>SVG</option>
         <option value="PNG">PNG</option>
      </select>
-    <select class="custom-select" aria-label="Engine">
+    <label>Engine</label>
+    <select class="custom-select" aria-label="Engine" name="Engine" id="SelectEngine">
         <option value="dot" selected>dot</option>
         <option value="circo">circo</option>
         <option value="neato">neato</option>
@@ -136,6 +139,7 @@
         <option value="osage">osage</option>
         <option value="twopi">twopi</option>
     </select>
+    </fieldset>
     <form action="/dataInfo" method="POST" enctype="multipart/form-data" id="info">
 
         <fieldset class='dataPanel'>
