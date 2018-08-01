@@ -19,8 +19,18 @@ CodeMirror.defineMode("shex", function(config) {
     return new RegExp("^(?:" + words.join("|") + ")$", "i");
   }
   var ops = wordRegexp(["and", "or", "not"]);
-  var keywords = wordRegexp(["base", "prefix", "iri", "literal", "nonLiteral", "bNode",
-                             "true", "false","a"]);
+  var keywords = wordRegexp([
+      "base",
+      "prefix",
+      "iri",
+      "literal",
+      "nonLiteral",
+      "bNode",
+      "true",
+      "false",
+      "a",
+      "extends",
+      "restricts"]);
   var operatorChars = /[*+\-<>=&|]/;
 
   function tokenBase(stream, state) {

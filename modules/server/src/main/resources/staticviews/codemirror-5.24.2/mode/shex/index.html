@@ -1,6 +1,6 @@
 <!doctype html>
 
-<title>CodeMirror: Turtle mode</title>
+<title>CodeMirror: ShEx mode</title>
 <meta charset="utf-8"/>
 <link rel=stylesheet href="../../doc/docs.css">
 
@@ -23,24 +23,26 @@
 </div>
 
 <article>
-<h2>Turtle mode</h2>
+<h2>ShEx mode</h2>
 <form><textarea id="code" name="code">
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+PREFIX :       <http://example.org/>
+PREFIX schema: <http://schema.org/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
 
-<http://purl.org/net/bsletten> 
-    a foaf:Person;
-    foaf:interest <http://www.w3.org/2000/01/sw/>;
-    foaf:based_near [
-        geo:lat "34.0736111" ;
-        geo:lon "-118.3994444"
-   ]
+:User IRI {
+ schema:name          xsd:string  ;
+ schema:birthDate     xsd:date?  ;
+ schema:gender        [ schema:Male schema:Female ];
+ schema:knows         @:User*
+}
 
+:Student extends :User {
+  :enrolledIn xsd:string
+}
 </textarea></form>
     <script>
       var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-        mode: "text/turtle",
+        mode: "text/shex",
         matchBrackets: true
       });
     </script>
