@@ -288,9 +288,9 @@ function prepareShapeMap() {
     var location = "/schemaConversions?" +
         schemaPart + "&" +
         "schemaFormat=" + encodeURIComponent(schemaFormat) + "&" +
-        "&schemaEngine=" + encodeURIComponent(schemaEngine) + "&" +
-        "&targetSchemaFormat" + encodeURIComponent(targetSchemaFormat) + "&" +
-        "&targetSchemaEngine" + encodeURIComponent(targetSchemaEngine)
+        "schemaEngine=" + encodeURIComponent(schemaEngine) + "&" +
+        "targetSchemaFormat=" + encodeURIComponent(targetSchemaFormat) + "&" +
+        "targetSchemaEngine=" + encodeURIComponent(targetSchemaEngine)
     ;
     var href = urlShaclex + location
     console.log("NewHRef: " + href)
