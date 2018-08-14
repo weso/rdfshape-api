@@ -18,6 +18,7 @@ case class SchemaParam(schema: Option[String],
                        schemaFormatFile: Option[String],
                        schemaEngine: Option[String],
                        schemaEmbedded: Option[Boolean],
+                       targetSchemaEngine: Option[String],
                        targetSchemaFormat: Option[String],
                        activeSchemaTab: Option[String]
                       ) {
@@ -157,12 +158,18 @@ object SchemaParam {
     schemaFormatUrl <- partsMap.optPartValue("schemaFormatUrl")
     schemaFormatFile <- partsMap.optPartValue("schemaFormatFile")
     schemaEngine <- partsMap.optPartValue("schemaEngine")
+    targetSchemaEngine <- partsMap.optPartValue("targetSchemaEngine")
     targetSchemaFormat <- partsMap.optPartValue("targetSchemaFormat")
     activeSchemaTab <- partsMap.optPartValue("activeSchemaTab")
     schemaEmbedded <- partsMap.optPartValueBoolean("schemaEmbedded")
   } yield
     SchemaParam(schema, schemaURL, schemaFile,
       schemaFormatTextArea, schemaFormatUrl, schemaFormatFile,
-      schemaEngine, schemaEmbedded, targetSchemaFormat, activeSchemaTab)
+      schemaEngine, schemaEmbedded,
+      targetSchemaEngine, targetSchemaFormat, activeSchemaTab
+    )
+
+  private[server] def empty: SchemaParam =
+    SchemaParam(None,None,None,None,None,None,None,None,None,None,None)
 
 }

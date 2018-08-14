@@ -1,6 +1,5 @@
 package es.weso.server
 
-import es.weso.rdf.jena._
 import es.weso.schema._
 import org.http4s.HttpService
 import org.http4s.dsl.io._
@@ -174,13 +173,13 @@ object WebService {
           response <- maybeData match {
             case Left(str) => BadRequest (s"Error obtaining data: $str")
             case Right((rdf,dp)) => {
-              val dv = DataValue(
+/*              val dv = DataValue(
                 dp.data, dp.dataURL,
                 dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
                 dp.inference.getOrElse(defaultInference), availableInferenceEngines,
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
-              )
+              ) */
               val targetFormat = dp.targetDataFormat.getOrElse("SVG")
               DataConverter.rdfConvert(rdf,targetFormat).
                 fold(e => BadRequest(s"Error: $e"),
@@ -283,7 +282,7 @@ object WebService {
 
       val sp = SchemaParam(optSchema, optSchemaURL, None,
         optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine,
-        None, None, optActiveSchemaTab)
+        None, None, None, optActiveSchemaTab)
 
       val sv = SchemaValue(optSchema, optSchemaURL,
         optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
@@ -382,7 +381,7 @@ object WebService {
         logger.info(s"BaseURI: $baseUri")
         logger.info(s"Endpoint: $optEndpoint")
         val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
-        val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, optActiveSchemaTab)
+        val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, None, optActiveSchemaTab)
         val optShapeMap = (optShapeMapFirst, optShapeMapAlt) match {
           case (Some(s1), Some(s2)) if s1 == s2 => {
             Some(s1)

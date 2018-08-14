@@ -211,4 +211,6 @@ object DataParam {
     )
   }
 
+  private[server] def empty: DataParam =
+    DataParam(None,None,None,None,None,None,None,None,None,None)
 }

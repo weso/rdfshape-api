@@ -78,7 +78,7 @@ object ApiHelper {
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       for {
         schema <- Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
-        result <- schema.convert(optTargetSchemaFormat,optSchemaEngine)
+        result <- schema.convert(optTargetSchemaFormat,optTargetSchemaEngine)
       } yield Some(result)
     }
   }
@@ -116,15 +116,26 @@ object ApiHelper {
                                   tp: TriggerModeParam,
                                   optInference: Option[String]
                                  ): (Result, Option[ValidationTrigger], Long) = {
-    val dp = DataParam(Some(data),None,None,None,optDataFormat,None,None,optInference,None,None)
-    val sp = SchemaParam(optSchema,None,None,optSchemaFormat,None,None,optSchemaEngine,None,None,None)
-    dp.getData._2 match {
-      case Left(s) => err(s)
-      case Right(rdf) => sp.getSchema(Some(rdf))._2 match {
-        case Left(s) => err(s)
-        case Right(schema) => validate(rdf,dp,schema,sp,tp)
-      }
-    }
+    val dp = DataParam.empty.copy(
+      data = Some(data),
+      dataFormatTextarea = optDataFormat,
+      inference = optInference
+    )
+    val sp = SchemaParam.empty.copy(
+      schema = optSchema,
+      schemaFormatTextArea = optSchemaFormat,
+      schemaEngine = optSchemaEngine
+    )
+    val (_,eitherRDF) = dp.getData
+    val result = for {
+     rdf <- eitherRDF
+     (_,eitherSchema) = sp.getSchema(Some(rdf))
+     schema <- eitherSchema
+    } yield (rdf,schema)
+
+    result.fold(e => err(e), { case (rdf,schema) =>
+      validate(rdf,dp,schema,sp,tp)}
+    )
   }
 
   private def err(msg: String) =
