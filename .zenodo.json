@@ -1,5 +1,5 @@
 {
-    "description": "SHACL/ShEx implementation", 
+    "description": "RDFShape implementation", 
     "license": "other-open", 
     "title": "RDFSHape: Online demo implementation of ShEx and SHACL", 
     "version": "v0.0.70", 
