@@ -24,8 +24,8 @@ scalafmt: {
 }
  */
 
-lazy val shaclexVersion        = "0.1.04"
-lazy val umlShaclexVersion     = "0.0.04"
+// lazy val shaclexVersion        = "0.1.04"
+lazy val umlShaclexVersion     = "0.0.05"
 
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
@@ -74,8 +74,8 @@ lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"       
 lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
-lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
-lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
+//lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
+//lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
 lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.12"      % umlShaclexVersion
 
 
@@ -115,8 +115,8 @@ lazy val server = project
   .settings(commonSettings, publishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      schema,
-      srdfJena,
+//      schema,
+//      srdfJena,
       http4sDsl,
       http4sBlazeServer,
       http4sBlazeClient,
