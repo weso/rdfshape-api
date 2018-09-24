@@ -185,7 +185,7 @@ object ApiHelper {
     val svg: String = Schema2UML.schema2UML(schema).fold(
         e => s"SVG conversion: $e",
         uml => {
-          println(s"UML converted: $uml")
+          // println(s"UML converted: $uml")
           uml.toSVG
         }
       )
