@@ -25,7 +25,7 @@ scalafmt: {
  */
 
 // lazy val shaclexVersion        = "0.1.04"
-lazy val umlShaclexVersion     = "0.0.05"
+lazy val umlShaclexVersion     = "0.0.06"
 
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
