@@ -1,6 +1,7 @@
 package es.weso.server
 
 import es.weso.rdf.jena.RDFAsJenaModel
+import es.weso.rdf.nodes.IRI
 import es.weso.schema.{DataFormats, Schemas}
 import es.weso.shapeMaps.ShapeMap
 import es.weso.schema._
@@ -24,5 +25,6 @@ object Defaults {
   val defaultShapeMapFormat = ShapeMap.defaultFormat
   val availableShapeMapFormats = ShapeMap.formats
   val defaultActiveShapeMapTab = "#shapeMapTextArea"
+  val defaultShapeLabel = IRI("Shape")
 
 }

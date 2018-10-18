@@ -12,9 +12,11 @@ import es.weso.rdf.RDFReasoner
 import io.circe._
 import org.http4s._
 import es.weso.rdf.dot.RDF2Dot
+import es.weso.rdf.nodes.IRI
 import org.log4s.getLogger
 import es.weso.uml._
-
+import es.weso.schemaInfer._
+import es.weso.shapeMaps.NodeSelector
 
 import scala.util.Try
 
@@ -160,7 +162,33 @@ object ApiHelper {
         } yield json
       }
     }
+  }
 
+  private[server] def shapeInfer(data: String,
+                            optDataFormat: Option[String],
+                            optNodeSelector: Option[String],
+                            optInference: Option[String],
+                            optEngine: Option[String],
+                            optSchemaFormat: Option[String],
+                            optLabelName: Option[String]
+                           ): Either[String, Json] = {
+   val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
+   val base = Some(FileUtils.currentFolderURL)
+   val engine = optEngine.getOrElse(defaultSchemaEngine)
+   val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
+   for {
+    basicRdf <- RDFAsJenaModel.fromChars(data, dataFormat, base)
+    rdf <- basicRdf.applyInference(optInference.getOrElse("None"))
+    selector <- NodeSelector.fromString(optNodeSelector.getOrElse(""), None, rdf.getPrefixMap())
+    schemaInfer <- SchemaInfer.infer(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
+    str <- schemaInfer.serialize(schemaFormat)
+   } yield Json.fromFields(
+     List(
+       ("inferedShape", Json.fromString(str)),
+       ("format", Json.fromString(schemaFormat)),
+       ("engine", Json.fromString(engine))
+     )
+   )
   }
 
   private[server] def dataInfo(rdf: RDFReasoner): Option[Json] = {
@@ -202,7 +230,6 @@ object ApiHelper {
     Json.fromFields(fields)
   }
 
-
   private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
     sp.schemaEmbedded match {
       case Some(true) => true
@@ -210,6 +237,5 @@ object ApiHelper {
       case None => defaultSchemaEmbedded
     }
   }
-
 
 }

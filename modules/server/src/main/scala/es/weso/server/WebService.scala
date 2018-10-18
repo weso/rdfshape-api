@@ -487,6 +487,77 @@ object WebService {
       }
     }
 
+    case req@GET -> Root / "shapeInfer" :?
+      OptDataParam(optData) +&
+      OptDataURLParam(optDataURL) +&
+      DataFormatParam(optDataFormat) +&
+      OptEndpointParam(optEndpoint) +&
+      InferenceParam(optInference) +&
+      SchemaEngineParam(optSchemaEngineParam) +&
+      SchemaFormatParam(optSchemaFormatParam) +&
+      OptActiveDataTabParam(optActiveDataTab) +&
+      OptNodeSelectorParam(optNodeSelectorParam)
+    => {
+      val dv = DataValue(optData,
+        optDataURL,
+        optDataFormat.getOrElse(defaultDataFormat),
+        availableDataFormats,
+        optInference.getOrElse(defaultInference),
+        availableInferenceEngines,
+        optEndpoint,
+        optActiveDataTab.getOrElse(defaultActiveDataTab)
+      )
+      val result = ApiHelper.shapeInfer(dv.data.getOrElse(""),
+        Some(dv.currentDataFormat), optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None)
+      Ok(html.shapeInfer(
+        result.toOption,
+        dv,
+        availableSchemaEngines,
+        optSchemaEngineParam.getOrElse(defaultSchemaEngine),
+        availableSchemaFormats,
+        optSchemaFormatParam.getOrElse(defaultSchemaFormat),
+        optNodeSelectorParam.getOrElse(""),
+        "Shape"
+      ))
+    }
+
+    case req@POST -> Root / "shapeInfer" => {
+      req.decode[Multipart[IO]] { m => {
+        val partsMap = PartsMap(m.parts)
+        for {
+          maybeData <- DataParam.mkData(partsMap).value
+          optNodeSelector <- partsMap.optPartValue("nodeSelector")
+          optSchemaEngine <- partsMap.optPartValue("schemaEngine")
+          optSchemaFormat <- partsMap.optPartValue("schemaFormat")
+          response <- maybeData match {
+            case Left(msg) => BadRequest(s"Error obtaining data: $msg")
+            case Right((rdf, dp)) => {
+              val dv = DataValue(
+                    dp.data, dp.dataURL,
+                    dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
+                    dp.inference.getOrElse(defaultInference), availableInferenceEngines,
+                    dp.endpoint,
+                    dp.activeDataTab.getOrElse(defaultActiveDataTab)
+              )
+              val result = ApiHelper.shapeInfer(dv.data.getOrElse(""),
+                Some(dv.currentDataFormat), optNodeSelector, dp.inference, optSchemaEngine, optSchemaFormat, None)
+              Ok(html.shapeInfer(
+                result.toOption,
+                dv,
+                availableSchemaEngines,
+                optSchemaEngine.getOrElse(defaultSchemaEngine),
+                availableSchemaFormats,
+                optSchemaFormat.getOrElse(defaultSchemaFormat),
+                optNodeSelector.getOrElse(""),
+                "Shape"
+              ))
+             }
+           }
+        } yield response
+       }
+      }
+    }
+
     // Contents on /static are mapped to /static
     case r@GET -> _ if r.pathInfo.startsWith("/static") => static(r).getOrElseF(NotFound())
 

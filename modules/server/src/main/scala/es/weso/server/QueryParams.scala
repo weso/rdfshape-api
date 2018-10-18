@@ -12,6 +12,7 @@ object QueryParams {
   object OptSchemaParam extends OptionalQueryParamDecoderMatcher[String]("schema")
   object SchemaURLParam extends OptionalQueryParamDecoderMatcher[String]("schemaURL")
   object SchemaFormatParam extends OptionalQueryParamDecoderMatcher[String]("schemaFormat")
+  object OptNodeSelectorParam extends OptionalQueryParamDecoderMatcher[String]("nodeSelector")
   object SchemaEngineParam extends OptionalQueryParamDecoderMatcher[String]("schemaEngine")
   object TargetSchemaFormatParam extends OptionalQueryParamDecoderMatcher[String]("targetSchemaFormat")
   object TargetSchemaEngineParam extends OptionalQueryParamDecoderMatcher[String]("targetSchemaEngine")

@@ -1,0 +1,35 @@
+@import es.weso.json.JsonTwirl
+@import es.weso.server.DataValue
+@import io.circe._
+
+@(result: Option[Json],
+  dv: DataValue,
+  engines: List[String],
+  currentEngine: String,
+  schemaFormats: List[String],
+  schemaFormat: String,
+  nodeSelector: String,
+  label: String,
+ )
+<html lang="en">
+<head>
+@head("RDFShape: Infer shape from Data")
+</head>
+<body>
+@navBar()
+<div class="container">
+<h1>Shape inference from data</h1>
+<div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.getOrElse(Json.Null)))}'></div>
+
+<form action="/shapeInfer" method="POST" enctype="multipart/form-data" id="info">
+    @selectSchemaEngine("shapeInfer", engines, currentEngine)
+    @selectSchemaFormat("shapeInfer","TextArea",schemaFormats,schemaFormat)
+    <textarea id="nodeSelector" placeHolder="Node selector" name="nodeSelector">@{nodeSelector}</textarea>
+    @dataPanel("shapeInfer",dv,false)
+    <button type="submit">Infer shape</button>
+</form>
+@otherOptions()
+</div>
+@scripts("shapeInfer")
+</body>
+</html>
