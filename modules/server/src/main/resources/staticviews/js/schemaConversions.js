@@ -94,18 +94,18 @@ function showResult(result) {
     result = $("#resultDiv").data("result");
     console.log("Show result: " + JSON.stringify(result));
     if(result) {
-        console.log("Result.nodesPrefixMap: " + JSON.stringify(result.nodesPrefixMap));
-        var nodesPrefixMap = result.nodesPrefixMap ;
-        var shapesPrefixMap = result.shapesPrefixMap ;
-        console.log("nodesPrefixMap: " + JSON.stringify(nodesPrefixMap));
-        console.log("shapesPrefixMap: " + JSON.stringify(shapesPrefixMap));
-        if (result.isValid || result.valid) {
+//        console.log("Result.nodesPrefixMap: " + JSON.stringify(result.nodesPrefixMap));
+//        var nodesPrefixMap = result.nodesPrefixMap ;
+//        var shapesPrefixMap = result.shapesPrefixMap ;
+//        console.log("nodesPrefixMap: " + JSON.stringify(nodesPrefixMap));
+//        console.log("shapesPrefixMap: " + JSON.stringify(shapesPrefixMap));
+/*        if (result.isValid || result.valid) {
             $("#resultDiv").removeClass("notValid").addClass("valid");
             showShapeMap(result.shapeMap,nodesPrefixMap,shapesPrefixMap);
         } else {
             $("#resultDiv").removeClass("valid").addClass("notValid");
             $("#resultDiv").append($("<p>").text(result.message));
-        }
+        } */
         var pre = $("<pre/>").text(JSON.stringify(result,undefined,2));
         var details = $("<details/>").append(pre);
         $("#resultDiv").append(details);
@@ -129,7 +129,7 @@ function showShape(status,shape,shapesPrefixMap) {
         "</code></td>" ;
 }
 
-function showShapeMap(shapeMap,nodesPrefixMap, shapesPrefixMap) {
+/*function showShapeMap(shapeMap,nodesPrefixMap, shapesPrefixMap) {
     var tableHead = "<thead><tr>" +
         "<th data-sortable=\"true\">Node</th>" +
         "<th data-sortable=\"true\">Shape</th>" +
@@ -149,6 +149,7 @@ function showShapeMap(shapeMap,nodesPrefixMap, shapesPrefixMap) {
         tableBody +
         "</table>");
 }
+*/
 
 function showErrors(errors) {
     if (errors.length > 0) {

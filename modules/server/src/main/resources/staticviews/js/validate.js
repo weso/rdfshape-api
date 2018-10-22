@@ -349,17 +349,17 @@ $("#permalink").click(function(e) {
   if (schemaEmbedded) {  schema = ""; }
 
   var location = "/validate?" +
-      dataPart + "&" +
-      "dataFormat=" + encodeURIComponent(dataFormat) + "&" +
-      schemaPart + "&" +
-      "schemaFormat=" + encodeURIComponent(schemaFormat) + "&" +
-      "schemaEngine=" + encodeURIComponent(schemaEngine) + "&" +
-      "triggerMode=" + encodeURIComponent(triggerMode) + "&" +
-      "schemaEmbedded=" + encodeURIComponent(schemaEmbedded) + "&" +
-      "inference=" + encodeURIComponent(inference) + "&" +
-      "activeDataTab=" + encodeURIComponent(dataActiveTab) + "&" +
-      "activeSchemaTab=" + encodeURIComponent(activeSchemaTab) + "&" +
-      "activeShapeMapTab=" + encodeURIComponent(shapeMapActiveTab) + "&" +
+      dataPart +
+      "&dataFormat=" + encodeURIComponent(dataFormat) + "&" +
+      schemaPart +
+      "&schemaFormat=" + encodeURIComponent(schemaFormat) +
+      "&schemaEngine=" + encodeURIComponent(schemaEngine) +
+      "&triggerMode=" + encodeURIComponent(triggerMode) +
+      "&schemaEmbedded=" + encodeURIComponent(schemaEmbedded) +
+      "&inference=" + encodeURIComponent(inference) +
+      "&activeDataTab=" + encodeURIComponent(dataActiveTab) +
+      "&activeSchemaTab=" + encodeURIComponent(activeSchemaTab) +
+      "&activeShapeMapTab=" + encodeURIComponent(shapeMapActiveTab) + "&" +
       shapeMapPart ;
     var href = urlShaclex + location
     console.log("NewHRef: " + href)

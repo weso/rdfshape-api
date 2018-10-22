@@ -15,6 +15,7 @@ import ApiHelper.{query, _}
 import cats.effect.IO._
 import Defaults._
 import ApiHelper._
+import io.circe.Json
 import org.http4s.MediaType._
 import org.http4s.headers.`Content-Type`
 // import cats._
@@ -498,6 +499,8 @@ object WebService {
       OptActiveDataTabParam(optActiveDataTab) +&
       OptNodeSelectorParam(optNodeSelectorParam)
     => {
+      val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+      val (dataStr, eitherRDF) = dp.getData
       val dv = DataValue(optData,
         optDataURL,
         optDataFormat.getOrElse(defaultDataFormat),
@@ -507,56 +510,82 @@ object WebService {
         optEndpoint,
         optActiveDataTab.getOrElse(defaultActiveDataTab)
       )
-      val result = ApiHelper.shapeInfer(dv.data.getOrElse(""),
-        Some(dv.currentDataFormat), optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None)
-      Ok(html.shapeInfer(
-        result.toOption,
-        dv,
-        availableSchemaEngines,
-        optSchemaEngineParam.getOrElse(defaultSchemaEngine),
-        availableSchemaFormats,
-        optSchemaFormatParam.getOrElse(defaultSchemaFormat),
-        optNodeSelectorParam.getOrElse(""),
-        "Shape"
-      ))
+      val eitherResult: Either[String,Json] = for {
+        rdf <- eitherRDF
+        jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None)
+      } yield {
+        jsonResult
+      }
+
+      eitherResult.fold(e => BadRequest(s"Error: $e"),r => {
+        Ok(html.shapeInfer(
+         Some(r),
+         dv,
+         availableSchemaEngines,
+         optSchemaEngineParam.getOrElse(defaultSchemaEngine),
+         availableSchemaFormats,
+         optSchemaFormatParam.getOrElse(defaultSchemaFormat),
+         optNodeSelectorParam.getOrElse(""),
+         "Shape"
+        ))
+      }
+      )
+
     }
 
     case req@POST -> Root / "shapeInfer" => {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
-        for {
-          maybeData <- DataParam.mkData(partsMap).value
+        val eitherResult = for {
+          dataPair        <- DataParam.mkData(partsMap).value
+          (rdf, dp)       <- dataPair
           optNodeSelector <- partsMap.optPartValue("nodeSelector")
           optSchemaEngine <- partsMap.optPartValue("schemaEngine")
           optSchemaFormat <- partsMap.optPartValue("schemaFormat")
-          response <- maybeData match {
-            case Left(msg) => BadRequest(s"Error obtaining data: $msg")
-            case Right((rdf, dp)) => {
-              val dv = DataValue(
-                    dp.data, dp.dataURL,
-                    dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
-                    dp.inference.getOrElse(defaultInference), availableInferenceEngines,
-                    dp.endpoint,
-                    dp.activeDataTab.getOrElse(defaultActiveDataTab)
-              )
-              val result = ApiHelper.shapeInfer(dv.data.getOrElse(""),
-                Some(dv.currentDataFormat), optNodeSelector, dp.inference, optSchemaEngine, optSchemaFormat, None)
-              Ok(html.shapeInfer(
-                result.toOption,
-                dv,
-                availableSchemaEngines,
-                optSchemaEngine.getOrElse(defaultSchemaEngine),
-                availableSchemaFormats,
-                optSchemaFormat.getOrElse(defaultSchemaFormat),
-                optNodeSelector.getOrElse(""),
-                "Shape"
-              ))
-             }
-           }
-        } yield response
-       }
+         jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelector, dp.inference, optSchemaEngine, optSchemaFormat, None)
+        } yield {
+          jsonResult
+        }
+ val dv = dv = DataValue(
+   dp.data,
+   dp.dataURL,
+   dp.dataFormat.getOrElse(defaultDataFormat),
+   availableDataFormats,
+   dp.inference.getOrElse(defaultInference),
+   availableInferenceEngines,
+   dp.endpoint,
+   dp.activeDataTab.getOrElse(defaultActiveDataTab)
+ )
+        eitherResult.fold(e => BadRequest(s"Error: $e"),r => {
+          Ok(html.shapeInfer(
+            Some(r),
+            dv,
+            availableSchemaEngines,
+            optSchemaEngine.getOrElse(defaultSchemaEngine),
+            availableSchemaFormats,
+            optSchemaFormat.getOrElse(defaultSchemaFormat),
+            optNodeSelector.getOrElse(""),
+            "Shape"
+          ))
+        }
+        )
+
+          Ok(
+            html.shapeInfer(
+              result.toOption,
+              dv,
+              availableSchemaEngines,
+              optSchemaEngine.getOrElse(defaultSchemaEngine),
+              availableSchemaFormats,
+              optSchemaFormat.getOrElse(defaultSchemaFormat),
+              optNodeSelector.getOrElse(""),
+              "Shape"
+            ))
+        }
+        r.fold(e => BadRequest(e), identity)
       }
     }
+  }
 
     // Contents on /static are mapped to /static
     case r@GET -> _ if r.pathInfo.startsWith("/static") => static(r).getOrElseF(NotFound())

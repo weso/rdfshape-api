@@ -164,21 +164,18 @@ object ApiHelper {
     }
   }
 
-  private[server] def shapeInfer(data: String,
-                            optDataFormat: Option[String],
-                            optNodeSelector: Option[String],
-                            optInference: Option[String],
-                            optEngine: Option[String],
-                            optSchemaFormat: Option[String],
-                            optLabelName: Option[String]
-                           ): Either[String, Json] = {
-   val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
+  private[server] def shapeInfer(rdf: RDFReasoner,
+                                 optNodeSelector: Option[String],
+                                 optInference: Option[String],
+                                 optEngine: Option[String],
+                                 optSchemaFormat: Option[String],
+                                 optLabelName: Option[String]
+                                ): Either[String, Json] = {
    val base = Some(FileUtils.currentFolderURL)
    val engine = optEngine.getOrElse(defaultSchemaEngine)
    val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
+   println(s"ShapeInfer: \nRDFReasoner: $rdf")
    for {
-    basicRdf <- RDFAsJenaModel.fromChars(data, dataFormat, base)
-    rdf <- basicRdf.applyInference(optInference.getOrElse("None"))
     selector <- NodeSelector.fromString(optNodeSelector.getOrElse(""), None, rdf.getPrefixMap())
     schemaInfer <- SchemaInfer.infer(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
     str <- schemaInfer.serialize(schemaFormat)

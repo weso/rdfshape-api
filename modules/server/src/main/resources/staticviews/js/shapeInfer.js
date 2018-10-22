@@ -1,4 +1,6 @@
 var codeMirrorData ;
+var codeMirrorSchema ;
+var codeMirrorNodeSelector ;
 
 function changeMode(element,syntax) {
     var mode = "turtle";
@@ -25,6 +27,8 @@ function changeMode(element,syntax) {
 
 function changeTheme(theme) {
     codeMirrorData.setOption("theme",theme);
+    codeMirrorSchema.setOption("theme",theme);
+    codeMirrorNodeSelector.setOption("theme",theme);
 }
 
 $(document).ready(function(){
@@ -32,36 +36,38 @@ $(document).ready(function(){
 function showResult(result) {
     result = $("#resultDiv").data("result");
     if(result) {
-        console.log("Result.nodesPrefixMap: " + JSON.stringify(result.nodesPrefixMap));
-        var tableHead = "<thead><tr>" +
-                "<th data-sortable=\"true\">Name</th>" +
-                "<th data-sortable=\"true\">Value</th>" +
-                "</tr></thead>";
-        var tableBody = '';
-        tableBody += "<tr><td>Number of triples</td><td>" + result.statements + "</td></tr>";
-        $("#resultDiv").append("<table data-toggle=\"table\" data-sort-order=\"desc\" data-sort-name=\"node\">" +
-                tableHead +
-                tableBody +
-                "</table>");
+        var textArea = $("<textarea/>").attr("id","schemaAreaId").text(result.inferedShape);
+        $("#resultDiv").append(textArea);
         var pre = $("<pre/>").text(JSON.stringify(result,undefined,2));
         var details = $("<details/>").append(pre);
         $("#resultDiv").append(details);
-        showDot(result.dot, "#resultDiv");
-        $("#SelectFormat").change(function() {
-            showDot(result.dot, "#resultDiv");
-        });
-        $("#SelectEngine").change(function() {
-            showDot(result.dot, "#resultDiv");
+        codeMirrorSchema = CodeMirror.fromTextArea(schemaAreaId, {
+            lineNumbers: true,
+            mode: "shex",
+            viewportMargin: Infinity,
+            matchBrackets: true
         });
     }
 }
 
   var urlShaclex = getHost();
     // When loading document get result from data-result attribute and show it
-    var result = $("#resultDiv").data("result");
-    showResult(result);
+  var result = $("#resultDiv").data("result");
+  showResult(result);
 
-  var rdfData = document.getElementById("rdfData");
+  var nodeSelector = document.getElementById("nodeSelector");
+  if (nodeSelector) {
+    codeMirrorNodeSelector = CodeMirror.fromTextArea(nodeSelector, {
+            lineNumbers: true,
+            mode: "shex",
+            viewportMargin: Infinity,
+            matchBrackets: true
+     });
+    codeMirrorNodeSelector.setSize(null,"2em");
+  }
+
+
+    var rdfData = document.getElementById("rdfData");
   if (rdfData) {
         codeMirrorData = CodeMirror.fromTextArea(rdfData, {
             lineNumbers: true,
@@ -111,10 +117,18 @@ function showResult(result) {
           break;
      }
   var inference = $("#inference").find(":selected").text();
-  var location = "/dataInfo?" +
-      dataPart + "&" +
-      "dataFormat=" + encodeURIComponent(dataFormat) +
-      "&inference=" + encodeURIComponent(inference) ;
+  var schemaEngine = $("#schemaEngine").find(":selected").text();
+  var schemaFormat = $("#schemaFormatTextArea").find(":selected").text();
+  var nodeSelector = $("#nodeSelector").val();
+  var location = "/shapeInfer?" +
+      dataPart +
+      "&dataFormat=" + encodeURIComponent(dataFormat) +
+      "&inference=" + encodeURIComponent(inference) +
+      "&activeDataTab=" + encodeURIComponent(dataActiveTab) +
+      "&schemaEngine=" + encodeURIComponent(schemaEngine) +
+      "&schemaFormat=" + encodeURIComponent(schemaFormat) +
+      "&nodeSelector=" + encodeURIComponent(nodeSelector)
+     ;
     var href = urlShaclex + location;
     console.log("NewHRef: " + href);
     window.location.assign(href) ;
