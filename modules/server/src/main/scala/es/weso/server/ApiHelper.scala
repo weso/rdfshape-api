@@ -174,18 +174,24 @@ object ApiHelper {
    val base = Some(FileUtils.currentFolderURL)
    val engine = optEngine.getOrElse(defaultSchemaEngine)
    val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
-   println(s"ShapeInfer: \nRDFReasoner: $rdf")
-   for {
-    selector <- NodeSelector.fromString(optNodeSelector.getOrElse(""), None, rdf.getPrefixMap())
-    schemaInfer <- SchemaInfer.infer(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
-    str <- schemaInfer.serialize(schemaFormat)
-   } yield Json.fromFields(
-     List(
-       ("inferedShape", Json.fromString(str)),
-       ("format", Json.fromString(schemaFormat)),
-       ("engine", Json.fromString(engine))
-     )
-   )
+   optNodeSelector match {
+     case None => Right(Json.Null)
+     case Some(nodeSelector) => {
+       for {
+         selector <- NodeSelector.fromString(nodeSelector, None, rdf.getPrefixMap())
+         schemaInfer <- {
+           SchemaInfer.infer(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
+         }
+         str <- schemaInfer.serialize(schemaFormat)
+       } yield Json.fromFields(
+         List(
+           ("inferedShape", Json.fromString(str)),
+           ("format", Json.fromString(schemaFormat)),
+           ("engine", Json.fromString(engine))
+         )
+       )
+     }
+   }
   }
 
   private[server] def dataInfo(rdf: RDFReasoner): Option[Json] = {

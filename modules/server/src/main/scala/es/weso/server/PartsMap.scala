@@ -9,6 +9,13 @@ import fs2.text.utf8Decode
 
 case class PartsMap private(map: Map[String,Part[IO]]) {
 
+  def eitherPartValue(key: String): IO[Either[String,String]] = for {
+    maybeValue <- optPartValue(key)
+  } yield maybeValue match {
+    case None => Left(s"Not found value for key $key\nKeys available: ${map.keySet.mkString(",")}")
+    case Some(s) => Right(s)
+  }
+
   def optPartValue(key: String): IO[Option[String]] =
     map.get(key) match {
       case Some(part) =>

@@ -20,7 +20,7 @@
 <div class="container">
 <div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.getOrElse(Json.Null)))}'></div>
 
-<form action="/shapeInfer" method="POST" enctype="multipart/form-data" id="info">
+<form action="/shapeInfer" method="POST" enctype="multipart/form-data" id="shapeInfer">
     @selectSchemaEngine("shapeInfer", engines, currentEngine)
     @selectSchemaFormat("shapeInfer","TextArea",schemaFormats,schemaFormat)
     <br/>

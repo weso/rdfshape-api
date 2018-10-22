@@ -15,6 +15,7 @@ import ApiHelper.{query, _}
 import cats.effect.IO._
 import Defaults._
 import ApiHelper._
+import cats.data.EitherT
 import io.circe.Json
 import org.http4s.MediaType._
 import org.http4s.headers.`Content-Type`
@@ -530,61 +531,39 @@ object WebService {
         ))
       }
       )
-
     }
 
     case req@POST -> Root / "shapeInfer" => {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
-        val eitherResult = for {
-          dataPair        <- DataParam.mkData(partsMap).value
-          (rdf, dp)       <- dataPair
-          optNodeSelector <- partsMap.optPartValue("nodeSelector")
-          optSchemaEngine <- partsMap.optPartValue("schemaEngine")
-          optSchemaFormat <- partsMap.optPartValue("schemaFormat")
-         jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelector, dp.inference, optSchemaEngine, optSchemaFormat, None)
+        val r = for {
+          dataPair <- DataParam.mkData(partsMap)
+          (rdf, dp) = dataPair
+          nodeSelector <- EitherT(partsMap.eitherPartValue("nodeSelector"))
+          schemaEngine <- EitherT(partsMap.eitherPartValue("schemaEngine"))
+          schemaFormat <- EitherT(partsMap.eitherPartValue("schemaFormatTextArea"))
+          jsonResult <- EitherT.fromEither[IO](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None))
         } yield {
-          jsonResult
-        }
- val dv = dv = DataValue(
-   dp.data,
-   dp.dataURL,
-   dp.dataFormat.getOrElse(defaultDataFormat),
-   availableDataFormats,
-   dp.inference.getOrElse(defaultInference),
-   availableInferenceEngines,
-   dp.endpoint,
-   dp.activeDataTab.getOrElse(defaultActiveDataTab)
- )
-        eitherResult.fold(e => BadRequest(s"Error: $e"),r => {
+          val dv = DataValue(dp.data,dp.dataURL,dp.dataFormat.getOrElse(defaultDataFormat),availableDataFormats,
+            dp.inference.getOrElse(defaultInference),
+            availableInferenceEngines,
+            dp.endpoint,
+            dp.activeDataTab.getOrElse(defaultActiveDataTab)
+          )
           Ok(html.shapeInfer(
-            Some(r),
+            Some(jsonResult),
             dv,
             availableSchemaEngines,
-            optSchemaEngine.getOrElse(defaultSchemaEngine),
+            schemaEngine,
             availableSchemaFormats,
-            optSchemaFormat.getOrElse(defaultSchemaFormat),
-            optNodeSelector.getOrElse(""),
+            schemaFormat,
+            nodeSelector,
             "Shape"
           ))
         }
-        )
-
-          Ok(
-            html.shapeInfer(
-              result.toOption,
-              dv,
-              availableSchemaEngines,
-              optSchemaEngine.getOrElse(defaultSchemaEngine),
-              availableSchemaFormats,
-              optSchemaFormat.getOrElse(defaultSchemaFormat),
-              optNodeSelector.getOrElse(""),
-              "Shape"
-            ))
-        }
-        r.fold(e => BadRequest(e), identity)
-      }
+        r.value.unsafeRunSync().fold(e => BadRequest(s"Error: $e"),identity)
     }
+   }
   }
 
     // Contents on /static are mapped to /static
