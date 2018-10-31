@@ -5,7 +5,7 @@ import org.scalatest._
 class HTML2RDFTest extends FunSpec with Matchers {
   describe(s"Extract RDF data from HTML") {
 
-/*    shouldExtract(
+    shouldExtract(
       """|<body prefix = "xsd: http://www.w3.org/2001/XMLSchema#"
          |      vocab = "http://schema.org/" >
          |<div resource="http://example.org/post" typeOf="Blog">
@@ -25,7 +25,7 @@ class HTML2RDFTest extends FunSpec with Matchers {
          |
          |<http://example.org/post> a schema:Blog ;
          |         schema:created "2018-10-30"^^xsd:date .
-      """.stripMargin
+      """.stripMargin, "html-rdfa11"
     )
 
     shouldExtract(
@@ -39,8 +39,8 @@ class HTML2RDFTest extends FunSpec with Matchers {
        |
        |<http://example.org>  md:item :eliza .
        |:eliza schema:name "Elizabeth" .
-    """.stripMargin
-    ) */
+    """.stripMargin, "html-microdata"
+    )
 
     shouldExtract(
       """|<div itemscope
@@ -49,13 +49,29 @@ class HTML2RDFTest extends FunSpec with Matchers {
          |""".stripMargin,
       """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
          |
-         |<http://example.org>  md:item <x> .
-      """.stripMargin
+         |<http://example.org>  md:item [
+         |  a  <https://vocab.example.net/book>
+         |] .
+      """.stripMargin, "html-microdata"
     )
-    def shouldExtract(html: String, expected: String): Unit = {
-      it(s"Should extract from $html and obtain $expected") {
+
+/* TODO: Checkwhy this test fails   shouldExtract(
+      """|<dl itemscope
+         |    itemtype="https://vocab.example.net/book">
+         |</dl>
+         |""".stripMargin,
+      """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
+         |
+         |<http://example.org>  md:item [
+         |  a  <https://vocab.example.net/book>
+         |] .
+      """.stripMargin, "html-microdata"
+    ) */
+
+    def shouldExtract(html: String, expected: String, extractorName: String): Unit = {
+      it(s"Should extract from $html and obtain $expected with extractor $extractorName") {
         val r = for {
-          rdf          <- HTML2RDF.extractFromString(html)
+          rdf          <- HTML2RDF.extractFromString(html,extractorName)
           expected     <- RDFAsJenaModel.fromChars(expected, "TURTLE")
           isIsomorphic <- rdf.isIsomorphicWith(expected)
         } yield (isIsomorphic, rdf)
