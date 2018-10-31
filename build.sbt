@@ -25,7 +25,9 @@ scalafmt: {
  */
 
 // lazy val shaclexVersion        = "0.1.04"
-lazy val umlShaclexVersion     = "0.0.11"
+lazy val umlShaclexVersion     = "0.0.12"
+lazy val any23Version          = "2.2"
+lazy val rdf4jVersion          = "2.2.4"
 
 // Dependency versions
 lazy val catsVersion           = "1.0.1"
@@ -77,6 +79,11 @@ lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"     
 //lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
 //lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
 lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.12"      % umlShaclexVersion
+lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
+lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
+lazy val any23_scraper    = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
+lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
+
 
 
 
@@ -125,6 +132,8 @@ lazy val server = project
       scalatags,
       selenium,
       umlShaclex,
+      any23_core, any23_api, any23_scraper,
+      rdf4j_runtime,
       plantuml,
       graphvizJava
     )

@@ -1,12 +1,16 @@
 package es.weso.server
 
+import java.net.URI
+
 import Defaults._
 import cats.data.EitherT
 import cats.effect.IO
+import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
+import org.http4s.Uri
+import org.http4s.client.blaze.Http1Client
 import org.log4s.getLogger
-
 
 case class DataParam(data: Option[String],
                      dataURL: Option[String],
@@ -92,7 +96,7 @@ case class DataParam(data: Option[String],
           case None => (None, Left(s"Non value for dataURL"))
           case Some(dataUrl) => {
             val dataFormat = dataFormatUrl.getOrElse(defaultDataFormat)
-            RDFAsJenaModel.fromURI(dataUrl, dataFormat) match {
+            rdfFromUri(new URI(dataUrl), dataFormat,None) match {
               case Left(str) => (None, Left(s"Error obtaining $dataUrl with $dataFormat: $str"))
               case Right(rdf) => applyInference(rdf, inference, dataFormat)
             }
@@ -104,7 +108,7 @@ case class DataParam(data: Option[String],
           case None => (None, Left(s"No value for dataFile"))
           case Some(dataStr) =>
             val dataFormat = dataFormatFile.getOrElse(defaultDataFormat)
-            RDFAsJenaModel.fromChars(dataStr, dataFormat, None) match {
+            rdfFromString(dataStr, dataFormat, None) match {
               case Left(msg) => (Some(dataStr), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
@@ -133,7 +137,7 @@ case class DataParam(data: Option[String],
           case None => (None, Right(RDFAsJenaModel.empty))
           case Some(data) => {
             val dataFormat = dataFormatTextarea.getOrElse(defaultDataFormat)
-            RDFAsJenaModel.fromChars(data, dataFormat, None) match {
+            rdfFromString(data, dataFormat, None) match {
               case Left(msg) => (Some(data), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
@@ -147,6 +151,26 @@ case class DataParam(data: Option[String],
       }
       case Right(other) => (None, Left(s"Unknown value for activeDataTab: $other"))
       case Left(msg) => (None, Left(msg))
+    }
+  }
+
+  private def rdfFromString(str: String,
+                            format: String,
+                            base: Option[String]
+                           ): Either[String, RDFReasoner] = {
+    format.toLowerCase match {
+      case "html" | "html-rdfa" | "html-microdata" => HTML2RDF.extractFromString(str,format.toLowerCase())
+      case _ => RDFAsJenaModel.fromChars(str,format,base)
+    }
+  }
+
+  private def rdfFromUri(uri: URI,
+                         format: String,
+                         base: Option[String]
+                        ): Either[String, RDFReasoner] = {
+    format.toLowerCase match {
+      case "html" | "html-rdfa" | "html-microdata" => HTML2RDF.extractFromUrl(uri.toString, format.toLowerCase())
+      case _ => RDFAsJenaModel.fromURI(uri.toString, format, base)
     }
   }
 
@@ -213,4 +237,6 @@ object DataParam {
 
   private[server] def empty: DataParam =
     DataParam(None,None,None,None,None,None,None,None,None,None)
+
+
 }

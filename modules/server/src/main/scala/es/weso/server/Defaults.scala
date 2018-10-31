@@ -8,7 +8,7 @@ import es.weso.schema._
 
 object Defaults {
 
-  val availableDataFormats = DataFormats.formatNames.toList
+  val availableDataFormats = (DataFormats.formatNames ++ List("html-microdata", "html-rdfa", "html")).toList
   val defaultDataFormat = DataFormats.defaultFormatName
   val availableSchemaFormats = Schemas.availableFormats
   val defaultSchemaFormat = Schemas.defaultSchemaFormat
