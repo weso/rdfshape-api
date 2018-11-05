@@ -8,6 +8,7 @@ import cats.effect.IO
 import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
+import es.weso.rdf.nodes.IRI
 import org.http4s.Uri
 import org.http4s.client.blaze.Http1Client
 import org.log4s.getLogger
@@ -160,7 +161,10 @@ case class DataParam(data: Option[String],
                            ): Either[String, RDFReasoner] = {
     format.toLowerCase match {
       case "html" | "html-rdfa" | "html-microdata" => HTML2RDF.extractFromString(str,format.toLowerCase())
-      case _ => RDFAsJenaModel.fromChars(str,format,base)
+      case _ => for {
+        baseIri <- mkBaseIri(base)
+        rdf <- RDFAsJenaModel.fromChars(str,format,baseIri)
+      } yield rdf
     }
   }
 
@@ -170,10 +174,17 @@ case class DataParam(data: Option[String],
                         ): Either[String, RDFReasoner] = {
     format.toLowerCase match {
       case "html" | "html-rdfa" | "html-microdata" => HTML2RDF.extractFromUrl(uri.toString, format.toLowerCase())
-      case _ => RDFAsJenaModel.fromURI(uri.toString, format, base)
+      case _ => for {
+       baseIri <- mkBaseIri(base)
+       rdf <- RDFAsJenaModel.fromURI(uri.toString, format, baseIri)
+      } yield rdf
     }
   }
 
+  private def mkBaseIri(maybeBase: Option[String]): Either[String, Option[IRI]] = maybeBase match {
+    case None => Right(None)
+    case Some(str) => IRI.fromString(str).map(Some(_))
+  }
 }
 
 object DataParam {

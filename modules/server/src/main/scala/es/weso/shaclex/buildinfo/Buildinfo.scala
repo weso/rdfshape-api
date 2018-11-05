@@ -6,9 +6,9 @@ import scala.Predef._
  
 case object BuildInfo {
   val name: String = "rdfshape"
-  val version: String = "0.1.05"
+  val version: String = "0.1.08"
   val scalaVersion: String = "2.12.5"
   val sbtVersion: String = "1.0.3"
-  val rdfshapeVersion: String = "0.1.04"
+  val rdfshapeVersion: String = "0.1.05"
   override val toString: String = "name: %s, version: %s, scalaVersion: %s, sbtVersion: %s" format (name, version, scalaVersion, sbtVersion)
 }

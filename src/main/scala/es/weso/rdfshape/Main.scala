@@ -6,11 +6,15 @@ import com.typesafe.scalalogging._
 import es.weso.server._
 import es.weso.schema._
 import es.weso.rdf.jena.RDFAsJenaModel
+
 import scala.concurrent.duration._
 import es.weso.utils.FileUtils
+
 import scala.util._
 import java.nio.file._
+
 import es.weso.rdf.RDFReader
+import es.weso.rdf.nodes.IRI
 
 object Main extends App with LazyLogging {
     try {
@@ -148,7 +152,7 @@ object Main extends App with LazyLogging {
   }
 
   def getRDFReader(opts: MainOpts, baseFolder: Path): Either[String, RDFReader] = {
-    val base = Some(FileUtils.currentFolderURL)
+    val base = Some(IRI(FileUtils.currentFolderURL))
     if (opts.data.isDefined) {
       val path = baseFolder.resolve(opts.data())
       for {

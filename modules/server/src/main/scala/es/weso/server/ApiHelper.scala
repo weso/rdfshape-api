@@ -1,5 +1,7 @@
 package es.weso.server
 
+import cats._
+import cats.data._
 import cats.implicits._
 import cats.effect.IO
 import org.http4s.client.blaze.Http1Client
@@ -154,7 +156,7 @@ object ApiHelper {
       case None => Right(Json.Null)
       case Some(queryStr) => {
         val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-        val base = Some(FileUtils.currentFolderURL)
+        val base = Some(IRI(FileUtils.currentFolderURL))
         for {
           basicRdf <- RDFAsJenaModel.fromChars(data, dataFormat, base)
           rdf <- basicRdf.applyInference(optInference.getOrElse("None"))
