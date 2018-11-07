@@ -125,7 +125,7 @@ $('.dataPanel a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
      }
   var inference = $("#inference").find(":selected").text();
   var targetDataFormat = $("#targetDataFormat").find(":selected").text();
-  var location = "/dataConversions?" +
+  var location = "/dataVisualization?" +
       dataPart + "&" +
       "dataFormat=" + encodeURIComponent(dataFormat) +
       "&targetDataFormat=" + encodeURIComponent(targetDataFormat) +

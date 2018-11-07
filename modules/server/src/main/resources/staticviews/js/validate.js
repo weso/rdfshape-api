@@ -22,6 +22,8 @@ function changeMode(element,syntax) {
             break ;
         case "SHEXC": mode = "shex" ;
             break ;
+        case "HTML": mode = "htmlembedded" ;
+            break ;
     }
     element.setOption("mode",mode);
 }

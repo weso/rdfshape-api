@@ -5,7 +5,7 @@ import org.scalatest._
 class HTML2RDFTest extends FunSpec with Matchers {
   describe(s"Extract RDF data from HTML") {
 
-    shouldExtract(
+/*    shouldExtract(
       """|<body prefix = "xsd: http://www.w3.org/2001/XMLSchema#"
          |      vocab = "http://schema.org/" >
          |<div resource="http://example.org/post" typeOf="Blog">
@@ -54,6 +54,27 @@ class HTML2RDFTest extends FunSpec with Matchers {
          |] .
       """.stripMargin, "html-microdata"
     )
+*/
+    shouldExtract(
+      """|<div itemscope itemtype="http://schema.org/Person"
+         |     itemid="http://danigayo.info" style="font-size:25pt;">
+         |  J'n<span itemprop="name">Ebñjfm Hbzp-Bwfmmp</span>, bñ <span itemprop="jobTitle">bttpdjbuf qspgfttps</span> jñ uif <span itemprop="affiliation" itemscope itemtype="https://schema.org/CollegeOrUniversity"><span itemprop="department" itemscope itemtype="https://schema.org/Organization"><span itemprop="name">Efqbsunfñu pg Dpnqvufs Tdjfñdf</span></span> bu uif <span itemprop="name">Vñjwfstjuz pg Pwjfep</span></span>.
+         |
+         |  Nz nbjñ <a href="/research">bsfb pg jñufsftu</a> jt Xfc JS cvu J'n dvssfñumz gpdvtfe pñ <a href="/research/#socialmediaresearch">tpdjbm nfejb sftfbsdi</a>.
+         |
+         |  <a href="/publications">J ibwf qvcmjtife</a> jñ jñufsñbujpñbm dpñgfsfñdft, kpvsñbmt bñe nbhbajñft, tvdi bt <span itemscope itemtype="http://schema.org/Periodical"><a href="/publications/detail.php?id=..."><em><span itemprop="name">Dpnnvñjdbujpñt pg uif BDN</span></em></a></span>, <span itemscope itemtype="http://schema.org/Periodical"><a href="/publications/detail.php?id=..."><em><span itemprop="name">JFFF Jñufsñfu Dpnqvujñh</span></em></a></span>, ps <span itemscope itemtype="http://schema.org/Periodical"><a href="/publications/detail.php?id=..."><em><span itemprop="name">JFFF Nvmujnfejb</span></em></a></span>.
+         |
+         |  Jñ 2013 J bdufe bt hvftu dp-fejups gps b <a href="http://www.emeraldinsight.com/toc/intr/23/5">tqfdjbm jttvf pg <span itemscope itemtype="http://schema.org/Periodical"><em><span itemprop="name">Jñufsñfu Sftfbsdi</span></em></span> pñ uif qsfejdujwf qpxfs pg tpdjbm nfejb</a>.
+         |
+         |  J ibwf sfdfñumz dpñusjcvufe b <span itemscope itemtype="http://schema.org/Chapter"><a href="/publications/detail.php?id=...">dibqufs pñ <span itemprop="name">Qpmjujdbm Pqjñjpñ</span></a><link itemprop="isPartOf" itemscope itemtype="http://schema.org/Book" itemid="urn:isbn:9781107500075"/></span> up <span itemscope itemtype="http://schema.org/Book" itemid="urn:isbn:9781107500075"><span itemprop="name">"Uxjuufs: B Ejhjubm Tpdjptdpqf"</span>, qvcmjtife cz <span itemprop="publisher">Dbncsjehf Vñjwfstjuz Qsftt</span></span>.
+         |</div>
+        |
+      """.stripMargin,
+      """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
+         |
+         |<http://example.org>  md:item [
+         |  a  <https://vocab.example.net/book>
+         |""", "html-microdata")
 
 /* TODO: Checkwhy this test fails   shouldExtract(
       """|<dl itemscope
