@@ -87,6 +87,7 @@ object DataConverter extends LazyLogging {
       case t if availableFormats.contains(t) => for {
         fmt <- getTargetFormat(t)
         dot <- rdf.serialize("DOT")
+        _ <- { println(s"DOT generated:\n${dot}\n-----end of dot\n") ; Right(()) }
         outstr <- dotConverter(dot,fmt)
       } yield outstr
       case _ =>

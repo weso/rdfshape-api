@@ -241,7 +241,7 @@ object WebService {
               ) */
               val targetFormat = dp.targetDataFormat.getOrElse(Svg)
               DataConverter.rdfConvert(rdf,targetFormat.name).
-                fold(e => BadRequest(s"Error: $e"),
+                fold(e => BadRequest(s"Error in conversion to $targetFormat: $e\nRDF:\n${rdf.serialize("TURTLE")}"),
                   result => Ok(result).map(_.withContentType(`Content-Type`(targetFormat.mimeType)))
                 )
             }
