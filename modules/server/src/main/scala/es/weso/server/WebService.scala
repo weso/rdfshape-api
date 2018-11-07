@@ -189,24 +189,19 @@ object WebService {
         OptActiveDataTabParam(optActiveDataTab) +&
         TargetDataFormatParam(maybeTargetDataFormat) => {
 
-      val either: Either[String, (Option[DataFormat],Option[DataFormat])] =  for {
-        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
-        tdf <- maybeTargetDataFormat.map(DataFormat.fromString(_)).sequence
-      } yield (df, tdf)
+        val either: Either[String, (Option[DataFormat], Option[DataFormat])] = for {
+          df  <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+          tdf <- maybeTargetDataFormat.map(DataFormat.fromString(_)).sequence
+        } yield (df, tdf)
 
-      either match {
-        case Left(str) => BadRequest(str)
-        case Right(values) => {
-          val (optDataFormat,optTargetDataFormat) = values
-          val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None,
-            optInference, None, optActiveDataTab
-          )
-          val (maybeStr, eitherRDF) = dp.getData
-          eitherRDF.fold(
-            str => BadRequest(str),
-            rdf => {
-              val (optDataFormat, optTargetDataFormat) = values
-              val dv = DataValue(optData,
+        either match {
+          case Left(str) => BadRequest(str)
+          case Right(values) => {
+            val (optDataFormat, optTargetDataFormat) = values
+            val targetDataFormat = optTargetDataFormat.getOrElse(Svg)
+            if (allNone(optData, optDataURL, optEndpoint)) {
+              val dv = DataValue(
+                optData,
                 optDataURL,
                 optDataFormat.getOrElse(defaultDataFormat),
                 availableDataFormats,
@@ -215,12 +210,34 @@ object WebService {
                 optEndpoint,
                 optActiveDataTab.getOrElse(defaultActiveDataTab)
               )
-              val targetDataFormat = optTargetDataFormat.getOrElse(Svg)
-              Ok(html.dataVisualization(dv,targetDataFormat))
-            })
+              Ok(html.dataVisualization(dv, targetDataFormat))
+            } else {
+            val dp = DataParam(optData,
+                               optDataURL,
+                               None,
+                               optEndpoint,
+                               optDataFormat,
+                               optDataFormat,
+                               None,
+                               optInference,
+                               None,
+                               optActiveDataTab)
+            val (maybeStr, eitherRDF) = dp.getData
+            eitherRDF.fold(
+              str => BadRequest(str),
+              rdf => {
+                DataConverter
+                  .rdfConvert(rdf, targetDataFormat.name)
+                  .fold(
+                    e => BadRequest(s"Error in conversion to $targetDataFormat: $e\nRDF:\n${rdf.serialize("TURTLE")}"),
+                    result => Ok(result).map(_.withContentType(`Content-Type`(targetDataFormat.mimeType)))
+                  )
+
+              }
+            )
+          }
         }
       }
-
     }
 
 

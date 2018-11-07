@@ -20,7 +20,7 @@ object DataFormat {
   lazy val availableDataFormats: List[DataFormat] =
     List(Turtle,JsonLd,NTriples,RdfXml,RdfJson,Trig,
       HtmlMicrodata,HtmlRdfa11,
-      Dot)
+      Dot,Svg,Png)
 
   lazy val dataFormatsMap: Map[String,DataFormat] =
     availableDataFormats.map(df => (df.name.toLowerCase,df)).toMap
