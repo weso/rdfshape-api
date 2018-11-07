@@ -1,15 +1,17 @@
 package es.weso.server
 
+import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
 import es.weso.schema.{DataFormats, Schemas}
 import es.weso.shapeMaps.ShapeMap
 import es.weso.schema._
+import es.weso.server.helper.DataFormat
 
 object Defaults {
 
-  val availableDataFormats = (DataFormats.formatNames ++ List("html-microdata", "html-rdfa", "html")).toList
-  val defaultDataFormat = DataFormats.defaultFormatName
+  val availableDataFormats = DataFormat.availableDataFormats
+  val defaultDataFormat = DataFormat.default
   val availableSchemaFormats = Schemas.availableFormats
   val defaultSchemaFormat = Schemas.defaultSchemaFormat
   val availableSchemaEngines = Schemas.availableSchemaNames

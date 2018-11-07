@@ -9,6 +9,7 @@ import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
 import es.weso.rdf.nodes.IRI
+import es.weso.server.helper.DataFormat
 import org.http4s.Uri
 import org.http4s.client.blaze.Http1Client
 import org.log4s.getLogger
@@ -17,11 +18,11 @@ case class DataParam(data: Option[String],
                      dataURL: Option[String],
                      dataFile: Option[String],
                      endpoint: Option[String],
-                     dataFormatTextarea: Option[String],
-                     dataFormatUrl: Option[String],
-                     dataFormatFile: Option[String],
+                     dataFormatTextarea: Option[DataFormat],
+                     dataFormatUrl: Option[DataFormat],
+                     dataFormatFile: Option[DataFormat],
                      inference: Option[String],
-                     targetDataFormat: Option[String],
+                     targetDataFormat: Option[DataFormat],
                      activeDataTab: Option[String]
                     ) {
   private[this] val logger = getLogger
@@ -51,17 +52,20 @@ case class DataParam(data: Option[String],
     }
   }
 
-  val dataFormat: Option[String] = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab)) match {
+  val dataFormat: Option[DataFormat] = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab)) match {
     case Right(`dataUrlType`) => dataFormatUrl
     case Right(`dataFileType`) => dataFormatFile
     case Right(`dataTextAreaType`) => dataFormatTextarea
     case _ => None
   }
 
-  private def applyInference(rdf: RDFReasoner, inference: Option[String], dataFormat: String): (Option[String],Either[String,RDFReasoner]) = {
+  private def applyInference(rdf: RDFReasoner,
+                             inference: Option[String],
+                             dataFormat: DataFormat
+                            ): (Option[String],Either[String,RDFReasoner]) = {
     extendWithInference(rdf, inference) match {
-      case Left(msg) => (rdf.serialize(dataFormat).toOption, Left(s"Error applying inference: $msg"))
-      case Right(newRdf) => (newRdf.serialize(dataFormat).toOption, Right(newRdf))
+      case Left(msg) => (rdf.serialize(dataFormat.name).toOption, Left(s"Error applying inference: $msg"))
+      case Right(newRdf) => (newRdf.serialize(dataFormat.name).toOption, Right(newRdf))
     }
   }
 
@@ -90,13 +94,13 @@ case class DataParam(data: Option[String],
       }
       case Some(a) => parseDataTab(a)
     }
-    logger.debug(s"Input type: $inputType")
+    println(s"Input type: $inputType")
     inputType match {
       case Right(`dataUrlType`) => {
         dataURL match {
           case None => (None, Left(s"Non value for dataURL"))
           case Some(dataUrl) => {
-            val dataFormat = dataFormatUrl.getOrElse(defaultDataFormat)
+            val dataFormat = dataFormatUrl.getOrElse(DataFormat.default)
             rdfFromUri(new URI(dataUrl), dataFormat,None) match {
               case Left(str) => (None, Left(s"Error obtaining $dataUrl with $dataFormat: $str"))
               case Right(rdf) => applyInference(rdf, inference, dataFormat)
@@ -113,8 +117,8 @@ case class DataParam(data: Option[String],
               case Left(msg) => (Some(dataStr), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
-                  case Left(msg) => (rdf.serialize(dataFormat).toOption, Left(s"Error applying inference: $msg"))
-                  case Right(newRdf) => (newRdf.serialize(dataFormat).toOption, Right(newRdf))
+                  case Left(msg) => (rdf.serialize(dataFormat.name).toOption, Left(s"Error applying inference: $msg"))
+                  case Right(newRdf) => (newRdf.serialize(dataFormat.name).toOption, Right(newRdf))
                 }
               }
             }
@@ -134,6 +138,7 @@ case class DataParam(data: Option[String],
         }
       }
       case Right(`dataTextAreaType`) => {
+        println(s"Obtaining data from textArea")
         data match {
           case None => (None, Right(RDFAsJenaModel.empty))
           case Some(data) => {
@@ -142,8 +147,8 @@ case class DataParam(data: Option[String],
               case Left(msg) => (Some(data), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
-                  case Left(msg) => (rdf.serialize(dataFormat).toOption, Left(s"Error applying inference: $msg"))
-                  case Right(newRdf) => (newRdf.serialize(dataFormat).toOption, Right(newRdf))
+                  case Left(msg) => (rdf.serialize(dataFormat.name).toOption, Left(s"Error applying inference: $msg"))
+                  case Right(newRdf) => (newRdf.serialize(dataFormat.name).toOption, Right(newRdf))
                 }
               }
             }
@@ -156,27 +161,32 @@ case class DataParam(data: Option[String],
   }
 
   private def rdfFromString(str: String,
-                            format: String,
+                            format: DataFormat,
                             base: Option[String]
                            ): Either[String, RDFReasoner] = {
-    format.toLowerCase match {
-      case "html" | "html-rdfa" | "html-microdata" => HTML2RDF.extractFromString(str,format.toLowerCase())
+    println(s"Format: $format")
+    format.name match {
+      case f if HTML2RDF.availableExtractorNames contains f => {
+        println(s"From HTML with format $f")
+        HTML2RDF.extractFromString(str,f)
+      }
       case _ => for {
         baseIri <- mkBaseIri(base)
-        rdf <- RDFAsJenaModel.fromChars(str,format,baseIri)
+        rdf <- RDFAsJenaModel.fromChars(str,format.name,baseIri)
       } yield rdf
     }
   }
 
   private def rdfFromUri(uri: URI,
-                         format: String,
+                         format: DataFormat,
                          base: Option[String]
                         ): Either[String, RDFReasoner] = {
-    format.toLowerCase match {
-      case "html" | "html-rdfa" | "html-microdata" => HTML2RDF.extractFromUrl(uri.toString, format.toLowerCase())
+    format.name.toLowerCase match {
+      case f if HTML2RDF.availableExtractorNames contains f =>
+        HTML2RDF.extractFromUrl(uri.toString, f)
       case _ => for {
        baseIri <- mkBaseIri(base)
-       rdf <- RDFAsJenaModel.fromURI(uri.toString, format, baseIri)
+       rdf <- RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri)
       } yield rdf
     }
   }
@@ -205,16 +215,29 @@ object DataParam {
     EitherT(r)
   }
 
+  private def getDataFormat(name: String, partsMap: PartsMap): IO[Option[DataFormat]] = for {
+    maybeStr <- partsMap.optPartValue(name)
+  } yield maybeStr match {
+    case None => None
+    case Some(str) => DataFormat.fromString(str).fold(
+      err => {
+        logger.error(s"Unsupported dataFormat: $str")
+        None
+      },
+      df => Some(df)
+    )
+  }
+
   private[server] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
     data <- partsMap.optPartValue("data")
     dataURL <- partsMap.optPartValue("dataURL")
     dataFile <- partsMap.optPartValue("dataFile")
     endpoint <- partsMap.optPartValue("endpoint")
-    dataFormatTextArea <- partsMap.optPartValue("dataFormatTextArea")
-    dataFormatUrl <- partsMap.optPartValue("dataFormatUrl")
-    dataFormatFile <- partsMap.optPartValue("dataFormatFile")
+    dataFormatTextArea <- getDataFormat("dataFormatTextArea", partsMap)
+    dataFormatUrl <- getDataFormat("dataFormatUrl",partsMap)
+    dataFormatFile <- getDataFormat("dataFormatFile", partsMap)
     inference <- partsMap.optPartValue("inference")
-    targetDataFormat <- partsMap.optPartValue("targetDataFormat")
+    targetDataFormat <- getDataFormat("targetDataFormat",partsMap)
     activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
   } yield {
     logger.debug(s"<<<***Data: $data")

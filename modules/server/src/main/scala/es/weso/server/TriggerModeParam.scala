@@ -66,7 +66,7 @@ case class TriggerModeParam(triggerMode: Option[String],
       case Right(`shapeMapFileType`) => shapeMapFile match {
           case None => (None, Left(s"No value for shapeMapFile"))
           case Some(shapeMapStr) =>
-            val shapeMapFormat = shapeMapFormatFile.getOrElse(defaultDataFormat)
+            val shapeMapFormat = shapeMapFormatFile.getOrElse(defaultShapeMapFormat)
             ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
               case Left(msg) => (Some(shapeMapStr), Left(msg))
               case Right(parsedShapeMap) => (Some(shapeMapStr), Right(parsedShapeMap))

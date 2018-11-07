@@ -20,6 +20,8 @@ import org.log4s.getLogger
 import QueryParams._
 import Http4sUtils._
 import ApiHelper._
+import es.weso.server.helper.DataFormat
+import cats.implicits._
 import guru.nidi.graphviz.engine.{Format, Graphviz, Rasterizer}
 import guru.nidi.graphviz.model.{Graph, MutableGraph}
 import guru.nidi.graphviz.parse.Parser
@@ -245,7 +247,7 @@ object APIService {
 
     case req @ (GET | POST) -> Root / `api` / "validate" :?
       DataParameter(data) +&
-      DataFormatParam(optDataFormat) +&
+      DataFormatParam(maybeStrDataFormat) +&
       OptSchemaParam(optSchema) +&
       SchemaFormatParam(optSchemaFormat) +&
       SchemaEngineParam(optSchemaEngine) +&
@@ -266,10 +268,19 @@ object APIService {
         optShapeMapFormat, // TODO: Maybe a more specific param for File format?
         optActiveShapeMapTab
       )
-      val result = validateStr(data, optDataFormat,
-        optSchema, optSchemaFormat, optSchemaEngine,
-        tp, optInference)
-      Ok(result._1.toJson)
+      val either: Either[String, Option[DataFormat]] =  for {
+        df <- maybeStrDataFormat.map(DataFormat.fromString(_)).sequence
+      } yield df
+
+      either match {
+        case Left(str) => BadRequest(str)
+        case Right(optDataFormat) => {
+          val result = validateStr(data, optDataFormat,
+            optSchema, optSchemaFormat, optSchemaEngine,
+            tp, optInference)
+          Ok(result._1.toJson)
+        }
+      }
     }
 
     // Contents on /swagger are directly mapped to /swagger

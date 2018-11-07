@@ -1,8 +1,9 @@
 @import es.weso.json.JsonTwirl
 @import es.weso.server.DataValue
+@import es.weso.server.helper.DataFormat
 @import io.circe._
 
-@(dv: DataValue, targetDataFormat: String)
+@(dv: DataValue, targetDataFormat: DataFormat)
 <html lang="en">
     <head>
         @head("RDFShape: Data visualization")
@@ -14,8 +15,8 @@
             <form action="/dataVisualization" method="POST" enctype="multipart/form-data" id="info">
                 @dataPanel("info",dv,false)
                 <select id="targetDataFormat" form="info" name="targetDataFormat" >
-                    <option value="SVG" @{if (targetDataFormat == "SVG") {"selected"}}>SVG</option>
-                    <option value="PNG" @{if (targetDataFormat == "PNG") {"selected"}}>PNG</option>
+                    <option value="svg" @{if (targetDataFormat.name == "svg") {"selected"}}>SVG</option>
+                    <option value="png" @{if (targetDataFormat.name == "png") {"selected"}}>PNG</option>
                 </select>
                 <button type="submit">Data visualization</button>
             </form>

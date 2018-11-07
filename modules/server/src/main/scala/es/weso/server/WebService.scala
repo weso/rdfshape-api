@@ -16,12 +16,13 @@ import cats.effect.IO._
 import Defaults._
 import ApiHelper._
 import cats.data.EitherT
+import es.weso.server.helper.{DataFormat, Svg}
 import io.circe.Json
 import org.http4s.MediaType._
 import org.http4s.headers.`Content-Type`
 // import cats._
 // import cats.data._
-// import cats.implicits._
+import cats.implicits._
 import org.log4s.getLogger
 
 object WebService {
@@ -44,24 +45,48 @@ object WebService {
     case req@GET -> Root / "dataConversions" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
-      DataFormatParam(optDataFormat) +&
+      DataFormatParam(maybeDataFormat) +&
       InferenceParam(optInference) +&
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) +&
-      TargetDataFormatParam(optTargetDataFormat) => {
-      val dv = DataValue(optData,
-        optDataURL,
-        optDataFormat.getOrElse(defaultDataFormat),
-        availableDataFormats,
-        optInference.getOrElse(defaultInference),
-        availableInferenceEngines,
-        optEndpoint,
-        optActiveDataTab.getOrElse(defaultActiveDataTab)
-      )
-      Ok(html.dataConversions(dv,
-        optTargetDataFormat.getOrElse(defaultDataFormat),
-        dataConvert(optData, optDataFormat, optTargetDataFormat)))
+      TargetDataFormatParam(maybeTargetDataFormat) => {
+      val either: Either[String, (Option[DataFormat],Option[DataFormat])] =  for {
+         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+         tdf <- maybeTargetDataFormat.map(DataFormat.fromString(_)).sequence
+       } yield (df, tdf)
 
+      either match {
+        case Left(str) => BadRequest(str)
+        case Right(values) => {
+          val (optDataFormat,optTargetDataFormat) = values
+          val dp =
+            DataParam(optData, optDataURL, None, optEndpoint,
+              optDataFormat, optDataFormat,
+              None,  //no dataFormatFile
+              optInference,
+              optTargetDataFormat,
+              optActiveDataTab)
+
+          val dv = DataValue(optData,
+            optDataURL,
+            optDataFormat.getOrElse(defaultDataFormat),
+            availableDataFormats,
+            optInference.getOrElse(defaultInference),
+            availableInferenceEngines,
+            optEndpoint,
+            optActiveDataTab.getOrElse(defaultActiveDataTab)
+          )
+          val (maybeStr, eitherRDF) = dp.getData
+          println(s"GET dataConversions: $maybeStr\nEitherRDF:${eitherRDF}\ndp: ${dp}\ndv: $dv")
+          val result = if (allNone(optData,optDataURL,optEndpoint))
+            Right(None)
+          else for {
+            rdf <- eitherRDF
+            str <- rdf.serialize(optTargetDataFormat.getOrElse(defaultDataFormat).name)
+          } yield Some(str)
+          Ok(html.dataConversions(dv,optTargetDataFormat.getOrElse(defaultDataFormat),result))
+        }
+      }
     }
 
     case req@POST -> Root / "dataConversions" => {
@@ -73,7 +98,6 @@ object WebService {
             case Left(msg) => BadRequest(s"Error obtaining data: $msg")
             case Right((rdf,dp)) => {
               val targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat)
-              val result = rdf.serialize(targetFormat).map(Some(_))
               val dv = DataValue(
                 dp.data, dp.dataURL,
                 dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
@@ -81,6 +105,11 @@ object WebService {
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
+              val (maybeStr, eitherRDF) = dp.getData
+              val result = for {
+                rdf <- eitherRDF
+                str <- rdf.serialize(targetFormat.name)
+              } yield Some(str)
               Ok(html.dataConversions(dv,
                   dp.targetDataFormat.getOrElse(defaultDataFormat),
                   result))
@@ -93,27 +122,40 @@ object WebService {
     case req@GET -> Root / "dataInfo" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
-      DataFormatParam(optDataFormat) +&
+      DataFormatParam(maybeDataFormat) +&
       InferenceParam(optInference) +&
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) => {
+      val either: Either[String, Option[DataFormat]] =  for {
+        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+      } yield df
 
-      val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
-      val (maybeStr, eitherRDF) = dp.getData
-      eitherRDF.fold(
-        str => BadRequest(str),
-        rdf => {
-          val dv = DataValue(optData,
-            optDataURL,
-            optDataFormat.getOrElse(defaultDataFormat),
-            availableDataFormats,
-            optInference.getOrElse(defaultInference),
-            availableInferenceEngines,
-            optEndpoint,
-            optActiveDataTab.getOrElse(defaultActiveDataTab)
-          )
-          Ok(html.dataInfo(dataInfo(rdf),dv))
-        })
+      either match {
+        case Left(str) => BadRequest(str)
+        case Right(optDataFormat) => {
+          val dp =
+            DataParam(optData, optDataURL, None, optEndpoint,
+              optDataFormat, optDataFormat,
+              None,  //no dataFormatFile
+              optInference,
+              None, optActiveDataTab)
+          val (maybeStr, eitherRDF) = dp.getData
+          eitherRDF.fold(
+            str => BadRequest(str),
+            rdf => {
+              val dv = DataValue(optData,
+                optDataURL,
+                optDataFormat.getOrElse(defaultDataFormat),
+                availableDataFormats,
+                optInference.getOrElse(defaultInference),
+                availableInferenceEngines,
+                optEndpoint,
+                optActiveDataTab.getOrElse(defaultActiveDataTab)
+              )
+              Ok(html.dataInfo(dataInfo(rdf),dv))
+            })
+        }
+      }
     }
 
     case req@POST -> Root / "dataInfo" => {
@@ -141,29 +183,44 @@ object WebService {
     case req@GET -> Root / "dataVisualization" :?
       OptDataParam(optData) +&
         OptDataURLParam(optDataURL) +&
-        DataFormatParam(optDataFormat) +&
+        DataFormatParam(maybeDataFormat) +&
         InferenceParam(optInference) +&
         OptEndpointParam(optEndpoint) +&
         OptActiveDataTabParam(optActiveDataTab) +&
-        TargetDataFormatParam(optTargetDataFormat) => {
+        TargetDataFormatParam(maybeTargetDataFormat) => {
 
-      val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
-      val (maybeStr, eitherRDF) = dp.getData
-      eitherRDF.fold(
-        str => BadRequest(str),
-        rdf => {
-          val dv = DataValue(optData,
-            optDataURL,
-            optDataFormat.getOrElse(defaultDataFormat),
-            availableDataFormats,
-            optInference.getOrElse(defaultInference),
-            availableInferenceEngines,
-            optEndpoint,
-            optActiveDataTab.getOrElse(defaultActiveDataTab)
+      val either: Either[String, (Option[DataFormat],Option[DataFormat])] =  for {
+        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+        tdf <- maybeTargetDataFormat.map(DataFormat.fromString(_)).sequence
+      } yield (df, tdf)
+
+      either match {
+        case Left(str) => BadRequest(str)
+        case Right(values) => {
+          val (optDataFormat,optTargetDataFormat) = values
+          val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None,
+            optInference, None, optActiveDataTab
           )
-          val targetDataFormat = optTargetDataFormat.getOrElse("SVG")
-          Ok(html.dataVisualization(dv,targetDataFormat))
-        })
+          val (maybeStr, eitherRDF) = dp.getData
+          eitherRDF.fold(
+            str => BadRequest(str),
+            rdf => {
+              val (optDataFormat, optTargetDataFormat) = values
+              val dv = DataValue(optData,
+                optDataURL,
+                optDataFormat.getOrElse(defaultDataFormat),
+                availableDataFormats,
+                optInference.getOrElse(defaultInference),
+                availableInferenceEngines,
+                optEndpoint,
+                optActiveDataTab.getOrElse(defaultActiveDataTab)
+              )
+              val targetDataFormat = optTargetDataFormat.getOrElse(Svg)
+              Ok(html.dataVisualization(dv,targetDataFormat))
+            })
+        }
+      }
+
     }
 
 
@@ -182,13 +239,10 @@ object WebService {
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               ) */
-              val targetFormat = dp.targetDataFormat.getOrElse("SVG")
-              DataConverter.rdfConvert(rdf,targetFormat).
+              val targetFormat = dp.targetDataFormat.getOrElse(Svg)
+              DataConverter.rdfConvert(rdf,targetFormat.name).
                 fold(e => BadRequest(s"Error: $e"),
-                  result => targetFormat match {
-                    case "SVG" => Ok(result).map(_.withContentType(`Content-Type`(`image/svg+xml`)))
-                    case "PNG" => Ok(result).map(_.withContentType(`Content-Type`(`text/html`)))
-                  }
+                  result => Ok(result).map(_.withContentType(`Content-Type`(targetFormat.mimeType)))
                 )
             }
           }
@@ -356,7 +410,7 @@ object WebService {
       OptExamplesParam(optExamples) +&
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
-      DataFormatParam(optDataFormat) +&
+      DataFormatParam(maybeDataFormat) +&
       OptSchemaParam(optSchema) +&
       SchemaURLParam(optSchemaURL) +&
       SchemaFormatParam(optSchemaFormat) +&
@@ -375,81 +429,98 @@ object WebService {
       OptActiveDataTabParam(optActiveDataTab) +&
       OptActiveSchemaTabParam(optActiveSchemaTab) +&
       OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
-
       if (optExamples.isDefined) {
         Ok(html.load(optExamples.get))
       } else {
-        val baseUri = req.uri
-        logger.info(s"BaseURI: $baseUri")
-        logger.info(s"Endpoint: $optEndpoint")
-        val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
-        val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, None, optActiveSchemaTab)
-        val optShapeMap = (optShapeMapFirst, optShapeMapAlt) match {
-          case (Some(s1), Some(s2)) if s1 == s2 => {
-            Some(s1)
+        val either: Either[String, Option[DataFormat]] =  for {
+          df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+        } yield df
+
+        either match {
+          case Left(str) => BadRequest(str)
+          case Right(optDataFormat) => {
+            val baseUri = req.uri
+            logger.info(s"BaseURI: $baseUri")
+            logger.info(s"Endpoint: $optEndpoint")
+            val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+            val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, None, optActiveSchemaTab)
+            val optShapeMap = (optShapeMapFirst, optShapeMapAlt) match {
+              case (Some(s1), Some(s2)) if s1 == s2 => {
+                Some(s1)
+              }
+              case (Some(s1), Some(s2)) => {
+                logger.info(s"Two values for shapeMap param, using $s1 and omitting $s2")
+                Some(s1)
+              }
+              case (Some(s1), None) => Some(s1)
+              case (None, Some(s2)) => Some(s2)
+              case (None, None) => None
+            }
+            val tp = TriggerModeParam(
+              optTriggerMode,
+              optShapeMap,
+              optShapeMapFormat,
+              optShapeMapURL,
+              optShapeMapFormat, // TODO: Maybe a more specific param for URL format?
+              optShapeMapFile,
+              optShapeMapFormat, // TODO: Maybe a more specific param for File format?
+              optActiveShapeMapTab
+            )
+            logger.info(s"OptSchema: $optSchema")
+            logger.info(s"OptSchemaFormat: $optSchemaFormat")
+
+            val (dataStr, eitherRDF) = dp.getData
+
+            val eitherResult: Either[String,IO[Response[IO]]] = for {
+              rdf <- eitherRDF
+              (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
+              schema <- eitherSchema
+            } yield {
+              val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp)
+              validateResponse(result, time, dp, sp, tp)
+            }
+
+            eitherResult.fold(e => BadRequest(s"Error: $e"),identity)
           }
-          case (Some(s1), Some(s2)) => {
-            logger.info(s"Two values for shapeMap param, using $s1 and omitting $s2")
-            Some(s1)
-          }
-          case (Some(s1), None) => Some(s1)
-          case (None, Some(s2)) => Some(s2)
-          case (None, None) => None
         }
-        val tp = TriggerModeParam(
-          optTriggerMode,
-          optShapeMap,
-          optShapeMapFormat,
-          optShapeMapURL,
-          optShapeMapFormat, // TODO: Maybe a more specific param for URL format?
-          optShapeMapFile,
-          optShapeMapFormat, // TODO: Maybe a more specific param for File format?
-          optActiveShapeMapTab
-        )
-        logger.info(s"OptSchema: $optSchema")
-        logger.info(s"OptSchemaFormat: $optSchemaFormat")
-
-        val (dataStr, eitherRDF) = dp.getData
-
-        val eitherResult: Either[String,IO[Response[IO]]] = for {
-          rdf <- eitherRDF
-          (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
-          schema <- eitherSchema
-        } yield {
-          val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp)
-          validateResponse(result, time, dp, sp, tp)
-        }
-
-        eitherResult.fold(e => BadRequest(s"Error: $e"),identity)
       }
     }
 
     case req@GET -> Root / "query" :?
       OptDataParam(optData) +&
         OptDataURLParam(optDataURL) +&
-        DataFormatParam(optDataFormat) +&
+        DataFormatParam(maybeDataFormat) +&
         OptQueryParam(optQuery) +&
         InferenceParam(optInference) +&
         OptEndpointParam(optEndpoint) +&
         OptActiveDataTabParam(optActiveDataTab) +&
         OptActiveQueryTabParam(optActiveQueryTab)
         => {
-      val result = query(optData.getOrElse(""), optDataFormat, optQuery, optInference)
-      val dv = DataValue(optData,
-        optDataURL,
-        optDataFormat.getOrElse(defaultDataFormat),
-        availableDataFormats,
-        optInference.getOrElse(defaultInference),
-        availableInferenceEngines,
-        optEndpoint,
-        optActiveDataTab.getOrElse(defaultActiveDataTab)
-      )
-      Ok(html.query(
-        result,
-        dv,
-        optQuery,
-        optActiveQueryTab.getOrElse(defaultActiveQueryTab)
-      ))
+      val either: Either[String, Option[DataFormat]] =  for {
+        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+      } yield df
+
+      either match {
+        case Left(str) => BadRequest(str)
+        case Right(optDataFormat) => {
+          val result = query(optData.getOrElse(""), optDataFormat, optQuery, optInference)
+          val dv = DataValue(optData,
+            optDataURL,
+            optDataFormat.getOrElse(defaultDataFormat),
+            availableDataFormats,
+            optInference.getOrElse(defaultInference),
+            availableInferenceEngines,
+            optEndpoint,
+            optActiveDataTab.getOrElse(defaultActiveDataTab)
+          )
+          Ok(html.query(
+            result,
+            dv,
+            optQuery,
+            optActiveQueryTab.getOrElse(defaultActiveQueryTab)
+          ))
+        }
+      }
     }
 
     case req@POST -> Root / "query" => {
@@ -492,7 +563,7 @@ object WebService {
     case req@GET -> Root / "shapeInfer" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
-      DataFormatParam(optDataFormat) +&
+      DataFormatParam(maybeDataFormat) +&
       OptEndpointParam(optEndpoint) +&
       InferenceParam(optInference) +&
       SchemaEngineParam(optSchemaEngineParam) +&
@@ -500,37 +571,46 @@ object WebService {
       OptActiveDataTabParam(optActiveDataTab) +&
       OptNodeSelectorParam(optNodeSelectorParam)
     => {
-      val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
-      val (dataStr, eitherRDF) = dp.getData
-      val dv = DataValue(optData,
-        optDataURL,
-        optDataFormat.getOrElse(defaultDataFormat),
-        availableDataFormats,
-        optInference.getOrElse(defaultInference),
-        availableInferenceEngines,
-        optEndpoint,
-        optActiveDataTab.getOrElse(defaultActiveDataTab)
-      )
-      val eitherResult: Either[String,Json] = for {
-        rdf <- eitherRDF
-        jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None)
-      } yield {
-        jsonResult
-      }
+      val either: Either[String, Option[DataFormat]] =  for {
+        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+      } yield df
 
-      eitherResult.fold(e => BadRequest(s"Error: $e"),r => {
-        Ok(html.shapeInfer(
-         Some(r),
-         dv,
-         availableSchemaEngines,
-         optSchemaEngineParam.getOrElse(defaultSchemaEngine),
-         availableSchemaFormats,
-         optSchemaFormatParam.getOrElse(defaultSchemaFormat),
-         optNodeSelectorParam.getOrElse(""),
-         "Shape"
-        ))
+      either match {
+        case Left(str) => BadRequest(str)
+        case Right(optDataFormat) => {
+          val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+          val (dataStr, eitherRDF) = dp.getData
+          val dv = DataValue(optData,
+            optDataURL,
+            optDataFormat.getOrElse(defaultDataFormat),
+            availableDataFormats,
+            optInference.getOrElse(defaultInference),
+            availableInferenceEngines,
+            optEndpoint,
+            optActiveDataTab.getOrElse(defaultActiveDataTab)
+          )
+          val eitherResult: Either[String,Json] = for {
+            rdf <- eitherRDF
+            jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None)
+          } yield {
+            jsonResult
+          }
+
+          eitherResult.fold(e => BadRequest(s"Error: $e"),r => {
+            Ok(html.shapeInfer(
+              Some(r),
+              dv,
+              availableSchemaEngines,
+              optSchemaEngineParam.getOrElse(defaultSchemaEngine),
+              availableSchemaFormats,
+              optSchemaFormatParam.getOrElse(defaultSchemaFormat),
+              optNodeSelectorParam.getOrElse(""),
+              "Shape"
+            ))
+          }
+          )
+        }
       }
-      )
     }
 
     case req@POST -> Root / "shapeInfer" => {
@@ -624,4 +704,7 @@ object WebService {
     ))
   }
 
+  private def allNone(maybes: Option[String]*) = {
+    maybes.forall(_.isEmpty)
+  }
 }

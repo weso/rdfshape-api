@@ -1,6 +1,8 @@
+@import es.weso.server.helper.DataFormat
+
 @( formId: String,
-   formats: List[String],
-   current: String
+   formats: List[DataFormat],
+   current: DataFormat
 )
 <label for="targetDataFormat">Target Data Format</label>
 <select id="targetDataFormat" form="@formId" name="targetDataFormat">

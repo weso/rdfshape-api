@@ -18,6 +18,7 @@ import es.weso.rdf.nodes.IRI
 import org.log4s.getLogger
 import es.weso.uml._
 import es.weso.schemaInfer._
+import es.weso.server.helper.DataFormat
 import es.weso.shapeMaps.NodeSelector
 
 import scala.util.Try
@@ -53,7 +54,7 @@ object ApiHelper {
     )
   }
 
-  private[server] def dataConvert(
+/*  private[server] def dataConvert(
      optData: Option[String],
      optDataFormat: Option[String],
      optTargetDataFormat: Option[String]): Either[String, Option[String]] =
@@ -67,7 +68,7 @@ object ApiHelper {
         str <- rdf.serialize(resultDataFormat)
       } yield Some(str)
     }
-  }
+  } */
 
   private[server] def schemaConvert(optSchema: Option[String],
                   optSchemaFormat: Option[String],
@@ -113,7 +114,7 @@ object ApiHelper {
   }
 
   private[server] def validateStr(data: String,
-                                  optDataFormat: Option[String],
+                                  optDataFormat: Option[DataFormat],
                                   optSchema: Option[String],
                                   optSchemaFormat: Option[String],
                                   optSchemaEngine: Option[String],
@@ -148,17 +149,17 @@ object ApiHelper {
     )
 
   private[server] def query(data: String,
-            optDataFormat: Option[String],
+            optDataFormat: Option[DataFormat],
             optQuery: Option[String],
             optInference: Option[String]
            ): Either[String, Json] = {
     optQuery match {
       case None => Right(Json.Null)
       case Some(queryStr) => {
-        val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
+        val dataFormat = optDataFormat.getOrElse(defaultDataFormat)
         val base = Some(IRI(FileUtils.currentFolderURL))
         for {
-          basicRdf <- RDFAsJenaModel.fromChars(data, dataFormat, base)
+          basicRdf <- RDFAsJenaModel.fromChars(data, dataFormat.name, base)
           rdf <- basicRdf.applyInference(optInference.getOrElse("None"))
           json <- rdf.queryAsJson(queryStr)
         } yield json
