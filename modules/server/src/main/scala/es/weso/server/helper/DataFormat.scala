@@ -10,7 +10,8 @@ sealed trait DataFormat {
 }
 
 object DataFormat {
-  def fromString(name: String): Either[String,DataFormat] = {
+  def fromString(name: String): Either[String,DataFormat] = if (name == "") Right(default)
+  else {
     dataFormatsMap.get(name.toLowerCase) match {
       case None => Left(s"Not found data format: $name. Available formats: ${availableDataFormats.mkString(",")}")
       case Some(df) => Right(df)
