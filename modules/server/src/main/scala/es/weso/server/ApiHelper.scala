@@ -184,7 +184,7 @@ object ApiHelper {
          selector <- NodeSelector.fromString(nodeSelector, None, rdf.getPrefixMap())
          schemaInfer <- {
            println(s"Selector: $selector")
-           SchemaInfer.infer(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
+           SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
          }
          str <- schemaInfer.serialize(schemaFormat)
        } yield Json.fromFields(
