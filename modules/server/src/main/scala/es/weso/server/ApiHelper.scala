@@ -186,12 +186,14 @@ object ApiHelper {
            println(s"Selector: $selector")
            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
          }
+         uml <- Schema2UML.schema2UML(schemaInfer)
          str <- schemaInfer.serialize(schemaFormat)
        } yield Json.fromFields(
          List(
            ("inferedShape", Json.fromString(str)),
            ("format", Json.fromString(schemaFormat)),
-           ("engine", Json.fromString(engine))
+           ("engine", Json.fromString(engine)),
+           ("svg", Json.fromString(uml.toSVG))
          )
        )
      }

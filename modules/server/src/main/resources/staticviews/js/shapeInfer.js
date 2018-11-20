@@ -36,8 +36,15 @@ $(document).ready(function(){
 function showResult(result) {
     result = $("#resultDiv").data("result");
     if(result) {
+        if (result.svg) {
+            console.log(result.svg);
+            var svgDiv = $("<div/>").append(result.svg);
+            $("#resultDiv").append(svgDiv);
+        }
         var textArea = $("<textarea/>").attr("id","schemaAreaId").text(result.inferedShape);
-        $("#resultDiv").append(textArea);
+        var textAreaTitle = $("<h2/>").text("Inferred shape");
+        var textAreaDiv = $("<div/>").append(textAreaTitle).append(textArea);
+        $("#resultDiv").append(textAreaDiv);
         var pre = $("<pre/>").text(JSON.stringify(result,undefined,2));
         var details = $("<details/>").append(pre);
         $("#resultDiv").append(details);
