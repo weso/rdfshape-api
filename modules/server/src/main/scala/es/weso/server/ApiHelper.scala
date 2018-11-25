@@ -182,10 +182,11 @@ object ApiHelper {
      case Some(nodeSelector) => {
        for {
          selector <- NodeSelector.fromString(nodeSelector, None, rdf.getPrefixMap())
-         schemaInfer <- {
+         result <- {
            println(s"Selector: $selector")
            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
          }
+         (schemaInfer, resultMap) = result
          uml <- Schema2UML.schema2UML(schemaInfer)
          str <- schemaInfer.serialize(schemaFormat)
        } yield Json.fromFields(
