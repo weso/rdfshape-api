@@ -40,3 +40,4 @@ pids
 *.tgz
 
 *~
+#build.sbt#
