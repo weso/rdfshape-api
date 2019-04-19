@@ -1,6 +1,6 @@
 package es.weso.server
 
-import java.io.ByteArrayOutputStream
+//import java.io.ByteArrayOutputStream
 
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
@@ -22,15 +22,17 @@ import Http4sUtils._
 import ApiHelper._
 import es.weso.server.helper.DataFormat
 import cats.implicits._
-import guru.nidi.graphviz.engine.{Format, Graphviz, Rasterizer}
-import guru.nidi.graphviz.model.{Graph, MutableGraph}
-import guru.nidi.graphviz.parse.Parser
-import javax.imageio.ImageIO
-import javax.xml.bind.DatatypeConverter
+//import guru.nidi.graphviz.engine.{Format, Graphviz, Rasterizer}
+//import guru.nidi.graphviz.model.{Graph, MutableGraph}
+//import guru.nidi.graphviz.parse.Parser
+//import javax.imageio.ImageIO
+//import javax.xml.bind.DatatypeConverter
 
-import scala.util.Try
+//import scala.util.Try
 
 object APIService {
+
+  private val relativeBase = Defaults.relativeBase
 
   private val logger = getLogger
   val api = "api"
@@ -277,7 +279,7 @@ object APIService {
         case Right(optDataFormat) => {
           val result = validateStr(data, optDataFormat,
             optSchema, optSchemaFormat, optSchemaEngine,
-            tp, optInference)
+            tp, optInference, relativeBase)
           Ok(result._1.toJson)
         }
       }

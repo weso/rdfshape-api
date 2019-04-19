@@ -8,26 +8,33 @@ function getHost() {
 function showQualify(node, prefix) {
  console.log("showQualify node)");
  console.log(node);
- var iriRegexp = /^<(.*)>$/g;
- var matchIri = iriRegexp.exec(node);
- if (matchIri) {
-   var rawNode = matchIri[1];
-   for (var key in prefix) {
-     if (rawNode.startsWith(prefix[key])) {
-       var localName = rawNode.slice(prefix[key].length);
-        console.log("qualifying " + localName)
-/*       if (localName.indexOf("/") > -1) {
-        return "&lt;" + rawNode + "&gt;" ;
-       } else */
-        var longNode = "<" + rawNode + ">";
-        return "<abbr title=\"" + longNode + "\">" + key + ":" + localName + "</abbr>";
+ var relativeBaseRegex = /^<internal:\/\/base\/(.*)>$/g;
+ var matchBase = relativeBaseRegex.exec(node);
+ if (matchBase) {
+ var rawNode = matchBase[1];
+   return "&lt;" + rawNode + "&gt;";
+ } else {
+     var iriRegexp = /^<(.*)>$/g;
+     var matchIri = iriRegexp.exec(node);
+     if (matchIri) {
+         var rawNode = matchIri[1];
+         for (var key in prefix) {
+             if (rawNode.startsWith(prefix[key])) {
+                 var localName = rawNode.slice(prefix[key].length);
+                 console.log("qualifying " + localName)
+                 /*       if (localName.indexOf("/") > -1) {
+                         return "&lt;" + rawNode + "&gt;" ;
+                        } else */
+                 var longNode = "<" + rawNode + ">";
+                 return "<abbr title=\"" + longNode + "\">" + key + ":" + localName + "</abbr>";
+             }
+         }
+         return "&lt;" + rawNode + "&gt;";
      }
-   }
-   return "&lt;" + rawNode + "&gt;" ;
+     if (node.match(/^[0-9\"\'\_]/)) return node;
+     console.log("Unknown format for node: " + node);
+     return node;
  }
- if (node.match(/^[0-9\"\'\_]/)) return node;
- console.log("Unknown format for node: " + node);
- return node;
 }
 
 function resetResult(result) {

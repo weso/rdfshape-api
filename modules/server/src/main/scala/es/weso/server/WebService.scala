@@ -11,21 +11,20 @@ import Http4sUtils._
 import org.http4s.multipart._
 import es.weso._
 import es.weso.server.QueryParams._
-import ApiHelper.{query, _}
+import ApiHelper._
 import cats.effect.IO._
 import Defaults._
 import ApiHelper._
 import cats.data.EitherT
 import es.weso.server.helper.{DataFormat, Svg}
 import io.circe.Json
-import org.http4s.MediaType._
 import org.http4s.headers.`Content-Type`
-// import cats._
-// import cats.data._
 import cats.implicits._
 import org.log4s.getLogger
 
 object WebService {
+
+  private val relativeBase = Defaults.relativeBase
 
   // Get the static content
   private val static: HttpService[IO] =
@@ -76,13 +75,13 @@ object WebService {
             optEndpoint,
             optActiveDataTab.getOrElse(defaultActiveDataTab)
           )
-          val (maybeStr, eitherRDF) = dp.getData
+          val (maybeStr, eitherRDF) = dp.getData(relativeBase)
           println(s"GET dataConversions: $maybeStr\nEitherRDF:${eitherRDF}\ndp: ${dp}\ndv: $dv")
           val result = if (allNone(optData,optDataURL,optEndpoint))
             Right(None)
           else for {
             rdf <- eitherRDF
-            str <- rdf.serialize(optTargetDataFormat.getOrElse(defaultDataFormat).name)
+            str <- rdf.serialize(optTargetDataFormat.getOrElse(defaultDataFormat).name, relativeBase)
           } yield Some(str)
           Ok(html.dataConversions(dv,optTargetDataFormat.getOrElse(defaultDataFormat),result))
         }
@@ -93,7 +92,7 @@ object WebService {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap).value
+          maybeData <- DataParam.mkData(partsMap, relativeBase).value
           response <- maybeData match {
             case Left(msg) => BadRequest(s"Error obtaining data: $msg")
             case Right((rdf,dp)) => {
@@ -105,7 +104,7 @@ object WebService {
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
-              val (maybeStr, eitherRDF) = dp.getData
+              val (maybeStr, eitherRDF) = dp.getData(relativeBase)
               val result = for {
                 rdf <- eitherRDF
                 str <- rdf.serialize(targetFormat.name)
@@ -139,7 +138,7 @@ object WebService {
               None,  //no dataFormatFile
               optInference,
               None, optActiveDataTab)
-          val (maybeStr, eitherRDF) = dp.getData
+          val (maybeStr, eitherRDF) = dp.getData(relativeBase)
           eitherRDF.fold(
             str => BadRequest(str),
             rdf => {
@@ -162,7 +161,7 @@ object WebService {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap).value
+          maybeData <- DataParam.mkData(partsMap,relativeBase).value
           response <- maybeData match {
             case Left(str) => BadRequest (s"Error obtaining data: $str")
             case Right((rdf,dp)) => {
@@ -222,7 +221,7 @@ object WebService {
                                optInference,
                                None,
                                optActiveDataTab)
-            val (maybeStr, eitherRDF) = dp.getData
+            val (maybeStr, eitherRDF) = dp.getData(relativeBase)
             eitherRDF.fold(
               str => BadRequest(str),
               rdf => {
@@ -245,7 +244,7 @@ object WebService {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap).value
+          maybeData <- DataParam.mkData(partsMap,relativeBase).value
           response <- maybeData match {
             case Left(str) => BadRequest (s"Error obtaining data: $str")
             case Right((rdf,dp)) => {
@@ -409,14 +408,14 @@ object WebService {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST validate partsMap. $partsMap")
         val r = for {
-          dataPair <- DataParam.mkData(partsMap)
+          dataPair <- DataParam.mkData(partsMap,relativeBase)
           (rdf, dp) = dataPair
           schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
           (schema, sp) = schemaPair
           tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
         } yield {
           // val schemaEmbedded = getSchemaEmbedded(sp)
-          val (result, maybeTriggerMode, time) = validate(rdf,dp, schema, sp, tp)
+          val (result, maybeTriggerMode, time) = validate(rdf,dp, schema, sp, tp, relativeBase)
           validateResponse(result, time, dp, sp, tp)
         }
       r.value.unsafeRunSync.fold(e => BadRequest(e), identity)
@@ -486,14 +485,14 @@ object WebService {
             logger.info(s"OptSchema: $optSchema")
             logger.info(s"OptSchemaFormat: $optSchemaFormat")
 
-            val (dataStr, eitherRDF) = dp.getData
+            val (dataStr, eitherRDF) = dp.getData(relativeBase)
 
             val eitherResult: Either[String,IO[Response[IO]]] = for {
               rdf <- eitherRDF
               (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
               schema <- eitherSchema
             } yield {
-              val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp)
+              val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp,relativeBase)
               validateResponse(result, time, dp, sp, tp)
             }
 
@@ -544,7 +543,7 @@ object WebService {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap).value
+          maybeData <- DataParam.mkData(partsMap,relativeBase).value
           response <- maybeData match {
             case Left(msg) => BadRequest(s"Error obtaining data: $msg")
             case Right((rdf, dp)) => for {
@@ -596,7 +595,7 @@ object WebService {
         case Left(str) => BadRequest(str)
         case Right(optDataFormat) => {
           val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
-          val (dataStr, eitherRDF) = dp.getData
+          val (dataStr, eitherRDF) = dp.getData(relativeBase)
           val dv = DataValue(optData,
             optDataURL,
             optDataFormat.getOrElse(defaultDataFormat),
@@ -608,7 +607,7 @@ object WebService {
           )
           val eitherResult: Either[String,Json] = for {
             rdf <- eitherRDF
-            jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None)
+            jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None, relativeBase)
           } yield {
             jsonResult
           }
@@ -634,12 +633,12 @@ object WebService {
       req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         val r = for {
-          dataPair <- DataParam.mkData(partsMap)
+          dataPair <- DataParam.mkData(partsMap,relativeBase)
           (rdf, dp) = dataPair
           nodeSelector <- EitherT(partsMap.eitherPartValue("nodeSelector"))
           schemaEngine <- EitherT(partsMap.eitherPartValue("schemaEngine"))
           schemaFormat <- EitherT(partsMap.eitherPartValue("schemaFormatTextArea"))
-          jsonResult <- EitherT.fromEither[IO](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None))
+          jsonResult <- EitherT.fromEither[IO](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None,relativeBase))
         } yield {
           val dv = DataValue(dp.data,dp.dataURL,dp.dataFormat.getOrElse(defaultDataFormat),availableDataFormats,
             dp.inference.getOrElse(defaultInference),

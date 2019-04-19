@@ -24,7 +24,8 @@ scalafmt: {
 }
  */
 
-lazy val umlShaclexVersion     = "0.0.25"
+lazy val umlShaclexVersion     = "0.0.24
+"
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
@@ -168,7 +169,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.5",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.

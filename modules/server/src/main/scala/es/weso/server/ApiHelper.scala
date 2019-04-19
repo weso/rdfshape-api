@@ -1,7 +1,7 @@
 package es.weso.server
 
-import cats._
-import cats.data._
+//import cats._
+//import cats.data._
 import cats.implicits._
 import cats.effect.IO
 import org.http4s.client.blaze.Http1Client
@@ -32,7 +32,7 @@ object ApiHelper {
     * Get base URI
     * @return default URI obtained from current folder
     */
-  private[server] def getBase: Option[String] = Some(FileUtils.currentFolderURL)
+  private[server] def getBase: Option[String] = Defaults.relativeBase.map(_.str)
 
   private[server] def prefixMap2Json(pm: PrefixMap): Json = {
     Json.fromFields(pm.pm.map { case (prefix, iri) => (prefix.str, Json.fromString(iri.getLexicalForm)) })
@@ -83,7 +83,7 @@ object ApiHelper {
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       for {
         schema <- Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
-        result <- schema.convert(optTargetSchemaFormat,optTargetSchemaEngine)
+        result <- schema.convert(optTargetSchemaFormat,optTargetSchemaEngine,base.map(IRI(_)))
       } yield Some(result)
     }
   }
@@ -92,14 +92,15 @@ object ApiHelper {
                                dp:DataParam,
                                schema: Schema,
                                sp: SchemaParam,
-                               tp: TriggerModeParam
+                               tp: TriggerModeParam,
+                               relativeBase: Option[IRI]
               ): (Result, Option[ValidationTrigger], Long) = {
     logger.debug(s"APIHelper: validate")
-    val base = Some(FileUtils.currentFolderURL)
+    val base = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
     val triggerMode = tp.triggerMode
     val (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(rdf.getPrefixMap,schema.pm)
     ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
-         optShapeMapStr.getOrElse(""),base, None, None,
+         optShapeMapStr.getOrElse(""), base, None, None,
          rdf.getPrefixMap, schema.pm) match {
          case Left(msg) =>
             err(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg")
@@ -119,7 +120,8 @@ object ApiHelper {
                                   optSchemaFormat: Option[String],
                                   optSchemaEngine: Option[String],
                                   tp: TriggerModeParam,
-                                  optInference: Option[String]
+                                  optInference: Option[String],
+                                  relativeBase: Option[IRI]
                                  ): (Result, Option[ValidationTrigger], Long) = {
     val dp = DataParam.empty.copy(
       data = Some(data),
@@ -131,22 +133,24 @@ object ApiHelper {
       schemaFormatTextArea = optSchemaFormat,
       schemaEngine = optSchemaEngine
     )
-    val (_,eitherRDF) = dp.getData
+    val (_,eitherRDF) = dp.getData(relativeBase)
     val result = for {
      rdf <- eitherRDF
      (_,eitherSchema) = sp.getSchema(Some(rdf))
      schema <- eitherSchema
     } yield (rdf,schema)
 
-    result.fold(e => err(e), { case (rdf,schema) =>
-      validate(rdf,dp,schema,sp,tp)}
-    )
+    result.fold(
+      e => err(e),
+      r => {
+        val (rdf,schema) = r
+        validate(rdf,dp,schema,sp,tp, relativeBase)
+      }
+   )
   }
 
   private def err(msg: String) =
-    (Result.errStr(s"Error: $msg"),
-      None, NoTime
-    )
+    (Result.errStr(s"Error: $msg"), None, NoTime )
 
   private[server] def query(data: String,
             optDataFormat: Option[DataFormat],
@@ -172,16 +176,17 @@ object ApiHelper {
                                  optInference: Option[String],
                                  optEngine: Option[String],
                                  optSchemaFormat: Option[String],
-                                 optLabelName: Option[String]
+                                 optLabelName: Option[String],
+                                 relativeBase: Option[IRI]
                                 ): Either[String, Json] = {
-   val base = Some(FileUtils.currentFolderURL)
+   val base = relativeBase.map(_.str)
    val engine = optEngine.getOrElse(defaultSchemaEngine)
    val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
    optNodeSelector match {
      case None => Right(Json.Null)
      case Some(nodeSelector) => {
        for {
-         selector <- NodeSelector.fromString(nodeSelector, None, rdf.getPrefixMap())
+         selector <- NodeSelector.fromString(nodeSelector, base, rdf.getPrefixMap())
          result <- {
            println(s"Selector: $selector")
            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))

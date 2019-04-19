@@ -10,8 +10,8 @@ import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
 import es.weso.rdf.nodes.IRI
 import es.weso.server.helper.DataFormat
-import org.http4s.Uri
-import org.http4s.client.blaze.Http1Client
+//import org.http4s.Uri
+//import org.http4s.client.blaze.Http1Client
 import org.log4s.getLogger
 
 case class DataParam(data: Option[String],
@@ -85,7 +85,8 @@ case class DataParam(data: Option[String],
     *         if it has string representation and the second parameter
     *         is the RDF data
     */
-  def getData: (Option[String], Either[String,RDFReasoner]) = {
+  def getData(relativeBase: Option[IRI]): (Option[String], Either[String,RDFReasoner]) = {
+    val base = relativeBase.map(_.str)
     logger.debug(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case None => {
@@ -101,7 +102,7 @@ case class DataParam(data: Option[String],
           case None => (None, Left(s"Non value for dataURL"))
           case Some(dataUrl) => {
             val dataFormat = dataFormatUrl.getOrElse(DataFormat.default)
-            rdfFromUri(new URI(dataUrl), dataFormat,None) match {
+            rdfFromUri(new URI(dataUrl), dataFormat,base) match {
               case Left(str) => (None, Left(s"Error obtaining $dataUrl with $dataFormat: $str"))
               case Right(rdf) => applyInference(rdf, inference, dataFormat)
             }
@@ -113,7 +114,7 @@ case class DataParam(data: Option[String],
           case None => (None, Left(s"No value for dataFile"))
           case Some(dataStr) =>
             val dataFormat = dataFormatFile.getOrElse(defaultDataFormat)
-            rdfFromString(dataStr, dataFormat, None) match {
+            rdfFromString(dataStr, dataFormat, base) match {
               case Left(msg) => (Some(dataStr), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
@@ -143,12 +144,12 @@ case class DataParam(data: Option[String],
           case None => (None, Right(RDFAsJenaModel.empty))
           case Some(data) => {
             val dataFormat = dataFormatTextarea.getOrElse(defaultDataFormat)
-            rdfFromString(data, dataFormat, None) match {
+            rdfFromString(data, dataFormat, base) match {
               case Left(msg) => (Some(data), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
-                  case Left(msg) => (rdf.serialize(dataFormat.name).toOption, Left(s"Error applying inference: $msg"))
-                  case Right(newRdf) => (newRdf.serialize(dataFormat.name).toOption, Right(newRdf))
+                  case Left(msg) => (rdf.serialize(dataFormat.name,relativeBase).toOption, Left(s"Error applying inference: $msg"))
+                  case Right(newRdf) => (newRdf.serialize(dataFormat.name,relativeBase).toOption, Right(newRdf))
                 }
               }
             }
@@ -200,13 +201,14 @@ case class DataParam(data: Option[String],
 object DataParam {
   private[this] val logger = getLogger
 
-  private[server] def mkData(partsMap: PartsMap
+  private[server] def mkData(partsMap: PartsMap,
+                             relativeBase: Option[IRI]
                             ): EitherT[IO,String,(RDFReasoner,DataParam)] = {
 
     val r = for {
       dp <- mkDataParam(partsMap)
     } yield {
-      val (maybeStr, maybeData) = dp.getData
+      val (maybeStr, maybeData) = dp.getData(relativeBase)
       maybeData match {
         case Left(str) => Left(str)
         case Right(data) => Right((data, dp.copy(data = maybeStr)))
