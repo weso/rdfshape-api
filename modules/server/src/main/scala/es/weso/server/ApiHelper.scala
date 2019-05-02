@@ -95,7 +95,7 @@ object ApiHelper {
                                tp: TriggerModeParam,
                                relativeBase: Option[IRI]
               ): (Result, Option[ValidationTrigger], Long) = {
-    logger.debug(s"APIHelper: validate")
+    println(s"APIHelper: validate")
     val base = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
     val triggerMode = tp.triggerMode
     val (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(rdf.getPrefixMap,schema.pm)

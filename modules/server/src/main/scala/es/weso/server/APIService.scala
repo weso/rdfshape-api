@@ -22,19 +22,10 @@ import Http4sUtils._
 import ApiHelper._
 import es.weso.server.helper.DataFormat
 import cats.implicits._
-import es.weso.server.WebService.{logger, relativeBase}
-//import guru.nidi.graphviz.engine.{Format, Graphviz, Rasterizer}
-//import guru.nidi.graphviz.model.{Graph, MutableGraph}
-//import guru.nidi.graphviz.parse.Parser
-//import javax.imageio.ImageIO
-//import javax.xml.bind.DatatypeConverter
-
-//import scala.util.Try
 
 object APIService {
 
   private val relativeBase = Defaults.relativeBase
-
   private val logger = getLogger
   val api = "api"
 //  val version = "1.0"
@@ -262,7 +253,7 @@ object APIService {
         ShapeParam(optShape) +&
         ShapeMapParameterAlt(optShapeMap) +&
         ShapeMapURLParameter(optShapeMapURL) +&
-        ShapeMapFileParameter(optShapeMapFile) +&
+        ShapeMapFileParameter(optShapeMapFile) +&  // This parameter seems unnecessary...maybe for keeping the state only?
         ShapeMapFormatParam(optShapeMapFormat) +&
         SchemaEmbedded(optSchemaEmbedded) +&
         InferenceParam(optInference) +&
@@ -299,7 +290,11 @@ object APIService {
             (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
             schema <- eitherSchema
           } yield {
+            println(s"RDF: $rdf")
+            println(s"Schema: $schema")
             val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
+            println(s"maybeTrigger: $maybeTrigger")
+            println(s"result: $result")
             Ok(result.toJson)
           }
           eitherResult.fold(e => BadRequest(s"Error: $e"), identity)
