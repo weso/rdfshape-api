@@ -251,6 +251,7 @@ object APIService {
     case req @ (GET | POST) -> Root / `api` / "validate" :?
       DataParameter(data) +&
       DataFormatParam(maybeStrDataFormat) +&
+      OptEndpointParam(optEndpoint) +&
       OptSchemaParam(optSchema) +&
       SchemaFormatParam(optSchemaFormat) +&
       SchemaEngineParam(optSchemaEngine) +&

@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "version": "0.0.1",
-        "title": "SHACLEX API",
+        "title": "RDFShape API",
         "contact": {
             "name": "Jose Emilio Labra Gayo (WESO Research group)",
             "url": "http://www.weso.es"
@@ -12,7 +12,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     },
-    "host": "shaclex.herokuapp.com",
+    "host": "rdfshape.weso.es",
     "basePath": "/api",
     "schemes": [
         "http"
@@ -20,7 +20,7 @@
     "tags": [
         {
             "name": "APIRest",
-            "description": "Shaclex REST API"
+            "description": "RDFShape REST API"
         }
     ],
     "paths": {
