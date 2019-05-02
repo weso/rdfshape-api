@@ -1,3 +1,5 @@
+# Emacs
+
 *~
 \#*\#
 /.emacs.desktop
@@ -8,6 +10,7 @@ tramp
 .\#*
 
 
+# Java
 *.class
 *.log
 
@@ -50,5 +53,3 @@ pids
 .npm
 *.tgz
 
-*~
-#build.sbt#

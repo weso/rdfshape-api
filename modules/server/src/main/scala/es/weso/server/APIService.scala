@@ -22,6 +22,7 @@ import Http4sUtils._
 import ApiHelper._
 import es.weso.server.helper.DataFormat
 import cats.implicits._
+import es.weso.server.WebService.{logger, relativeBase}
 //import guru.nidi.graphviz.engine.{Format, Graphviz, Rasterizer}
 //import guru.nidi.graphviz.model.{Graph, MutableGraph}
 //import guru.nidi.graphviz.parse.Parser
@@ -249,39 +250,59 @@ object APIService {
     }
 
     case req @ (GET | POST) -> Root / `api` / "validate" :?
-      DataParameter(data) +&
-      DataFormatParam(maybeStrDataFormat) +&
-      OptSchemaParam(optSchema) +&
-      SchemaFormatParam(optSchemaFormat) +&
-      SchemaEngineParam(optSchemaEngine) +&
-      OptTriggerModeParam(optTriggerMode) +&
-      ShapeMapParameter(optShapeMap) +&
-      ShapeMapURLParameter(optShapeMapURL) +&
-      ShapeMapFileParameter(optShapeMapFile) +&
-      ShapeMapFormatParam(optShapeMapFormat) +&
-      OptActiveShapeMapTabParam(optActiveShapeMapTab) +& 
-      InferenceParam(optInference) => {
-      val tp = TriggerModeParam(
-        optTriggerMode,
-        optShapeMap,
-        optShapeMapFormat,
-        optShapeMapURL,
-        optShapeMapFormat, // TODO: Maybe a more specific param for URL format?
-        optShapeMapFile,
-        optShapeMapFormat, // TODO: Maybe a more specific param for File format?
-        optActiveShapeMapTab
-      )
-      val either: Either[String, Option[DataFormat]] =  for {
-        df <- maybeStrDataFormat.map(DataFormat.fromString(_)).sequence
+      OptDataParam(optData) +&
+        OptDataURLParam(optDataURL) +&
+        DataFormatParam(maybeDataFormat) +&
+        OptSchemaParam(optSchema) +&
+        SchemaURLParam(optSchemaURL) +&
+        SchemaFormatParam(optSchemaFormat) +&
+        SchemaEngineParam(optSchemaEngine) +&
+        OptTriggerModeParam(optTriggerMode) +&
+        NodeParam(optNode) +&
+        ShapeParam(optShape) +&
+        ShapeMapParameterAlt(optShapeMap) +&
+        ShapeMapURLParameter(optShapeMapURL) +&
+        ShapeMapFileParameter(optShapeMapFile) +&
+        ShapeMapFormatParam(optShapeMapFormat) +&
+        SchemaEmbedded(optSchemaEmbedded) +&
+        InferenceParam(optInference) +&
+        OptEndpointParam(optEndpoint) +&
+        OptActiveDataTabParam(optActiveDataTab) +&
+        OptActiveSchemaTabParam(optActiveSchemaTab) +&
+        OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
+      val either: Either[String, Option[DataFormat]] = for {
+        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
 
       either match {
         case Left(str) => BadRequest(str)
         case Right(optDataFormat) => {
-          val result = validateStr(data, optDataFormat,
-            optSchema, optSchemaFormat, optSchemaEngine,
-            tp, optInference, relativeBase)
-          Ok(result._1.toJson)
+          val baseUri = req.uri
+          logger.info(s"BaseURI: $baseUri")
+          logger.info(s"Endpoint: $optEndpoint")
+          val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+          val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, None, optActiveSchemaTab)
+          val tp = TriggerModeParam(
+            optTriggerMode,
+            optShapeMap,
+            optShapeMapFormat,
+            optShapeMapURL,
+            optShapeMapFormat, // TODO: Maybe a more specific param for URL format?
+            optShapeMapFile,
+            optShapeMapFormat, // TODO: Maybe a more specific param for File format?
+            optActiveShapeMapTab
+          )
+          val (dataStr, eitherRDF) = dp.getData(relativeBase)
+
+          val eitherResult: Either[String, IO[Response[IO]]] = for {
+            rdf <- eitherRDF
+            (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
+            schema <- eitherSchema
+          } yield {
+            val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
+            Ok(result.toJson)
+          }
+          eitherResult.fold(e => BadRequest(s"Error: $e"), identity)
         }
       }
     }
