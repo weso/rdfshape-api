@@ -126,7 +126,7 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
             ("schema", schemaStr),
             ("schemaFormat", "SHEXC"),
             ("triggerMode", "ShapeMap"),
-            ("shape-map", shapeMapStr),
+            ("shapeap", shapeMapStr),
             ("schemaEngine", "ShEx")
           ))))
 
