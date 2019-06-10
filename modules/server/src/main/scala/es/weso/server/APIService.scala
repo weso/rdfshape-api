@@ -103,14 +103,17 @@ object APIService {
         case None => BadRequest(s"Must provide a dataUrl")
         case Some(dataUrl) => {
           httpClient.expect[String](dataUrl).flatMap(data => {
-            RDFAsJenaModel.fromChars(data, dataFormat, None) match {
-              case Left(e) => BadRequest(s"Error reading rdf: $e\nRdf string: $data")
-              case Right(rdf) => {
-                val nodes: List[String] =
-                  (
-                    rdf.subjects() ++
-                      rdf.iriObjects() ++
-                      rdf.predicates()).map(_.toString).toList
+     	  val either = for {
+	       rdf <- RDFAsJenaModel.fromChars(data, dataFormat, None)
+		   subjs <- rdf.subjects
+		   objs <- rdf.iriObjects
+		   preds <- rdf.predicates
+		   ls = subjs ++ objs ++ preds
+	      } yield (rdf, ls.map(_.toString).toList)
+		  either match {
+              case Left(e) => BadRequest(s"Error: $e\nRdf string: $data")
+              case Right(pair) => {
+		        val (rdf,nodes) = pair
                 val jsonNodes: Json = Json.fromValues(nodes.map(str => Json.fromString(str)))
                 val pm: Json = prefixMap2Json(rdf.getPrefixMap)
                 val result = DataInfoResult(data, dataFormat, jsonNodes, pm).asJson
@@ -126,14 +129,17 @@ object APIService {
       DataParameter(data) +&
       DataFormatParam(optDataFormat) => {
       val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-      RDFAsJenaModel.fromChars(data, dataFormat, None) match {
-        case Left(e) => BadRequest(s"Error reading rdf: $e\nRdf string: $data")
-        case Right(rdf) => {
-          val nodes: List[String] =
-            (
-              rdf.subjects() ++
-              rdf.iriObjects() ++
-              rdf.predicates()).map(_.toString).toList
+	  val either = for {
+	    rdf <- RDFAsJenaModel.fromChars(data, dataFormat, None)
+		subjs <- rdf.subjects
+		objs <- rdf.iriObjects
+		preds <- rdf.predicates
+		ls = subjs ++ objs ++ preds
+	  } yield (rdf, ls.map(_.toString).toList)
+	  either match {
+        case Left(e) => BadRequest(s"Error: $e\nRdf string: $data")
+        case Right(pair) => {
+		  val (rdf,nodes) = pair
           val jsonNodes: Json = Json.fromValues(nodes.map(str => Json.fromString(str)))
           val pm: Json = prefixMap2Json(rdf.getPrefixMap)
           val result = DataInfoResult(data, dataFormat, jsonNodes, pm).asJson
