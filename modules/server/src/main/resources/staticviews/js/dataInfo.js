@@ -40,6 +40,8 @@ function showDot(dot, idName) {
     var opts = { engine: engine };
     switch (format) {
        case "SVG":
+           console.log("Rendering dot...")
+           console.log(dot)
            v.renderSVGElement(dot, opts).then(function(svg) {
            console.log(svg);
            var graph = $("<svg/>").append(svg);
