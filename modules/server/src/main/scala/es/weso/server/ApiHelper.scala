@@ -227,13 +227,14 @@ object ApiHelper {
   }
 
   private[server] def schemaInfo(schema:Schema): Json = {
-    val svg: String = Schema2UML.schema2UML(schema).fold(
-        e => s"SVG conversion: $e",
+    val eitherUML = Schema2UML.schema2UML(schema)
+
+    val (svg,plantuml):(String,String) = eitherUML.fold(
+        e => (s"SVG conversion: $e", s"UML Error convertins: $e"),
         uml => {
           // println(s"UML converted: $uml")
-          uml.toSVG
-        }
-      )
+          (uml.toSVG, uml.toPlantUML)
+        })
     val info = schema.info
     val fields: List[(String,Json)] =
       List(
@@ -242,7 +243,8 @@ object ApiHelper {
         ("wellFormed", Json.fromBoolean(info.isWellFormed)),
         ("errors", Json.fromValues(info.errors.map(Json.fromString(_)))),
         ("parsed", Json.fromString("Parsed OK")),
-        ("svg", Json.fromString(svg))
+        ("svg", Json.fromString(svg)),
+        ("plantUML", Json.fromString(plantuml))
       )
     Json.fromFields(fields)
   }
