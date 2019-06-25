@@ -207,10 +207,12 @@ object ApiHelper {
   }
 
   private[server] def dataInfo(rdf: RDFReasoner): Option[Json] = {
+    val dotStr = RDF2Dot.rdf2dot(rdf).fold(e => s"Error: $e", _.toString)
+    println(s"## dataInfo: DotStr: $dotStr")
     Some(Json.fromFields(
       List(
         ("statements", Json.fromString(rdf.getNumberOfStatements().fold(identity,_.toString))),
-        ("dot",Json.fromString(RDF2Dot.rdf2dot(rdf).toString)),
+        ("dot",Json.fromString(dotStr)),
         ("nodesPrefixMap", ApiHelper.prefixMap2Json(rdf.getPrefixMap()))
       )
     ))
