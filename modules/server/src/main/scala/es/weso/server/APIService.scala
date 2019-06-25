@@ -109,8 +109,8 @@ object APIService {
                 val nodes: List[String] =
                   (
                     rdf.subjects() ++
-                      rdf.iriObjects() ++
-                      rdf.predicates()).map(_.toString).toList
+                    rdf.iriObjects() ++
+                    rdf.predicates()).map(_.toString).toList
                 val jsonNodes: Json = Json.fromValues(nodes.map(str => Json.fromString(str)))
                 val pm: Json = prefixMap2Json(rdf.getPrefixMap)
                 val result = DataInfoResult(data, dataFormat, jsonNodes, pm).asJson
