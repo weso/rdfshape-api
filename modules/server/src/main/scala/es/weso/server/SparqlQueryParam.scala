@@ -1,7 +1,8 @@
 package es.weso.server
 
-import cats.effect.IO
+import cats.effect.{Effect, IO}
 import Defaults._
+import cats.implicits._
 
 import scala.io.Source
 import scala.util.Try
@@ -49,8 +50,8 @@ case class SparqlQueryParam(query: Option[Query],
 
 object SparqlQueryParam {
 
-  private[server] def mkQuery(partsMap: PartsMap
-                     ): IO[Either[String, (Query, SparqlQueryParam)]] = for {
+  private[server] def mkQuery[F[_]:Effect](partsMap: PartsMap[F]
+                     ): F[Either[String, (Query, SparqlQueryParam)]] = for {
     qp <- mkQueryParam(partsMap)
   } yield {
     val (maybeStr, maybeQuery) = qp.getQuery
@@ -60,7 +61,7 @@ object SparqlQueryParam {
     }
   }
 
-  private[server] def mkQueryParam(partsMap: PartsMap): IO[SparqlQueryParam] = for {
+  private[server] def mkQueryParam[F[_]:Effect](partsMap: PartsMap[F]): F[SparqlQueryParam] = for {
     queryStr <- partsMap.optPartValue("query")
     queryURL <- partsMap.optPartValue("queryURL")
     queryFile <- partsMap.optPartValue("queryFile")

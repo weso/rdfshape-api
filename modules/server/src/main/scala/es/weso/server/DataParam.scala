@@ -4,7 +4,8 @@ import java.net.URI
 
 import Defaults._
 import cats.data.EitherT
-import cats.effect.IO
+import cats.implicits._
+import cats.effect.{Effect, IO}
 import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
@@ -201,12 +202,12 @@ case class DataParam(data: Option[String],
 object DataParam {
   private[this] val logger = getLogger
 
-  private[server] def mkData(partsMap: PartsMap,
+  private[server] def mkData[F[_]:Effect](partsMap: PartsMap[F],
                              relativeBase: Option[IRI]
-                            ): EitherT[IO,String,(RDFReasoner,DataParam)] = {
+                            ): EitherT[F,String,(RDFReasoner,DataParam)] = {
 
     val r = for {
-      dp <- mkDataParam(partsMap)
+      dp <- mkDataParam[F](partsMap)
     } yield {
       val (maybeStr, maybeData) = dp.getData(relativeBase)
       maybeData match {
@@ -217,7 +218,7 @@ object DataParam {
     EitherT(r)
   }
 
-  private def getDataFormat(name: String, partsMap: PartsMap): IO[Option[DataFormat]] = for {
+  private def getDataFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[DataFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
   } yield maybeStr match {
     case None => None
@@ -230,7 +231,7 @@ object DataParam {
     )
   }
 
-  private[server] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
+  private[server] def mkDataParam[F[_]:Effect](partsMap: PartsMap[F]): F[DataParam] = for {
     data <- partsMap.optPartValue("data")
     dataURL <- partsMap.optPartValue("dataURL")
     dataFile <- partsMap.optPartValue("dataFile")

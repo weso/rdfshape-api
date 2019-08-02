@@ -24,33 +24,37 @@ scalafmt: {
 }
  */
 
-lazy val umlShaclexVersion     = "0.0.28"
+lazy val umlShaclexVersion     = "0.0.29"
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
 // Dependency versions
-lazy val catsVersion           = "1.0.1"
-lazy val commonsTextVersion    = "1.2"
-lazy val circeVersion          = "0.9.0"
+lazy val catsVersion           = "2.0.0-M4"
+lazy val commonsTextVersion    = "1.7"
+lazy val circeVersion          = "0.12.0-M4"
 lazy val graphvizJavaVersion   = "0.5.2"
-lazy val http4sVersion         = "0.18.5"
-lazy val jgraphtVersion        = "1.1.0"
+lazy val http4sVersion         = "0.21.0-M2"
+lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
-lazy val loggingVersion        = "3.7.2"
+lazy val loggingVersion        = "3.9.2"
 lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
-lazy val scalacticVersion      = "3.0.4"
+lazy val scalacticVersion      = "3.0.8"
 lazy val scalaGraphVersion     = "1.11.5"
-lazy val scalaTestVersion      = "3.0.5"
-lazy val scalatagsVersion      = "0.6.7"
-lazy val scallopVersion        = "3.1.1"
+lazy val scalaTestVersion      = "3.0.8"
+lazy val scalatagsVersion      = "0.7.0"
+lazy val scallopVersion        = "3.3.1"
 lazy val seleniumVersion       = "2.35.0"
-lazy val typesafeConfigVersion = "1.3.2"
+lazy val silencerVersion       = "1.4.2"
+lazy val typesafeConfigVersion = "1.3.4"
 
+// WebJars
+lazy val jqueryVersion         = "3.4.1"
+lazy val bootstrapVersion      = "4.3.1"
 
 // Compiler plugin dependency versions
-lazy val simulacrumVersion    = "0.11.0"
-lazy val kindProjectorVersion = "0.9.5"
+// lazy val simulacrumVersion    = "0.11.0"
+// lazy val kindProjectorVersion = "0.9.5"
 lazy val scalaMacrosVersion   = "2.1.1"
 
 // Dependency modules
@@ -77,19 +81,20 @@ lazy val scalatags         = "com.lihaoyi"                %% "scalatags"        
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
 //lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
 //lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
-lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.12"      % umlShaclexVersion
+lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.13"      % umlShaclexVersion
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
-lazy val any23_scraper    = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
+lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 
-
+lazy val jquery            = "org.webjars"                % "jquery"               % jqueryVersion
+lazy val bootstrap         = "org.webjars"                % "bootstrap"            % bootstrapVersion
 
 
 // Compiler plugin modules
 lazy val scalaMacrosParadise = "org.scalamacros"      % "paradise"        % scalaMacrosVersion cross CrossVersion.full
-lazy val simulacrum          = "com.github.mpilquist" %% "simulacrum"     % simulacrumVersion
-lazy val kindProjector       = "org.spire-math"       %% "kind-projector" % kindProjectorVersion
+//lazy val simulacrum          = "com.github.mpilquist" %% "simulacrum"     % simulacrumVersion
+//lazy val kindProjector       = "org.spire-math"       %% "kind-projector" % kindProjectorVersion
 
 lazy val rdfshape = project
   .in(file("."))
@@ -99,7 +104,6 @@ lazy val rdfshape = project
 //    buildInfoKeys := BuildInfoKey.ofN(name, version, scalaVersion, sbtVersion),
 //    buildInfoPackage := "es.weso.shaclex.buildinfo" 
 //  )
-  .settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
   .aggregate(server)
   .dependsOn(server)
   .settings(
@@ -107,13 +111,15 @@ lazy val rdfshape = project
     libraryDependencies ++= Seq(
       logbackClassic,
       scalaLogging,
-      scallop
+      scallop,
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+      "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided      
     ),
     cancelable in Global      := true,
     fork                      := true,
     reStartArgs               := Seq("--server"),
     parallelExecution in Test := false
-  )
+  ).settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
 
 lazy val server = project
   .in(file("modules/server"))
@@ -134,7 +140,10 @@ lazy val server = project
       any23_core, any23_api, any23_scraper,
       rdf4j_runtime,
       plantuml,
-      graphvizJava
+      graphvizJava,
+      // webJars
+      jquery,
+      bootstrap
     )
   )
 
@@ -168,7 +177,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.0",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
@@ -177,18 +186,18 @@ lazy val compilationSettings = Seq(
     "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.  "-encoding", "UTF-8",
     "-language:_",
     "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
-    "-Xfuture",                          // Turn on future language features.
-    "-Xlint",
+//    "-Xfuture",                          // Turn on future language features.
+//    "-Xlint",
     "-Yrangepos",
 //    "-Ylog-classpath",
-    "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver
-    "-Ywarn-dead-code",                  // Warn when dead code is identified.
-    "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
-    "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
-    "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
-    "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
-    "-Ywarn-nullary-unit",               // Warn when nullary methods return Unit.
-    "-Ywarn-numeric-widen",              // Warn when numerics are widened.
+//    "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver
+//    "-Ywarn-dead-code",                  // Warn when dead code is identified.
+//    "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
+//    "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
+//    "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
+//    "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
+//    "-Ywarn-nullary-unit",               // Warn when nullary methods return Unit.
+//    "-Ywarn-numeric-widen",              // Warn when numerics are widened.
 //    "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
 //    "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
 //    "-Ywarn-unused:locals",              // Warn if a local definition is unused.
@@ -197,10 +206,11 @@ lazy val compilationSettings = Seq(
 //    "-Ywarn-unused:privates",            // Warn if a private member is unused.
 //    "-Ywarn-value-discard",              // Warn when non-Unit expression results are unused.
 //    "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
-    "-Ypartial-unification",
-  )
-  // format: on
+//    "-Ypartial-unification",
 )
+)
+
+
 
 lazy val wixSettings = Seq(
   wixProductId        := "39b564d5-d381-4282-ada9-87244c76e14b",
@@ -249,3 +259,8 @@ lazy val publishSettings = Seq(
   bintrayRepository in bintray   := "weso-releases",
   bintrayOrganization in bintray := Some("weso")
 )
+
+// silence all warnings on autogenerated files
+scalacOptions += "-P:silencer:pathFilters=target/.*" 
+// Make sure you only exclude warnings for the project directories, i.e. make builds reproducible
+scalacOptions += s"-P:silencer:sourceRoots=${baseDirectory.value.getCanonicalPath}"

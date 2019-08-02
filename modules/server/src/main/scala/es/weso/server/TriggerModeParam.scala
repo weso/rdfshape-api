@@ -1,6 +1,6 @@
 package es.weso.server
 
-import cats.effect.IO
+import cats.effect.{Effect, IO}
 import Defaults._
 import cats.data._
 import cats.implicits._
@@ -92,8 +92,8 @@ case class TriggerModeParam(triggerMode: Option[String],
 
 object TriggerModeParam {
 
-  def mkTriggerModeParam(partsMap: PartsMap): EitherT[IO,String,TriggerModeParam] = {
-    val tp: IO[TriggerModeParam] = for {
+  def mkTriggerModeParam[F[_]:Effect](partsMap: PartsMap[F]): EitherT[F,String,TriggerModeParam] = {
+    val tp: F[TriggerModeParam] = for {
       optTriggerMode <- partsMap.optPartValue("triggerMode")
       optShapeMap <- partsMap.optPartValue("shapeMap")
       optShapeMapURL <- partsMap.optPartValue("shapeMapURL")
@@ -112,7 +112,7 @@ object TriggerModeParam {
         optShapeMapFile,
         optShapeMapFormatFile,
         optActiveShapeMapTab)
-    val r: IO[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
+    val r: F[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
     EitherT(r)
   }
 }

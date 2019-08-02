@@ -4,7 +4,8 @@ package es.weso.server
 //import cats.data._
 import cats.implicits._
 import cats.effect.IO
-import org.http4s.client.blaze.Http1Client
+import org.http4s.client.blaze._
+import scala.concurrent.ExecutionContext.Implicits.global
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
@@ -39,19 +40,23 @@ object ApiHelper {
   }
 
   private[server] def resolveUri(baseUri: Uri, urlStr: String): Either[String, Option[String]] = {
+    println(s"Handling Uri: $urlStr")
     // TODO: handle timeouts
+    ???
+    /* Commented. Aug 2019
     Uri.fromString(urlStr).fold(
       fail => {
         logger.info(s"Error parsing $urlStr")
         Left(fail.message)
       },
       uri => Try {
-        val httpClient = Http1Client[IO]().unsafeRunSync
+        val httpClient = BlazeClientBuilder[IO](global).unsafeRunSync
         val resolvedUri = baseUri.resolve(uri)
         logger.info(s"Resolved: $resolvedUri")
         httpClient.expect[String](resolvedUri).unsafeRunSync()
       }.toEither.leftMap(_.getMessage).map(Some(_))
     )
+    */
   }
 
 /*  private[server] def dataConvert(

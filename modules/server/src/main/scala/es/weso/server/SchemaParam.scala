@@ -2,7 +2,8 @@ package es.weso.server
 
 import Defaults._
 import cats.data.EitherT
-import cats.effect.IO
+import cats.effect.{Effect, IO}
+import cats.implicits._
 import es.weso.rdf.RDFReasoner
 import es.weso.schema.{Schema, Schemas}
 
@@ -22,6 +23,7 @@ case class SchemaParam(schema: Option[String],
                        targetSchemaFormat: Option[String],
                        activeSchemaTab: Option[String]
                       ) {
+
   private val logger = getLogger
   
   sealed abstract class SchemaInputType {
@@ -131,9 +133,9 @@ object SchemaParam {
 
   private val logger = getLogger
 
-  private[server] def mkSchema(partsMap: PartsMap,
+  private[server] def mkSchema[F[_]:Effect](partsMap: PartsMap[F],
                                data: Option[RDFReasoner]
-                      ): EitherT[IO, String, (Schema, SchemaParam)] = {
+                      ): EitherT[F, String, (Schema, SchemaParam)] = {
     val r = for {
       sp <- {
         logger.info(s"PartsMap: $partsMap")
@@ -150,7 +152,7 @@ object SchemaParam {
     EitherT(r)
   }
 
-  private[server] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {
+  private[server] def mkSchemaParam[F[_]:Effect](partsMap: PartsMap[F]): F[SchemaParam] = for {
     schema <- partsMap.optPartValue("schema")
     schemaURL <- partsMap.optPartValue("schemaURL")
     schemaFile <- partsMap.optPartValue("schemaFile")

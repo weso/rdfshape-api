@@ -1,9 +1,10 @@
 package es.weso.server
 
+import java.util.concurrent.Executors
+
 import es.weso.schema._
 import org.http4s.HttpService
 import org.http4s.dsl.io._
-import org.http4s.server.staticcontent.ResourceService.Config
 import cats.effect._
 import org.http4s._
 import org.http4s.twirl._
@@ -12,7 +13,7 @@ import org.http4s.multipart._
 import es.weso._
 import es.weso.server.QueryParams._
 import ApiHelper._
-import cats.effect.IO._
+// import cats.effect.IO._
 import Defaults._
 import ApiHelper._
 import cats.data.EitherT
@@ -20,24 +21,44 @@ import es.weso.server.helper.{DataFormat, Svg}
 import io.circe.Json
 import org.http4s.headers.`Content-Type`
 import cats.implicits._
+import org.http4s.dsl.Http4sDsl
+import org.http4s.server.Router
+import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
+import org.http4s.server.staticcontent.webjarService
+import org.http4s.server.staticcontent.WebjarService.{WebjarAsset, Config}
 
-object WebService {
+class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
+  extends Http4sDsl[F] {
 
   private val relativeBase = Defaults.relativeBase
 
-  // Get the static content
-  private val static: HttpService[IO] =
-    staticResource[IO](Config("/static", "/static"))
-
-  private val views: HttpService[IO] =
-    staticResource(Config("/staticviews", "/"))
-
   private val logger = getLogger
 
-  val webService: HttpService[IO] = HttpService[IO] {
+  def routes(implicit timer: Timer[F]): HttpRoutes[F] =
+    Router[F](
+      "" ->
+        rootRoutes.combineK(
+        static).combineK(
+        webjars
+        ))  // TODO: <+> could be used instead of combineK but if gives an error
 
-    case req@GET -> Root => {
+  private val static =
+    resourceService[F](ResourceService.Config("/static", blocker))
+
+  private val webjars: HttpRoutes[F] = {
+    def isJsAsset(asset: WebjarAsset): Boolean = asset.asset.endsWith(".js")
+    webjarService(
+      Config(
+        filter = isJsAsset,
+        blocker = blocker
+      )
+    )
+  }
+
+  val rootRoutes = HttpRoutes.of[F] {
+
+    case GET -> Root => {
       Ok(html.index())
     }
 
@@ -89,7 +110,7 @@ object WebService {
     }
 
     case req@POST -> Root / "dataConversions" => {
-      req.decode[Multipart[IO]] { m =>
+      req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap, relativeBase).value
@@ -158,7 +179,7 @@ object WebService {
     }
 
     case req@POST -> Root / "dataInfo" => {
-      req.decode[Multipart[IO]] { m =>
+      req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
@@ -241,7 +262,7 @@ object WebService {
 
 
     case req@POST -> Root / "dataVisualization" => {
-      req.decode[Multipart[IO]] { m =>
+      req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
@@ -267,7 +288,7 @@ object WebService {
     }
 
     case req@POST -> Root / "schemaConversions" =>
-      req.decode[Multipart[IO]] { m => {
+      req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
@@ -322,7 +343,7 @@ object WebService {
     }
 
     case req@POST -> Root / "schemaInfo" =>
-      req.decode[Multipart[IO]] { m => {
+      req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
@@ -404,7 +425,7 @@ object WebService {
     }
 
     case req@POST -> Root / "validate" =>
-      req.decode[Multipart[IO]] { m => {
+      req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST validate partsMap. $partsMap")
         val r = for {
@@ -418,8 +439,11 @@ object WebService {
           val (result, maybeTriggerMode, time) = validate(rdf,dp, schema, sp, tp, relativeBase)
           validateResponse(result, time, dp, sp, tp)
         }
-      r.value.unsafeRunSync.fold(e => BadRequest(e), identity)
-    }
+        for {
+          e <- r.value
+          v <- e.fold(BadRequest(_), identity)
+        } yield v
+      }
   }
 
   case req@GET -> Root / "validate" :?
@@ -487,7 +511,7 @@ object WebService {
 
             val (dataStr, eitherRDF) = dp.getData(relativeBase)
 
-            val eitherResult: Either[String,IO[Response[IO]]] = for {
+            val eitherResult: Either[String,F[Response[F]]] = for {
               rdf <- eitherRDF
               (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
               schema <- eitherSchema
@@ -540,7 +564,7 @@ object WebService {
     }
 
     case req@POST -> Root / "query" => {
-      req.decode[Multipart[IO]] { m => {
+      req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
@@ -630,7 +654,7 @@ object WebService {
     }
 
     case req@POST -> Root / "shapeInfer" => {
-      req.decode[Multipart[IO]] { m => {
+      req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         val r = for {
           dataPair <- DataParam.mkData(partsMap,relativeBase)
@@ -638,7 +662,7 @@ object WebService {
           nodeSelector <- EitherT(partsMap.eitherPartValue("nodeSelector"))
           schemaEngine <- EitherT(partsMap.eitherPartValue("schemaEngine"))
           schemaFormat <- EitherT(partsMap.eitherPartValue("schemaFormatTextArea"))
-          jsonResult <- EitherT.fromEither[IO](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None,relativeBase))
+          jsonResult <- EitherT.fromEither[F](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None,relativeBase))
         } yield {
           val dv = DataValue(dp.data,dp.dataURL,dp.dataFormat.getOrElse(defaultDataFormat),availableDataFormats,
             dp.inference.getOrElse(defaultInference),
@@ -657,23 +681,28 @@ object WebService {
             "Shape"
           ))
         }
-        r.value.unsafeRunSync().fold(e => BadRequest(s"Error: $e"),identity)
-    }
+        // r.value.unsafeRunSync().fold(e => BadRequest(s"Error: $e"),identity)
+        for {
+          e <- r.value
+          v <- e.fold(BadRequest(_), identity)
+        } yield v
+      }
    }
   }
 
-    // Contents on /static are mapped to /static
-    case r@GET -> _ if r.pathInfo.startsWith("/static") => static(r).getOrElseF(NotFound())
+/*    // Contents on /static are mapped to /static
+    case r@GET -> _ if r.pathInfo.startsWith("/static") => static(r).getOrElseF(NotFound()) */
 
     // case r @ GET -> _ if r.pathInfo.startsWith("/swagger.json") => views(r)
 
     // When accessing to a folder (ends by /) append index.scala.html
-    case r@GET -> _ if r.pathInfo.endsWith("/") =>
+/*    case r@GET -> _ if r.pathInfo.endsWith("/") =>
       webService(r.withPathInfo(r.pathInfo + "index.scala.html")).getOrElseF(NotFound())
 
     case r@GET -> _ =>
       val rr = if (r.pathInfo.contains('.')) r else r.withPathInfo(r.pathInfo + ".html")
-      views(rr).getOrElseF(NotFound())
+      views(rr).getOrElseF(NotFound()) */
+
   }
 
   def err[A](str: String): Either[String, A] = {
@@ -684,7 +713,7 @@ object WebService {
                                        time: Long,
                                        dp: DataParam,
                                        sp: SchemaParam,
-                                       tp: TriggerModeParam): IO[Response[IO]] = {
+                                       tp: TriggerModeParam): F[Response[F]] = {
     val dv = DataValue(
       dp.data, dp.dataURL,
       dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
@@ -723,4 +752,10 @@ object WebService {
   private def allNone(maybes: Option[String]*) = {
     maybes.forall(_.isEmpty)
   }
+
+}
+
+object WebService {
+  def apply[F[_]: Effect: ContextShift](blocker: Blocker): WebService[F] =
+    new WebService[F](blocker)
 }

@@ -36,12 +36,12 @@ case object Dot extends DataFormat {
 
 case object Svg extends DataFormat {
   override val name = "svg"
-  override val mimeType = `image/svg+xml`
+  override val mimeType = MediaType.image.`svg+xml`
 }
 
 case object Png extends DataFormat {
   override val name = "png"
-  override val mimeType = `image/png`
+  override val mimeType = MediaType.image.png
 }
 
 sealed trait RDFFormat extends DataFormat
@@ -73,17 +73,17 @@ case object RdfXml extends RDFFormat {
 
 case object RdfJson extends RDFFormat {
   override val name = "rdf/json"
-  override val mimeType = `application/json`
+  override val mimeType = MediaType.application.json
 }
 
 sealed trait HtmlFormat extends DataFormat
 
 case object HtmlRdfa11 extends HtmlFormat {
   override val name = "html-rdfa11"
-  override val mimeType = `text/html`
+  override val mimeType = MediaType.text.html
 }
 
 case object HtmlMicrodata extends HtmlFormat {
   override val name = "html-microdata"
-  override val mimeType = `text/html`
+  override val mimeType = MediaType.text.html
 }

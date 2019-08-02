@@ -1,6 +1,6 @@
 package es.weso.server
 
-//import java.io.ByteArrayOutputStream
+import java.util.concurrent.Executors
 
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
@@ -9,6 +9,8 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s.{HttpService, _}
 import org.http4s.dsl.io._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import org.http4s.client.blaze._
 import org.http4s.server.staticcontent.ResourceService.Config
 import cats.effect._
@@ -22,16 +24,19 @@ import Http4sUtils._
 import ApiHelper._
 import es.weso.server.helper.DataFormat
 import cats.implicits._
+import org.http4s.dsl.Http4sDsl
+import org.http4s.server.staticcontent.{ResourceService, resourceService}
 
-object APIService {
+class APIService[F[_]](blocker: Blocker)(implicit F: ConcurrentEffect[F], cs: ContextShift[F])
+  extends Http4sDsl[F] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
   val api = "api"
 //  val version = "1.0"
 
-  private val swagger: HttpService[IO] = staticResource(Config("/swagger", "/swagger"))
-
+  private val swagger =
+    resourceService[F](ResourceService.Config("/swagger", blocker))
 
   val availableDataFormats = DataFormats.formatNames.toList
   val defaultDataFormat = DataFormats.defaultFormatName
@@ -43,7 +48,7 @@ object APIService {
   val defaultTriggerMode = Schemas.defaultTriggerMode
   val defaultSchemaEmbedded = false
 
-  val apiService: HttpService[IO] = HttpService[IO] {
+  val apiService = HttpRoutes.of[F] {
 
     case GET -> Root / `api` / "schema" / "engines" => {
       val engines = Schemas.availableSchemaNames
@@ -98,40 +103,33 @@ object APIService {
       OptDataURLParam(optDataUrl) +&
       DataFormatParam(optDataFormat) => {
       val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-      val httpClient = Http1Client[IO]().unsafeRunSync
-      optDataUrl match {
-        case None => BadRequest(s"Must provide a dataUrl")
-        case Some(dataUrl) => {
-          httpClient.expect[String](dataUrl).flatMap(data => {
-//            RDFAsJenaModel.fromChars(data, dataFormat, None) match {
-//              case Left(e) => BadRequest(s"Error reading rdf: $e\nRdf string: $data")
-//              case Right(rdf) => {
-//                val nodes: List[String] =
-//                  (
-//                    rdf.subjects() ++
-//                    rdf.iriObjects() ++
-//                    rdf.predicates()).map(_.toString).toList
-     	  val either = for {
-	       rdf <- RDFAsJenaModel.fromChars(data, dataFormat, None)
-		   subjs <- rdf.subjects
-		   objs <- rdf.iriObjects
-		   preds <- rdf.predicates
-		   ls = subjs ++ objs ++ preds
-      } yield (rdf, ls.map(_.toString).toList)
-		  either match {
+      BlazeClientBuilder[F](global).resource.use { client => {
+        optDataUrl match {
+          case None => BadRequest(s"Must provide a dataUrl")
+          case Some(dataUrl) => client.expect[String](dataUrl).flatMap(data => {
+            val either = for {
+              rdf <- RDFAsJenaModel.fromChars(data, dataFormat, None)
+              subjs <- rdf.subjects
+              objs <- rdf.iriObjects
+              preds <- rdf.predicates
+              ls = subjs ++ objs ++ preds
+            } yield (rdf, ls.map(_.toString).toList)
+            either match {
               case Left(e) => BadRequest(s"Error: $e\nRdf string: $data")
               case Right(pair) => {
-		        val (rdf,nodes) = pair
+                val (rdf,nodes) = pair
                 val jsonNodes: Json = Json.fromValues(nodes.map(str => Json.fromString(str)))
                 val pm: Json = prefixMap2Json(rdf.getPrefixMap)
                 val result = DataInfoResult(data, dataFormat, jsonNodes, pm).asJson
-                Ok(result).map(_.withContentType(`Content-Type`(`application/json`)))
+                Ok(result).map(_.withContentType(`Content-Type`(MediaType.application.json)))
               }
-          }
+            }
           })
         }
       }
+     }
     }
+
 
     case req @ GET -> Root / `api` / "data" / "info" :?
       DataParameter(data) +&
@@ -151,7 +149,7 @@ object APIService {
           val jsonNodes: Json = Json.fromValues(nodes.map(str => Json.fromString(str)))
           val pm: Json = prefixMap2Json(rdf.getPrefixMap)
           val result = DataInfoResult(data, dataFormat, jsonNodes, pm).asJson
-          Ok(result).map(_.withContentType(`Content-Type`(`application/json`)))
+          Ok(result).map(_.withContentType(`Content-Type`(MediaType.application.json)))
         }
       }
     }
@@ -174,7 +172,7 @@ object APIService {
           val pm: Json = prefixMap2Json(schema.pm)
           //          implicit val encoder: EntityEncoder[SchemaInfoResult] = ???
           val result = SchemaInfoResult(schemaStr, schemaFormat, schemaEngine, jsonShapes, pm).asJson
-          Ok(result).map(_.withContentType(`Content-Type`(`application/json`)))
+          Ok(result).map(_.withContentType(`Content-Type`(MediaType.application.json)))
         }
       }
     }
@@ -187,18 +185,18 @@ object APIService {
         e => BadRequest(s"Error: $e"),
         result => result.resultFormat match {
           case "SVG" => {
-            Ok(result.result).map(_.withContentType(`Content-Type`(`image/svg+xml`)))
+            Ok(result.result).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
           }
-          case "PNG" => Ok(result.result).map(_.withContentType(`Content-Type`(`text/html`)))
+          case "PNG" => Ok(result.result).map(_.withContentType(`Content-Type`(MediaType.text.html)))
           case _ => {
           val default = Ok(result.asJson)
-            .map(_.withContentType(`Content-Type`(`application/json`)))
+            .map(_.withContentType(`Content-Type`(MediaType.application.json)))
           req.headers.get(`Accept`) match {
             case Some(ah) => {
               logger.info(s"Accept header: $ah")
-              val hasHTML: Boolean = ah.values.exists(mr => mr.mediaRange.satisfiedBy(`text/html`))
+              val hasHTML: Boolean = ah.values.exists(mr => mr.mediaRange.satisfiedBy(MediaType.text.html))
               if (hasHTML) {
-                Ok(result.toHTML).map(_.withContentType(`Content-Type`(`text/html`)))
+                Ok(result.toHTML).map(_.withContentType(`Content-Type`(MediaType.text.html)))
               } else default
             }
             case None => default
@@ -232,13 +230,13 @@ object APIService {
                 val result = SchemaConversionResult(schemaStr, schemaFormat, schemaEngine,
                   resultSchemaFormat, resultSchemaEngine, resultStr)
                 val default = Ok(result.asJson)
-                  .map(_.withContentType(`Content-Type`(`application/json`)))
+                  .map(_.withContentType(`Content-Type`(MediaType.application.json)))
                 req.headers.get(`Accept`) match {
                   case Some(ah) => {
                     logger.info(s"Accept header: $ah")
-                    val hasHTML: Boolean = ah.values.exists(mr => mr.mediaRange.satisfiedBy(`text/html`))
+                    val hasHTML: Boolean = ah.values.exists(mr => mr.mediaRange.satisfiedBy(MediaType.text.html))
                     if (hasHTML) {
-                      Ok(result.toHTML).map(_.withContentType(`Content-Type`(`text/html`)))
+                      Ok(result.toHTML).map(_.withContentType(`Content-Type`(MediaType.text.html)))
                     } else default
                   }
                   case None => default
@@ -299,7 +297,7 @@ object APIService {
           )
           val (dataStr, eitherRDF) = dp.getData(relativeBase)
 
-          val eitherResult: Either[String, IO[Response[IO]]] = for {
+          val eitherResult: Either[String, F[Response[F]]] = for {
             rdf <- eitherRDF
             (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
             schema <- eitherSchema
@@ -320,8 +318,9 @@ object APIService {
     case r @ GET -> _ if r.pathInfo.startsWith("/swagger/") => swagger(r).getOrElseF(NotFound())
 
   }
+}
 
-
-
-
+object APIService {
+  def apply[F[_]: ConcurrentEffect: ContextShift](blocker: Blocker): APIService[F] =
+    new APIService[F](blocker)
 }
