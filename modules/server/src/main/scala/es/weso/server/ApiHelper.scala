@@ -2,10 +2,15 @@ package es.weso.server
 
 //import cats._
 //import cats.data._
+import java.util.concurrent.Executors
+
 import cats.implicits._
-import cats.effect.IO
+import cats.effect.{Blocker, ContextShift, IO, Timer}
 import org.http4s.client.blaze._
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.concurrent._
+
+import scala.concurrent.ExecutionContext.global
+//import scala.concurrent.ExecutionContext.Implicits.global
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
@@ -21,6 +26,7 @@ import es.weso.uml._
 import es.weso.schemaInfer._
 import es.weso.server.helper.DataFormat
 import es.weso.shapeMaps.NodeSelector
+import org.http4s.client.{Client, JavaNetClientBuilder}
 
 import scala.util.Try
 
@@ -42,21 +48,23 @@ object ApiHelper {
   private[server] def resolveUri(baseUri: Uri, urlStr: String): Either[String, Option[String]] = {
     println(s"Handling Uri: $urlStr")
     // TODO: handle timeouts
-    ???
-    /* Commented. Aug 2019
     Uri.fromString(urlStr).fold(
       fail => {
         logger.info(s"Error parsing $urlStr")
         Left(fail.message)
       },
       uri => Try {
-        val httpClient = BlazeClientBuilder[IO](global).unsafeRunSync
+        // TODO: The following code is unsafe...
+        implicit val cs: ContextShift[IO] = IO.contextShift(global)
+        implicit val timer: Timer[IO] = IO.timer(global)
+        val blockingPool = Executors.newFixedThreadPool(5)
+        val blocker = Blocker.liftExecutorService(blockingPool)
+        val httpClient: Client[IO] = JavaNetClientBuilder[IO](blocker).create
         val resolvedUri = baseUri.resolve(uri)
         logger.info(s"Resolved: $resolvedUri")
         httpClient.expect[String](resolvedUri).unsafeRunSync()
       }.toEither.leftMap(_.getMessage).map(Some(_))
     )
-    */
   }
 
 /*  private[server] def dataConvert(
