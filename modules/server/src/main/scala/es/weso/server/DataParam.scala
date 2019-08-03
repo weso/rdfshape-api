@@ -11,8 +11,6 @@ import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
 import es.weso.rdf.nodes.IRI
 import es.weso.server.helper.DataFormat
-//import org.http4s.Uri
-//import org.http4s.client.blaze.Http1Client
 import org.log4s.getLogger
 
 case class DataParam(data: Option[String],

@@ -1,10 +1,27 @@
 package es.weso.server
 
-import cats.effect.IO
-import org.http4s.server.Server
-import org.http4s.server.blaze.BlazeBuilder
 import org.scalatest._
-import selenium._
+import org.scalatestplus.selenium.HtmlUnit
+import cats._
+import org.http4s._
+import org.http4s.dsl.io._
+import org.http4s.implicits._
+import cats.effect._
+import org.http4s.dsl.Http4sDsl
+import org.http4s.server.{Router, Server}
+import org.http4s.server.blaze.{BlazeBuilder, BlazeServerBuilder}
+import org.http4s.server.middleware.CORS
+import org.http4s.server.staticcontent.FileService.Config
+import org.log4s.getLogger
+// import fs2.Stream
+import scala.util.Properties.envOrNone
+import cats.implicits._
+import cats.effect._
+import org.http4s.twirl._
+import es.weso._
+import org.http4s.server.staticcontent._
+import scala.concurrent.ExecutionContext
+
 
 
 class WebServiceTest extends FunSpec
@@ -14,7 +31,9 @@ class WebServiceTest extends FunSpec
   with HtmlUnit {
   val ip = "0.0.0.0"
   val port = 8080
-  val shaclexServer = new RDFShapeServer(ip, port)
+  implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  val shaclexServer = new RDFShapeServer[IO](ip, port)
   var server: Server[IO] = null
 
   before {

@@ -4,7 +4,6 @@ package es.weso.server
 
 // import org.http4s.util.{ExitCode, StreamApp}
 import cats._
-import cats.implicits._
 import org.http4s._
 import org.http4s.dsl.io._
 import org.http4s.implicits._
@@ -17,10 +16,8 @@ import org.http4s.server.staticcontent.FileService.Config
 import org.log4s.getLogger
 // import fs2.Stream
 import scala.util.Properties.envOrNone
-// import cats._
-// import cats.data._
 import cats.implicits._
-import cats.effect.IO
+import cats.effect._
 import org.http4s.twirl._
 import es.weso._
 import org.http4s.server.staticcontent._
@@ -95,7 +92,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 object RDFShapeServer extends IOApp {
   val ip = "0.0.0.0"
   val port = envOrNone("PORT") map (_.toInt) getOrElse (8080)
-  private[this] val logger = getLogger
+  // private[this] val logger = getLogger
 
   override def run(args: List[String]): IO[ExitCode]  =
     new RDFShapeServer[IO](ip,port).resource.use(_ => IO.never).as(ExitCode.Success)

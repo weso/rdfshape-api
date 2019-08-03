@@ -1,6 +1,10 @@
 package es.weso.server
 
-import cats.effect.IO
+import cats._
+import org.http4s._
+import org.http4s.dsl.io._
+import org.http4s.implicits._
+import cats.effect._
 import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.shapeMaps.{Status => ShapeMapStatus, _}
 import io.circe.Json
@@ -9,15 +13,21 @@ import org.http4s.{Request, Response, Uri}
 import org.http4s.{Query => HQuery}
 import org.scalatest._
 import org.http4s.dsl.io._
+import scala.concurrent.ExecutionContext
 
 class ValidateShExTest extends FunSpec with Matchers with EitherValues {
 
   val ip = "0.0.0.0"
   val port = 8080
-  val server = new RDFShapeServer(ip, port)
+  implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  def serve(req: Request[IO]): Response[IO] =
-    server.service.orNotFound(req).unsafeRunSync
+  def serve(req: Request[IO]): IO[Response[IO]] = {
+    val blocker = Blocker[IO]
+    blocker.use { case (b) =>
+      APIService[IO](b).apiService.orNotFound.run(req)
+    }
+  }
 
   describe("ValidateShEx") {
 /*    it("Should return 200 when asking for root") {
@@ -80,7 +90,7 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
 
       val shapeMapStr = ":x@:S"
 
-      val response = serve(Request(
+      val ioResponse = serve(Request(
         GET,
         Uri(
           path = "/api/validate",
@@ -93,6 +103,7 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
             ("schemaEngine", "ShEx")
           ))))
 
+      val response = ioResponse.unsafeRunSync
       response.status should be(Ok)
       val strResponse = response.as[String].unsafeRunSync()
       val jsonResponse = parse(strResponse).getOrElse(Json.Null)
@@ -117,7 +128,7 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
 
       val shapeMapStr = ":x@:S"
 
-      val response = serve(Request(
+      val ioResponse = serve(Request(
         GET,
         Uri(
           path = "/api/validate",
@@ -126,10 +137,11 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
             ("schema", schemaStr),
             ("schemaFormat", "SHEXC"),
             ("triggerMode", "ShapeMap"),
-            ("shapeap", shapeMapStr),
+            ("shape-map", shapeMapStr),
             ("schemaEngine", "ShEx")
           ))))
 
+      val response = ioResponse.unsafeRunSync
       response.status should be(Ok)
       val strResponse = response.as[String].unsafeRunSync()
       val jsonResponse = parse(strResponse).getOrElse(Json.Null)

@@ -56,25 +56,20 @@ class HTML2RDFTest extends FunSpec with Matchers {
     )
 */
     shouldExtract(
-      """|<div itemscope itemtype="http://schema.org/Person"
-         |     itemid="http://danigayo.info" style="font-size:25pt;">
-         |  J'n<span itemprop="name">Ebñjfm Hbzp-Bwfmmp</span>, bñ <span itemprop="jobTitle">bttpdjbuf qspgfttps</span> jñ uif <span itemprop="affiliation" itemscope itemtype="https://schema.org/CollegeOrUniversity"><span itemprop="department" itemscope itemtype="https://schema.org/Organization"><span itemprop="name">Efqbsunfñu pg Dpnqvufs Tdjfñdf</span></span> bu uif <span itemprop="name">Vñjwfstjuz pg Pwjfep</span></span>.
-         |
-         |  Nz nbjñ <a href="/research">bsfb pg jñufsftu</a> jt Xfc JS cvu J'n dvssfñumz gpdvtfe pñ <a href="/research/#socialmediaresearch">tpdjbm nfejb sftfbsdi</a>.
-         |
-         |  <a href="/publications">J ibwf qvcmjtife</a> jñ jñufsñbujpñbm dpñgfsfñdft, kpvsñbmt bñe nbhbajñft, tvdi bt <span itemscope itemtype="http://schema.org/Periodical"><a href="/publications/detail.php?id=..."><em><span itemprop="name">Dpnnvñjdbujpñt pg uif BDN</span></em></a></span>, <span itemscope itemtype="http://schema.org/Periodical"><a href="/publications/detail.php?id=..."><em><span itemprop="name">JFFF Jñufsñfu Dpnqvujñh</span></em></a></span>, ps <span itemscope itemtype="http://schema.org/Periodical"><a href="/publications/detail.php?id=..."><em><span itemprop="name">JFFF Nvmujnfejb</span></em></a></span>.
-         |
-         |  Jñ 2013 J bdufe bt hvftu dp-fejups gps b <a href="http://www.emeraldinsight.com/toc/intr/23/5">tqfdjbm jttvf pg <span itemscope itemtype="http://schema.org/Periodical"><em><span itemprop="name">Jñufsñfu Sftfbsdi</span></em></span> pñ uif qsfejdujwf qpxfs pg tpdjbm nfejb</a>.
-         |
-         |  J ibwf sfdfñumz dpñusjcvufe b <span itemscope itemtype="http://schema.org/Chapter"><a href="/publications/detail.php?id=...">dibqufs pñ <span itemprop="name">Qpmjujdbm Pqjñjpñ</span></a><link itemprop="isPartOf" itemscope itemtype="http://schema.org/Book" itemid="urn:isbn:9781107500075"/></span> up <span itemscope itemtype="http://schema.org/Book" itemid="urn:isbn:9781107500075"><span itemprop="name">"Uxjuufs: B Ejhjubm Tpdjptdpqf"</span>, qvcmjtife cz <span itemprop="publisher">Dbncsjehf Vñjwfstjuz Qsftt</span></span>.
+      """|<div itemscope
+         |     itemtype="http://schema.org/Person"
+         |     itemid="http://person.info/alice" style="font-size:25pt;">
+         |  My name is <span itemprop="name">Alice</span>.
          |</div>
         |
       """.stripMargin,
       """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
-         |
-         |<http://example.org>  md:item [
-         |  a  <https://vocab.example.net/book>
-         |""", "html-microdata")
+         |prefix person: <http://person.info/>
+         |<http://example.org>  md:item person:alice .
+         |person:alice a <http://schema.org/Person> ;
+         |  <http://schema.org/Person/name> "Alice" .
+         |""".stripMargin,
+      "html-microdata")
 
 /* TODO: Checkwhy this test fails   shouldExtract(
       """|<dl itemscope
@@ -92,17 +87,36 @@ class HTML2RDFTest extends FunSpec with Matchers {
     def shouldExtract(html: String, expected: String, extractorName: String): Unit = {
       it(s"Should extract from $html and obtain $expected with extractor $extractorName") {
         val r = for {
-          rdf          <- HTML2RDF.extractFromString(html,extractorName)
-          expected     <- RDFAsJenaModel.fromChars(expected, "TURTLE")
-          isIsomorphic <- rdf.isIsomorphicWith(expected)
-        } yield (isIsomorphic, rdf)
+          expected     <- {
+            println(s"## Before parsing RDF\n${expected}\n---")
+            RDFAsJenaModel.fromChars(expected, "TURTLE")
+          }
+          rdf          <- {
+            println(s"Expected: \n ${expected.serialize("TURTLE").getOrElse("")}")
+            println(s"## Before extraction with $extractorName")
+            HTML2RDF.extractFromString(html,extractorName)
+          }
+          isIsomorphic <- {
+            println(s"RDF extracted: \n ${rdf.serialize("TURTLE").getOrElse("")}")
+            rdf.isIsomorphicWith(expected)
+          }
+        } yield (isIsomorphic, rdf, expected)
 
         r.fold(
-          e => fail(s"Error: $e"),
+          e => fail(s"Error extracting: $e"),
           pair => {
-            val (ok, rdf) = pair
-            info(s"Model:\n${rdf.serialize("Turtle").getOrElse("")}")
-            ok should be(true)
+            val (ok, rdf, expected) = pair
+            if (ok) {
+              info(s"Model extracted isomorphic with expected")
+            } else {
+              fail(
+                s"""Model extracted is not isomorphic with expected one:
+                   |Model extracted
+                   |${rdf.serialize("Turtle").getOrElse("")}
+                   |Model expected
+                   |${expected.serialize("Turtle").getOrElse("")}
+                   |""".stripMargin)
+            }
           }
         )
       }

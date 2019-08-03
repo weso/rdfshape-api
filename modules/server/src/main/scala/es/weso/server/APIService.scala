@@ -263,7 +263,8 @@ class APIService[F[_]](blocker: Blocker)(implicit F: ConcurrentEffect[F], cs: Co
         OptTriggerModeParam(optTriggerMode) +&
         NodeParam(optNode) +&
         ShapeParam(optShape) +&
-        ShapeMapParameterAlt(optShapeMap) +&
+        ShapeMapParameterAlt(optShapeMapAlt) +&
+        ShapeMapParameter(optShapeMap) +&
         ShapeMapURLParameter(optShapeMapURL) +&
         ShapeMapFileParameter(optShapeMapFile) +&  // This parameter seems unnecessary...maybe for keeping the state only?
         ShapeMapFormatParam(optShapeMapFormat) +&
@@ -285,9 +286,22 @@ class APIService[F[_]](blocker: Blocker)(implicit F: ConcurrentEffect[F], cs: Co
           logger.info(s"Endpoint: $optEndpoint")
           val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
           val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, None, optActiveSchemaTab)
+          val collectShapeMap = (optShapeMap,optShapeMapAlt) match {
+            case (None,None) => None
+            case (None, Some(sm)) => Some(sm)
+            case (Some(sm), None) => Some(sm)
+            case (Some(sm1), Some(sm2)) => if (sm1 == sm2) Some(sm1)
+              else {
+                val msg = (s"2 shape-map paramters with different values: $sm1 and $sm2. We use: $sm1")
+                logger.error(msg)
+                println(msg)
+                Some(sm1)
+              }
+           }
+          println(s"#### optShapeMap: ${collectShapeMap}")
           val tp = TriggerModeParam(
             optTriggerMode,
-            optShapeMap,
+            collectShapeMap,
             optShapeMapFormat,
             optShapeMapURL,
             optShapeMapFormat, // TODO: Maybe a more specific param for URL format?
