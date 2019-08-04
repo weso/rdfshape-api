@@ -1,17 +1,15 @@
 package es.weso.server
 
 import java.io.ByteArrayOutputStream
-
+import java.util.Base64
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema.DataFormats
-import es.weso.server.APIService._
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
 import guru.nidi.graphviz.parse.Parser
 import javax.imageio.ImageIO
-import javax.xml.bind.DatatypeConverter
 
 import scala.util.Try
 
@@ -35,7 +33,7 @@ object DataConverter extends LazyLogging {
           val image = renderer.toImage
           val baos = new ByteArrayOutputStream()
           ImageIO.write(image, "png", baos)
-          val data = DatatypeConverter.printBase64Binary(baos.toByteArray)
+          val data = Base64.getEncoder.encodeToString(baos.toByteArray)
           val imageString = "data:image/png;base64," + data
           "<html><body><img src='" + imageString + "'></body></html>"
         }
