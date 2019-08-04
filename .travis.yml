@@ -1,5 +1,9 @@
 language: scala
 scala:
    - 2.13.0
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
 jdk:
   - openjdk11
