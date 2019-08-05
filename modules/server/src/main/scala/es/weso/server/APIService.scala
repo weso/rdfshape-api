@@ -1,7 +1,5 @@
 package es.weso.server
 
-import java.util.concurrent.Executors
-
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
 import io.circe._
@@ -9,8 +7,6 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s.{HttpService, _}
 import org.http4s.dsl.io._
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import org.http4s.client.blaze._
 import org.http4s.server.staticcontent.ResourceService.Config
 import cats.effect._
@@ -20,20 +16,27 @@ import org.http4s.circe._
 import org.http4s.MediaType._
 import org.log4s.getLogger
 import QueryParams._
-import Http4sUtils._
 import ApiHelper._
+import cats.Monad
+import cats.data.EitherT
 import es.weso.server.helper.DataFormat
 import cats.implicits._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.staticcontent.{ResourceService, resourceService}
 
-class APIService[F[_]](blocker: Blocker)(implicit F: ConcurrentEffect[F], cs: ContextShift[F])
+import scala.concurrent.ExecutionContext.global
+import es.weso.server.utils.Http4sUtils._
+
+class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextShift[F])
   extends Http4sDsl[F] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
   val api = "api"
-//  val version = "1.0"
+  implicit val client = BlazeClientBuilder[F](global).resource
+  val wikidataEntityUrl = "http://www.wikidata.org/entity/Q"
+
+  //  val version = "1.0"
 
   private val swagger =
     resourceService[F](ResourceService.Config("/swagger", blocker))
@@ -48,7 +51,7 @@ class APIService[F[_]](blocker: Blocker)(implicit F: ConcurrentEffect[F], cs: Co
   val defaultTriggerMode = Schemas.defaultTriggerMode
   val defaultSchemaEmbedded = false
 
-  val apiService = HttpRoutes.of[F] {
+  val routes = HttpRoutes.of[F] {
 
     case GET -> Root / `api` / "schema" / "engines" => {
       val engines = Schemas.availableSchemaNames
@@ -328,10 +331,34 @@ class APIService[F[_]](blocker: Blocker)(implicit F: ConcurrentEffect[F], cs: Co
       }
     }
 
+    case req @ GET -> Root / `api` / "wikidata" / "entity" :?
+      OptSchemaParam(optEntity) => {
+      optEntity match {
+        case None => Ok("")
+        case Some(entity) => {
+          getUri(entity).fold(e => Ok(Json.fromString(e)), uri =>
+          for {
+            either <- resolveStream[F](uri)
+          } yield either.fold(e => Ok(Json.fromString(e)), stream => Ok(Json.fromString("Stream")))
+          )
+        }
+      }
+    }
+
     // Contents on /swagger are directly mapped to /swagger
     case r @ GET -> _ if r.pathInfo.startsWith("/swagger/") => swagger(r).getOrElseF(NotFound())
 
   }
+
+  private def getUri(entity: String): Either[String, Uri] = {
+    println(s"getUri: $entity")
+    val q = """Q(\d*)""".r
+    entity match {
+      case q(n) => Uri.fromString(wikidataEntityUrl + n).leftMap(f => s"Error creating URI for entity ${n}: ${f}")
+      case _ => Uri.fromString(entity).leftMap(f => s"Error creating URI from $entity: $f")
+    }
+  }
+
 }
 
 object APIService {

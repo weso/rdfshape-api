@@ -98,12 +98,12 @@ lazy val scalaMacrosParadise = "org.scalamacros"      % "paradise"        % scal
 
 lazy val rdfshape = project
   .in(file("."))
-  .enablePlugins(ScalaUnidocPlugin, SbtNativePackager, WindowsPlugin, JavaAppPackaging)
+  .enablePlugins(ScalaUnidocPlugin, 
+      SbtNativePackager, 
+      WindowsPlugin, 
+      JavaAppPackaging,
+  )
   .disablePlugins(RevolverPlugin)
-//  .settings(
-//    buildInfoKeys := BuildInfoKey.ofN(name, version, scalaVersion, sbtVersion),
-//    buildInfoPackage := "es.weso.shaclex.buildinfo" 
-//  )
   .aggregate(server)
   .dependsOn(server)
   .settings(
@@ -123,12 +123,14 @@ lazy val rdfshape = project
 
 lazy val server = project
   .in(file("modules/server"))
-  .enablePlugins(SbtTwirl)
+  .enablePlugins(SbtTwirl, BuildInfoPlugin)
   .settings(commonSettings, publishSettings)
   .settings(
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "es.weso.rdfshape.buildinfo" 
+  )
+  .settings(
     libraryDependencies ++= Seq(
-//      schema,
-//      srdfJena,
       http4sDsl,
       http4sBlazeServer,
       http4sBlazeClient,

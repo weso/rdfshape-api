@@ -1,0 +1,48 @@
+@import es.weso.json.JsonTwirl
+@import es.weso.server.values._
+@import io.circe._
+
+@(result: Option[Json],ev: WikidataEntityValue)
+<html lang="en">
+<head>
+@head("RDFShape: Wikidata entity info")
+<script src="/vizjs/viz.js"></script>
+<script src="/vizjs/full.render.js"></script>
+</head>
+<body>
+@navBar()
+<div class="container">
+<h1>Info about Wikidata entity</h1>
+
+<div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.getOrElse(Json.Null)))}'></div>
+
+<fieldset>
+   <label for="SelectFormat">Format</label>
+   <select class="custom-select" aria-label="Format" name="Format" id="SelectFormat">
+      <option value="SVG" selected>SVG</option>
+      <option value="PNG">PNG</option>
+   </select>
+
+   <label for="SelectEngine">Engine</label>
+   <select class="custom-select" aria-label="Engine" name="Engine" id="SelectEngine">
+     <option value="dot" selected>dot</option>
+     <option value="circo">circo</option>
+     <option value="neato">neato</option>
+     <option value="fdp">fdp</option>
+     <option value="osage">osage</option>
+     <option value="twopi">twopi</option>
+   </select>
+ </fieldset>
+
+<form action="/wdEntity"
+      method="POST"
+      enctype="multipart/form-data"
+      id="wdEntity">
+    @wdEntityPanel("wdEntity",ev)
+    <button type="submit">Wikidata entity info</button>
+</form>
+@otherOptions()
+</div>
+@scripts("wdEntity")
+</body>
+</html>

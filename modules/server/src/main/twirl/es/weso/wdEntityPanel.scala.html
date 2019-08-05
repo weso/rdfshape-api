@@ -1,0 +1,9 @@
+@import es.weso.server.values._
+
+@(formName: String,ev: WikidataEntityValue)
+<fieldset>
+    <legend>Wikidata entity</legend>
+    <label for="@{formName}">Entity</label>
+    <input id="entity" type="text" class="form-control" placeHolder="Wikidata entity (Qxxx)" aria-describedby="Wikidata entity"
+    name="entity">@{ev.entity}</input>
+</fieldset>

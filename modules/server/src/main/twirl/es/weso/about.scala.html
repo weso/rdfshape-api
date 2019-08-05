@@ -1,22 +1,28 @@
-@import es.weso.shaclex.buildinfo.BuildInfo._
+@import es.weso.rdfshape.buildinfo.BuildInfo._
 <html lang="en">
 <head>@head("RDFShape: About")</head>
 <body>
 @navBar()
 <div class="container">
 <h1>RDFShape</h1>
-<p>RDF playground which can be used to play with:
+<p>RDFShape is an RDF playground which can be used to play with:
     <ul>
-    <li> <a href="http://shex.io/">ShEx</a> (Shape Expressions)</li>
-    <li><a href="https://www.w3.org/TR/shacl/">SHACL</a> (Shapes Constraint Language)</li>
-    <li>SPARQL</li>
-    <li>RDF conversion between different formats</li>
-    <li>Simple RDFS and OWL inference</li>
+    <li><a href="https://www.w3.org/TR/rdf11-concepts/">RDF</a> conversion between different formats like
+        <a href="http://www.w3.org/TR/turtle/">Turtle</a> and <a href="http://www.w3.org/TR/json-ld/">JSON-LD</a></li>
+    <li>RDF validation using <a href="http://shex.io/">ShEx</a> (Shape Expressions) and
+        <a href="https://www.w3.org/TR/shacl/">SHACL</a> (Shapes Constraint Language)</li>
+    <li>RDF querying with <a href="http://www.w3.org/TR/sparql11-query/">SPARQL</a></li>
+    <li><a href="http://www.w3.org/TR/rdf-schema/">RDFS</a> and <a href="https://www.w3.org/TR/owl2-primer/">OWL</a> inference</li>
 </ul>
 <p>Author: <a href="http://labra.weso.es">Jose Emilio Labra Gayo</a></p>
+<p>Further info:
+    <a href="http://ceur-ws.org/Vol-2180/paper-35.pdf">RDFShape: An RDF playground based on Shapes</a>,
+    Jose Emilio Labra Gayo, Daniel Fernández Álvarez, Herminio García González,
+    Demo presented at International Semantic Web Conference, Monterey, California - 2018
+</p>
 <ul>
 <li>
-    Project name: @name, RDFShape version: @rdfshapeVersion, SHACLex version: @version</li>
+    Project name: @name, RDFShape version: @version</li>
     <li>Built with
         <a href="http://www.scala-lang.org/">Scala</a> (@scalaVersion) and
         <a href="http://www.scala-sbt.org/">SBT</a> (@sbtVersion)</li>

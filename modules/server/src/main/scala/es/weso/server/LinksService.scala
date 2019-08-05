@@ -10,7 +10,7 @@ import org.http4s.dsl.Http4sDsl
 class LinksService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
-  val linksService = HttpRoutes.of[F] {
+  val routes = HttpRoutes.of[F] {
 
     // data Info
     case GET -> Root / "links" / "i1" => {

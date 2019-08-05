@@ -10,6 +10,8 @@ object QueryParams {
   object DataFormatParam extends OptionalQueryParamDecoderMatcher[String]("dataFormat")
   object TargetDataFormatParam extends OptionalQueryParamDecoderMatcher[String]("targetDataFormat")
   object OptSchemaParam extends OptionalQueryParamDecoderMatcher[String]("schema")
+  object OptEntityParam extends OptionalQueryParamDecoderMatcher[String]("entity")
+  object OptWithDotParam extends OptionalQueryParamDecoderMatcher[Boolean]("withDot")
   object SchemaURLParam extends OptionalQueryParamDecoderMatcher[String]("schemaURL")
   object SchemaFormatParam extends OptionalQueryParamDecoderMatcher[String]("schemaFormat")
   object OptNodeSelectorParam extends OptionalQueryParamDecoderMatcher[String]("nodeSelector")
