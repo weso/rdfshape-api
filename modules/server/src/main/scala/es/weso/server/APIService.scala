@@ -1,39 +1,35 @@
 package es.weso.server
 
+import cats.effect._
+import cats.implicits._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
+import es.weso.server.ApiHelper._
+import es.weso.server.QueryParams._
+import es.weso.server.helper.DataFormat
+import es.weso.server.utils.Http4sUtils._
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import org.http4s.{HttpService, _}
-import org.http4s.dsl.io._
-import org.http4s.client.blaze._
-import org.http4s.server.staticcontent.ResourceService.Config
-import cats.effect._
+import fs2._
 import org.http4s._
-import org.http4s.headers._
 import org.http4s.circe._
-import org.http4s.MediaType._
-import org.log4s.getLogger
-import QueryParams._
-import ApiHelper._
-import cats.Monad
-import cats.data.EitherT
-import es.weso.server.helper.DataFormat
-import cats.implicits._
+import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
+import org.http4s.headers._
 import org.http4s.server.staticcontent.{ResourceService, resourceService}
+import org.log4s.getLogger
 
-import scala.concurrent.ExecutionContext.global
-import es.weso.server.utils.Http4sUtils._
+import scala.concurrent.duration._
 
-class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextShift[F])
+class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
+                                               client: Client[F])(implicit cs: ContextShift[F])
   extends Http4sDsl[F] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
   val api = "api"
-  implicit val client = BlazeClientBuilder[F](global).resource
+
   val wikidataEntityUrl = "http://www.wikidata.org/entity/Q"
 
   //  val version = "1.0"
@@ -106,8 +102,7 @@ class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextSh
       OptDataURLParam(optDataUrl) +&
       DataFormatParam(optDataFormat) => {
       val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-      BlazeClientBuilder[F](global).resource.use { client => {
-        optDataUrl match {
+      optDataUrl match {
           case None => BadRequest(s"Must provide a dataUrl")
           case Some(dataUrl) => client.expect[String](dataUrl).flatMap(data => {
             val either = for {
@@ -128,8 +123,6 @@ class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextSh
               }
             }
           })
-        }
-      }
      }
     }
 
@@ -332,14 +325,19 @@ class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextSh
     }
 
     case req @ GET -> Root / `api` / "wikidata" / "entity" :?
-      OptSchemaParam(optEntity) => {
-      optEntity match {
-        case None => Ok("")
+      OptEntityParam(optEntity) => {
+       println(s"Wikidata entity: $optEntity")
+       optEntity match {
+        case None => Ok("No entity provided")
         case Some(entity) => {
-          getUri(entity).fold(e => Ok(Json.fromString(e)), uri =>
-          for {
-            either <- resolveStream[F](uri)
-          } yield either.fold(e => Ok(Json.fromString(e)), stream => Ok(Json.fromString("Stream")))
+          getUri(entity).fold(
+            e => Ok(Json.fromString(e)),
+            uri => for {
+            either <- resolveStream[F](uri,client)
+            resp <- either.fold(e =>
+              Ok(Json.fromString(e)),
+              stream => Ok(stream))
+          } yield resp
           )
         }
       }
@@ -349,6 +347,9 @@ class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextSh
     case r @ GET -> _ if r.pathInfo.startsWith("/swagger/") => swagger(r).getOrElseF(NotFound())
 
   }
+
+  private def drip: Stream[F, String] =
+    Stream.awakeEvery[F](100.millis).map(_.toString).take(10)
 
   private def getUri(entity: String): Either[String, Uri] = {
     println(s"getUri: $entity")
@@ -362,6 +363,6 @@ class APIService[F[_]:ConcurrentEffect](blocker: Blocker)(implicit cs: ContextSh
 }
 
 object APIService {
-  def apply[F[_]: ConcurrentEffect: ContextShift](blocker: Blocker): APIService[F] =
-    new APIService[F](blocker)
+  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): APIService[F] =
+    new APIService[F](blocker, client)
 }

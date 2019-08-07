@@ -19,10 +19,10 @@ object Http4sUtils {
     Monad[F].pure(if (r.status.isSuccess) Right(r.bodyAsText)
     else Left(s"Status error fetching $uri: ${r.status}"))
 
-  def resolveStream[F[_]:Monad: Concurrent](uri: Uri)(implicit client: Resource[F,Client[F]]): F[Either[String,Stream[F,String]]] = client.use { c => {
+  def resolveStream[F[_]:Monad: Concurrent](uri: Uri,
+                                            client: Client[F]): F[Either[String,Stream[F,String]]] = {
     val req = Request[F](Method.GET, uri)
-    mkClient(c).fetch(req)(getBody(uri,_))
-   }
+    client.toHttpApp(req).flatMap(resp => getBody(uri,resp))
   }
 
 }

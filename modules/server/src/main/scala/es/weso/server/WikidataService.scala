@@ -1,5 +1,5 @@
 package es.weso.server
-import cats._
+
 import cats.data._
 import cats.effect._
 import cats.implicits._
@@ -7,28 +7,39 @@ import es.weso._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.dot.RDF2Dot
 import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.server.QueryParams.{OptEntityParam, OptSchemaParam, OptWithDotParam}
-import es.weso.server.values._
-import org.http4s._
-import org.http4s.twirl._
-import io.circe._
-import fs2.{io => ioFs2, _}
-import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.client.middleware.{FollowRedirect, Logger}
-import org.http4s.dsl.Http4sDsl
-import org.http4s.multipart.Multipart
+import es.weso.rdf.streams.Streams
+import es.weso.server.QueryParams.{OptEntityParam, OptWithDotParam}
 import es.weso.server.utils.Http4sUtils._
-import scala.concurrent.ExecutionContext.global
+import es.weso.server.values._
+import io.circe._
+import fs2._
+import org.http4s._
+import org.http4s.client.Client
+import org.http4s.dsl.Http4sDsl
+import org.http4s.headers.Accept
+import org.http4s.multipart.Multipart
+import org.http4s.twirl._
+import org.http4s.implicits._
 
-class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
+
+class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
-  implicit val client = BlazeClientBuilder[F](global).resource
+  val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
 
-  val wikidataEntityUrl = "http://www.wikidata.org/entity/Q"
+
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
+
+    case GET -> Root / "testQ" => {
+      val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
+      client.toHttpApp(req).flatMap(resp => Ok(Streams.cnv(resp.body)))
+    }
+
+    case GET -> Root / "testR" => {
+      // val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
+      Ok(Streams.getRaw(wikidataEntityUrl / "Q33"))
+    }
 
     case GET -> Root / "wdEntity" :?
       OptEntityParam(optEntity) +&
@@ -96,7 +107,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker)(implicit F: Effe
   private def resolve(uri: Uri): EitherT[F, String, Stream[F,String]] = {
     println(s"Resolve: $uri")
     for {
-      eitherData <- EitherT.liftF(resolveStream[F](uri))
+      eitherData <- EitherT.liftF(resolveStream[F](uri, client))
       data <- EitherT.fromEither[F](eitherData.leftMap(e => s"Error retrieving $uri: $e"))
     } yield data
   }
@@ -162,7 +173,9 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker)(implicit F: Effe
 }
 
 object WikidataService {
-  def apply[F[_]: Effect: ConcurrentEffect: ContextShift](blocker: Blocker): WikidataService[F] =
-    new WikidataService[F](blocker)
+  def apply[F[_]: Effect: ConcurrentEffect: ContextShift](blocker: Blocker,
+                                                          client: Client[F]
+                                                         ): WikidataService[F] =
+    new WikidataService[F](blocker, client)
 }
 

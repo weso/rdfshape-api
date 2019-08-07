@@ -5,10 +5,14 @@ import org.http4s.implicits._
 import org.http4s.server.Server
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.CORS
+import es.weso.server.utils.Http4sUtils._
 import org.log4s.getLogger
 import cats.effect._
 import cats.implicits._
+import org.http4s.client.Client
+import org.http4s.client.blaze.BlazeClientBuilder
 
+import scala.concurrent.ExecutionContext.global
 import scala.util.Properties.envOrNone
 
 /*
@@ -46,12 +50,12 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 
   logger.info(s"Starting RDFShape on '$host:$port'")
 
-  def routesService(blocker: Blocker): HttpRoutes[F] =
+  def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
     CORS(
       WebService[F](blocker).routes <+>
       DataService[F](blocker).routes <+>
-      WikidataService[F](blocker).routes <+>
-      APIService[F](blocker).routes <+>
+      WikidataService[F](blocker, client).routes <+>
+      APIService[F](blocker, client).routes <+>
       EndpointService[F](blocker).routes <+>
       LinksService[F](blocker).routes
     )
@@ -67,15 +71,17 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
       .mountService(service).
       serve */
 
-  def httpApp(blocker: Blocker): HttpApp[F] =
-    routesService(blocker).orNotFound
+  def httpApp(blocker: Blocker,
+              client: Client[F]): HttpApp[F] =
+    routesService(blocker, client).orNotFound
 
   def resource: Resource[F, Server[F]] =
     for {
       blocker <- Blocker[F]
+      client <- BlazeClientBuilder[F](global).resource
       server <- BlazeServerBuilder[F]
         .bindHttp(8080)
-        .withHttpApp(httpApp(blocker))
+        .withHttpApp(httpApp(blocker,mkClient(client)))
         .resource
     } yield server
 
