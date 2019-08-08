@@ -44,14 +44,14 @@ class EndpointService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: Context
       }
     }
 
-   case req@GET -> Root / "endpoint" / "neighbours" :?
+   case req@GET -> Root / "endpoint" / "outgoing" :?
      OptQueryParam(optQuery) +&
        OptEndpointParam(optEndpoint)
    => {
      Ok("Not implemented yet get neighbours of a node")
    }
 
-   case req@POST -> Root / "endpoint" / "neighbours" => {
+   case req@POST -> Root / "endpoint" / "outgoing" => {
      req.decode[Multipart[F]] { m => {
      }
        Ok("Not implemented yet")

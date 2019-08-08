@@ -26,20 +26,26 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F
   extends Http4sDsl[F] {
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
-
+  val apiUri = uri"/api/wikidata/entity"
 
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
 
-    case GET -> Root / "testQ" => {
+/*    case GET -> Root / "testQ" => {
       val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
       client.toHttpApp(req).flatMap(resp => Ok(Streams.cnv(resp.body)))
-    }
+    } */
 
     case GET -> Root / "testR" => {
       // val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
       Ok(Streams.getRaw(wikidataEntityUrl / "Q33"))
     }
+
+    case GET -> Root / "testRM" => {
+      // val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
+      Ok(Streams.getRawWithModel(wikidataEntityUrl / "Q33"))
+    }
+
 
     case GET -> Root / "wdEntity" :?
       OptEntityParam(optEntity) +&
@@ -66,7 +72,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F
         }
         response <- Ok(html.wdEntity(result, WikidataEntityValue(optEntity)))
       } yield response
-     }
+    }
     }
 
     case req@GET -> Root / "wdSchema" => Ok("Not implemented wikidata schema yet")
@@ -80,16 +86,20 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F
       case Some(entity) => {
         val process = for {
           uri <- getUri(entity)
-          data <- resolve(uri)
-          rdf <- getRDF(data)
-          maybeDot <- generateDot(rdf, withDot)/* if (generateDot)
-                   EitherT.fromEither[F](RDF2Dot.rdf2dot(rdf).bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
-                  else EitherT.pure(none) */
-          json <- prepareJsonOk(entity, uri, rdf, maybeDot)
+//          data <- resolve(uri)
+//          rdf <- getRDF(data)
+//          maybeDot <- generateDot(rdf, withDot)/* if (generateDot)
+//                   EitherT.fromEither[F](RDF2Dot.rdf2dot(rdf).bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
+//                  else EitherT.pure(none) */
+          json <- prepareJson(entity, proxyUri(uri))// prepareJsonOk(entity, uri, rdf, maybeDot)
         } yield Option(json)
         process.value.flatMap(e => F.pure(mkJson(entity,e)))
       }
     }
+  }
+
+  private def proxyUri(uri: Uri): Uri = {
+    apiUri.withQueryParam("entity",uri.renderString)
   }
 
   private def mkJson(entity: String, e: Either[String, Option[Json]]): Option[Json] =
@@ -99,7 +109,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F
    println(s"getUri: $entity")
    val q = """Q(\d*)""".r
    entity match {
-    case q(n) => EitherT.fromEither[F](Uri.fromString(wikidataEntityUrl + n).leftMap(f => s"Error creating URI for entity ${n}: ${f}"))
+    case q(n) => EitherT.pure(wikidataEntityUrl / ("Q" + n))
     case _ => EitherT.fromEither[F](Uri.fromString(entity).leftMap(f => s"Error creating URI from $entity: $f"))
    }
   }
@@ -128,8 +138,16 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F
   private def jsonErr(entity: String, msg: String): Json =
     Json.fromFields(List(
     ("entity", Json.fromString(entity)),
-    ("msg", Json.fromString(msg))
+    ("error", Json.fromString(msg))
     ))
+
+  private def prepareJson(entity: String,
+                            uri: Uri
+                           ): EitherT[F, String, Json] =
+   EitherT.pure(Json.fromFields(List(
+    ("entity", Json.fromString(entity)),
+    ("uri", Json.fromString(uri.toString)),
+   )))
 
   private def prepareJsonOk(entity: String,
                           uri: Uri,

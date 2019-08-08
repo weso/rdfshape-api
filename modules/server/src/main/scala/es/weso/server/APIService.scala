@@ -3,6 +3,7 @@ package es.weso.server
 import cats.effect._
 import cats.implicits._
 import es.weso.rdf.jena.RDFAsJenaModel
+import es.weso.rdf.streams.Streams
 import es.weso.schema._
 import es.weso.server.ApiHelper._
 import es.weso.server.QueryParams._
@@ -324,20 +325,25 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       }
     }
 
+    case req @ GET -> Root / `api` / "endpoint" / "outgoing" :?
+      OptEndpointParam(optEndpoint) +&
+      OptNodeParam(optNode)
+      => optEndpoint match {
+        case None => mkErr("No endpoint provided")
+        case Some(endpoint) => optNode match {
+            case None => mkErr("No node provided")
+            case Some(node) => Ok(Streams.getOutgoing(endpoint, node))
+        }
+      }
+
     case req @ GET -> Root / `api` / "wikidata" / "entity" :?
       OptEntityParam(optEntity) => {
-       println(s"Wikidata entity: $optEntity")
        optEntity match {
-        case None => Ok("No entity provided")
+        case None => mkErr("No entity provided")
         case Some(entity) => {
-          getUri(entity).fold(
-            e => Ok(Json.fromString(e)),
-            uri => for {
-            either <- resolveStream[F](uri,client)
-            resp <- either.fold(e =>
-              Ok(Json.fromString(e)),
-              stream => Ok(stream))
-          } yield resp
+          getWikidataUri(entity).fold(
+            e => mkErr(e),
+            uri => Ok(Streams.getRaw(uri))
           )
         }
       }
@@ -348,11 +354,11 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
   }
 
-  private def drip: Stream[F, String] =
-    Stream.awakeEvery[F](100.millis).map(_.toString).take(10)
+  private def mkErr(msg: String): F[Response[F]] =
+    Ok(Json.fromFields(List(("error", Json.fromString(msg)))))
 
-  private def getUri(entity: String): Either[String, Uri] = {
-    println(s"getUri: $entity")
+  private def getWikidataUri(entity: String): Either[String, Uri] = {
+    println(s"getWikidataUri: $entity")
     val q = """Q(\d*)""".r
     entity match {
       case q(n) => Uri.fromString(wikidataEntityUrl + n).leftMap(f => s"Error creating URI for entity ${n}: ${f}")

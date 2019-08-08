@@ -1,5 +1,7 @@
-var codeMirrorEntity ;
-var codeMirrorData ;
+var codeMirrorEndpoint ;
+var codeMirrorNode ;
+var codeMirrorData ; // To show results
+
 
 function changeMode(element,syntax) {
     var mode = "turtle";
@@ -28,34 +30,6 @@ function changeMode(element,syntax) {
 
 function changeTheme(theme) {
     codeMirrorData.setOption("theme",theme);
-}
-
-function showDot(dot, idName) {
-    $(idName).append("<div id='graph'></div>");
-    var format=$("#SelectFormat option:selected").text();
-    console.log("Selected format " + format);
-    var engine=$("#SelectEngine option:selected").text();
-    console.log("Selected engine " + engine);
-    $("#graph").empty();
-    var v = new Viz();
-    var opts = { engine: engine };
-    switch (format) {
-       case "SVG":
-           console.log("Rendering dot...")
-           console.log(dot)
-           v.renderSVGElement(dot, opts).then(function(svg) {
-           console.log(svg);
-           var graph = $("<svg/>").append(svg);
-           $("#graph").append(graph);
-          });
-          break;
-       case "PNG":
-         v.renderImageElement(dot,opts).then(function(element) {
-          $("#graph").append(element);
-         });
-         break;
-    }
-    v.render;
 }
 
 $(document).ready(function(){
@@ -101,9 +75,13 @@ $(document).ready(function(){
  $("#permalink").click(function(e) {
   e.preventDefault();
   console.log("click on permalink...");
-  var entity = codeMirrorEntity.getValue();
-  var entityPart = "entity=" + encodeURIComponent(entity);
-  var location = "/wikidata/entity?" + entityPart ;
+  var endpoint = codeMirrorEndpoint.getValue();
+  var node = codeMirrorNode.getValue();
+  var endpointPart = "endpoint=" + encodeURIComponent(endpoint);
+  var nodePart = "node=" + encodeURIComponent(node);
+  var location = "/endpoint?" +
+      endpointPart + "&" +
+      nodePart ;
   var href = urlShaclex + location;
   console.log("NewHRef: " + href);
   window.location.assign(href) ;
