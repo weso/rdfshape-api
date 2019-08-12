@@ -46,7 +46,7 @@ class EndpointService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: Context
 
    case req@GET -> Root / "endpoint" / "outgoing" :?
      OptQueryParam(optQuery) +&
-       OptEndpointParam(optEndpoint)
+     OptEndpointParam(optEndpoint)
    => {
      Ok("Not implemented yet get neighbours of a node")
    }

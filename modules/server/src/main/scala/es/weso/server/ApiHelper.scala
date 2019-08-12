@@ -1,16 +1,11 @@
 package es.weso.server
 
-//import cats._
-//import cats.data._
 import java.util.concurrent.Executors
 
 import cats.implicits._
 import cats.effect.{Blocker, ContextShift, IO, Timer}
-import org.http4s.client.blaze._
-import java.util.concurrent._
 
 import scala.concurrent.ExecutionContext.global
-//import scala.concurrent.ExecutionContext.Implicits.global
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.schema._
@@ -19,7 +14,6 @@ import es.weso.utils.FileUtils
 import es.weso.rdf.RDFReasoner
 import io.circe._
 import org.http4s._
-import es.weso.rdf.dot.RDF2Dot
 import es.weso.rdf.nodes.IRI
 import org.log4s.getLogger
 import es.weso.uml._
@@ -27,6 +21,7 @@ import es.weso.schemaInfer._
 import es.weso.server.helper.DataFormat
 import es.weso.shapeMaps.NodeSelector
 import org.http4s.client.{Client, JavaNetClientBuilder}
+import es.weso.rdf.sgraph._
 
 import scala.util.Try
 
@@ -220,7 +215,7 @@ object ApiHelper {
   }
 
   private[server] def dataInfo(rdf: RDFReasoner): Option[Json] = {
-    val dotStr = RDF2Dot.rdf2dot(rdf).fold(e => s"Error: $e", _.toString)
+    val dotStr = RDF2SGraph.rdf2sgraph(rdf).fold(e => s"Error: $e", _.toString)
     println(s"## dataInfo: DotStr: $dotStr")
     Some(Json.fromFields(
       List(

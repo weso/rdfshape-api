@@ -2,9 +2,11 @@ package es.weso.server
 
 import java.io.ByteArrayOutputStream
 import java.util.Base64
+
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
+import es.weso.rdf.sgraph.RDF2SGraph
 import es.weso.schema.DataFormats
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
@@ -59,18 +61,18 @@ object DataConverter extends LazyLogging {
     GraphFormat("PNG","application/png",Format.PNG),
     GraphFormat("PS","application/ps",Format.PS)
   )
-  lazy val availableFormats = availableGraphFormats.map(_.name)
+  lazy val availableGraphFormatNames = availableGraphFormats.map(_.name)
 
   case class GraphFormat(name: String, mime: String, fmt: Format)
 
 
   private[server] def dataConvert(data: String,
-                          optDataFormat: Option[String],
-                          optTargetFormat: Option[String]
-                         ): Either[String,DataConversionResult] = {
+                                  optDataFormat: Option[String],
+                                  optTargetFormat: Option[String]
+                                 ): Either[String,DataConversionResult] = {
     val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
     val targetFormat = optTargetFormat.getOrElse(DataFormats.defaultFormatName)
-    logger.info(s"Converting $data with format $dataFormat to $targetFormat")
+    println(s"Converting $data with format $dataFormat to $targetFormat. OptTargetFormat: $optTargetFormat")
     for {
       rdf <- RDFAsJenaModel.fromChars(data,dataFormat,None)
       result <- rdfConvert(rdf,targetFormat)
@@ -81,15 +83,19 @@ object DataConverter extends LazyLogging {
                                  targetFormat: String
                                  ): Either[String,String] =
   targetFormat.toUpperCase match {
+      case "JSON" => for {
+        sgraph <- RDF2SGraph.rdf2sgraph(rdf)
+      } yield sgraph.toJson.spaces2
       case t if dataFormats.contains(t) => rdf.serialize(t)
-      case t if availableFormats.contains(t) => for {
+      case t if availableGraphFormatNames.contains(t) => for {
         fmt <- getTargetFormat(t)
         dot <- rdf.serialize("DOT")
         _ <- { println(s"DOT generated:\n${dot}\n-----end of dot\n") ; Right(()) }
         outstr <- dotConverter(dot,fmt)
       } yield outstr
+
       case _ =>
-        Left(s"Unsupported conversion to $targetFormat\nFormats available: ${(dataFormats ++ availableFormats).mkString(",")}")
+        Left(s"Unsupported conversion to $targetFormat\nFormats available: ${(dataFormats ++ availableGraphFormatNames).mkString(",")}")
   }
 
 }

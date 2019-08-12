@@ -51,11 +51,6 @@ function showResult(result) {
     }
 }
 
-/*function getDataFormat(element) {
-    var format = element.options[element.selectedIndex].value;
-    window.alert("Data format of " + element + " format: " + format);
-} */
-
   var urlShaclex = getHost();
   console.log("urlShaclex: " + urlShaclex);
 

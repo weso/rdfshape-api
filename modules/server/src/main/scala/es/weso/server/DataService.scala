@@ -7,10 +7,12 @@ import es.weso.server.QueryParams._
 import org.http4s._
 import org.http4s.multipart._
 import org.http4s.twirl._
+import org.http4s.implicits._
 import cats.implicits._
 import es.weso.server.ApiHelper._
 import es.weso.server.Defaults._
 import es.weso.server.helper.{DataFormat, Svg}
+import io.circe.Json
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.log4s.getLogger
@@ -22,7 +24,6 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
   private val logger = getLogger
 
   val routes = HttpRoutes.of[F] {
-
 
     case req@GET -> Root / "dataConversions" :?
       OptDataParam(optData) +&
@@ -60,13 +61,21 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
           )
           val (maybeStr, eitherRDF) = dp.getData(relativeBase)
           println(s"GET dataConversions: $maybeStr\nEitherRDF:${eitherRDF}\ndp: ${dp}\ndv: $dv")
-          val result = if (allNone(optData,optDataURL,optEndpoint))
-            Right(None)
-          else for {
-            rdf <- eitherRDF
-            str <- rdf.serialize(optTargetDataFormat.getOrElse(defaultDataFormat).name, relativeBase)
-          } yield Some(str)
-          Ok(html.dataConversions(dv,optTargetDataFormat.getOrElse(defaultDataFormat),result))
+          val result: Option[Json] =
+            if (allNone(optData,optDataURL,optEndpoint))
+            None
+            else
+             Some(
+              Json.fromFields(List(
+                ("href", Json.fromString(
+                  uri"/api/data/convert".
+                  withOptionQueryParam(QueryParams.data,dp.data).
+                  withOptionQueryParam(QueryParams.dataFormat, dp.dataFormat.map(_.name)).
+                  withOptionQueryParam(QueryParams.targetDataFormat, dp.targetDataFormat.map(_.name)).renderString)
+                )
+              )))
+
+          Ok(html.dataConversions(result, dv,optTargetDataFormat.getOrElse(defaultDataFormat)))
         }
       }
     }
@@ -87,14 +96,18 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
-              val (maybeStr, eitherRDF) = dp.getData(relativeBase)
-              val result = for {
-                rdf <- eitherRDF
-                str <- rdf.serialize(targetFormat.name)
-              } yield Some(str)
-              Ok(html.dataConversions(dv,
-                  dp.targetDataFormat.getOrElse(defaultDataFormat),
-                  result))
+              val result: Option[Json] =
+                  Some(
+                    Json.fromFields(List(
+                      ("href", Json.fromString(
+                        uri"/api/data/convert".
+                          withOptionQueryParam(QueryParams.data,dp.data).
+                          withOptionQueryParam(QueryParams.dataFormat, dp.dataFormat.map(_.name)).
+                          withOptionQueryParam(QueryParams.targetDataFormat, dp.targetDataFormat.map(_.name)).renderString)
+                      )
+                    )))
+              Ok(html.dataConversions(result,dv,
+                  dp.targetDataFormat.getOrElse(defaultDataFormat)))
             }
           }
         } yield response

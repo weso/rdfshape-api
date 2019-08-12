@@ -1,24 +1,22 @@
 @import es.weso.server.DataValue
 @import es.weso.server.helper.DataFormat
+@import io.circe._
+@import es.weso.utils.json.JsonTwirl
 
-@(dv: DataValue,
+@(result: Option[Json],
+  dv: DataValue,
   currentTargetDataFormat: DataFormat,
-  result: Either[String, Option[String]]
 )
 <html lang="en">
 <head>@head("RDFShape: Data Conversions")</head>
 <body>
 @navBar()
 <div class="container">
-@if(result.isLeft) {
-  <p class="error">Error in conversion: @{result.left}</p>
-} else if(result.right.get.isDefined) {
-  <textarea id="targetDataArea">@{result.right.get.get}</textarea>
-} else {
-  <!-- No result -->
-}
+<h1>RDF Data conversions</h1>
+    <div id="resultDiv"
+         data-result='@{Html(JsonTwirl.json2htmlAttr(result.getOrElse(Json.Null)))}'></div>
 
-<form action="/dataConversions" method="POST" enctype="multipart/form-data" id="convert">
+    <form action="/dataConversions" method="POST" enctype="multipart/form-data" id="convert">
     @dataPanel("convert",dv,false)
     @selectTargetDataFormat("convert",dv.availableDataFormats,currentTargetDataFormat)
     <div class="submit">

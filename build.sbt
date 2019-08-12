@@ -24,7 +24,8 @@ scalafmt: {
 }
  */
 
-lazy val umlShaclexVersion     = "0.0.29"
+lazy val umlShaclexVersion     = "0.0.32"
+lazy val shaclexVersion        = "0.1.27"
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
@@ -79,9 +80,9 @@ lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"       
 lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
-//lazy val schema            = "es.weso"                    % "schema_2.12"          % shaclexVersion
-//lazy val srdfJena          = "es.weso"                    % "srdfjena_2.12"        % shaclexVersion
 lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.13"      % umlShaclexVersion
+lazy val utilsTest         = "es.weso"                    % "utilstest_2.13"       % shaclexVersion
+
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
 lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
@@ -143,6 +144,7 @@ lazy val server = project
       rdf4j_runtime,
       plantuml,
       graphvizJava,
+      utilsTest % Test, 
       // webJars
       jquery,
       bootstrap

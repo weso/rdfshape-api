@@ -5,7 +5,6 @@ import cats.effect._
 import cats.implicits._
 import es.weso._
 import es.weso.rdf.RDFReader
-import es.weso.rdf.dot.RDF2Dot
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.streams.Streams
 import es.weso.server.QueryParams.{OptEntityParam, OptWithDotParam}
@@ -20,6 +19,7 @@ import org.http4s.headers.Accept
 import org.http4s.multipart.Multipart
 import org.http4s.twirl._
 import org.http4s.implicits._
+import es.weso.rdf.sgraph._
 
 
 class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
@@ -129,9 +129,9 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F
   } yield rdf */
 
   private def generateDot(rdf: RDFReader, maybeDot: Boolean): EitherT[F, String, Option[String]] =
-    if (maybeDot) {
-      EitherT.fromEither[F](RDF2Dot.rdf2dot(rdf).bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
-    }
+    if (maybeDot) for {
+      sgraph <- EitherT.fromEither[F](RDF2SGraph.rdf2sgraph(rdf))  // .bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
+    } yield Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs))
     else
       EitherT.pure(None)
 

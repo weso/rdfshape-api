@@ -38,7 +38,7 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
   private val swagger =
     resourceService[F](ResourceService.Config("/swagger", blocker))
 
-  val availableDataFormats = DataFormats.formatNames.toList
+  val availableDataFormats = DataFormats.formatNames.toList ++ List("JSON")
   val defaultDataFormat = DataFormats.defaultFormatName
   val availableSchemaFormats = Schemas.availableFormats
   val defaultSchemaFormat = Schemas.defaultSchemaFormat
@@ -83,20 +83,6 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
     case GET -> Root / `api` / "data" / "formats" / "default" => {
       val dataFormat = DataFormats.defaultFormatName
       Ok(Json.fromString(dataFormat))
-    }
-
-    case req @ GET -> Root / `api` / "test" :? NameParam(name) => {
-      val default = Ok(s"Hello ${name.getOrElse("World")}")
-      req.headers.get(`Accept-Language`) match {
-        case Some(al) => {
-          al match {
-            case _ if (al.satisfiedBy(LanguageTag("es"))) =>
-              Ok(s"Hola ${name.getOrElse("Mundo")}!")
-            case _ => default
-          }
-        }
-        case None => default
-      }
     }
 
     case req @ GET -> Root / `api` / "dataUrl" / "info" :?
@@ -184,7 +170,10 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           case "SVG" => {
             Ok(result.result).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
           }
-          case "PNG" => Ok(result.result).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+          case "PNG" =>
+            Ok(result.result).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+          case "JSON" =>
+            Ok(result.result).map(_.withContentType(`Content-Type`(MediaType.application.json)))
           case _ => {
           val default = Ok(result.asJson)
             .map(_.withContentType(`Content-Type`(MediaType.application.json)))
