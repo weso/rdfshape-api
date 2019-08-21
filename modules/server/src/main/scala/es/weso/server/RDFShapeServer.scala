@@ -93,6 +93,8 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 object RDFShapeServer extends IOApp {
   private val ip = "0.0.0.0"
   private val port = envOrNone("PORT") map (_.toInt) getOrElse 8080
+  println(s"ENV PORT ${System getenv "PORT"}")
+  println(s"PORT: $port")
 
   override def run(args: List[String]): IO[ExitCode]  =
     new RDFShapeServer[IO](ip,port).resource.use(_ => IO.never).as(ExitCode.Success)
