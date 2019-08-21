@@ -80,16 +80,17 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
     } yield server
 
 //  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
-  def stream(blocker:Blocker)(implicit C: ContextShift[F]): Stream[F, Nothing] = {
+  def stream(blocker:Blocker): Stream[F, Nothing] = {
     for {
       client <- BlazeClientBuilder[F](global).stream
-      // app = httpApp(blocker, client).orNotFound
-         // HelloService[F](blocker).routes
+      app = (HelloService[F](blocker).routes).orNotFound
         // .orNotFound
       // finalHttpApp = Logger.httpApp(true, true)(app)
       exitCode <- BlazeServerBuilder[F]
         .bindHttp(port)
-        .withHttpApp(httpApp(blocker,mkClient(client)))
+        .withHttpApp(
+          app // httpApp(blocker,mkClient(client))
+        )
         .serve
     } yield exitCode
     }.drain
