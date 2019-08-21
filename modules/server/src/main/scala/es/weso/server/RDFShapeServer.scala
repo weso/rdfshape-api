@@ -83,7 +83,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
       blocker <- Blocker[F]
       client <- BlazeClientBuilder[F](global).resource
       server <- BlazeServerBuilder[F]
-        .bindHttp(8080)
+        .bindHttp(port)
         .withHttpApp(httpApp(blocker,mkClient(client)))
         .resource
     } yield server
