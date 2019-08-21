@@ -10,8 +10,9 @@ sealed trait DataFormat {
 }
 
 object DataFormat {
-  def fromString(name: String): Either[String,DataFormat] = if (name == "") Right(default)
-  else {
+  def fromString(name: String): Either[String,DataFormat] =
+    if (name == "") Right(default)
+    else {
     dataFormatsMap.get(name.toLowerCase) match {
       case None => Left(s"Not found data format: $name. Available formats: ${availableDataFormats.mkString(",")}")
       case Some(df) => Right(df)
@@ -21,12 +22,17 @@ object DataFormat {
   lazy val availableDataFormats: List[DataFormat] =
     List(Turtle,JsonLd,NTriples,RdfXml,RdfJson,Trig,
       HtmlMicrodata,HtmlRdfa11,
-      Dot,Svg,Png)
+      Dot,Svg,Png,JsonDataFormat)
 
   lazy val dataFormatsMap: Map[String,DataFormat] =
     availableDataFormats.map(df => (df.name.toLowerCase,df)).toMap
 
   lazy val default: DataFormat = Turtle
+}
+
+case object JsonDataFormat extends DataFormat {
+  override val name = "json"
+  override val mimeType = new MediaType("application","json")
 }
 
 case object Dot extends DataFormat {

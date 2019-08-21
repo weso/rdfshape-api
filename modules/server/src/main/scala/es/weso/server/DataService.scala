@@ -8,20 +8,24 @@ import org.http4s._
 import org.http4s.multipart._
 import org.http4s.twirl._
 import org.http4s.implicits._
+import org.http4s.circe._
 import cats.implicits._
 import es.weso.server.ApiHelper._
 import es.weso.server.Defaults._
 import es.weso.server.helper.{DataFormat, Svg}
 import io.circe.Json
+import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.log4s.getLogger
 
-class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
+class DataService[F[_]](blocker: Blocker,
+                        client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
+  private val apiDataUri = uri"/api/data"
 
   val routes = HttpRoutes.of[F] {
 
@@ -44,6 +48,7 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
           val (optDataFormat,optTargetDataFormat) = values
           val dp =
             DataParam(optData, optDataURL, None, optEndpoint,
+              optDataFormat,
               optDataFormat, optDataFormat,
               None,  //no dataFormatFile
               optInference,
@@ -61,7 +66,15 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
           )
           val (maybeStr, eitherRDF) = dp.getData(relativeBase)
           println(s"GET dataConversions: $maybeStr\nEitherRDF:${eitherRDF}\ndp: ${dp}\ndv: $dv")
-          val result: Option[Json] =
+          val multipart = Multipart(Vector(
+            Part.formData[F]("data",dp.data.getOrElse("")),
+            Part.formData[F]("dataFormat", dp.dataFormat.map(_.name).getOrElse(DataFormats.defaultFormatName)),
+            Part.formData[F]("targetDataFormat", dp.targetDataFormat.map(_.name).getOrElse(DataFormats.defaultFormatName))
+          ))
+          val entity = EntityEncoder[F,Multipart[F]].toEntity(multipart)
+          val body = entity.body
+          val req = Request(method = POST, uri = apiDataUri / "convert", body = body, headers = multipart.headers)
+/*          val result: Option[Json] =
             if (allNone(optData,optDataURL,optEndpoint))
             None
             else
@@ -73,9 +86,15 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
                   withOptionQueryParam(QueryParams.dataFormat, dp.dataFormat.map(_.name)).
                   withOptionQueryParam(QueryParams.targetDataFormat, dp.targetDataFormat.map(_.name)).renderString)
                 )
-              )))
-
-          Ok(html.dataConversions(result, dv,optTargetDataFormat.getOrElse(defaultDataFormat)))
+              ))) */
+          println(s"Request: $req")
+          for {
+            either <- client.fetch(req) {
+              case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+              case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+            }
+           resp <- Ok(html.dataConversions(either, dv,optTargetDataFormat.getOrElse(defaultDataFormat)))
+          } yield resp
         }
       }
     }
@@ -96,18 +115,22 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
-              val result: Option[Json] =
-                  Some(
-                    Json.fromFields(List(
-                      ("href", Json.fromString(
-                        uri"/api/data/convert".
-                          withOptionQueryParam(QueryParams.data,dp.data).
-                          withOptionQueryParam(QueryParams.dataFormat, dp.dataFormat.map(_.name)).
-                          withOptionQueryParam(QueryParams.targetDataFormat, dp.targetDataFormat.map(_.name)).renderString)
-                      )
-                    )))
-              Ok(html.dataConversions(result,dv,
-                  dp.targetDataFormat.getOrElse(defaultDataFormat)))
+              val multipart = Multipart(Vector(
+                    Part.formData[F]("data",dp.data.getOrElse("")),
+                    Part.formData[F]("dataFormat", dp.dataFormat.map(_.name).getOrElse(DataFormats.defaultFormatName)),
+                    Part.formData[F]("targetDataFormat", dp.targetDataFormat.map(_.name).getOrElse(DataFormats.defaultFormatName))
+              ))
+              val entity = EntityEncoder[F,Multipart[F]].toEntity(multipart)
+              val body = entity.body
+              val req = Request(method = POST, uri = apiDataUri / "convert", body = body, headers = multipart.headers)
+              for {
+                either <- client.fetch(req) {
+                  case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+                  case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+                }
+                resp <- Ok(html.dataConversions(either, dv, dp.targetDataFormat.getOrElse(defaultDataFormat)))
+              } yield resp
+
             }
           }
         } yield response
@@ -130,7 +153,7 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
         case Right(optDataFormat) => {
           val dp =
             DataParam(optData, optDataURL, None, optEndpoint,
-              optDataFormat, optDataFormat,
+              optDataFormat, optDataFormat, optDataFormat,
               None,  //no dataFormatFile
               optInference,
               None, optActiveDataTab)
@@ -147,7 +170,7 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
                 optEndpoint,
                 optActiveDataTab.getOrElse(defaultActiveDataTab)
               )
-              Ok(html.dataInfo(dataInfo(rdf),dv))
+              Ok(html.dataInfo(Some(dataInfo(rdf, maybeStr, optDataFormat)),dv))
             })
         }
       }
@@ -159,7 +182,8 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
         for {
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
           response <- maybeData match {
-            case Left(str) => BadRequest (s"Error obtaining data: $str")
+            case Left(str) =>
+              BadRequest (s"Error obtaining data: $str")
             case Right((rdf,dp)) => {
               val dv = DataValue(
                 dp.data, dp.dataURL,
@@ -168,7 +192,7 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
                 dp.endpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
-              Ok(html.dataInfo(dataInfo(rdf),dv))
+              Ok(html.dataInfo(Some(dataInfo(rdf,dp.data,dp.dataFormat)),dv))
             }
           }
         } yield response
@@ -210,7 +234,7 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
             val dp = DataParam(optData,
                                optDataURL,
                                None,
-                               optEndpoint,
+                               optEndpoint, optDataFormat,
                                optDataFormat,
                                optDataFormat,
                                None,
@@ -221,11 +245,13 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
             eitherRDF.fold(
               str => BadRequest(str),
               rdf => {
+                val targetFormat = dp.targetDataFormat.getOrElse(Svg)
+                val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
                 DataConverter
-                  .rdfConvert(rdf, targetDataFormat.name)
+                  .rdfConvert(rdf,dp.data,dataFormat,targetFormat.name)
                   .fold(
                     e => BadRequest(s"Error in conversion to $targetDataFormat: $e\nRDF:\n${rdf.serialize("TURTLE")}"),
-                    result => Ok(result).map(_.withContentType(`Content-Type`(targetDataFormat.mimeType)))
+                    result => Ok(result.toJson).map(_.withContentType(`Content-Type`(targetDataFormat.mimeType)))
                   )
 
               }
@@ -252,9 +278,10 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               ) */
               val targetFormat = dp.targetDataFormat.getOrElse(Svg)
-              DataConverter.rdfConvert(rdf,targetFormat.name).
+              val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
+              DataConverter.rdfConvert(rdf,dp.data,dataFormat,targetFormat.name).
                 fold(e => BadRequest(s"Error in conversion to $targetFormat: $e\nRDF:\n${rdf.serialize("TURTLE")}"),
-                  result => Ok(result).map(_.withContentType(`Content-Type`(targetFormat.mimeType)))
+                  result => Ok(result.toJson).map(_.withContentType(`Content-Type`(targetFormat.mimeType)))
                 )
             }
           }
@@ -315,6 +342,8 @@ class DataService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShif
 }
 
 object DataService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker): DataService[F] =
-    new DataService[F](blocker)
+  def apply[F[_]: Effect: ContextShift](blocker: Blocker,
+                                        client: Client[F]
+                                       ): DataService[F] =
+    new DataService[F](blocker,client)
 }

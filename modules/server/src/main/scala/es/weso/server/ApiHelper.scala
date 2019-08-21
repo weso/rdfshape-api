@@ -3,7 +3,8 @@ package es.weso.server
 import java.util.concurrent.Executors
 
 import cats.implicits._
-import cats.effect.{Blocker, ContextShift, IO, Timer}
+import cats.effect.{Blocker, ConcurrentEffect, ContextShift, IO, Timer}
+import results._
 
 import scala.concurrent.ExecutionContext.global
 import es.weso.rdf.PrefixMap
@@ -12,9 +13,10 @@ import es.weso.schema._
 import es.weso.server.Defaults._
 import es.weso.utils.FileUtils
 import es.weso.rdf.RDFReasoner
-import io.circe._
-import org.http4s._
 import es.weso.rdf.nodes.IRI
+import io.circe._
+import org.http4s._, org.http4s.dsl.io._
+import org.http4s.circe._
 import org.log4s.getLogger
 import es.weso.uml._
 import es.weso.schemaInfer._
@@ -214,16 +216,23 @@ object ApiHelper {
    }
   }
 
-  private[server] def dataInfo(rdf: RDFReasoner): Option[Json] = {
-    val dotStr = RDF2SGraph.rdf2sgraph(rdf).fold(e => s"Error: $e", _.toString)
-    println(s"## dataInfo: DotStr: $dotStr")
-    Some(Json.fromFields(
-      List(
-        ("statements", Json.fromString(rdf.getNumberOfStatements().fold(identity,_.toString))),
-        ("dot",Json.fromString(dotStr)),
-        ("nodesPrefixMap", ApiHelper.prefixMap2Json(rdf.getPrefixMap()))
-      )
-    ))
+  private[server] def dataFormatOrDefault(df: Option[String]): String =
+    df.getOrElse(DataFormats.defaultFormatName)
+
+  private[server] def dataInfoFromString(data: String, dataFormatStr: String): Json =  {
+    val either = for {
+      dataFormat <- DataFormat.fromString(dataFormatStr)
+      rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name)
+    } yield dataInfo(rdf, Some(data), Some(dataFormat))
+    either.fold(e => DataInfoResult.fromMsg(e).toJson, identity)
+  }
+
+  private[server] def dataInfo(rdf: RDFReasoner, data: Option[String], dataFormat: Option[DataFormat]): Json =  {
+    val either = for {
+      numberStatements <- rdf.getNumberOfStatements
+      preds <- rdf.predicates
+    } yield DataInfoResult.fromData(data, dataFormat, preds, numberStatements, rdf.getPrefixMap)
+    either.fold(e => DataInfoResult.fromMsg(e), identity).toJson
   }
 
   private[server] def getSchema(sv: SchemaValue): Either[String,Schema] = {
@@ -265,4 +274,9 @@ object ApiHelper {
     }
   }
 
+  // TODO: I want to move this method here but it infers type IO instead of generic F
+  /* private[server] def errJson[F[_]:ConcurrentEffect](msg: String): F[Response[F]] =
+    Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
+
+   */
 }

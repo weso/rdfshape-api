@@ -17,6 +17,7 @@ case class DataParam(data: Option[String],
                      dataURL: Option[String],
                      dataFile: Option[String],
                      endpoint: Option[String],
+                     dataFormatValue: Option[DataFormat],
                      dataFormatTextarea: Option[DataFormat],
                      dataFormatUrl: Option[DataFormat],
                      dataFormatFile: Option[DataFormat],
@@ -55,7 +56,7 @@ case class DataParam(data: Option[String],
     case Right(`dataUrlType`) => dataFormatUrl
     case Right(`dataFileType`) => dataFormatFile
     case Right(`dataTextAreaType`) => dataFormatTextarea
-    case _ => None
+    case _ => dataFormatValue
   }
 
   private def applyInference(rdf: RDFReasoner,
@@ -86,13 +87,14 @@ case class DataParam(data: Option[String],
     */
   def getData(relativeBase: Option[IRI]): (Option[String], Either[String,RDFReasoner]) = {
     val base = relativeBase.map(_.str)
-    logger.debug(s"ActiveDataTab: $activeDataTab")
+    println(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
-      case None => {
-        if (endpoint.isDefined) Right(dataEndpointType)
-        else Right(dataTextAreaType)
-      }
       case Some(a) => parseDataTab(a)
+      case None if endpoint.isDefined => Right(dataEndpointType)
+      case None if data.isDefined => Right(dataTextAreaType)
+      case None if dataURL.isDefined => Right(dataUrlType)
+      case None if dataFile.isDefined => Right(dataFileType)
+      case None => Right(dataTextAreaType)
     }
     println(s"Input type: $inputType")
     inputType match {
@@ -142,7 +144,7 @@ case class DataParam(data: Option[String],
         data match {
           case None => (None, Right(RDFAsJenaModel.empty))
           case Some(data) => {
-            val dataFormat = dataFormatTextarea.getOrElse(defaultDataFormat)
+            val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(defaultDataFormat))
             rdfFromString(data, dataFormat, base) match {
               case Left(msg) => (Some(data), Left(msg))
               case Right(rdf) => {
@@ -235,19 +237,21 @@ object DataParam {
     dataFile <- partsMap.optPartValue("dataFile")
     endpoint <- partsMap.optPartValue("endpoint")
     dataFormatTextArea <- getDataFormat("dataFormatTextArea", partsMap)
+    dataFormatValue <- getDataFormat("dataFormat", partsMap)
     dataFormatUrl <- getDataFormat("dataFormatUrl",partsMap)
     dataFormatFile <- getDataFormat("dataFormatFile", partsMap)
     inference <- partsMap.optPartValue("inference")
     targetDataFormat <- getDataFormat("targetDataFormat",partsMap)
     activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
   } yield {
-    logger.debug(s"<<<***Data: $data")
-    logger.debug(s"<<<***Data Format TextArea: $dataFormatTextArea")
-    logger.debug(s"<<<***Data Format Url: $dataFormatUrl")
-    logger.debug(s"<<<***Data Format File: $dataFormatFile")
-    logger.debug(s"<<<***Data URL: $dataURL")
-    logger.debug(s"<<<***Endpoint: $endpoint")
-    logger.debug(s"<<<***ActiveDataTab: $activeDataTab")
+    println(s"<<<***Data: $data")
+    println(s"<<<***Data Format: $dataFormatValue")
+    println(s"<<<***Data Format TextArea: $dataFormatTextArea")
+    println(s"<<<***Data Format Url: $dataFormatUrl")
+    println(s"<<<***Data Format File: $dataFormatFile")
+    println(s"<<<***Data URL: $dataURL")
+    println(s"<<<***Endpoint: $endpoint")
+    println(s"<<<***ActiveDataTab: $activeDataTab")
     val endpointRegex = "Endpoint: (.+)".r
     val finalEndpoint = endpoint.fold(data match {
       case None => None
@@ -262,16 +266,16 @@ object DataParam {
         else activeDataTab
       case None => activeDataTab
     } */
-    logger.debug(s"<<<***Endpoint: $finalEndpoint")
+    println(s"<<<***Endpoint: $finalEndpoint")
 
-    DataParam(data,dataURL,dataFile,finalEndpoint,
+    DataParam(data,dataURL,dataFile,finalEndpoint,dataFormatValue,
       dataFormatTextArea,dataFormatUrl,dataFormatFile,
       inference,targetDataFormat,finalActiveDataTab
     )
   }
 
   private[server] def empty: DataParam =
-    DataParam(None,None,None,None,None,None,None,None,None,None)
+    DataParam(None,None,None,None,None,None,None,None,None,None,None)
 
 
 }

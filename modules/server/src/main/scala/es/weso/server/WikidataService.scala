@@ -21,8 +21,9 @@ import org.http4s.twirl._
 import org.http4s.implicits._
 import es.weso.rdf.sgraph._
 
-
-class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
+class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
+                                              client: Client[F]
+                                             )(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"

@@ -20,6 +20,7 @@ import org.http4s.server.Router
 import org.http4s.server.staticcontent.WebjarService.{Config, WebjarAsset}
 import org.http4s.server.staticcontent.{ResourceService, resourceService, webjarService}
 import org.log4s.getLogger
+import APIDefinitions._
 
 class EndpointService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
@@ -30,14 +31,14 @@ class EndpointService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: Context
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
 
-   case req@GET -> Root / "endpoint" / "query" :?
+   case req@GET -> Root / `api` / "endpoint" / "query" :?
       OptQueryParam(optQuery) +&
         OptEndpointParam(optEndpoint)
     => {
       Ok("Not implemented yet")
    }
 
-    case req@POST -> Root / "endpoint" / "query" => {
+    case req@POST -> Root / `api` / "endpoint" / "query" => {
       req.decode[Multipart[F]] { m => {
       }
         Ok("Not implemented yet")

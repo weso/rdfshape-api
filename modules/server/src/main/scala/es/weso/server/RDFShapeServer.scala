@@ -53,8 +53,11 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
   def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
     CORS(
       WebService[F](blocker).routes <+>
-      DataService[F](blocker).routes <+>
+      DataService[F](blocker, client).routes <+>
       WikidataService[F](blocker, client).routes <+>
+      ShExService[F](blocker,client).routes <+>
+      SchemaService[F](blocker,client).routes <+>
+      ShapeMapService[F](blocker,client).routes <+>
       APIService[F](blocker, client).routes <+>
       EndpointService[F](blocker).routes <+>
       LinksService[F](blocker).routes

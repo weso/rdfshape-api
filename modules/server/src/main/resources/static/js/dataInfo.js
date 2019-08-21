@@ -68,7 +68,7 @@ function showResult(result) {
                 "<th data-sortable=\"true\">Value</th>" +
                 "</tr></thead>";
         var tableBody = '';
-        tableBody += "<tr><td>Number of triples</td><td>" + result.statements + "</td></tr>";
+        tableBody += "<tr><td>Number of triples</td><td>" + result.numberStatements + "</td></tr>";
         $("#resultDiv").append("<table data-toggle=\"table\" data-sort-order=\"desc\" data-sort-name=\"node\">" +
                 tableHead +
                 tableBody +

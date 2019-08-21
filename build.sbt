@@ -24,7 +24,7 @@ scalafmt: {
 }
  */
 
-lazy val umlShaclexVersion     = "0.0.32"
+lazy val umlShaclexVersion     = "0.0.33"
 lazy val shaclexVersion        = "0.1.27"
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"

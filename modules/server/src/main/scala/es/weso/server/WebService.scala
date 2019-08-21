@@ -252,7 +252,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
             val baseUri = req.uri
             logger.info(s"BaseURI: $baseUri")
             logger.info(s"Endpoint: $optEndpoint")
-            val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+            val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
             val sp = SchemaParam(optSchema, optSchemaURL, None, optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine, optSchemaEmbedded, None, None, optActiveSchemaTab)
             val optShapeMap = (optShapeMapFirst, optShapeMapAlt) match {
               case (Some(s1), Some(s2)) if s1 == s2 => {
@@ -388,7 +388,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       either match {
         case Left(str) => BadRequest(str)
         case Right(optDataFormat) => {
-          val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
+          val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
           val (dataStr, eitherRDF) = dp.getData(relativeBase)
           val dv = DataValue(optData,
             optDataURL,
