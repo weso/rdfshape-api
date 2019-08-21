@@ -83,10 +83,39 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 }
 
 object Server {
+
+  def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
+//    HelloService[F](blocker).routes <+>
+    WebService[F](blocker).routes <+>
+    DataService[F](blocker, client).routes <+>
+    WikidataService[F](blocker, client).routes <+>
+    ShExService[F](blocker,client).routes <+>
+    SchemaService[F](blocker,client).routes <+>
+    ShapeMapService[F](blocker,client).routes <+>
+    APIService[F](blocker, client).routes <+>
+    EndpointService[F](blocker).routes <+>
+    LinksService[F](blocker).routes
+        
+    /*CORS(
+        WebService[F](blocker).routes <+>
+        DataService[F](blocker, client).routes <+>
+        WikidataService[F](blocker, client).routes <+>
+        ShExService[F](blocker,client).routes <+>
+        SchemaService[F](blocker,client).routes <+>
+        ShapeMapService[F](blocker,client).routes <+>
+        APIService[F](blocker, client).routes <+>
+        EndpointService[F](blocker).routes <+>
+        LinksService[F](blocker).routes
+      ) */
+
+
   def stream[F[_]: ConcurrentEffect](blocker:Blocker, port: Int, ip: String)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     for {
       client <- BlazeClientBuilder[F](global).stream
-      app = (HelloService[F](blocker).routes).orNotFound
+      app = (
+        // HelloService[F](blocker).routes
+	routesService[F](blocker,client)
+      ).orNotFound
       // .orNotFound
       finalHttpApp = Logger.httpApp(true, true)(app)
       exitCode <- BlazeServerBuilder[F]
