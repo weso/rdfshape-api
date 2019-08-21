@@ -18,7 +18,7 @@ import org.http4s.dsl.Http4sDsl
 import scala.concurrent.ExecutionContext.global
 import scala.util.Properties.envOrNone
 
-
+/*
 class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
@@ -32,15 +32,15 @@ object HelloService {
   def apply[F[_]: Effect: ContextShift](blocker: Blocker): HelloService[F] =
     new HelloService[F](blocker)
 }
-
+*/
 
 class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
   private val logger = getLogger
 
   logger.info(s"Starting RDFShape on '$host:$port'")
 
-  def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
-    HelloService[F](blocker).routes
+/*  def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
+    HelloService[F](blocker).routes */
     /*  CORS(
         WebService[F](blocker).routes <+>
         DataService[F](blocker, client).routes <+>
@@ -64,7 +64,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         .mountService(service).
         serve */
 
-  def httpApp(blocker: Blocker,
+/*  def httpApp(blocker: Blocker,
               client: Client[F]): HttpApp[F] =
    routesService(blocker, client).orNotFound
   //  TestRoutes.helloWorldRoutes[F](HelloWorld.impl[F]).orNotFound
@@ -78,7 +78,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         .withHttpApp(httpApp(blocker,mkClient(client)))
         .resource
     } yield server
-
+*/
 //  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
 }
 
@@ -92,7 +92,8 @@ object Server {
     ShExService[F](blocker,client).routes <+>
     SchemaService[F](blocker,client).routes <+>
     ShapeMapService[F](blocker,client).routes <+>
-    APIService[F](blocker, client).routes <+>
+    CORS( APIService[F](blocker, client).routes ) <+>
+    StaticService[F](blocker).routes <+>
     EndpointService[F](blocker).routes <+>
     LinksService[F](blocker).routes
         
@@ -114,10 +115,10 @@ object Server {
       client <- BlazeClientBuilder[F](global).stream
       app = (
         // HelloService[F](blocker).routes
-	routesService[F](blocker,client)
+	      routesService[F](blocker,client)
       ).orNotFound
       // .orNotFound
-      finalHttpApp = Logger.httpApp(true, true)(app)
+      finalHttpApp = Logger.httpApp(true, false)(app)
       exitCode <- BlazeServerBuilder[F]
         .bindHttp(port,ip)
         .withHttpApp(finalHttpApp)

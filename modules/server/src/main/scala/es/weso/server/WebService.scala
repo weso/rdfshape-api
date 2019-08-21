@@ -34,28 +34,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
 
   private val logger = getLogger
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] =
-    Router[F](
-      "" ->
-        rootRoutes.combineK(
-        static).combineK(
-        webjars
-        ))  // TODO: <+> could be used instead of combineK but if gives an error
-
-  private val static =
-    resourceService[F](ResourceService.Config("/static", blocker))
-
-  private val webjars: HttpRoutes[F] = {
-    def isJsAsset(asset: WebjarAsset): Boolean = asset.asset.endsWith(".js")
-    webjarService(
-      Config(
-        filter = isJsAsset,
-        blocker = blocker
-      )
-    )
-  }
-
-  val rootRoutes = HttpRoutes.of[F] {
+  def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
 
     case GET -> Root => {
       Ok(html.index())
@@ -459,20 +438,6 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       }
    }
   }
-
-/*    // Contents on /static are mapped to /static
-    case r@GET -> _ if r.pathInfo.startsWith("/static") => static(r).getOrElseF(NotFound()) */
-
-    // case r @ GET -> _ if r.pathInfo.startsWith("/swagger.json") => views(r)
-
-    // When accessing to a folder (ends by /) append index.scala.html
-/*    case r@GET -> _ if r.pathInfo.endsWith("/") =>
-      webService(r.withPathInfo(r.pathInfo + "index.scala.html")).getOrElseF(NotFound())
-
-    case r@GET -> _ =>
-      val rr = if (r.pathInfo.contains('.')) r else r.withPathInfo(r.pathInfo + ".html")
-      views(rr).getOrElseF(NotFound()) */
-
   }
 
   private def err[A](str: String): Either[String, A] = {
