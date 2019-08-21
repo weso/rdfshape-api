@@ -4,16 +4,16 @@ import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.{Router, Server}
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.middleware.CORS
+import org.http4s.server.middleware.{CORS, Logger}
 import es.weso.server.utils.Http4sUtils._
 import org.log4s.getLogger
 import cats.effect._
 import cats.implicits._
-import es.weso.schemaInfer.Config
+import es.weso.quickstart.{HelloWorld, TestRoutes}
+import fs2.Stream
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.dsl.Http4sDsl
-import org.http4s.server.staticcontent.ResourceService
 
 import scala.concurrent.ExecutionContext.global
 import scala.util.Properties.envOrNone
@@ -36,7 +36,6 @@ object HelloService {
 
 class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
   private val logger = getLogger
-  // private val pool = Executors.newCachedThreadPool()
 
   logger.info(s"Starting RDFShape on '$host:$port'")
 
@@ -67,7 +66,8 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 
   def httpApp(blocker: Blocker,
               client: Client[F]): HttpApp[F] =
-    routesService(blocker, client).orNotFound
+    // routesService(blocker, client).orNotFound
+    TestRoutes.helloWorldRoutes[F](HelloWorld.impl[F]).orNotFound
 
   def resource: Resource[F, Server[F]] =
     for {
@@ -79,15 +79,36 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         .resource
     } yield server
 
+  def stream[F[_]: ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+    for {
+      client <- BlazeClientBuilder[F](global).stream
+      helloWorldAlg = HelloWorld.impl[F]
+      httpApp = (
+        // HelloService[F](blocker).routes
+        TestRoutes.helloWorldRoutes[F](helloWorldAlg)
+        ).orNotFound
+      finalHttpApp = Logger.httpApp(true, true)(httpApp)
+      exitCode <- BlazeServerBuilder[F]
+        .bindHttp(8080, "0.0.0.0")
+        .withHttpApp(finalHttpApp)
+        .serve
+    } yield exitCode
+   }.drain
+
 }
 
 object RDFShapeServer extends IOApp {
+
   private val ip = "0.0.0.0"
   private val port = envOrNone("PORT") map (_.toInt) getOrElse 8080
-  println(s"ENV PORT ${System getenv "PORT"}")
   println(s"PORT: $port")
 
+  def main(args: List[String]): Unit = {
+    run(args).unsafeRunSync()
+  }
+
   override def run(args: List[String]): IO[ExitCode]  =
-    new RDFShapeServer[IO](ip,port).resource.use(_ => IO.never).as(ExitCode.Success)
+    new RDFShapeServer[IO](ip,port).  //stream[IO].compile.drain.as(ExitCode.Success)
+     resource.use(_ => IO.never).as(ExitCode.Success)
 
 }
