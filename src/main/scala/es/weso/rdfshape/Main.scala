@@ -13,6 +13,7 @@ import es.weso.utils.FileUtils
 import scala.util._
 import java.nio.file._
 
+import es.weso.quickstart.QuickStartMain
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 
@@ -30,7 +31,7 @@ object Main extends App with LazyLogging {
     opts.verify()
 
     if (opts.server()) {
-      RDFShapeServer.main(args)
+      QuickStartMain.main(args)
     }
 
     val baseFolder: Path = if (opts.baseFolder.isDefined) {
