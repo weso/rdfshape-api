@@ -23,13 +23,13 @@ class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShi
   extends Http4sDsl[F] {
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
-      case GET -> Root =>
-        Ok("Hi!")
-    }
+    case GET -> Root =>
+      Ok("Hi!")
+  }
 }
 
 object HelloService {
- def apply[F[_]: Effect: ContextShift](blocker: Blocker): HelloService[F] =
+  def apply[F[_]: Effect: ContextShift](blocker: Blocker): HelloService[F] =
     new HelloService[F](blocker)
 }
 
@@ -41,32 +41,32 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 
   def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
     HelloService[F](blocker).routes
-/*    CORS(
-      WebService[F](blocker).routes <+>
-      DataService[F](blocker, client).routes <+>
-      WikidataService[F](blocker, client).routes <+>
-      ShExService[F](blocker,client).routes <+>
-      SchemaService[F](blocker,client).routes <+>
-      ShapeMapService[F](blocker,client).routes <+>
-      APIService[F](blocker, client).routes <+>
-      EndpointService[F](blocker).routes <+>
-      LinksService[F](blocker).routes
-    ) */
+  /*    CORS(
+        WebService[F](blocker).routes <+>
+        DataService[F](blocker, client).routes <+>
+        WikidataService[F](blocker, client).routes <+>
+        ShExService[F](blocker,client).routes <+>
+        SchemaService[F](blocker,client).routes <+>
+        ShapeMapService[F](blocker,client).routes <+>
+        APIService[F](blocker, client).routes <+>
+        EndpointService[F](blocker).routes <+>
+        LinksService[F](blocker).routes
+      ) */
 
-/*  val service = routesService.local { req: Request[IO] =>
-    val path = req.uri.path
-    logger.debug(s"Request with path: ${req.remoteAddr.getOrElse("null")} -> ${req.method}: $path")
-    req
-  } */
+  /*  val service = routesService.local { req: Request[IO] =>
+      val path = req.uri.path
+      logger.debug(s"Request with path: ${req.remoteAddr.getOrElse("null")} -> ${req.method}: $path")
+      req
+    } */
 
-/*  def build(): fs2.Stream[IO, ExitCode] =
-    BlazeServerBuilder[IO].bindHttp(port, host)
-      .mountService(service).
-      serve */
+  /*  def build(): fs2.Stream[IO, ExitCode] =
+      BlazeServerBuilder[IO].bindHttp(port, host)
+        .mountService(service).
+        serve */
 
   def httpApp(blocker: Blocker,
               client: Client[F]): HttpApp[F] =
-    // routesService(blocker, client).orNotFound
+  // routesService(blocker, client).orNotFound
     TestRoutes.helloWorldRoutes[F](HelloWorld.impl[F]).orNotFound
 
   def resource: Resource[F, Server[F]] =
@@ -79,13 +79,13 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         .resource
     } yield server
 
-  def stream[F[_]: ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     for {
       client <- BlazeClientBuilder[F](global).stream
-      helloWorldAlg = HelloWorld.impl[F]
+      // helloWorldAlg = HelloWorld.impl[F]
       httpApp = (
-        // HelloService[F](blocker).routes
-        TestRoutes.helloWorldRoutes[F](helloWorldAlg)
+//        TestRoutes.helloWorldRoutes[F](helloWorldAlg)
+         HelloService[F](blocker).routes
         ).orNotFound
       finalHttpApp = Logger.httpApp(true, true)(httpApp)
       exitCode <- BlazeServerBuilder[F]
@@ -93,7 +93,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         .withHttpApp(finalHttpApp)
         .serve
     } yield exitCode
-   }.drain
+    }.drain
 
 }
 
@@ -107,8 +107,12 @@ object RDFShapeServer extends IOApp {
     run(args).unsafeRunSync()
   }
 
-  override def run(args: List[String]): IO[ExitCode]  =
-    new RDFShapeServer[IO](ip,port).  //stream[IO].compile.drain.as(ExitCode.Success)
-     resource.use(_ => IO.never).as(ExitCode.Success)
+  override def run(args: List[String]): IO[ExitCode]  = {
+    val blocker = Blocker.liftExecutionContext(global)
+    new RDFShapeServer[IO](ip,port).
+      stream[IO](blocker).compile.drain.as(ExitCode.Success)
+  }
+
+//  resource.use(_ => IO.never).as(ExitCode.Success)
 
 }
