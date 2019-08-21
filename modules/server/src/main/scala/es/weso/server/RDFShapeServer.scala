@@ -40,8 +40,8 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
   logger.info(s"Starting RDFShape on '$host:$port'")
 
   def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
-    // HelloService[F](blocker).routes
-      CORS(
+    HelloService[F](blocker).routes
+    /*  CORS(
         WebService[F](blocker).routes <+>
         DataService[F](blocker, client).routes <+>
         WikidataService[F](blocker, client).routes <+>
@@ -51,7 +51,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         APIService[F](blocker, client).routes <+>
         EndpointService[F](blocker).routes <+>
         LinksService[F](blocker).routes
-      )
+      ) */
 
   /*  val service = routesService.local { req: Request[IO] =>
       val path = req.uri.path
