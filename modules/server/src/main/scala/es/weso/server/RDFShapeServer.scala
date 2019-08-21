@@ -2,47 +2,37 @@ package es.weso.server
 
 import org.http4s._
 import org.http4s.implicits._
-import org.http4s.server.Server
+import org.http4s.server.{Router, Server}
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.CORS
 import es.weso.server.utils.Http4sUtils._
 import org.log4s.getLogger
 import cats.effect._
 import cats.implicits._
+import es.weso.schemaInfer.Config
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.dsl.Http4sDsl
+import org.http4s.server.staticcontent.ResourceService
 
 import scala.concurrent.ExecutionContext.global
 import scala.util.Properties.envOrNone
 
-/*
+
 class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] =
-    Router[F](
-      "" -> staticRoutes.combineK(rootRoutes)  // TODO: <+> could be used instead of combineK but if gives an error
-    )
-
-  private val views: HttpRoutes[F] =
-    fileService(Config(systemPath = "/static", blocker = blocker))
-
-  def staticRoutes = resourceService[F](ResourceService.Config("/static", blocker))
-
-  def rootRoutes(implicit timer: Timer[F]): HttpRoutes[F] =
-    HttpRoutes.of[F] {
-
-      case GET -> Root / "hi" =>
-        Ok(html.index())
+  def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
+      case GET -> Root =>
+        Ok("Hi!")
     }
-
 }
 
 object HelloService {
  def apply[F[_]: Effect: ContextShift](blocker: Blocker): HelloService[F] =
     new HelloService[F](blocker)
 }
-*/
+
 
 class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
   private val logger = getLogger
@@ -51,7 +41,8 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
   logger.info(s"Starting RDFShape on '$host:$port'")
 
   def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
-    CORS(
+    HelloService[F](blocker).routes
+/*    CORS(
       WebService[F](blocker).routes <+>
       DataService[F](blocker, client).routes <+>
       WikidataService[F](blocker, client).routes <+>
@@ -61,7 +52,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
       APIService[F](blocker, client).routes <+>
       EndpointService[F](blocker).routes <+>
       LinksService[F](blocker).routes
-    )
+    ) */
 
 /*  val service = routesService.local { req: Request[IO] =>
     val path = req.uri.path
