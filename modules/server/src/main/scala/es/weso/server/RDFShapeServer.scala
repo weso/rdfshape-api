@@ -40,8 +40,8 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
   logger.info(s"Starting RDFShape on '$host:$port'")
 
   def routesService(blocker: Blocker, client: Client[F]): HttpRoutes[F] =
-    HelloService[F](blocker).routes
-  /*    CORS(
+    // HelloService[F](blocker).routes
+      CORS(
         WebService[F](blocker).routes <+>
         DataService[F](blocker, client).routes <+>
         WikidataService[F](blocker, client).routes <+>
@@ -51,7 +51,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         APIService[F](blocker, client).routes <+>
         EndpointService[F](blocker).routes <+>
         LinksService[F](blocker).routes
-      ) */
+      )
 
   /*  val service = routesService.local { req: Request[IO] =>
       val path = req.uri.path
@@ -66,8 +66,8 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
 
   def httpApp(blocker: Blocker,
               client: Client[F]): HttpApp[F] =
-  // routesService(blocker, client).orNotFound
-    TestRoutes.helloWorldRoutes[F](HelloWorld.impl[F]).orNotFound
+   routesService(blocker, client).orNotFound
+  //  TestRoutes.helloWorldRoutes[F](HelloWorld.impl[F]).orNotFound
 
   def resource: Resource[F, Server[F]] =
     for {
@@ -79,18 +79,17 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
         .resource
     } yield server
 
-  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+//  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+  def stream(blocker:Blocker)(implicit C: ContextShift[F]): Stream[F, Nothing] = {
     for {
       client <- BlazeClientBuilder[F](global).stream
-      // helloWorldAlg = HelloWorld.impl[F]
-      httpApp = (
-//        TestRoutes.helloWorldRoutes[F](helloWorldAlg)
-         HelloService[F](blocker).routes
-        ).orNotFound
-      finalHttpApp = Logger.httpApp(true, true)(httpApp)
+      // app = httpApp(blocker, client).orNotFound
+         // HelloService[F](blocker).routes
+        // .orNotFound
+      // finalHttpApp = Logger.httpApp(true, true)(app)
       exitCode <- BlazeServerBuilder[F]
-        .bindHttp(8080, "0.0.0.0")
-        .withHttpApp(finalHttpApp)
+        .bindHttp(port)
+        .withHttpApp(httpApp(blocker,mkClient(client)))
         .serve
     } yield exitCode
     }.drain
@@ -110,9 +109,7 @@ object RDFShapeServer extends IOApp {
   override def run(args: List[String]): IO[ExitCode]  = {
     val blocker = Blocker.liftExecutionContext(global)
     new RDFShapeServer[IO](ip,port).
-      stream[IO](blocker).compile.drain.as(ExitCode.Success)
+      stream(blocker).compile.drain.as(ExitCode.Success)
   }
-
-//  resource.use(_ => IO.never).as(ExitCode.Success)
 
 }
