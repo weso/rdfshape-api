@@ -89,10 +89,12 @@ object Server {
     WebService[F](blocker).routes <+>
     DataService[F](blocker, client).routes <+>
     WikidataService[F](blocker, client).routes <+>
-    ShExService[F](blocker,client).routes <+>
-    SchemaService[F](blocker,client).routes <+>
-    ShapeMapService[F](blocker,client).routes <+>
-    CORS( APIService[F](blocker, client).routes ) <+>
+    CORS (
+      SchemaService[F](blocker,client).routes <+>
+      APIService[F](blocker, client).routes <+>
+      ShExService[F](blocker,client).routes <+>
+      ShapeMapService[F](blocker,client).routes
+    ) <+>
     StaticService[F](blocker).routes <+>
     EndpointService[F](blocker).routes <+>
     LinksService[F](blocker).routes

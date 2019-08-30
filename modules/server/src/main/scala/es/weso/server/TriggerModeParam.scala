@@ -65,12 +65,14 @@ case class TriggerModeParam(triggerMode: Option[String],
       }
       case Right(`shapeMapFileType`) => shapeMapFile match {
           case None => (None, Left(s"No value for shapeMapFile"))
-          case Some(shapeMapStr) =>
+          case Some(shapeMapStr) => {
+            println(s"### ShapeMapFile: $shapeMapStr")
             val shapeMapFormat = shapeMapFormatFile.getOrElse(defaultShapeMapFormat)
             ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
               case Left(msg) => (Some(shapeMapStr), Left(msg))
               case Right(parsedShapeMap) => (Some(shapeMapStr), Right(parsedShapeMap))
             }
+          }
         }
       case Right(`shapeMapTextAreaType`) => shapeMap match {
           case None => (None, Right(ShapeMap.empty))
@@ -102,7 +104,9 @@ object TriggerModeParam {
       optShapeMapFormatUrl <- partsMap.optPartValue("shapeMapFormatURL")
       optShapeMapFormatFile <- partsMap.optPartValue("shapeMapFormatFile")
       optActiveShapeMapTab <- partsMap.optPartValue("shapeMapActiveTab")
-    } yield
+    } yield {
+      println(s"### Parsing triggerMode params")
+      println(s"### ShapeMapFormatFile: $optShapeMapFormatFile")
       TriggerModeParam(
         optTriggerMode,
         optShapeMap,
@@ -112,6 +116,7 @@ object TriggerModeParam {
         optShapeMapFile,
         optShapeMapFormatFile,
         optActiveShapeMapTab)
+    }
     val r: F[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
     EitherT(r)
   }

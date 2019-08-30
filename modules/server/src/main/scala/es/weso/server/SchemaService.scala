@@ -212,6 +212,7 @@ class SchemaService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
         } yield {
           // val schemaEmbedded = getSchemaEmbedded(sp)
+          println(s"Trigger mode: $tp")
           val (result, maybeTriggerMode, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
           result
         }
