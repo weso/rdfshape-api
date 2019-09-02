@@ -13,7 +13,7 @@ import es.weso.utils.FileUtils
 import scala.util._
 import java.nio.file._
 
-import es.weso.quickstart.QuickStartMain
+// import es.weso.quickstart.QuickStartMain
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 
