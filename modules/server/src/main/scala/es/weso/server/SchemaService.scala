@@ -164,6 +164,33 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         }
       }
 
+    case req @ GET -> Root / `api` / "schema" / "visualize" :?
+        SchemaURLParam(optSchemaURL) +&
+        OptSchemaParam(optSchema) +&
+        SchemaFormatParam(optSchemaFormat) +&
+        SchemaEngineParam(optSchemaEngine) +&
+        OptActiveSchemaTabParam(optActiveSchemaTab) => {
+      val sp = SchemaParam(optSchema,
+        optSchemaURL,
+        None,
+        optSchemaFormat,
+        optSchemaFormat,
+        optSchemaFormat,
+        optSchemaEngine,
+        None,
+        None,
+        None,
+        optActiveSchemaTab)
+      val (_,either) = sp.getSchema(None)
+      either.fold(
+        e => errJson(s"Error obtaining schema $e"),
+        (schema: Schema) => {
+          val (svg,_) = schema2SVG(schema)
+          Ok(svg).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
+        }
+      )
+    }
+
     case req @ GET -> Root / `api` / "schema" / "validate" :?
           OptDataParam(optData) +&
             OptDataURLParam(optDataURL) +&
