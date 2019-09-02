@@ -145,6 +145,56 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       })
     }
 
+    case req@POST -> Root / "schemaVisualize" =>
+      req.decode[Multipart[F]] { m => {
+        val partsMap = PartsMap(m.parts)
+        for {
+          maybePair <- SchemaParam.mkSchema(partsMap, None).value
+          response <- maybePair match {
+            case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
+            case Right((schema, sp)) => {
+              val sv = SchemaValue(sp.schema,
+                sp.schemaURL,
+                sp.schemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
+                sp.schemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
+                sp.activeSchemaTab.getOrElse(defaultActiveSchemaTab)
+              )
+              val info = schemaVisualize(schema)
+              Ok(html.schemaVisualize(Some(info),sv))
+            }
+          }
+        } yield response
+      }
+      }
+
+    case req@GET -> Root / "schemaVisualize" :?
+      OptSchemaParam(optSchema) +&
+        SchemaURLParam(optSchemaURL) +&
+        SchemaFormatParam(optSchemaFormat) +&
+        SchemaEngineParam(optSchemaEngine) +&
+        OptActiveSchemaTabParam(optActiveSchemaTab)
+    => {
+      logger.info(s"GET schemaVisualize: schema=$optSchema\nschemaURL: $optSchemaURL")
+
+      val sp = SchemaParam(optSchema, optSchemaURL, None,
+        optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine,
+        None, None, None, optActiveSchemaTab)
+
+      val sv = SchemaValue(optSchema, optSchemaURL,
+        optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
+        optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
+        optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
+      )
+      val (maybeStr, eitherSchema) = sp.getSchema(None)
+
+      eitherSchema.fold(
+        e => BadRequest(s"Error obtaining schema: $e"),
+        schema => {
+          val info = schemaVisualize(schema)
+          Ok(html.schemaVisualize(Some(info),sv))
+        })
+    }
+
     case req@GET -> Root / "dataOptions" => {
       Ok(html.dataOptions(
         availableDataFormats,

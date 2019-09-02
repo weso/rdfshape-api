@@ -93,10 +93,10 @@ object Server {
       SchemaService[F](blocker,client).routes <+>
       APIService[F](blocker, client).routes <+>
       ShExService[F](blocker,client).routes <+>
-      ShapeMapService[F](blocker,client).routes
+      ShapeMapService[F](blocker,client).routes <+>
+      EndpointService[F](blocker,client).routes
     ) <+>
     StaticService[F](blocker).routes <+>
-    EndpointService[F](blocker).routes <+>
     LinksService[F](blocker).routes
         
     /*CORS(

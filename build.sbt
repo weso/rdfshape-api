@@ -42,6 +42,7 @@ lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
 lazy val scalacticVersion      = "3.0.8"
 lazy val scalaGraphVersion     = "1.11.5"
+lazy val scalajVersion         = "2.4.2"
 lazy val scalaTestVersion      = "3.0.8"
 lazy val scalatagsVersion      = "0.7.0"
 lazy val scallopVersion        = "3.3.1"
@@ -77,6 +78,7 @@ lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"    
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
 lazy val scalactic         = "org.scalactic"              %% "scalactic"           % scalacticVersion
 lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"          % scalacheckVersion
+lazy val scalaj            = "org.scalaj"                 %% "scalaj-http"         % scalajVersion
 lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
@@ -144,6 +146,7 @@ lazy val server = project
       rdf4j_runtime,
       plantuml,
       graphvizJava,
+      scalaj,
       utilsTest % Test, 
       // webJars
       jquery,

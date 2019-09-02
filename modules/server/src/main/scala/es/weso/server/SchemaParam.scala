@@ -6,7 +6,6 @@ import cats.effect.{Effect, IO}
 import cats.implicits._
 import es.weso.rdf.RDFReasoner
 import es.weso.schema.{Schema, Schemas}
-
 import scala.io.Source
 import scala.util.Try
 import org.log4s.getLogger
@@ -78,23 +77,36 @@ case class SchemaParam(schema: Option[String],
         }
       }
       case _ => {
-        logger.info(s"######## Schema not embedded...Active schema tab: ${activeSchemaTab}")
-        parseSchemaTab(activeSchemaTab.getOrElse(chooseSchemaTab)) match {
+        val inputType = activeSchemaTab match {
+          case Some(a) => parseSchemaTab(a)
+          case None if schema.isDefined => Right(SchemaTextAreaType)
+          case None if schemaURL.isDefined => Right(SchemaUrlType)
+          case None if schemaFile.isDefined => Right(SchemaFileType)
+          case None => Right(SchemaTextAreaType)
+        }
+        logger.info(s"Input type: ${inputType.toString} - activeSchemaTab: ${activeSchemaTab}")
+        inputType match {
           case Right(`SchemaUrlType`) => {
             logger.info(s"######## SchemaUrl: ${schemaURL}")
             schemaURL match {
-              case None => (None, Left(s"Non value for dataURL"))
+              case None => (None, Left(s"Non value for schemaURL"))
               case Some(schemaUrl) => Try {
-                // val uri = new java.net.URI(schemaUrl)
+                // TODO: Refactor this part to use the client and follow redirects!
                 Source.fromURL(schemaUrl).mkString
               }.toEither match {
-                case Left(err) => (None, Left(s"Error obtaining schema from url $schemaUrl: ${err.getMessage} "))
-                case Right(schemaStr) => Schemas.fromString(schemaStr,
-                  schemaFormat.getOrElse(defaultSchemaFormat),
-                  schemaEngine.getOrElse(defaultSchemaEngine),
-                  ApiHelper.getBase) match {
-                  case Left(msg) => (Some(schemaStr), Left(s"Error parsing file: $msg"))
-                  case Right(schema) => (Some(schemaStr), Right(schema))
+                case Left(err) => {
+                  println(s"######>>> Error obtaining schema from ${schemaUrl}: $err")
+                  (None, Left(s"Error obtaining schema from url $schemaUrl: ${err.getMessage} "))
+                }
+                case Right(schemaStr) => {
+                  println(s"######>>> String obtained from ${schemaUrl}: $schemaStr")
+                  Schemas.fromString(schemaStr,
+                    schemaFormat.getOrElse(defaultSchemaFormat),
+                    schemaEngine.getOrElse(defaultSchemaEngine),
+                    ApiHelper.getBase) match {
+                    case Left(msg) => (Some(schemaStr), Left(s"Error parsing file: $msg"))
+                    case Right(schema) => (Some(schemaStr), Right(schema))
+                  }
                 }
               }
             }
