@@ -86,9 +86,6 @@ object Server {
 
   def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
 //    HelloService[F](blocker).routes <+>
-    WebService[F](blocker).routes <+>
-    DataService[F](blocker, client).routes <+>
-    WikidataService[F](blocker, client).routes <+>
     CORS (
       SchemaService[F](blocker,client).routes <+>
       APIService[F](blocker, client).routes <+>
@@ -96,6 +93,9 @@ object Server {
       ShapeMapService[F](blocker,client).routes <+>
       EndpointService[F](blocker,client).routes
     ) <+>
+    WebService[F](blocker).routes <+>
+    DataService[F](blocker, client).routes <+>
+    WikidataService[F](blocker, client).routes <+>
     StaticService[F](blocker).routes <+>
     LinksService[F](blocker).routes
         
