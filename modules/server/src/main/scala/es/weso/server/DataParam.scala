@@ -149,7 +149,7 @@ case class DataParam(data: Option[String],
               case Left(msg) => (Some(data), Left(msg))
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
-                  case Left(msg) => (rdf.serialize(dataFormat.name,relativeBase).toOption, Left(s"Error applying inference: $msg"))
+                  case Left(msg) => (Some(data), Left(s"Error applying inference: $msg"))
                   case Right(newRdf) => (newRdf.serialize(dataFormat.name,relativeBase).toOption, Right(newRdf))
                 }
               }
