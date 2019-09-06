@@ -1,11 +1,15 @@
 package es.weso.server
 
+import java.net.URL
+
+import org.http4s.QueryParamDecoder
 import org.http4s.dsl.io.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
 
 object QueryParams {
   lazy val data = "data"
   lazy val dataURL = "dataURL"
   lazy val endpoint = "endpoint"
+  lazy val endpoints = "endpoints"
   lazy val dataFormat= "dataFormat"
   lazy val targetDataFormat = "targetDataFormat"
   lazy val schema = "schema"
@@ -52,4 +56,14 @@ object QueryParams {
   object OptActiveShapeMapTabParam extends OptionalQueryParamDecoderMatcher[String]("activeShapeMapTab")
   object OptActiveQueryTabParam extends OptionalQueryParamDecoderMatcher[String]("activeQueryTab")
 
+  case class Endpoints(urls: List[URL])
+
+  def cnv: String => Endpoints = {
+    ???
+  }
+
+  implicit val endpointsQueryParamDecoder: QueryParamDecoder[Endpoints] =
+    QueryParamDecoder[String].map(cnv)
+
+  object OptEndpointsParamMatcher extends OptionalQueryParamDecoderMatcher[Endpoints]("endpoints")
 }

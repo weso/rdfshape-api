@@ -381,7 +381,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
                     dp.data, dp.dataURL,
                     dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
                     dp.inference.getOrElse(defaultInference), availableInferenceEngines,
-                    dp.endpoint,
+                    dp.maybeEndpoint,
                     dp.activeDataTab.getOrElse(defaultActiveDataTab)
                   )
                   Ok(html.query(
@@ -466,7 +466,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
           val dv = DataValue(dp.data,dp.dataURL,dp.dataFormat.getOrElse(defaultDataFormat),availableDataFormats,
             dp.inference.getOrElse(defaultInference),
             availableInferenceEngines,
-            dp.endpoint,
+            dp.maybeEndpoint,
             dp.activeDataTab.getOrElse(defaultActiveDataTab)
           )
           Ok(html.shapeInfer(
@@ -503,7 +503,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       dp.data, dp.dataURL,
       dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
       dp.inference.getOrElse(defaultInference), availableInferenceEngines,
-      dp.endpoint,
+      dp.maybeEndpoint,
       dp.activeDataTab.getOrElse(defaultActiveDataTab)
     )
     val sv = SchemaValue(sp.schema,

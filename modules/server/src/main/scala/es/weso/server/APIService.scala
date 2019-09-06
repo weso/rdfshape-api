@@ -27,6 +27,7 @@ import org.log4s.getLogger
 import scala.concurrent.duration._
 import APIDefinitions._
 import es.weso.html
+import org.http4s.dsl.io.Ok
 
 class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                                                client: Client[F])(implicit cs: ContextShift[F])
@@ -221,7 +222,7 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
   }
 
-  private def errJson(msg: String): F[Response[F]] =
+  def errJson(msg: String): F[Response[F]] =
     Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
 
 }

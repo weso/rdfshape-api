@@ -8,7 +8,7 @@ import cats.implicits._
 import cats.effect.{Effect, IO}
 import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
-import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
+import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.server.helper.DataFormat
 import org.log4s.getLogger
@@ -16,7 +16,7 @@ import org.log4s.getLogger
 case class DataParam(data: Option[String],
                      dataURL: Option[String],
                      dataFile: Option[String],
-                     endpoint: Option[String],
+                     maybeEndpoint: Option[String],
                      dataFormatValue: Option[DataFormat],
                      dataFormatTextarea: Option[DataFormat],
                      dataFormatUrl: Option[DataFormat],
@@ -26,7 +26,7 @@ case class DataParam(data: Option[String],
                      activeDataTab: Option[String]
                     ) {
   private[this] val logger = getLogger
-  
+
   sealed abstract class DataInputType {
     val id: String
   }
@@ -90,10 +90,10 @@ case class DataParam(data: Option[String],
     println(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case Some(a) => parseDataTab(a)
-      case None if endpoint.isDefined => Right(dataEndpointType)
       case None if data.isDefined => Right(dataTextAreaType)
       case None if dataURL.isDefined => Right(dataUrlType)
       case None if dataFile.isDefined => Right(dataFileType)
+      case None if maybeEndpoint.isDefined => Right(dataEndpointType)
       case None => Right(dataTextAreaType)
     }
     println(s"Input type: $inputType")
@@ -127,7 +127,7 @@ case class DataParam(data: Option[String],
         }
       }
       case Right(`dataEndpointType`) => {
-        endpoint match {
+        maybeEndpoint match {
           case None => (None, Left(s"No value for endpoint"))
           case Some(endpointUrl) => {
             Endpoint.fromString(endpointUrl) match {
@@ -150,7 +150,18 @@ case class DataParam(data: Option[String],
               case Right(rdf) => {
                 extendWithInference(rdf, inference) match {
                   case Left(msg) => (Some(data), Left(s"Error applying inference: $msg"))
-                  case Right(newRdf) => (newRdf.serialize(dataFormat.name,relativeBase).toOption, Right(newRdf))
+                  case Right(newRdf) => {
+                    val maybeRdfStr = newRdf.serialize(dataFormat.name,relativeBase).toOption
+                    maybeEndpoint match {
+                      case None =>
+                        (maybeRdfStr, Right(newRdf))
+                      case Some(endpoint) =>
+                        Endpoint.fromString(endpoint) match {
+                          case Left(msg) => (Some(data), Left(s"Error applying inference: $msg"))
+                          case Right(endpoint) => (maybeRdfStr, Right(Compound(List(endpoint, newRdf))))
+                        }
+                    }
+                  }
                 }
               }
             }

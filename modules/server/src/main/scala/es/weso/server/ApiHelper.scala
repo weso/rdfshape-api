@@ -3,7 +3,7 @@ package es.weso.server
 import java.util.concurrent.Executors
 
 import cats.implicits._
-import cats.effect.{Blocker, ConcurrentEffect, ContextShift, IO, Timer}
+import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Effect, IO, Timer}
 import results._
 
 import scala.concurrent.ExecutionContext.global
@@ -15,7 +15,8 @@ import es.weso.utils.FileUtils
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.nodes.IRI
 import io.circe._
-import org.http4s._, org.http4s.dsl.io._
+import org.http4s._
+import org.http4s.dsl.io._
 import org.http4s.circe._
 import org.log4s.getLogger
 import es.weso.uml._
@@ -159,6 +160,7 @@ object ApiHelper {
    )
   }
 
+
   private def err(msg: String) =
     (Result.errStr(s"Error: $msg"), None, NoTime )
 
@@ -243,18 +245,29 @@ object ApiHelper {
     Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
   }
 
+  case class SchemaInfoReply(schemaName: Option[String],
+                                     schemaEngine: Option[String],
+                                     wellFormed: Boolean,
+                                     shapes: List[String],
+                                     errors: List[String]
+                                    ) {
+    def toJson: Json = Json.fromFields(List(
+      ("schemaName", schemaName.fold(Json.Null)(Json.fromString(_))),
+      ("schemaEngine", schemaEngine.fold(Json.Null)(Json.fromString(_))),
+      ("wellFormed", Json.fromBoolean(wellFormed)),
+      ("shapes", Json.fromValues(shapes.map(Json.fromString(_)))),
+      ("errors", Json.fromValues(errors.map(Json.fromString(_))))
+    ))
+  }
+
+  object SchemaInfoReply {
+    def fromError(msg: String): SchemaInfoReply =
+      SchemaInfoReply(None,None,false,List(),List())
+  }
+
   private[server] def schemaInfo(schema:Schema): Json = {
     val info = schema.info
-    val fields: List[(String,Json)] =
-      List(
-        ("schemaName", Json.fromString(info.schemaName)),
-        ("schemaEngine", Json.fromString(info.schemaEngine)),
-        ("wellFormed", Json.fromBoolean(info.isWellFormed)),
-        ("shapes", Json.fromValues(schema.shapes.map(Json.fromString(_)))),
-        ("errors", Json.fromValues(info.errors.map(Json.fromString(_)))),
-        ("parsed", Json.fromString("Parsed OK")),
-      )
-    Json.fromFields(fields)
+    SchemaInfoReply(Some(info.schemaName), Some(info.schemaEngine), info.isWellFormed, schema.shapes,info.errors).toJson
   }
 
   private[server] def schema2SVG(schema: Schema): (String,String) = {
@@ -265,6 +278,16 @@ object ApiHelper {
         // println(s"UML converted: $uml")
         (uml.toSVG, uml.toPlantUML)
       }
+    )
+  }
+
+  private[server] def schemaCytoscape(schema:Schema): Json = {
+    val eitherJson = for {
+      uml <- Schema2UML.schema2UML(schema)
+    } yield uml.toJson
+    eitherJson.fold(
+      e => Json.fromFields(List(("error", Json.fromString(s"Error converting to schema 2 JSON: $e")))),
+      identity
     )
   }
 

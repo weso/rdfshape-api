@@ -22,6 +22,7 @@ import org.http4s.headers._
 import org.http4s.multipart.Multipart
 import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
+import es.weso.server.ApiHelper.SchemaInfoReply
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
     extends Http4sDsl[F] {
@@ -90,7 +91,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           }
           for {
             e <- r.value
-            v <- e.fold(errJson(_), Ok(_))
+            v <- e.fold(msg => Ok(SchemaInfoReply.fromError(msg).toJson), Ok(_))
           } yield v
         }
       }
@@ -164,6 +165,24 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         }
       }
 
+    case req @ POST -> Root / `api` / "schema" / "cytoscape" =>
+      req.decode[Multipart[F]] { m =>
+      {
+        val partsMap = PartsMap(m.parts)
+        logger.info(s"POST info partsMap. $partsMap")
+        val r: EitherT[F, String, Json] = for {
+          schemaPair <- SchemaParam.mkSchema(partsMap, None)
+          (schema, _) = schemaPair
+        } yield {
+          schemaCytoscape(schema)
+        }
+        for {
+          e <- r.value
+          v <- e.fold(errJson(_), Ok(_))
+        } yield v
+      }
+      }
+
     case req @ GET -> Root / `api` / "schema" / "visualize" :?
         SchemaURLParam(optSchemaURL) +&
         OptSchemaParam(optSchema) +&
@@ -200,8 +219,6 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             SchemaFormatParam(optSchemaFormat) +&
             SchemaEngineParam(optSchemaEngine) +&
             OptTriggerModeParam(optTriggerMode) +&
-            NodeParam(optNode) +&
-            ShapeParam(optShape) +&
             ShapeMapParameterAlt(optShapeMapAlt) +&
             ShapeMapParameter(optShapeMap) +&
             ShapeMapURLParameter(optShapeMapURL) +&
@@ -210,9 +227,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             SchemaEmbedded(optSchemaEmbedded) +&
             InferenceParam(optInference) +&
             OptEndpointParam(optEndpoint) +&
+//            OptEndpointsParam(optEndpoints) +&
             OptActiveDataTabParam(optActiveDataTab) +&
             OptActiveSchemaTabParam(optActiveSchemaTab) +&
             OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
+      println(s"### ${endpoints}")
       val either: Either[String, Option[DataFormat]] = for {
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df

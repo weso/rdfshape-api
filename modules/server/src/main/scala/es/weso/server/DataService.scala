@@ -112,7 +112,7 @@ class DataService[F[_]](blocker: Blocker,
                 dp.data, dp.dataURL,
                 dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
                 dp.inference.getOrElse(defaultInference), availableInferenceEngines,
-                dp.endpoint,
+                dp.maybeEndpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
               val multipart = Multipart(Vector(
@@ -189,7 +189,7 @@ class DataService[F[_]](blocker: Blocker,
                 dp.data, dp.dataURL,
                 dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
                 dp.inference.getOrElse(defaultInference), availableInferenceEngines,
-                dp.endpoint,
+                dp.maybeEndpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
               Ok(html.dataInfo(Some(dataInfo(rdf,dp.data,dp.dataFormat)),dv))
@@ -304,7 +304,7 @@ class DataService[F[_]](blocker: Blocker,
       dp.data, dp.dataURL,
       dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
       dp.inference.getOrElse(defaultInference), availableInferenceEngines,
-      dp.endpoint,
+      dp.maybeEndpoint,
       dp.activeDataTab.getOrElse(defaultActiveDataTab)
     )
     val sv = SchemaValue(sp.schema,
