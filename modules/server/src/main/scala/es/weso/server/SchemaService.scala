@@ -91,7 +91,10 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           }
           for {
             e <- r.value
-            v <- e.fold(msg => Ok(SchemaInfoReply.fromError(msg).toJson), Ok(_))
+            v <- e.fold(msg => {
+              println(s"###### Error $msg")
+              Ok(SchemaInfoReply.fromError(msg).toJson)
+            }, Ok(_))
           } yield v
         }
       }

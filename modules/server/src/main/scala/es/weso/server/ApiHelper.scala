@@ -261,8 +261,10 @@ object ApiHelper {
   }
 
   object SchemaInfoReply {
-    def fromError(msg: String): SchemaInfoReply =
-      SchemaInfoReply(None,None,false,List(),List())
+    def fromError(msg: String): SchemaInfoReply = {
+      println(s"SchemaInfoReply from $msg")
+      SchemaInfoReply(None,None,false,List(),List(msg))
+    }
   }
 
   private[server] def schemaInfo(schema:Schema): Json = {
