@@ -101,15 +101,18 @@ lazy val scalaMacrosParadise = "org.scalamacros"      % "paradise"        % scal
 
 lazy val rdfshape = project
   .in(file("."))
-  .enablePlugins(ScalaUnidocPlugin, 
-      SbtNativePackager, 
-      WindowsPlugin, 
-      JavaAppPackaging,
+  .enablePlugins(
+    ScalaUnidocPlugin,
+    SbtNativePackager,
+    WindowsPlugin,
+    JavaAppPackaging,
+    DockerPlugin
   )
   .disablePlugins(RevolverPlugin)
   .aggregate(server)
   .dependsOn(server)
   .settings(
+    dockerExposedPorts ++= Seq(80),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(noDocProjects: _*),
     libraryDependencies ++= Seq(
       logbackClassic,
