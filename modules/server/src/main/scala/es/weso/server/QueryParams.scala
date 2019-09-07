@@ -56,14 +56,4 @@ object QueryParams {
   object OptActiveShapeMapTabParam extends OptionalQueryParamDecoderMatcher[String]("activeShapeMapTab")
   object OptActiveQueryTabParam extends OptionalQueryParamDecoderMatcher[String]("activeQueryTab")
 
-  case class Endpoints(urls: List[URL])
-
-  def cnv: String => Endpoints = {
-    ???
-  }
-
-  implicit val endpointsQueryParamDecoder: QueryParamDecoder[Endpoints] =
-    QueryParamDecoder[String].map(cnv)
-
-  object OptEndpointsParamMatcher extends OptionalQueryParamDecoderMatcher[Endpoints]("endpoints")
 }
