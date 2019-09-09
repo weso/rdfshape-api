@@ -430,7 +430,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
           )
           val eitherResult: Either[String,Json] = for {
             rdf <- eitherRDF
-            jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None, relativeBase)
+            jsonResult <- ApiHelper.shapeInfer(rdf, optNodeSelectorParam, optInference, optSchemaEngineParam, optSchemaFormatParam, None, relativeBase, true)
           } yield {
             jsonResult
           }
@@ -461,7 +461,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
           nodeSelector <- EitherT(partsMap.eitherPartValue("nodeSelector"))
           schemaEngine <- EitherT(partsMap.eitherPartValue("schemaEngine"))
           schemaFormat <- EitherT(partsMap.eitherPartValue("schemaFormatTextArea"))
-          jsonResult <- EitherT.fromEither[F](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None,relativeBase))
+          jsonResult <- EitherT.fromEither[F](shapeInfer(rdf, Some(nodeSelector), dp.inference, Some(schemaEngine), Some(schemaFormat), None, relativeBase, true))
         } yield {
           val dv = DataValue(dp.data,dp.dataURL,dp.dataFormat.getOrElse(defaultDataFormat),availableDataFormats,
             dp.inference.getOrElse(defaultInference),

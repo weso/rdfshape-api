@@ -19,8 +19,8 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.log4s.getLogger
 
-class DataService[F[_]](blocker: Blocker,
-                        client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
+class DataWebService[F[_]](blocker: Blocker,
+                           client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
   private val relativeBase = Defaults.relativeBase
@@ -319,7 +319,7 @@ class DataService[F[_]](blocker: Blocker,
       availableShapeMapFormats,
       tp.activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
     )
-    
+
     val validationReport: Option[Either[String,String]] =
       Some(result.validationReport.flatMap(_.serialize("TURTLE")))
 
@@ -341,9 +341,9 @@ class DataService[F[_]](blocker: Blocker,
 
 }
 
-object DataService {
+object DataWebService {
   def apply[F[_]: Effect: ContextShift](blocker: Blocker,
                                         client: Client[F]
-                                       ): DataService[F] =
-    new DataService[F](blocker,client)
+                                       ): DataWebService[F] =
+    new DataWebService[F](blocker,client)
 }

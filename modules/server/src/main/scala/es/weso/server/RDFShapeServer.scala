@@ -1,8 +1,7 @@
 package es.weso.server
-
 import org.http4s._
 import org.http4s.implicits._
-import org.http4s.server.{Router, Server}
+import org.http4s.server._
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.{CORS, Logger}
 import es.weso.server.utils.Http4sUtils._
@@ -14,7 +13,6 @@ import fs2.Stream
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.dsl.Http4sDsl
-
 import scala.concurrent.ExecutionContext.global
 import scala.util.Properties.envOrNone
 
@@ -94,7 +92,7 @@ object Server {
       EndpointService[F](blocker,client).routes
     ) <+>
     WebService[F](blocker).routes <+>
-    DataService[F](blocker, client).routes <+>
+    DataWebService[F](blocker, client).routes <+>
     WikidataService[F](blocker, client).routes <+>
     StaticService[F](blocker).routes <+>
     LinksService[F](blocker).routes

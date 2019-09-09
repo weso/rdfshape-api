@@ -25,7 +25,7 @@ import es.weso.server.helper.DataFormat
 import es.weso.shapeMaps.NodeSelector
 import org.http4s.client.{Client, JavaNetClientBuilder}
 import es.weso.rdf.sgraph._
-
+import es.weso.utils.json.JsonUtilsServer._
 import scala.util.Try
 
 object ApiHelper {
@@ -64,22 +64,6 @@ object ApiHelper {
       }.toEither.leftMap(_.getMessage).map(Some(_))
     )
   }
-
-/*  private[server] def dataConvert(
-     optData: Option[String],
-     optDataFormat: Option[String],
-     optTargetDataFormat: Option[String]): Either[String, Option[String]] =
-   optData match {
-    case None => Right(None)
-    case Some(data) => {
-      val dataFormat = optDataFormat.getOrElse(DataFormats.defaultFormatName)
-      val resultDataFormat = optTargetDataFormat.getOrElse(DataFormats.defaultFormatName)
-      for {
-        rdf <- RDFAsJenaModel.fromChars(data, dataFormat, None)
-        str <- rdf.serialize(resultDataFormat)
-      } yield Some(str)
-    }
-  } */
 
   private[server] def schemaConvert(optSchema: Option[String],
                   optSchemaFormat: Option[String],
@@ -183,13 +167,48 @@ object ApiHelper {
     }
   }
 
+  private[server] def dataExtract(rdf: RDFReasoner,
+                                  optData: Option[String],
+                                  optDataFormat: Option[DataFormat],
+                                  optNodeSelector: Option[String],
+                                  optInference: Option[String],
+                                  optEngine: Option[String],
+                                  optSchemaFormat: Option[String],
+                                  optLabelName: Option[String],
+                                  relativeBase: Option[IRI]
+                                 ): DataExtractResult = {
+    val base = relativeBase.map(_.str)
+    val engine = optEngine.getOrElse(defaultSchemaEngine)
+    val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
+    optNodeSelector match {
+      case None => DataExtractResult.fromMsg("DataExtract: Node selector not specified")
+      case Some(nodeSelector) => {
+        val r = for {
+          selector <- NodeSelector.fromString(nodeSelector, base, rdf.getPrefixMap())
+          result <- {
+            println(s"Node selector: $selector")
+            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
+          }
+        } yield (result)
+
+        r.fold(
+          err => DataExtractResult.fromMsg(err),
+          pair => {
+            val (schema, resultShapeMap) = pair
+            DataExtractResult.fromExtraction(optData, optDataFormat, schemaFormat, engine, schema, resultShapeMap)
+          })
+      }
+    }
+  }
+
   private[server] def shapeInfer(rdf: RDFReasoner,
                                  optNodeSelector: Option[String],
                                  optInference: Option[String],
                                  optEngine: Option[String],
                                  optSchemaFormat: Option[String],
                                  optLabelName: Option[String],
-                                 relativeBase: Option[IRI]
+                                 relativeBase: Option[IRI],
+                                 withUml: Boolean
                                 ): Either[String, Json] = {
    val base = relativeBase.map(_.str)
    val engine = optEngine.getOrElse(defaultSchemaEngine)
@@ -204,15 +223,18 @@ object ApiHelper {
            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
          }
          (schemaInfer, resultMap) = result
-         uml <- Schema2UML.schema2UML(schemaInfer)
+         uml <- if (withUml) Schema2UML.schema2UML(schemaInfer).map(Some(_)) else Right(None)
+         svg = uml.map(_.toSVG)
          str <- schemaInfer.serialize(schemaFormat)
        } yield Json.fromFields(
          List(
            ("inferedShape", Json.fromString(str)),
            ("format", Json.fromString(schemaFormat)),
            ("engine", Json.fromString(engine)),
-           ("svg", Json.fromString(uml.toSVG))
-         )
+           ("nodeSelector", Json.fromString(nodeSelector))
+         ) ++
+           maybeField(uml,"uml",(v:UML) => Json.fromString(v.toPlantUML)) ++
+           maybeField(svg, "svg", Json.fromString(_))
        )
      }
    }
@@ -236,6 +258,7 @@ object ApiHelper {
     } yield DataInfoResult.fromData(data, dataFormat, preds, numberStatements, rdf.getPrefixMap)
     either.fold(e => DataInfoResult.fromMsg(e), identity).toJson
   }
+
 
   private[server] def getSchema(sv: SchemaValue): Either[String,Schema] = {
     val schemaEngine = sv.currentSchemaEngine

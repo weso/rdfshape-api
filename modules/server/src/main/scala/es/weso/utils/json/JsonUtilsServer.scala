@@ -12,4 +12,13 @@ object JsonUtilsServer {
       case Some(v) => List((name,cnv(v)))
     }
 
+  def eitherField[A](data: Either[String,A],
+                    name: String,
+                    cnv: A => Json
+                   ): List[(String,Json)] =
+    data match {
+      case Left(msg) => List((name, Json.fromString(msg)))
+      case Right(v) => List((name,cnv(v)))
+    }
+
 }

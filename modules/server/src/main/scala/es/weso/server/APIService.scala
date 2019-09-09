@@ -26,7 +26,9 @@ import org.log4s.getLogger
 
 import scala.concurrent.duration._
 import APIDefinitions._
+import cats.data.EitherT
 import es.weso.html
+import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
 
 class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
@@ -76,7 +78,6 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
     }
 
     case req@POST -> Root / `api` / "data" / "info" => {
-      println(s"POST /api/data/info, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
@@ -189,17 +190,17 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap, relativeBase).value
+          schemaEngine <- partsMap.optPartValue("schemaEngine")
+          schemaFormat <- partsMap.optPartValue("schemaFormat")
+          inference <- partsMap.optPartValue("inference")
+          label <- partsMap.optPartValue("labelName")
+          optBaseStr <- partsMap.optPartValue("base")
+          nodeSelector <- partsMap.optPartValue("nodeSelector")
           response <- maybeData match {
-            case Left(err) => errJson(
-              s"""|Error obtaining RDF data
-                  |$err""".stripMargin
-            )
+            case Left(err) => Ok(DataExtractResult.fromMsg(s"Error obtaining data: $err").toJson)
             case Right((rdf, dp)) => {
-              val dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
-              dp.data match {
-                case Some(data) => errJson("Not implemented yet extract Schema as API")
-                case None => errJson("No data provided")
-              }
+              val d = dataExtract(rdf, dp.data, dp.dataFormatValue, nodeSelector, inference, schemaEngine, schemaFormat, label, None)
+              Ok(d.toJson)
             }
           }
         } yield response
