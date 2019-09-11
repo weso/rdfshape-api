@@ -7,7 +7,7 @@ import es.weso.rdf.streams.Streams
 import es.weso.schema._
 import es.weso.server.APIDefinitions._
 import es.weso.server.ApiHelper._
-import es.weso.server.Defaults.defaultDataFormat
+import es.weso.server.Defaults._
 import es.weso.server.QueryParams._
 import es.weso.server.helper.DataFormat
 import es.weso.server.results._
@@ -20,9 +20,9 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.multipart.Multipart
-import org.http4s.server.staticcontent.{ResourceService, resourceService}
-import org.log4s.getLogger
 import es.weso.server.ApiHelper.SchemaInfoReply
+import org.log4s.getLogger
+
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
     extends Http4sDsl[F] {
@@ -44,9 +44,13 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       Ok(json)
     }
 
-    case GET -> Root / `api` / "schema" / "formats" => {
-      val formats = Schemas.availableFormats
-      val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
+    case GET -> Root / `api` / "schema" / "formats" :?
+      SchemaEngineParam(optSchemaEngine) => {
+      val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
+      val json = Schemas.lookupSchema(schemaEngine) match {
+        case Right(schema) => Json.fromValues(schema.formats.toList.map(Json.fromString(_)))
+        case Left(_) => Json.fromFields(List(("error", Json.fromString(s"Schema engine: ${schemaEngine} not found. Available engines = ${Schemas.availableSchemaNames.mkString(",")}"))))
+      }
       Ok(json)
     }
 
@@ -100,55 +104,41 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       }
 
     case req @ GET -> Root / `api` / "schema" / "convert" :?
-          OptSchemaParam(optSchema) +&
-            SchemaFormatParam(optSchemaFormat) +&
-            SchemaEngineParam(optSchemaEngine) +&
-            TargetSchemaFormatParam(optResultSchemaFormat) +&
-            TargetSchemaEngineParam(optResultSchemaEngine) => {
-      val schemaEngine       = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
-      val schemaFormat       = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
-      val resultSchemaFormat = optResultSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
-      val resultSchemaEngine = optResultSchemaEngine.getOrElse(Schemas.defaultSchemaName)
-
+         OptSchemaParam(optSchema) +&
+         SchemaFormatParam(optSchemaFormat) +&
+         SchemaEngineParam(optSchemaEngine) +&
+         TargetSchemaFormatParam(optResultSchemaFormat) +&
+         TargetSchemaEngineParam(optResultSchemaEngine) => {
+      val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
+      val schemaFormat = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
       val schemaStr = optSchema match {
         case None         => ""
         case Some(schema) => schema
       }
       Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None) match {
         case Left(e) => errJson(s"Error reading schema: $e\nString: $schemaStr")
-        case Right(schema) => {
-          if (schemaEngine.toUpperCase == resultSchemaEngine.toUpperCase) {
-            schema.serialize(resultSchemaFormat) match {
-              case Right(resultStr) => {
-                val result = SchemaConversionResult(schemaStr,
-                                                    schemaFormat,
-                                                    schemaEngine,
-                                                    resultSchemaFormat,
-                                                    resultSchemaEngine,
-                                                    resultStr)
-                val default = Ok(result.asJson)
-                  .map(_.withContentType(`Content-Type`(MediaType.application.json)))
-                req.headers.get(`Accept`) match {
-                  case Some(ah) => {
-                    logger.info(s"Accept header: $ah")
-                    val hasHTML: Boolean = ah.values.exists(mr => mr.mediaRange.satisfiedBy(MediaType.text.html))
-                    if (hasHTML) {
-                      Ok(result.toHTML).map(_.withContentType(`Content-Type`(MediaType.text.html)))
-                    } else default
-                  }
-                  case None => default
-                }
-              }
-              case Left(e) =>
-                errJson(s"Error serializing $schemaStr with $resultSchemaFormat/$resultSchemaEngine: $e")
-            }
-          } else {
-            errJson(
-              s"Conversion between different schema engines not implemented yet: $schemaEngine/$resultSchemaEngine")
-          }
-        }
+        case Right(schema) => Ok(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine).toJson)
       }
     }
+
+    case req @ POST -> Root / `api` / "schema" / "convert" =>
+      req.decode[Multipart[F]] { m =>
+      {
+        val partsMap = PartsMap(m.parts)
+        logger.info(s"POST info partsMap. $partsMap")
+        val r: EitherT[F, String, Json] = for {
+          schemaPair <- SchemaParam.mkSchema(partsMap, None)
+          (schema, sp) = schemaPair
+        } yield {
+          convertSchema(schema, sp.schema, sp.schemaFormat.getOrElse(defaultSchemaFormat), sp.schemaEngine.getOrElse(defaultSchemaEngine), sp.targetSchemaFormat, sp.targetSchemaEngine).toJson
+        }
+        for {
+          e <- r.value
+          v <- e.fold((s:String) => Ok(SchemaConversionResult.fromMsg(s).toJson), Ok(_))
+        } yield v
+      }
+      }
+
 
     case req @ POST -> Root / `api` / "schema" / "visualize" =>
       req.decode[Multipart[F]] { m =>

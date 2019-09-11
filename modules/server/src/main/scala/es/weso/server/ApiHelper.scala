@@ -16,16 +16,17 @@ import es.weso.rdf.RDFReasoner
 import es.weso.rdf.nodes.IRI
 import io.circe._
 import org.http4s._
-import org.http4s.dsl.io._
-import org.http4s.circe._
 import org.log4s.getLogger
 import es.weso.uml._
 import es.weso.schemaInfer._
 import es.weso.server.helper.DataFormat
-import es.weso.shapeMaps.NodeSelector
+import es.weso.shapeMaps.{NodeSelector, ShapeMap}
 import org.http4s.client.{Client, JavaNetClientBuilder}
-import es.weso.rdf.sgraph._
+import es.weso.shacl.converter.Shacl2ShEx
+import es.weso.shex.converter.ShEx2Shacl
 import es.weso.utils.json.JsonUtilsServer._
+import es.weso.server.Defaults._
+
 import scala.util.Try
 
 object ApiHelper {
@@ -199,6 +200,23 @@ object ApiHelper {
           })
       }
     }
+  }
+
+  private[server] def convertSchema(schema: Schema,
+                                    schemaStr: Option[String],
+                                    schemaFormat: String,
+                                    schemaEngine: String,
+                                    optTargetSchemaFormat: Option[String],
+                                    optTargetSchemaEngine: Option[String]
+                                   ): SchemaConversionResult = {
+    val result:Either[String,SchemaConversionResult] = for {
+      resultStr <- schema.convert(optTargetSchemaFormat, optTargetSchemaEngine, None)
+      sourceStr <- schemaStr match {
+        case None => schema.serialize(schemaFormat)
+        case Some(source) => Right(source)
+      }
+    } yield SchemaConversionResult.fromConversion(sourceStr,schemaFormat,schemaEngine,optTargetSchemaFormat, optTargetSchemaEngine, resultStr, ShapeMap.empty)
+    result.fold(err => SchemaConversionResult.fromMsg(s"convertSchema: error: $err"), identity)
   }
 
   private[server] def shapeInfer(rdf: RDFReasoner,
