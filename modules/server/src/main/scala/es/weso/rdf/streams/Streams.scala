@@ -15,7 +15,8 @@ import org.apache.jena.query.QueryExecutionFactory
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.{Lang, RDFDataMgr}
 import org.apache.jena.riot.lang.PipedRDFStream
-import org.apache.jena.riot.system.{StreamOps, StreamRDF, StreamRDFLib, StreamRDFWriter, StreamRDFWriterFactory}
+import org.apache.jena.riot.system._
+// import org.apache.jena.riot.system.{StreamOps, StreamRDF, StreamRDFLib, StreamRDFWriter, StreamRDFWriterFactory}
 import org.http4s.Uri
 import org.opengis.metadata.identification.CharacterSet
 
@@ -41,7 +42,7 @@ object Streams {
       val streamGraph = StreamRDFLib.graph(modelGraph)
       RDFDataMgr.parse(streamGraph, uri.renderString)
       println(s"Model graph: ${model}")
-      StreamOps.sendGraphToStream(modelGraph,destination)
+      StreamRDFOps.sendGraphToStream(modelGraph,destination)
       stringWriter.toString
     })
   }
@@ -51,7 +52,7 @@ object Streams {
     val stringWriter = new StringWriter
     val os: OutputStream = new WriterOutputStream(stringWriter,UTF_8)
     val destination: StreamRDF = StreamRDFWriter.getWriterStream(os,Lang.TURTLE)
-    StreamOps.sendGraphToStream(c.getGraph,destination)
+    StreamRDFOps.sendGraphToStream(c.getGraph,destination)
     stringWriter.toString
   })
 

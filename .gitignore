@@ -9,6 +9,9 @@ auto-save-list
 tramp
 .\#*
 
+.bloop
+.metals
+
 
 # Java
 *.class
