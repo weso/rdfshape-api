@@ -130,7 +130,12 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, sp) = schemaPair
         } yield {
-          convertSchema(schema, sp.schema, sp.schemaFormat.getOrElse(defaultSchemaFormat), sp.schemaEngine.getOrElse(defaultSchemaEngine), sp.targetSchemaFormat, sp.targetSchemaEngine).toJson
+          println(s"schema / convert ---target: ${sp.targetSchemaFormat}, ${sp.targetSchemaEngine}")
+          convertSchema(schema, 
+            sp.schema, 
+            sp.schemaFormat.getOrElse(defaultSchemaFormat), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
+            sp.targetSchemaFormat, sp.targetSchemaEngine
+            ).toJson
         }
         for {
           e <- r.value

@@ -7,19 +7,22 @@ import es.weso._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.streams.Streams
-import es.weso.server.QueryParams.{OptEntityParam, OptWithDotParam}
+import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam}
 import es.weso.server.utils.Http4sUtils._
 import es.weso.server.values._
 import io.circe._
 import fs2._
 import org.http4s._
+import org.http4s.circe._
 import org.http4s.client.Client
+import org.http4s.implicits._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.Accept
 import org.http4s.multipart.Multipart
 import org.http4s.twirl._
 import org.http4s.implicits._
 import es.weso.rdf.sgraph._
+import APIDefinitions._
 
 class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
                                               client: Client[F]
@@ -28,9 +31,55 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri = uri"/api/wikidata/entity"
+  val defaultLimit = 20
+  val defaultContinue = 1
 
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
+
+    case GET -> Root / `api` / "wikidata" / "test"  => {
+      Ok("Wikidata Test")
+    }
+
+    case GET -> Root / `api` / "wikidata" / "entityLabel" :?
+       WdEntityParam(entity) +&
+       LanguageParam(language) => {
+        val uri = Uri.unsafeFromString(s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=${entity}&languages=${language}&format=json")
+        val req: Request[F] = Request(method = GET, uri = uri)
+         for {
+          either <- client.fetch(req) {
+            case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+            case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+          }
+          resp <- Ok(either.fold(Json.fromString(_), identity))
+         } yield resp
+    }
+
+    case GET -> Root / `api` / "wikidata" / "searchEntity" :?
+      LabelParam(label) +&
+      LanguageParam(language) +&
+      LimitParam(maybelimit) +&
+      ContinueParam(maybeContinue) => {
+      val limit: String = maybelimit.getOrElse(defaultLimit.toString)
+      val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
+      val uri = uri"https://www.wikidata.org".
+        withPath("/w/api.php").
+        withQueryParam("action", "wbsearchentities").
+        withQueryParam("search", label).
+        withQueryParam("language", language).
+        withQueryParam("limit",limit).
+        withQueryParam("continue",continue).
+        withQueryParam("format","json")
+
+      val req: Request[F] = Request(method = GET, uri = uri)
+      for {
+        either <- client.fetch(req) {
+          case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+          case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+        }
+        resp <- Ok(either.fold(Json.fromString(_), identity))
+      } yield resp
+    }
 
 /*    case GET -> Root / "testQ" => {
       val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))

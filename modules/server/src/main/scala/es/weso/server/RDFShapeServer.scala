@@ -89,27 +89,14 @@ object Server {
       APIService[F](blocker, client).routes <+>
       ShExService[F](blocker,client).routes <+>
       ShapeMapService[F](blocker,client).routes <+>
+      WikidataService[F](blocker, client).routes <+>
       EndpointService[F](blocker,client).routes
     ) <+>
     WebService[F](blocker).routes <+>
     DataWebService[F](blocker, client).routes <+>
-    WikidataService[F](blocker, client).routes <+>
     StaticService[F](blocker).routes <+>
     LinksService[F](blocker).routes
         
-    /*CORS(
-        WebService[F](blocker).routes <+>
-        DataService[F](blocker, client).routes <+>
-        WikidataService[F](blocker, client).routes <+>
-        ShExService[F](blocker,client).routes <+>
-        SchemaService[F](blocker,client).routes <+>
-        ShapeMapService[F](blocker,client).routes <+>
-        APIService[F](blocker, client).routes <+>
-        EndpointService[F](blocker).routes <+>
-        LinksService[F](blocker).routes
-      ) */
-
-
   def stream[F[_]: ConcurrentEffect](blocker:Blocker, port: Int, ip: String)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     for {
       client <- BlazeClientBuilder[F](global).stream

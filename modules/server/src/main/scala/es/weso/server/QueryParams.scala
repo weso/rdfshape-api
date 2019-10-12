@@ -55,5 +55,10 @@ object QueryParams {
   object OptActiveSchemaTabParam extends OptionalQueryParamDecoderMatcher[String]("activeSchemaTab")
   object OptActiveShapeMapTabParam extends OptionalQueryParamDecoderMatcher[String]("activeShapeMapTab")
   object OptActiveQueryTabParam extends OptionalQueryParamDecoderMatcher[String]("activeQueryTab")
+  object WdEntityParam extends QueryParamDecoderMatcher[String]("wdEntity")
+  object LanguageParam extends QueryParamDecoderMatcher[String]("language")
+  object LabelParam extends QueryParamDecoderMatcher[String]("label")
+  object LimitParam extends OptionalQueryParamDecoderMatcher[String]("limit")
+  object ContinueParam extends OptionalQueryParamDecoderMatcher[String]("continue")
 
 }

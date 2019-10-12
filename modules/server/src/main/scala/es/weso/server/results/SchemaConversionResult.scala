@@ -40,7 +40,7 @@ object SchemaConversionResult {
                      resultShapeMap: ShapeMap
                     ): SchemaConversionResult =
     SchemaConversionResult(
-      s"Conversion ($schemaFormat/$schemaEngine) -> (${optTargetSchemaFormat.getOrElse("")}/${optTargetSchemaEngine.getOrElse("")} done!",
+      s"Conversion ($schemaFormat/$schemaEngine) -> (${optTargetSchemaFormat.getOrElse("")}/${optTargetSchemaEngine.getOrElse("")}) done!",
       Some(source),
       Some(schemaFormat),
       Some(schemaEngine),

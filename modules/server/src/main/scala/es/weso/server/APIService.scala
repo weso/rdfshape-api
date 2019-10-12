@@ -49,6 +49,11 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       Ok(json)
     }
 
+    case GET -> Root / `api` / "data" / "formats" / "default" => {
+      val dataFormat = DataFormats.defaultFormatName
+      Ok(Json.fromString(dataFormat))
+    }
+
     case GET -> Root / `api` / "data" / "visualize" / "formats" => {
       val formats = DataConverter.availableGraphFormatNames ++
         List(
@@ -57,11 +62,6 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         )
       val json = Json.fromValues(formats.map(Json.fromString(_)))
       Ok(json)
-    }
-
-    case GET -> Root / `api` / "data" / "formats" / "default" => {
-      val dataFormat = DataFormats.defaultFormatName
-      Ok(Json.fromString(dataFormat))
     }
 
     case req@GET -> Root / `api` / "dataUrl" / "info" :?

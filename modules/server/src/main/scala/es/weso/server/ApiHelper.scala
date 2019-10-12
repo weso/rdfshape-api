@@ -218,8 +218,11 @@ object ApiHelper {
         case None => schema.serialize(schemaFormat)
         case Some(source) => Right(source)
       }
-    } yield SchemaConversionResult.fromConversion(sourceStr,schemaFormat,schemaEngine,optTargetSchemaFormat, optTargetSchemaEngine, resultStr, ShapeMap.empty)
-    result.fold(err => SchemaConversionResult.fromMsg(s"convertSchema: error: $err"), identity)
+    } yield SchemaConversionResult.fromConversion(sourceStr, schemaFormat, schemaEngine, optTargetSchemaFormat, optTargetSchemaEngine, resultStr, ShapeMap.empty)
+    result.fold(err => SchemaConversionResult.fromMsg(s"convertSchema: error: $err"), { r => 
+      println(s"SchemaConversionResult: ${r}")
+      r
+    })
   }
 
   private[server] def shapeInfer(rdf: RDFReasoner,

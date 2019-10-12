@@ -213,9 +213,10 @@ case class DataParam(data: Option[String],
 object DataParam {
   private[this] val logger = getLogger
 
-  private[server] def mkData[F[_]:Effect](partsMap: PartsMap[F],
-                             relativeBase: Option[IRI]
-                            ): EitherT[F,String,(RDFReasoner,DataParam)] = {
+  private[server] def mkData[F[_]:Effect](
+     partsMap: PartsMap[F],
+     relativeBase: Option[IRI]
+    ): EitherT[F,String,(RDFReasoner,DataParam)] = {
 
     val r = for {
       dp <- mkDataParam[F](partsMap)
@@ -248,9 +249,9 @@ object DataParam {
     dataFile <- partsMap.optPartValue("dataFile")
     endpoint <- partsMap.optPartValue("endpoint")
     dataFormatTextArea <- getDataFormat("dataFormatTextArea", partsMap)
-    dataFormatValue <- getDataFormat("dataFormat", partsMap)
     dataFormatUrl <- getDataFormat("dataFormatUrl",partsMap)
     dataFormatFile <- getDataFormat("dataFormatFile", partsMap)
+    dataFormatValue <- getDataFormat("dataFormat", partsMap)
     inference <- partsMap.optPartValue("inference")
     targetDataFormat <- getDataFormat("targetDataFormat",partsMap)
     activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
