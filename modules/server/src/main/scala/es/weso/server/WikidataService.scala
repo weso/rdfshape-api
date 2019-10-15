@@ -7,7 +7,7 @@ import es.weso._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.streams.Streams
-import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam}
+import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam, WdSchemaParam}
 import es.weso.server.utils.Http4sUtils._
 import es.weso.server.values._
 import io.circe._
@@ -32,7 +32,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri = uri"/api/wikidata/entity"
   val defaultLimit = 20
-  val defaultContinue = 1
+  val defaultContinue = 0
 
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
@@ -55,6 +55,27 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
          } yield resp
     }
 
+    case GET -> Root / `api` / "wikidata" / "schemaContent" :?
+      WdSchemaParam(wdSchema) => {
+      val uri = uri"https://www.wikidata.org".
+        withPath(s"/wiki/Special:EntitySchemaText/${wdSchema}")
+
+      println(s"wikidata/schemaContent: ${uri.toString}")
+      val req: Request[F] = Request(method = GET, uri = uri)
+      for {
+        eitherValues <- client.fetch(req) {
+          case Status.Successful(r) => r.attemptAs[String].leftMap(_.message).value
+          case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[String])
+        }
+        json: Json = eitherValues.fold(
+          e => Json.fromFields(List(("error", Json.fromString(e)))),
+          s => Json.fromFields(List(("result",Json.fromString(s))))
+        )
+        resp <- Ok(json)
+      } yield resp
+
+    }
+
     case GET -> Root / `api` / "wikidata" / "searchEntity" :?
       LabelParam(label) +&
       LanguageParam(language) +&
@@ -62,6 +83,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       ContinueParam(maybeContinue) => {
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
+
       val uri = uri"https://www.wikidata.org".
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
@@ -71,15 +93,51 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         withQueryParam("continue",continue).
         withQueryParam("format","json")
 
+      println(s"wikidata/searchEntity: ${uri.toString}")
+
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
-        either <- client.fetch(req) {
+        eitherValues <- client.fetch(req) {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
-        resp <- Ok(either.fold(Json.fromString(_), identity))
+        eitherResult = for {
+          json <- eitherValues
+          converted <- cnvEntities(json)
+        } yield converted
+        resp <- Ok(eitherResult.fold(Json.fromString(_), identity))
       } yield resp
     }
+
+
+    case GET -> Root / `api` / "wikidata" / "languages" => {
+
+      val uri = uri"https://www.wikidata.org".
+        withPath("/w/api.php").
+        withQueryParam("action", "query").
+        withQueryParam("meta", "wbcontentlanguages").
+        withQueryParam("wbclcontext", "term").
+        withQueryParam("wbclprop","code|autonym").
+        withQueryParam("format","json")
+
+      println(s"wikidata/languages: ${uri.toString}")
+
+      val req: Request[F] = Request(method = GET, uri = uri)
+      for {
+        eitherValues <- client.fetch(req) {
+          case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+          case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+        }
+        eitherResult = for {
+          json <- eitherValues
+          converted <- cnvLanguages(json)
+        } yield converted
+        resp <- Ok(
+          eitherResult.fold(Json.fromString(_),identity)
+        )
+      } yield resp
+    }
+
 
 /*    case GET -> Root / "testQ" => {
       val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
@@ -237,6 +295,48 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
           ))))
         )
       } */
+
+  /*
+     Languages have this structure:
+     { "batchcomplete": "",
+       "query": {
+        "wbcontentlanguages": {
+            "aa": {
+                "code": "aa",
+                "autonym": "Qafár af"
+            },
+            "ab": {
+                "code": "ab",
+                "autonym": "Аҧсшәа"
+            }
+        }
+     }
+   */
+
+  def cnvEntities(json:Json): Either[String, Json] = for {
+    entities <- json.hcursor.downField("search").values.toRight("Error obtaining search value")
+    converted = Json.fromValues(entities.map((value: Json) => Json.fromFields(List(
+      ("label", value.hcursor.downField("label").focus.getOrElse(Json.Null)),
+      ("id", value.hcursor.downField("id").focus.getOrElse(Json.Null)),
+      ("uri", value.hcursor.downField("concepturi").focus.getOrElse(Json.Null)),
+      ("descr", value.hcursor.downField("description").focus.getOrElse(Json.Null))
+    ))))
+  } yield converted
+
+  def cnvLanguages(json:Json): Either[String, Json] = for {
+    // query <- .focus.toRight(s"Error obtaining query at ${json.spaces2}" )
+    languagesObj <- json.hcursor.downField("query").downField("wbcontentlanguages").focus.toRight(s"Error obtaining query/wbcontentlanguages at ${json.spaces2}" )
+    keys <- languagesObj.hcursor.keys.toRight(s"Error obtaining values from languages: ${languagesObj.spaces2}")
+    converted = Json.fromValues(keys.map(
+      key => Json.fromFields(List(
+        ("label",languagesObj.hcursor.downField(key).downField("code").focus.getOrElse(Json.Null)),
+        ("name", languagesObj.hcursor.downField(key).downField("autonym").focus.getOrElse(Json.Null))
+      )
+    )))
+  } yield {
+    println(s"Converted: ${converted}")
+    converted
+  }
 
 }
 

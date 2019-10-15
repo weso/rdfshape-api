@@ -269,7 +269,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             case (Some(sm1), Some(sm2)) =>
               if (sm1 == sm2) Some(sm1)
               else {
-                val msg = (s"2 shape-map paramters with different values: $sm1 and $sm2. We use: $sm1")
+                val msg = (s"2 shape-map parameters with different values: $sm1 and $sm2. We use: $sm1")
                 logger.error(msg)
                 println(msg)
                 Some(sm1)

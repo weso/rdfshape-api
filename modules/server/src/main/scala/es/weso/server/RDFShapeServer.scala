@@ -15,6 +15,7 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.dsl.Http4sDsl
 import scala.concurrent.ExecutionContext.global
 import scala.util.Properties.envOrNone
+import scala.concurrent.duration._
 
 /*
 class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
@@ -108,6 +109,7 @@ object Server {
       finalHttpApp = Logger.httpApp(true, false)(app)
       exitCode <- BlazeServerBuilder[F]
         .bindHttp(port,ip)
+        .withIdleTimeout(10.minutes)
         .withHttpApp(finalHttpApp)
         .serve
     } yield exitCode

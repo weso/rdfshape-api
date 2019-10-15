@@ -13,7 +13,7 @@ import es.weso.schema._
 import es.weso.server.Defaults._
 import es.weso.utils.FileUtils
 import es.weso.rdf.RDFReasoner
-import es.weso.rdf.nodes.IRI
+import es.weso.rdf.nodes._
 import io.circe._
 import org.http4s._
 import org.log4s.getLogger
@@ -179,7 +179,7 @@ object ApiHelper {
                                   optEngine: Option[String],
                                   optSchemaFormat: Option[String],
                                   optLabelName: Option[String],
-                                  relativeBase: Option[IRI]
+                                  relativeBase: Option[IRI],
                                  ): DataExtractResult = {
     val base = relativeBase.map(_.str)
     val engine = optEngine.getOrElse(defaultSchemaEngine)
@@ -191,9 +191,26 @@ object ApiHelper {
           selector <- NodeSelector.fromString(nodeSelector, base, rdf.getPrefixMap())
           result <- {
             println(s"Node selector: $selector")
-            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
+            val inferOptions: InferOptions = InferOptions(
+              inferTypePlainNode = true,
+              addLabelLang = Some(Lang("en")),
+              possiblePrefixMap = PossiblePrefixes.wikidataPrefixMap,
+              maxFollowOn = 1,
+              followOnLs = List(),
+              followOnThreshold = Some(1),
+              sortFunction = InferOptions.orderByIRI
+            )
+            SchemaInfer.runInferSchema(rdf, 
+               selector, 
+               engine, 
+               optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel),
+               inferOptions
+            )
           }
-        } yield (result)
+        } yield {
+          println(s"Schema infered!! \n ${result._1.serialize("ShExC").fold(identity,identity)}")
+          result
+        }
 
         r.fold(
           err => DataExtractResult.fromMsg(err),
