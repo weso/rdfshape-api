@@ -2,7 +2,7 @@ package es.weso.server
 
 import cats.effect._
 import cats.implicits._
-import es.weso.rdf.jena.RDFAsJenaModel
+import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
 import es.weso.rdf.streams.Streams
 import es.weso.schema._
 import es.weso.server.ApiHelper._
@@ -26,10 +26,14 @@ import org.log4s.getLogger
 
 import scala.concurrent.duration._
 import APIDefinitions._
+import cats.Monad
 import cats.data.EitherT
 import es.weso.html
+import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
+
+import scala.util.Try
 
 class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                                                client: Client[F])(implicit cs: ContextShift[F])
@@ -209,22 +213,40 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     case req @ GET -> Root / `api` / "endpoint" / "outgoing" :?
       OptEndpointParam(optEndpoint) +&
-      OptNodeParam(optNode)
-      => optEndpoint match {
-        case None => errJson("No endpoint provided")
-        case Some(endpoint) => optNode match {
-            case None => errJson("No node provided")
-            case Some(node) => Ok(Streams.getOutgoing(endpoint, node))
-        }
-      }
+      OptNodeParam(optNode) +&
+      LimitParam(optLimit)
+      => for {
+      eitherOutgoing <- getOutgoing(optEndpoint, optNode, optLimit).value
+      resp <- eitherOutgoing.fold((s: String) => errJson(s"Error: $s"), (outgoing: Outgoing) => Ok(outgoing.toJson))
+    } yield resp
+
 
     // Contents on /swagger are directly mapped to /swagger
     case r @ GET -> _ if r.pathInfo.startsWith("/swagger/") => swagger(r).getOrElseF(NotFound())
 
   }
 
+  private def parseInt(s: String): Either[String, Int] =
+    Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))
+
   def errJson(msg: String): F[Response[F]] =
     Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
+
+  def getOutgoing(optEndpoint: Option[String], optNode: Option[String], optLimit: Option[String]
+                 ): EitherT[F,String,Outgoing] = {
+    for {
+      endpointIRI <- EitherT.fromEither[F](Either.fromOption(optEndpoint,"No endpoint provided").flatMap(IRI.fromString(_)))
+      node <- EitherT.fromEither[F](Either.fromOption(optNode,"No node provided").flatMap(IRI.fromString(_)))
+      limit <- EitherT.fromEither[F](parseInt(optLimit.getOrElse("1")))
+      o <- outgoing(endpointIRI,node,limit)
+    } yield o
+  }
+
+  def outgoing(endpoint: IRI, node: IRI, limit: Int): EitherT[F, String,Outgoing] = for {
+    triples <- EitherT.fromEither[F](Endpoint(endpoint).triplesWithSubject(node))
+  } yield Outgoing.fromTriples(node,endpoint,triples)
+
+    //    Monad[F].pure(Left(s"Not implemented"))
 
 }
 

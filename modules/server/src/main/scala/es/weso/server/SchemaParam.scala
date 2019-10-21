@@ -84,10 +84,10 @@ case class SchemaParam(schema: Option[String],
           case None if schemaFile.isDefined => Right(SchemaFileType)
           case None => Right(SchemaTextAreaType)
         }
-        logger.info(s"Input type: ${inputType.toString} - activeSchemaTab: ${activeSchemaTab}")
+        println(s"Input type: ${inputType.toString} - activeSchemaTab: ${activeSchemaTab}, schemaURL: ${schemaURL}")
         inputType match {
           case Right(`SchemaUrlType`) => {
-            logger.info(s"######## SchemaUrl: ${schemaURL}")
+            println(s"######## SchemaUrl: ${schemaURL}")
             schemaURL match {
               case None => (None, Left(s"Non value for schemaURL"))
               case Some(schemaUrl) => Try {
@@ -176,12 +176,14 @@ object SchemaParam {
     targetSchemaFormat <- partsMap.optPartValue("targetSchemaFormat")
     activeSchemaTab <- partsMap.optPartValue("activeSchemaTab")
     schemaEmbedded <- partsMap.optPartValueBoolean("schemaEmbedded")
-  } yield
+  } yield {
+    println(s"mkSchemaParam => schemaURL = ${schemaURL}")
     SchemaParam(schema, schemaURL, schemaFile,
       schemaFormatTextArea, schemaFormatUrl, schemaFormatFile,
       schemaEngine, schemaEmbedded,
       targetSchemaEngine, targetSchemaFormat, activeSchemaTab
     )
+  }
 
   private[server] def empty: SchemaParam =
     SchemaParam(None,None,None,None,None,None,None,None,None,None,None)

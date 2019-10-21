@@ -319,6 +319,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           } yield {
             // val schemaEmbedded = getSchemaEmbedded(sp)
             println(s"Trigger mode: $tp")
+            println(s"Schema: ${schema.serialize("ShExC").getOrElse("Error serializing schema")}")
             val (result, maybeTriggerMode, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
             result
           }

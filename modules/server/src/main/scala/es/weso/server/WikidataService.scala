@@ -13,12 +13,12 @@ import es.weso.server.values._
 import io.circe._
 import fs2._
 import org.http4s._
+import org.http4s.Charset._
 import org.http4s.circe._
-import org.http4s.client.Client
-import org.http4s.implicits._
-import org.http4s.dsl.Http4sDsl
-import org.http4s.headers.Accept
-import org.http4s.multipart.Multipart
+import org.http4s.client._
+import org.http4s.dsl._
+import org.http4s.headers._
+import org.http4s.multipart._
 import org.http4s.twirl._
 import org.http4s.implicits._
 import es.weso.rdf.sgraph._
@@ -31,6 +31,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri = uri"/api/wikidata/entity"
+  val wikidataUri: Uri = uri"https://query.wikidata.org/sparql"
   val defaultLimit = 20
   val defaultContinue = 0
 
@@ -109,7 +110,6 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       } yield resp
     }
 
-
     case GET -> Root / `api` / "wikidata" / "languages" => {
 
       val uri = uri"https://www.wikidata.org".
@@ -138,6 +138,24 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       } yield resp
     }
 
+    case req@POST -> Root / `api` / "wikidata" / "query" => req.decode[Multipart[F]] { m => {
+        val partsMap = PartsMap(m.parts)
+        for {
+          optQuery <- partsMap.optPartValue("query")
+          query = optQuery.getOrElse("")
+          req: Request[F] =
+             Request(method = GET, uri = wikidataUri.withQueryParam("query",query))
+               .withHeaders(
+                 `Accept`(MediaType.application.`json`)
+               )
+          eitherValue <- client.fetch(req) {
+            case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+            case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+          }
+          resp <- Ok(eitherValue.fold(Json.fromString(_), identity))
+        } yield resp
+      }
+    }
 
 /*    case GET -> Root / "testQ" => {
       val req: Request[F] = Request(uri = wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
@@ -334,7 +352,6 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       )
     )))
   } yield {
-    println(s"Converted: ${converted}")
     converted
   }
 

@@ -319,16 +319,21 @@ object ApiHelper {
   }
 
   case class SchemaInfoReply(schemaName: Option[String],
-                                     schemaEngine: Option[String],
-                                     wellFormed: Boolean,
-                                     shapes: List[String],
-                                     errors: List[String]
-                                    ) {
+                             schemaEngine: Option[String],
+                             wellFormed: Boolean,
+                             shapes: List[String],
+                             shapesPrefixMap: List[(String,String)],
+                             errors: List[String]
+                             ) {
     def toJson: Json = Json.fromFields(List(
       ("schemaName", schemaName.fold(Json.Null)(Json.fromString(_))),
       ("schemaEngine", schemaEngine.fold(Json.Null)(Json.fromString(_))),
       ("wellFormed", Json.fromBoolean(wellFormed)),
       ("shapes", Json.fromValues(shapes.map(Json.fromString(_)))),
+      ("shapesPrefixMap", Json.fromValues(shapesPrefixMap.map(pair => Json.fromFields(List(
+        ("prefix", Json.fromString(pair._1)),
+        ("uri", Json.fromString(pair._2))
+      ))))),
       ("errors", Json.fromValues(errors.map(Json.fromString(_))))
     ))
   }
@@ -336,13 +341,20 @@ object ApiHelper {
   object SchemaInfoReply {
     def fromError(msg: String): SchemaInfoReply = {
       println(s"SchemaInfoReply from $msg")
-      SchemaInfoReply(None,None,false,List(),List(msg))
+      SchemaInfoReply(None,None,false,List(),List(),List(msg))
     }
   }
 
   private[server] def schemaInfo(schema:Schema): Json = {
     val info = schema.info
-    SchemaInfoReply(Some(info.schemaName), Some(info.schemaEngine), info.isWellFormed, schema.shapes,info.errors).toJson
+    SchemaInfoReply(
+      Some(info.schemaName),
+      Some(info.schemaEngine),
+      info.isWellFormed,
+      schema.shapes,
+      schema.pm.pm.toList.map{ case (prefix, iri) => (prefix.str, iri.str) },
+      info.errors
+    ).toJson
   }
 
   private[server] def schema2SVG(schema: Schema): (String,String) = {

@@ -48,6 +48,7 @@ object Streams {
   }
 
   def getOutgoing[F[_]: LiftIO](endpoint: String, node: String): F[String] = LiftIO[F].liftIO( IO {
+    println(s"Outgoing: $node at $endpoint")
     val c = QueryExecutionFactory.sparqlService(endpoint, queryTriplesWithSubject(IRI(node))).execConstruct()
     val stringWriter = new StringWriter
     val os: OutputStream = new WriterOutputStream(stringWriter,UTF_8)
