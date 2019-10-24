@@ -110,6 +110,42 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       } yield resp
     }
 
+    case GET -> Root / `api` / "wikidata" / "searchProperty" :?
+      LabelParam(label) +&
+      LanguageParam(language) +&
+      LimitParam(maybelimit) +&
+      ContinueParam(maybeContinue) => {
+      val limit: String = maybelimit.getOrElse(defaultLimit.toString)
+      val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
+
+      println(s"SearchProperty!!")
+
+      val uri = uri"https://www.wikidata.org".
+        withPath("/w/api.php").
+        withQueryParam("action", "wbsearchentities").
+        withQueryParam("search", label).
+        withQueryParam("language", language).
+        withQueryParam("limit",limit).
+        withQueryParam("continue",continue).
+        withQueryParam("type","property").
+        withQueryParam("format","json")
+
+      println(s"wikidata/searchProperty: ${uri.toString}")
+
+      val req: Request[F] = Request(method = GET, uri = uri)
+      for {
+        eitherValues <- client.fetch(req) {
+          case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
+          case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
+        }
+        eitherResult = for {
+          json <- eitherValues
+          converted <- cnvEntities(json)
+        } yield converted
+        resp <- Ok(eitherResult.fold(Json.fromString(_), identity))
+      } yield resp
+    }
+
     case GET -> Root / `api` / "wikidata" / "languages" => {
 
       val uri = uri"https://www.wikidata.org".
