@@ -29,17 +29,17 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
 
     blocker.use { case (blocker) =>
       BlazeClientBuilder[IO](global).resource.use { case client =>
-       APIService[IO](blocker, client).routes.orNotFound.run(req)
+       SchemaService[IO](blocker, client).routes.orNotFound.run(req)
      }
     }
   }
 
   describe("ValidateShEx") {
-      /*    it("Should return 200 when asking for root") {
+/*     it("Should return 200 when asking for root") {
       val response = serve(Request(GET, Uri(path = "/")))
-      response.status should be(Ok)
-    }
-
+      response.unsafeRunSync.status should be(Ok)
+    } */
+/*
     it("Should run test API method") {
       val response = serve(Request(
         GET,
@@ -98,7 +98,7 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
         val ioResponse = serve(Request(
           GET,
           Uri(
-            path = "/api/validate",
+            path = "/api/schema/validate",
             query = HQuery.fromPairs(
               ("data", dataStr),
               ("schema", schemaStr),
@@ -136,7 +136,7 @@ class ValidateShExTest extends FunSpec with Matchers with EitherValues {
         val ioResponse = serve(Request(
           GET,
           Uri(
-            path = "/api/validate",
+            path = "/api/schema/validate",
             query = HQuery.fromPairs(
               ("data", dataStr),
               ("schema", schemaStr),
