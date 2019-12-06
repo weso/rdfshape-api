@@ -1,3 +1,7 @@
+lazy val scala212 = "2.12.10"
+lazy val scala213 = "2.13.1"
+lazy val supportedScalaVersions = List(scala213, scala212)
+
 /*
 scalafmt: {
   style = defaultWithAlign
@@ -124,6 +128,7 @@ lazy val rdfshape = project
     cancelable in Global      := true,
     fork                      := true,
     reStartArgs               := Seq("--server"),
+    crossScalaVersions := supportedScalaVersions,
     // parallelExecution in Test := false
   ).settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
 
@@ -187,7 +192,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  scalaVersion := "2.13.0",
+  //  scalaVersion := "2.13.0",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
