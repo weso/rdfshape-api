@@ -3,7 +3,8 @@ package es.weso.server
 import java.util.concurrent.Executors
 
 import cats.implicits._
-import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Effect, IO, Timer}
+import cats.data.EitherT
+import cats.effect._
 import results._
 
 import scala.concurrent.ExecutionContext.global
@@ -74,15 +75,16 @@ object ApiHelper {
                   optSchemaEngine: Option[String],
                   optTargetSchemaFormat: Option[String],
                   optTargetSchemaEngine: Option[String],
-                  base: Option[String]): Either[String, Option[String]] =
+                  base: Option[String]): EitherT[IO, String, Option[String]] =
    optSchema match {
-    case None => Right(None)
+    case None => EitherT.fromEither[IO](None.asRight[String])
     case Some(schemaStr) => {
       val schemaFormat = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
+      // val x: EitherT[IO,String,Schema] = Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
       for {
         schema <- Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
-        result <- schema.convert(optTargetSchemaFormat,optTargetSchemaEngine,base.map(IRI(_)))
+        result <- EitherT.fromEither[IO](schema.convert(optTargetSchemaFormat,optTargetSchemaEngine,base.map(IRI(_))))
       } yield Some(result)
     }
   }
@@ -121,7 +123,7 @@ object ApiHelper {
                                   tp: TriggerModeParam,
                                   optInference: Option[String],
                                   relativeBase: Option[IRI]
-                                 ): (Result, Option[ValidationTrigger], Long) = {
+                                 ): IO[(Result, Option[ValidationTrigger], Long)] = {
     val dp = DataParam.empty.copy(
       data = Some(data),
       dataFormatTextarea = optDataFormat,
@@ -134,9 +136,10 @@ object ApiHelper {
     )
     val (_,eitherRDF) = dp.getData(relativeBase)
     val result = for {
-     rdf <- eitherRDF
-     (_,eitherSchema) = sp.getSchema(Some(rdf))
-     schema <- eitherSchema
+     rdf <- EitherT.fromEither[IO](eitherRDF)
+     pair <- EitherT.liftF[IO,String,(Option[String],Either[String,Schema])](sp.getSchema(Some(rdf)))
+     (_,eitherSchema) = pair
+     schema <- EitherT.fromEither[IO](eitherSchema)
     } yield (rdf,schema)
 
     result.fold(
@@ -310,7 +313,7 @@ object ApiHelper {
   }
 
 
-  private[server] def getSchema(sv: SchemaValue): Either[String,Schema] = {
+  private[server] def getSchema(sv: SchemaValue): EitherT[IO,String,Schema] = {
     val schemaEngine = sv.currentSchemaEngine
     val schemaFormat = sv.currentSchemaFormat
     val schemaStr = sv.schema.getOrElse("")

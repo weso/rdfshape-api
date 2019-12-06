@@ -13,7 +13,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 * RDFShape server requires [SBT](https://www.scala-sbt.org/) to be built
 
-## Deploy at local machine 
+## Deploy at local machine
 
 * Clone the [github repository](https://github.com/labra/rdfshape)
 
@@ -44,6 +44,3 @@ Contributions are greatly appreciated. Please fork this repository and open a pu
 
 * [Issues about RDFShape online demo](https://github.com/labra/rdfshape/issues)
 * [Issues about SHACLex validation library](https://github.com/labra/shaclex/issues)
-
-
-

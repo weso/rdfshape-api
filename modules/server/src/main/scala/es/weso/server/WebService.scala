@@ -33,6 +33,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
   private val relativeBase = Defaults.relativeBase
 
   private val logger = getLogger
+  val L = implicitly[LiftIO[F]]
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
 
@@ -56,16 +57,11 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
                 sp.schemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
                 sp.activeSchemaTab.getOrElse(defaultActiveSchemaTab)
               )
-              Ok(html.schemaConversions(
-                sv,
-                optTargetSchemaFormat.getOrElse(defaultSchemaFormat),
-                optTargetSchemaEngine.getOrElse(defaultSchemaEngine),
-                schemaConvert(sp.schema,sp.schemaFormat,sp.schemaEngine,
-                  optTargetSchemaFormat,optTargetSchemaEngine,
-                  ApiHelper.getBase))
-              )
+              for {
+                eitherCnv <- L.liftIO(schemaConvert(sp.schema,sp.schemaFormat,sp.schemaEngine,optTargetSchemaFormat,optTargetSchemaEngine,ApiHelper.getBase).value)
+                ok <- Ok(html.schemaConversions(sv,optTargetSchemaFormat.getOrElse(defaultSchemaFormat),optTargetSchemaEngine.getOrElse(defaultSchemaEngine),eitherCnv))
+              } yield ok
             }
-
           }
         } yield response
       }
@@ -80,19 +76,22 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         TargetSchemaEngineParam(optTargetSchemaEngine) +&
         OptActiveSchemaTabParam(optActiveSchemaTab) => {
 
+      val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)    
+      val schemaEngine = optSchemaEngine.getOrElse(defaultSchemaEngine)
+      val targetSchemaFormat = optTargetSchemaFormat.getOrElse(defaultSchemaFormat)
+      val targetSchemaEngine = optTargetSchemaEngine.getOrElse(defaultSchemaEngine)
       val sv = SchemaValue(optSchema, optSchemaURL,
-        optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
-        optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
+        schemaFormat, availableSchemaFormats,
+        schemaEngine, availableSchemaEngines,
         optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
       )
-      Ok(html.schemaConversions(
-        sv,
-        optTargetSchemaFormat.getOrElse(defaultSchemaFormat),
-        optTargetSchemaEngine.getOrElse(defaultSchemaEngine),
-        schemaConvert(optSchema,optSchemaFormat,optSchemaEngine,
-          optTargetSchemaFormat,optTargetSchemaEngine,
-          ApiHelper.getBase))
-      )
+      for {
+        cnv <- L.liftIO(schemaConvert(optSchema,optSchemaFormat,optSchemaEngine,optTargetSchemaFormat,optTargetSchemaEngine,ApiHelper.getBase).value)
+        ok <- Ok(html.schemaConversions(sv,
+          targetSchemaFormat, 
+          targetSchemaEngine,
+          cnv))
+       } yield ok
     }
 
     case req@POST -> Root / "schemaInfo" =>
@@ -135,14 +134,18 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
         optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
       )
-      val (maybeStr, eitherSchema) = sp.getSchema(None)
 
-      eitherSchema.fold(
-        e => BadRequest(s"Error obtaining schema: $e"),
-        schema => {
-         val info = schemaInfo(schema)
-         Ok(html.schemaInfo(Some(info),sv))
-      })
+      for {
+        pair <- L.liftIO(sp.getSchema(None))
+        (_,either: Either[String,Schema]) = pair
+        v <- either.fold(
+          s => BadRequest(s"Error obtaining schema: $s"), 
+          schema => { 
+           val info = schemaInfo(schema)
+           Ok(html.schemaInfo(Some(info),sv))   
+          }
+        )  
+      } yield v
     }
 
     case req@POST -> Root / "schemaVisualize" =>
@@ -185,14 +188,14 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         optSchemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
         optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
       )
-      val (maybeStr, eitherSchema) = sp.getSchema(None)
-
-      eitherSchema.fold(
-        e => BadRequest(s"Error obtaining schema: $e"),
-        schema => {
+      for {
+        pair <- L.liftIO(sp.getSchema(None))
+        (_,either: Either[String,Schema]) = pair
+        v <- either.fold(e => BadRequest(s"Error obtaining schema: $e"), schema => {
           val info = schemaVisualize(schema)
           Ok(html.schemaVisualize(Some(info),sv))
         })
+      } yield v 
     }
 
     case req@GET -> Root / "dataOptions" => {
@@ -310,16 +313,19 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
 
             val (dataStr, eitherRDF) = dp.getData(relativeBase)
 
-            val eitherResult: Either[String,F[Response[F]]] = for {
-              rdf <- eitherRDF
-              (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
-              schema <- eitherSchema
+            val eitherResult: EitherT[F,String,F[Response[F]]] = for {
+              rdf <- EitherT.fromEither[F](eitherRDF)
+              pair <- EitherT.liftF[F,String,(Option[String], Either[String,Schema])](L.liftIO(sp.getSchema(Some(rdf))))
+              (_,either: Either[String,Schema]) = pair
+              schema <- EitherT.fromEither[F](either)
+              // (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
+              // schema <- eitherSchema
             } yield {
               val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp,relativeBase)
               validateResponse(result, time, dp, sp, tp)
             }
 
-            eitherResult.fold(e => BadRequest(s"Error: $e"),identity)
+            eitherResult.foldF(e => BadRequest(s"Error: $e"),identity)
           }
         }
       }

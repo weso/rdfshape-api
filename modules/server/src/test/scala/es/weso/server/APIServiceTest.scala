@@ -42,7 +42,16 @@ class APIServiceTest extends FunSpec with Matchers with EitherValues with JsonMa
            | { "data": { "id": "N1", "type": "lit", "label": "1" } },
            | { "data": { "source": "N0", "target": "N1", "label": ":p", "href": "http://example.org/p"} }
            |]""".stripMargin
-      jsonResponse should matchJsonString(expected)
+      jsonResponse.hcursor.downField("msg").as[String].fold(err => 
+        fail(s"Error decoding field msg in response: ${err.toString}"),
+        str => str should be("Conversion successful!") 
+      ) 
+      jsonResponse.hcursor.downField("result").as[String].fold(err => 
+       fail(s"Error obtaining field result from obtained JSON:\n${jsonResponse.spaces2}"), 
+       strResult => parse(strResult).fold(err => 
+       fail(s"Error parsing string in Result: $err\nString in Result:$strResult"),
+       jsonResult => jsonResult should matchJsonString(expected)
+     ))  
     }
   }
 

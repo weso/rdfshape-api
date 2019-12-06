@@ -9,7 +9,8 @@ import es.weso.rdf.jena.RDFAsJenaModel
 
 import scala.concurrent.duration._
 import es.weso.utils.FileUtils
-
+import cats.data.EitherT
+import cats.effect._
 import scala.util._
 import java.nio.file._
 
@@ -44,17 +45,17 @@ object Main extends App with LazyLogging {
 
     val base = Some(FileUtils.currentFolderURL)
 
-    val validateOptions: Either[String, (RDFReader, Schema, ValidationTrigger)] = for {
+    val validateOptions: EitherT[IO, String, (RDFReader, Schema, ValidationTrigger)] = for {
       rdf <- getRDFReader(opts, baseFolder)
       schema <- getSchema(opts, baseFolder, rdf)
       triggerName = opts.trigger.toOption.getOrElse(ValidationTrigger.default.name)
       shapeMapStr <- getShapeMapStr(opts)
-      trigger <- ValidationTrigger.findTrigger(triggerName, shapeMapStr, base,
+      trigger <- EitherT.fromEither[IO](ValidationTrigger.findTrigger(triggerName, shapeMapStr, base,
         opts.node.toOption, opts.shapeLabel.toOption,
-        rdf.getPrefixMap(), schema.pm)
+        rdf.getPrefixMap(), schema.pm))
     } yield (rdf, schema, trigger)
 
-    validateOptions match {
+    validateOptions.value.unsafeRunSync match {
       case Left(e) => {
         println(s"Error: $e")
       }
@@ -142,22 +143,22 @@ object Main extends App with LazyLogging {
     }
   }
 
-  def getShapeMapStr(opts: MainOpts): Either[String, String] = {
+  def getShapeMapStr(opts: MainOpts): EitherT[IO, String, String] = {
     if (opts.shapeMap.isDefined) {
       // val shapeMapFormat = opts.shapeMapFormat.toOption.getOrElse("COMPACT")
       for {
         // TODO: Allow different shapeMap formats
         content <- FileUtils.getContents(opts.shapeMap())
       } yield content.toString
-    } else Right("")
+    } else EitherT.pure[IO,String]("")
   }
 
-  def getRDFReader(opts: MainOpts, baseFolder: Path): Either[String, RDFReader] = {
+  def getRDFReader(opts: MainOpts, baseFolder: Path): EitherT[IO,String, RDFReader] = {
     val base = Some(IRI(FileUtils.currentFolderURL))
     if (opts.data.isDefined) {
       val path = baseFolder.resolve(opts.data())
       for {
-        rdf <- RDFAsJenaModel.fromFile(path.toFile(), opts.dataFormat(), base)
+        rdf <- RDFAsJenaModel.fromFileIO(path.toFile(), opts.dataFormat(), base)
       } yield {
         if (opts.inference.isDefined) {
           rdf.applyInference(opts.inference()) match {
@@ -171,11 +172,11 @@ object Main extends App with LazyLogging {
       }
     } else {
       logger.info("RDF Data option not specified")
-      Right(RDFAsJenaModel.empty)
+      EitherT.liftF[IO,String,RDFReader](RDFAsJenaModel.emptyIO)
     }
   }
 
-  def getSchema(opts: MainOpts, baseFolder: Path, rdf: RDFReader): Either[String, Schema] = {
+  def getSchema(opts: MainOpts, baseFolder: Path, rdf: RDFReader): EitherT[IO,String, Schema] = {
     val base = Some(FileUtils.currentFolderURL)
     if (opts.schema.isDefined) {
       val path = baseFolder.resolve(opts.schema())
@@ -185,8 +186,6 @@ object Main extends App with LazyLogging {
       logger.info("Schema not specified. Extracting schema from data")
       Schemas.fromRDF(rdf, opts.engine())
     }
-    //  }
-
   }
 }
 

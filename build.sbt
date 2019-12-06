@@ -24,8 +24,8 @@ scalafmt: {
 }
  */
 
-lazy val umlShaclexVersion     = "0.0.47"
-lazy val shaclexVersion        = "0.1.41"  // for utilsTest
+lazy val shaclexVersion        = "0.1.47"  // for utilsTest
+lazy val umlShaclexVersion     = "0.0.48"
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
@@ -124,7 +124,7 @@ lazy val rdfshape = project
     cancelable in Global      := true,
     fork                      := true,
     reStartArgs               := Seq("--server"),
-    parallelExecution in Test := false
+    // parallelExecution in Test := false
   ).settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
 
 lazy val server = project

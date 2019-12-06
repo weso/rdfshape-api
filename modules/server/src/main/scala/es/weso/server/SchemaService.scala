@@ -29,7 +29,8 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
 
   private val relativeBase = Defaults.relativeBase
   private val logger       = getLogger
-
+  
+  val L = implicitly[LiftIO[F]]
   val routes = HttpRoutes.of[F] {
 
     case GET -> Root / `api` / "schema" / "engines" => {
@@ -70,16 +71,19 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         case None         => ""
         case Some(schema) => schema
       }
-      Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None) match {
-        case Left(e) => errJson(s"Error reading schema: $e\nString: $schemaStr")
-        case Right(schema) => {
-          val shapes: List[String] = schema.shapes
-          val jsonShapes           = Json.fromValues(shapes.map(Json.fromString(_)))
-          val pm: Json             = prefixMap2Json(schema.pm)
-          val result               = SchemaInfoResult(schemaStr, schemaFormat, schemaEngine, jsonShapes, pm).asJson
-          Ok(result)
-        }
-      }
+      for {
+        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).value)
+        r <- either.fold(
+          e => errJson(s"Error reading schema: $e\nString: $schemaStr"), 
+          schema => {
+            val shapes: List[String] = schema.shapes
+            val jsonShapes           = Json.fromValues(shapes.map(Json.fromString(_)))
+            val pm: Json             = prefixMap2Json(schema.pm)
+            val result               = SchemaInfoResult(schemaStr, schemaFormat, schemaEngine, jsonShapes, pm).asJson
+            Ok(result)
+          }
+        )
+      } yield r 
     }
 
     case req @ POST -> Root / `api` / "schema" / "info" =>
@@ -115,10 +119,13 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         case None         => ""
         case Some(schema) => schema
       }
-      Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None) match {
-        case Left(e) => errJson(s"Error reading schema: $e\nString: $schemaStr")
-        case Right(schema) => Ok(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine).toJson)
-      }
+      for {
+        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).value)
+        r <- either.fold(
+          e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
+          schema => Ok(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine).toJson)
+        )
+      } yield r 
     }
 
     case req @ POST -> Root / `api` / "schema" / "convert" =>
@@ -198,14 +205,14 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         None,
         None,
         optActiveSchemaTab)
-      val (_,either) = sp.getSchema(None)
-      either.fold(
-        e => errJson(s"Error obtaining schema $e"),
-        (schema: Schema) => {
+      for {
+        pair <- L.liftIO(sp.getSchema(None))
+        (_,either: Either[String,Schema]) = pair
+        v <- either.fold(s => errJson(s"Error obtaining schema $s"), schema => {
           val (svg,_) = schema2SVG(schema)
           Ok(svg).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
-        }
-      )
+        })
+      } yield v
     }
 
     case req @ GET -> Root / `api` / "schema" / "validate" :?
@@ -288,10 +295,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           )
           val (dataStr, eitherRDF) = dp.getData(relativeBase)
 
-          val eitherResult: Either[String, F[Response[F]]] = for {
-            rdf <- eitherRDF
-            (schemaStr, eitherSchema) = sp.getSchema(Some(rdf))
-            schema <- eitherSchema
+          val eitherResult: EitherT[F, String, F[Response[F]]] = for {
+            rdf <- EitherT.fromEither[F](eitherRDF)
+            pair <- EitherT.liftF[F,String,(Option[String],Either[String,Schema])](L.liftIO(sp.getSchema(Some(rdf))))
+            (schemaStr, eitherSchema) = pair
+            schema <- EitherT.fromEither[F](eitherSchema)
           } yield {
             println(s"RDF: $rdf")
             println(s"Schema: $schema")
@@ -300,7 +308,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             println(s"result: $result")
             Ok(result.toJson)
           }
-          eitherResult.fold(e => errJson(s"Error: $e"), identity)
+          eitherResult.foldF(e => errJson(s"Error: $e"), identity)
         }
       }
     }
