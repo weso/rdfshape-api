@@ -29,7 +29,8 @@ scalafmt: {
  */
 
 // Local dependencies 
-lazy val shaclexVersion        = "0.1.47"  // for utilsTest
+// lazy val shaclexVersion        = "0.1.47" 
+lazy val utilsVersion          = "0.1.63" // for utilsTest
 lazy val umlShaclexVersion     = "0.0.48"
 
 
@@ -88,7 +89,7 @@ lazy val scalaTest         = "org.scalatest"              %% "scalatest"        
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
 lazy val umlShaclex        = "es.weso"                    %% "umlshaclex"          % umlShaclexVersion
-lazy val utilsTest         = "es.weso"                    %% "utilstest"           % shaclexVersion
+lazy val utilsTest         = "es.weso"                    %% "utilstest"           % utilsVersion
 
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
@@ -160,7 +161,8 @@ lazy val server = project
       // webJars
       jquery,
       bootstrap
-    )
+    ),
+    crossScalaVersions := supportedScalaVersions,
   )
 
 /* ********************************************************
