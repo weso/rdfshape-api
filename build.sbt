@@ -28,13 +28,16 @@ scalafmt: {
 }
  */
 
+// Local dependencies 
 lazy val shaclexVersion        = "0.1.47"  // for utilsTest
 lazy val umlShaclexVersion     = "0.0.48"
+
+
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
 // Dependency versions
-lazy val catsVersion           = "2.0.0-M4"
+lazy val catsVersion           = "2.0.0"
 lazy val commonsTextVersion    = "1.7"
 lazy val circeVersion          = "0.12.0-M4"
 lazy val graphvizJavaVersion   = "0.5.2"
@@ -59,8 +62,6 @@ lazy val jqueryVersion         = "3.4.1"
 lazy val bootstrapVersion      = "4.3.1"
 
 // Compiler plugin dependency versions
-// lazy val simulacrumVersion    = "0.11.0"
-// lazy val kindProjectorVersion = "0.9.5"
 lazy val scalaMacrosVersion   = "2.1.1"
 
 // Dependency modules
@@ -86,8 +87,8 @@ lazy val scalaj            = "org.scalaj"                 %% "scalaj-http"      
 lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
-lazy val umlShaclex        = "es.weso"                    % "umlshaclex_2.13"      % umlShaclexVersion
-lazy val utilsTest         = "es.weso"                    % "utilstest_2.13"       % shaclexVersion
+lazy val umlShaclex        = "es.weso"                    %% "umlshaclex"          % umlShaclexVersion
+lazy val utilsTest         = "es.weso"                    %% "utilstest"           % shaclexVersion
 
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
