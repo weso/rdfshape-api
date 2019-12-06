@@ -1,6 +1,14 @@
+# RDFShape
+
+RDF playground. This repository contains the server part of the RDFShape web app.
+The server has been implemented in Scala using the [http4s](https://http4s.org/) library. 
+
+[![Build Status](https://travis-ci.org/weso/rdfshape.svg?branch=master)](https://travis-ci.org/weso/rdfshape)
+
 # More info
 
-* Background info: [Validating RDF data book](http://book.validatingrdf.com)
+* The client part of RDFShape has been separated to a [React app](https://github.com/weso/rdfshape-client).
+* Background info about validating RDF: [Validating RDF data book](http://book.validatingrdf.com)
 * [How-to](https://github.com/labra/rdfshape/wiki/Tutorial): explains how to use RDFShape to validate RDF
 
 # Deployed versions of RDFShape
