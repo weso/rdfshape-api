@@ -31,6 +31,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
   private val logger       = getLogger
   
   val L = implicitly[LiftIO[F]]
+
   val routes = HttpRoutes.of[F] {
 
     case GET -> Root / `api` / "schema" / "engines" => {
@@ -236,7 +237,6 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             OptActiveDataTabParam(optActiveDataTab) +&
             OptActiveSchemaTabParam(optActiveSchemaTab) +&
             OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
-      println(s"### ${endpoints}")
       val either: Either[String, Option[DataFormat]] = for {
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
@@ -319,8 +319,10 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST validate partsMap. $partsMap")
           val r: EitherT[F, String, Result] = for {
+            _ <- info(s"Parsing partsMap: ${partsMap}")
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (rdf, dp) = dataPair
+            _ <- info(s"Data param parsed: ${dp}")
             schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
             (schema, sp) = schemaPair
             tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
@@ -342,6 +344,9 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
   // TODO: Move this method to a more generic place...
   private def errJson(msg: String): F[Response[F]] =
     Ok(Json.fromFields(List(("error", Json.fromString(msg)))))
+
+  private def info(msg: String): EitherT[F,String,Unit] = 
+    EitherT.liftF[F,String,Unit](LiftIO[F].liftIO(IO(println(msg))))  
 
 }
 
