@@ -93,7 +93,7 @@ lazy val utilsTest         = "es.weso"                    %% "utilstest"        
 
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
-lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
+lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.3"
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 
 lazy val jquery            = "org.webjars"                % "jquery"               % jqueryVersion
