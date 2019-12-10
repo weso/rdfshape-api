@@ -54,7 +54,7 @@ lazy val scalajVersion         = "2.4.2"
 lazy val scalaTestVersion      = "3.0.8"
 lazy val scalatagsVersion      = "0.7.0"
 lazy val scallopVersion        = "3.3.1"
-lazy val seleniumVersion       = "2.35.0"
+lazy val seleniumVersion       = "2.53.1"
 lazy val silencerVersion       = "1.4.2"
 lazy val typesafeConfigVersion = "1.3.4"
 
