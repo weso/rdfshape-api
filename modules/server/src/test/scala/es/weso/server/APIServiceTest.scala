@@ -12,8 +12,10 @@ import org.scalatest._
 import es.weso.utils.test._
 
 import scala.concurrent.ExecutionContext.global
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class APIServiceTest extends FunSpec with Matchers with EitherValues with JsonMatchers {
+class APIServiceTest extends AnyFunSpec with Matchers with EitherValues with JsonMatchers {
 
   describe(s"API Service") {
     it("Should obtain JSON data from RDF") {

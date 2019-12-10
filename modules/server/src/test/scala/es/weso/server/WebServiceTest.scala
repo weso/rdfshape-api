@@ -21,10 +21,12 @@ import org.http4s.twirl._
 import es.weso._
 import org.http4s.server.staticcontent._
 import scala.concurrent.ExecutionContext
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 
 
-class WebServiceTest extends FunSpec
+class WebServiceTest extends AnyFunSpec
   with Matchers
   with EitherValues
   with BeforeAndAfter
