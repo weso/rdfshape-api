@@ -35,7 +35,7 @@ lazy val umlShaclexVersion     = "0.0.49"
 
 
 lazy val any23Version          = "2.2"
-lazy val rdf4jVersion          = "2.2.4"
+lazy val rdf4jVersion          = "2.5.5"
 
 // Dependency versions
 lazy val catsVersion           = "2.0.0"
