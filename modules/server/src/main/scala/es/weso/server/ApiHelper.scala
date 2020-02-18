@@ -27,6 +27,7 @@ import es.weso.shacl.converter.Shacl2ShEx
 import es.weso.shex.converter.ShEx2Shacl
 import es.weso.utils.json.JsonUtilsServer._
 import es.weso.server.Defaults._
+import org.http4s.dsl._
 
 import scala.util.Try
 
@@ -409,9 +410,6 @@ object ApiHelper {
     }
   }
 
-  // TODO: I want to move this method here but it infers type IO instead of generic F
-  /* private[server] def errJson[F[_]:ConcurrentEffect](msg: String): F[Response[F]] =
-    Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
-
-   */
+  private[server] def mkJsonErr(msg: String) = Json.fromFields(List(("error", Json.fromString(msg))))
+  
 }

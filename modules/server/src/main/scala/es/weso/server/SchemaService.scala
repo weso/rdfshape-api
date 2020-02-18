@@ -301,11 +301,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             (schemaStr, eitherSchema) = pair
             schema <- EitherT.fromEither[F](eitherSchema)
           } yield {
-            println(s"RDF: $rdf")
-            println(s"Schema: $schema")
+            println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<Cannot serialize RDF>")}")
+            println(s"Schema: ${schema.serialize("ShExC",None).getOrElse("<Cannot serialize schema")}")
             val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
-            println(s"maybeTrigger: $maybeTrigger")
-            println(s"result: $result")
+            println(s">>>> maybeTrigger: $maybeTrigger")
+            println(s">>>> result: $result")
             Ok(result.toJson)
           }
           eitherResult.foldF(e => errJson(s"Error: $e"), identity)
@@ -343,7 +343,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
 
   // TODO: Move this method to a more generic place...
   private def errJson(msg: String): F[Response[F]] =
-    Ok(Json.fromFields(List(("error", Json.fromString(msg)))))
+    Ok(mkJsonErr(msg)) // 
 
   private def info(msg: String): EitherT[F,String,Unit] = 
     EitherT.liftF[F,String,Unit](LiftIO[F].liftIO(IO(println(msg))))  

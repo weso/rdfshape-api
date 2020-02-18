@@ -1,5 +1,6 @@
 package es.weso.server
 
+import ApiHelper._
 import cats.effect._
 import cats.data.EitherT
 import es.weso.schema._
@@ -32,7 +33,7 @@ class ShapeMapService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         println(s"ShapeMap/info")
         val partsMap = PartsMap(m.parts)
         val t: EitherT[F,String,(ShapeMap,ShapeMapParam)] = ShapeMapParam.mkShapeMap(partsMap)
-        t.foldF(e => BadRequest(e), pair => {
+        t.foldF(e => Ok(mkJsonErr(e)), pair => {
           val (sm,smp) = pair
           val smi: ShapeMapInfoResult = ShapeMapInfoResult.fromShapeMap(smp.shapeMap,smp.optShapeMapFormat, sm)
           Ok(smi.toJson)
@@ -69,6 +70,8 @@ class ShapeMapService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
     } */
 
  }
+
+
 }
 
 object ShapeMapService {
