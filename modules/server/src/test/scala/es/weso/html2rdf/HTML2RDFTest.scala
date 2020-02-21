@@ -1,8 +1,10 @@
 package es.weso.html2rdf
 import es.weso.rdf.jena.RDFAsJenaModel
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class HTML2RDFTest extends FunSpec with Matchers {
+class HTML2RDFTest extends AnyFunSpec with Matchers {
   describe(s"Extract RDF data from HTML") {
 
 /*    shouldExtract(
