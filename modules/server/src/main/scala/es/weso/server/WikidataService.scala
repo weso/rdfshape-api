@@ -7,7 +7,7 @@ import es.weso._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.streams.Streams
-import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam, WdSchemaParam}
+import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEndpointParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam, WdSchemaParam}
 import es.weso.server.utils.Http4sUtils._
 import es.weso.server.values._
 import io.circe._
@@ -78,6 +78,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
     }
 
     case GET -> Root / `api` / "wikidata" / "searchEntity" :?
+      OptEndpointParam(endpoint) +&
       LabelParam(label) +&
       LanguageParam(language) +&
       LimitParam(maybelimit) +&
@@ -85,7 +86,10 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      val uri = uri"https://www.wikidata.org".
+//      val uri = uri"https://www.wikidata.org"
+
+      val requestUrl = s"$endpoint"
+      val uri = Uri.fromString(requestUrl).valueOr(throw _).
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
