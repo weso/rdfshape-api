@@ -86,10 +86,13 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-//      val uri = uri"https://www.wikidata.org"
 
-      val requestUrl = s"$endpoint"
+
+      val requestUrl = s"${endpoint.get.replaceFirst("query", "www")}"
+      println(requestUrl)
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
+//      val uri = uri"https://www.wikidata.org".
+//      val uri = uri"${endpoint}".
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
@@ -98,7 +101,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         withQueryParam("continue",continue).
         withQueryParam("format","json")
 
-      println(s"wikidata/searchEntity: ${uri.toString}")
+      println(s"wikidata/searchEntityx: ${uri.toString}")
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
@@ -115,6 +118,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
     }
 
     case GET -> Root / `api` / "wikidata" / "searchProperty" :?
+      OptEndpointParam(endpoint) +&
       LabelParam(label) +&
       LanguageParam(language) +&
       LimitParam(maybelimit) +&
@@ -124,7 +128,10 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 
       println(s"SearchProperty!!")
 
-      val uri = uri"https://www.wikidata.org".
+      val requestUrl = s"${endpoint.get.replaceFirst("query", "www")}"
+      println(requestUrl)
+      val uri = Uri.fromString(requestUrl).valueOr(throw _).
+//      val uri = uri"https://www.wikidata.org".
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
