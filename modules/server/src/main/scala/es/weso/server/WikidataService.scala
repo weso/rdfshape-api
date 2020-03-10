@@ -88,11 +88,9 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 
 
 
-      val requestUrl = s"${endpoint.get.replaceFirst("query", "www")}"
+      val requestUrl = s"${endpoint.get}"
       println(requestUrl)
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
-//      val uri = uri"https://www.wikidata.org".
-//      val uri = uri"${endpoint}".
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
