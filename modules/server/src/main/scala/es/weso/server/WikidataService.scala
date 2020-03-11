@@ -223,9 +223,11 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         val partsMap = PartsMap(m.parts)
         for {
           optQuery <- partsMap.optPartValue("query")
+          optEndpoint <- partsMap.optPartValue("endpoint")
+          endpoint = optEndpoint.getOrElse(wikidataUri.toString())
           query = optQuery.getOrElse("")
           req: Request[F] =
-             Request(method = GET, uri = wikidataUri.withQueryParam("query",query))
+             Request(method = GET, uri = Uri.fromString(endpoint).valueOr(throw _).withQueryParam("query", query))
                .withHeaders(
                  `Accept`(MediaType.application.`json`)
                )
@@ -233,7 +235,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
             case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
           }
-          resp <- Ok(eitherValue.fold(Json.fromString(_), identity))
+          resp <- Ok(eitherValue.fold(Json.fromString, identity))
         } yield resp
       }
     }
