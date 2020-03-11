@@ -126,7 +126,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 
       println(s"SearchProperty!!")
 
-      val requestUrl = s"${endpoint.get.replaceFirst("query", "www")}"
+      val requestUrl = s"${endpoint.get}"
       println(requestUrl)
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
 //      val uri = uri"https://www.wikidata.org".
