@@ -86,9 +86,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-
-
-      val requestUrl = s"${endpoint.get}"
+      val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
       println(requestUrl)
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
         withPath("/w/api.php").
@@ -124,12 +122,8 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      println(s"SearchProperty!!")
-
-      val requestUrl = s"${endpoint.get}"
-      println(requestUrl)
+      val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
-//      val uri = uri"https://www.wikidata.org".
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
@@ -138,8 +132,6 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         withQueryParam("continue",continue).
         withQueryParam("type","property").
         withQueryParam("format","json")
-
-      println(s"wikidata/searchProperty: ${uri.toString}")
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
@@ -214,7 +206,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
           converted <- cnvLanguages(json)
         } yield converted
         resp <- Ok(
-          eitherResult.fold(Json.fromString(_),identity)
+          eitherResult.fold(Json.fromString,identity)
         )
       } yield resp
     }
