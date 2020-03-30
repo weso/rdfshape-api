@@ -68,13 +68,16 @@ case class SchemaParam(schema: Option[String],
     schemaEmbedded match {
       case Some(true) => data match {
         case None => IO((None, Left(s"Schema embedded but no data found")))
-        case Some(rdf) => Schemas.fromRDF(rdf, schemaEngine.getOrElse(defaultSchemaEngine)).fold(
-          s => (None, Left(s"Error obtaining schema from RDF $rdf")), 
-          schema => schema.serialize(schemaFormat.getOrElse(defaultSchemaFormat)).fold(
-            s => (None, Right(schema)),
-            str => (Some(str), Right(schema))
-          )
-        ) 
+        case Some(rdf) => for {
+          eitherSchema <- Schemas.fromRDF(rdf, schemaEngine.getOrElse(defaultSchemaEngine)).value  
+          resp <- eitherSchema match {
+            case Left(str) => 
+              IO((None, Left(s"Error obtaining schema from RDF $rdf")))
+            case Right(schema) => for { 
+              str <- schema.serialize(schemaFormat.getOrElse(defaultSchemaFormat))
+            } yield (Some(str), Right(schema))
+          }
+        } yield resp
       }
       case _ => {
         val inputType = activeSchemaTab match {

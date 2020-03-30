@@ -26,6 +26,8 @@ import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
 import org.http4s.server.staticcontent.webjarService
 import org.http4s.server.staticcontent.WebjarService.{WebjarAsset, Config}
+import es.weso.server.utils.IOUtils._
+import es.weso.rdf.RDFReader
 
 class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
@@ -230,21 +232,19 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST validate partsMap. $partsMap")
-        val r = for {
+        val r: ESF[Response[F],F] = for {
           dataPair <- DataParam.mkData(partsMap,relativeBase)
           (rdf, dp) = dataPair
           schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
           (schema, sp) = schemaPair
           tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
+          pair <- io2esf(validate(rdf,dp, schema, sp, tp, relativeBase))
+          (result, maybeTrigger, time) = pair
+          ok <- validateResponse(result, time, dp, sp, tp)
         } yield {
-          // val schemaEmbedded = getSchemaEmbedded(sp)
-          val (result, maybeTriggerMode, time) = validate(rdf,dp, schema, sp, tp, relativeBase)
-          validateResponse(result, time, dp, sp, tp)
+          ok
         }
-        for {
-          e <- r.value
-          v <- e.fold(BadRequest(_), identity)
-        } yield v
+        r.value.flatMap(_.fold(e => BadRequest(e), F.pure(_)))
       }
   }
 
@@ -270,7 +270,9 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) +&
       OptActiveSchemaTabParam(optActiveSchemaTab) +&
-      OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
+      OptActiveShapeMapTabParam(optActiveShapeMapTab) => 
+      Ok(s"Web Service has been deprecated in favor of ReactClient")
+      /* {
       if (optExamples.isDefined) {
         Ok(html.load(optExamples.get))
       } else {
@@ -330,7 +332,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         }
       }
     }
-
+*/
     case req@GET -> Root / "query" :?
       OptDataParam(optData) +&
         OptDataURLParam(optDataURL) +&
@@ -340,7 +342,8 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         OptEndpointParam(optEndpoint) +&
         OptActiveDataTabParam(optActiveDataTab) +&
         OptActiveQueryTabParam(optActiveQueryTab)
-        => {
+        => Ok(s"Web Service has been deprecated in favor of Javascript Client")
+/*        {
       val either: Either[String, Option[DataFormat]] =  for {
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
@@ -366,10 +369,10 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
           ))
         }
       }
-    }
+    } */
 
     case req@POST -> Root / "query" => {
-      req.decode[Multipart[F]] { m => {
+      req.decode[Multipart[F]] { m => /* {
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
@@ -401,8 +404,9 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
             } yield response
           }
         } yield response
-       }
-      }
+       } */
+       Ok(s"Web service has been deprecated in favor of Javascript client")
+      } 
     }
 
     case req@GET -> Root / "shapeInfer" :?
@@ -422,7 +426,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
 
       either match {
         case Left(str) => BadRequest(str)
-        case Right(optDataFormat) => {
+        case Right(optDataFormat) => /* {
           val dp = DataParam(optData, optDataURL, None, optEndpoint, optDataFormat, optDataFormat, optDataFormat, None, optInference, None, optActiveDataTab)
           val (dataStr, eitherRDF) = dp.getData(relativeBase)
           val dv = DataValue(optData,
@@ -453,12 +457,14 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
               "Shape"
             ))
           }
-          )
-        }
+          ) */
+          Ok(s"Web service has been deprecated")
       }
     }
 
-    case req@POST -> Root / "shapeInfer" => {
+    case req@POST -> Root / "shapeInfer" => 
+       Ok(s"Web service has been deprecated")
+    /* {
       req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
         val r = for {
@@ -491,9 +497,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
           e <- r.value
           v <- e.fold(BadRequest(_), identity)
         } yield v
-      }
-   }
-  }
+      } */
   }
 
   private def err[A](str: String): Either[String, A] = {
@@ -504,7 +508,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
                                        time: Long,
                                        dp: DataParam,
                                        sp: SchemaParam,
-                                       tp: TriggerModeParam): F[Response[F]] = {
+                                       tp: TriggerModeParam): ESF[Response[F],F] = {
     val dv = DataValue(
       dp.data, dp.dataURL,
       dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
@@ -524,20 +528,14 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       availableShapeMapFormats,
       tp.activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
     )
-    
-    val validationReport: Option[Either[String,String]] =
-      Some(result.validationReport.flatMap(_.serialize("TURTLE")))
 
-    logger.info(s"Validation report: $validationReport")
-
-    Ok(html.validate(Some(result),time,
-      validationReport,
-      dv, sv,
-      availableTriggerModes,
-      tp.triggerMode.getOrElse(defaultTriggerMode),
-      smv,
-      getSchemaEmbedded(sp)
-    ))
+    val r: ESF[Response[F],F] = for {
+      validationReport <- either2ef[RDFReader,F](result.validationReport)
+      strRdf <- io2esf(validationReport.serialize("TURTLE"))
+      ok <- f2es(Ok(html.validate(Some(result),time,Some(Right(strRdf)),dv, sv, availableTriggerModes,tp.triggerMode.getOrElse(defaultTriggerMode),
+      smv,getSchemaEmbedded(sp))))
+    } yield ok
+    r
   }
 
   private def allNone(maybes: Option[String]*) = {

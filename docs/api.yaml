@@ -10,7 +10,7 @@ info:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 servers:
-  - url: http://rdfshape.weso.es/api/
+  - url: http://rdfshape.weso.es:8080/api/
     description: RDFShape at WESO
   - url: http://shaclex.herokuapp.com/api/
     description: RDFShape at Heroku

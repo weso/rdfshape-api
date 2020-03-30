@@ -30,8 +30,8 @@ scalafmt: {
 
 // Local dependencies 
 // lazy val shaclexVersion        = "0.1.47" 
-lazy val utilsVersion          = "0.1.63" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.49"
+lazy val utilsVersion          = "0.1.67" // for utilsTest
+lazy val umlShaclexVersion     = "0.0.51"
 
 
 lazy val any23Version          = "2.2"
@@ -42,7 +42,7 @@ lazy val catsVersion           = "2.0.0"
 lazy val commonsTextVersion    = "1.7"
 lazy val circeVersion          = "0.12.0-M4"
 lazy val graphvizJavaVersion   = "0.5.2"
-lazy val http4sVersion         = "0.21.0-M4"
+lazy val http4sVersion         = "0.21.2"
 lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
@@ -195,7 +195,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  //  scalaVersion := "2.13.0",
+  scalaVersion := "2.13.1",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
