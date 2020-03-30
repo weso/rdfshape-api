@@ -1,7 +1,6 @@
 package es.weso.server
 
 import java.net.URI
-
 import Defaults._
 import cats.data.EitherT
 import cats.implicits._

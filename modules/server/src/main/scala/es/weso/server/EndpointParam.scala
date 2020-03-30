@@ -14,6 +14,7 @@ import es.weso.server.helper.DataFormat
 import io.circe.Json
 import org.log4s.getLogger
 import scalaj.http._
+import es.weso.server.utils.IOUtils._
 
 case class EndpointInfo(msg: String, status: Option[String] = None) {
   def asJson: Json = Json.fromFields(
@@ -26,8 +27,8 @@ case class EndpointInfo(msg: String, status: Option[String] = None) {
 
 case class EndpointParam(url: String) {
 
-  def getEndpointAsRDFReader[F[_]:Applicative]: EitherT[F, String,RDFReader] =
-    EitherT.fromEither[F](Endpoint.fromString(url))
+  def getEndpointAsRDFReader[F[_]:Effect]: EitherT[F, String, RDFReader] =
+    io2esf[RDFReader,F](Endpoint.fromString(url))
 
   def getInfo[F[_]: Effect]: F[EndpointInfo] = {
     println(s"Obtaining info of endpoint $url")

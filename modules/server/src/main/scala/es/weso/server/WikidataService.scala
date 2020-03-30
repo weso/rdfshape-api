@@ -7,7 +7,7 @@ import es.weso._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.streams.Streams
-import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam, WdSchemaParam}
+import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEndpointParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam, WdSchemaParam}
 import es.weso.server.utils.Http4sUtils._
 import es.weso.server.values._
 import io.circe._
@@ -24,7 +24,7 @@ import org.http4s.implicits._
 import es.weso.rdf.sgraph._
 import APIDefinitions._
 
-class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
+class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
                                              )(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
@@ -78,6 +78,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
     }
 
     case GET -> Root / `api` / "wikidata" / "searchEntity" :?
+      OptEndpointParam(endpoint) +&
       LabelParam(label) +&
       LanguageParam(language) +&
       LimitParam(maybelimit) +&
@@ -85,7 +86,9 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      val uri = uri"https://www.wikidata.org".
+      val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
+      println(requestUrl)
+      val uri = Uri.fromString(requestUrl).valueOr(throw _).
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
@@ -94,7 +97,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         withQueryParam("continue",continue).
         withQueryParam("format","json")
 
-      println(s"wikidata/searchEntity: ${uri.toString}")
+      println(s"wikidata/searchEntityx: ${uri.toString}")
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
@@ -111,6 +114,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
     }
 
     case GET -> Root / `api` / "wikidata" / "searchProperty" :?
+      OptEndpointParam(endpoint) +&
       LabelParam(label) +&
       LanguageParam(language) +&
       LimitParam(maybelimit) +&
@@ -118,9 +122,8 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
       val limit: String = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      println(s"SearchProperty!!")
-
-      val uri = uri"https://www.wikidata.org".
+      val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
+      val uri = Uri.fromString(requestUrl).valueOr(throw _).
         withPath("/w/api.php").
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
@@ -129,8 +132,6 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         withQueryParam("continue",continue).
         withQueryParam("type","property").
         withQueryParam("format","json")
-
-      println(s"wikidata/searchProperty: ${uri.toString}")
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
@@ -205,7 +206,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
           converted <- cnvLanguages(json)
         } yield converted
         resp <- Ok(
-          eitherResult.fold(Json.fromString(_),identity)
+          eitherResult.fold(Json.fromString,identity)
         )
       } yield resp
     }
@@ -214,9 +215,11 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
         val partsMap = PartsMap(m.parts)
         for {
           optQuery <- partsMap.optPartValue("query")
+          optEndpoint <- partsMap.optPartValue("endpoint")
+          endpoint = optEndpoint.getOrElse(wikidataUri.toString())
           query = optQuery.getOrElse("")
           req: Request[F] =
-             Request(method = GET, uri = wikidataUri.withQueryParam("query",query))
+             Request(method = GET, uri = Uri.fromString(endpoint).valueOr(throw _).withQueryParam("query", query))
                .withHeaders(
                  `Accept`(MediaType.application.`json`)
                )
@@ -224,7 +227,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
             case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
           }
-          resp <- Ok(eitherValue.fold(Json.fromString(_), identity))
+          resp <- Ok(eitherValue.fold(Json.fromString, identity))
         } yield resp
       }
     }
@@ -320,15 +323,18 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
     } yield data
   }
 
-  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = EitherT.pure(RDFAsJenaModel.empty)
+  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
+    EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty))
   /* for {
     ls <-EitherT.liftF(str.compile.toList)
     rdf <- EitherT.fromEither[F](RDFAsJenaModel.fromString(ls.mkString, "TURTLE", None))
   } yield rdf */
 
+  private def fromIO[A](io: IO[A]): EitherT[F, String, A] = EitherT.liftF(LiftIO[F].liftIO(io))
+
   private def generateDot(rdf: RDFReader, maybeDot: Boolean): EitherT[F, String, Option[String]] =
     if (maybeDot) for {
-      sgraph <- EitherT.fromEither[F](RDF2SGraph.rdf2sgraph(rdf))  // .bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
+      sgraph <- fromIO(RDF2SGraph.rdf2sgraph(rdf))  // .bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
     } yield Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs))
     else
       EitherT.pure(None)
@@ -352,7 +358,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
                           rdf: RDFReader,
                           maybeDot: Option[String]
                          ): EitherT[F, String, Json] = for {
-    serialized <- EitherT.fromEither[F](rdf.serialize("TURTLE"))
+    serialized <- fromIO(rdf.serialize("TURTLE"))
   } yield Json.fromFields(List(
     ("entity", Json.fromString(entity)),
     ("uri", Json.fromString(uri.toString)),
@@ -430,7 +436,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 }
 
 object WikidataService {
-  def apply[F[_]: Effect: ConcurrentEffect: ContextShift](blocker: Blocker,
+  def apply[F[_]: Effect: ConcurrentEffect: ContextShift: LiftIO](blocker: Blocker,
                                                           client: Client[F]
                                                          ): WikidataService[F] =
     new WikidataService[F](blocker, client)
