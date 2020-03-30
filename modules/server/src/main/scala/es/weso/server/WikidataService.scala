@@ -24,7 +24,7 @@ import org.http4s.implicits._
 import es.weso.rdf.sgraph._
 import APIDefinitions._
 
-class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
+class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
                                              )(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
@@ -323,15 +323,18 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
     } yield data
   }
 
-  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = EitherT.pure(RDFAsJenaModel.empty)
+  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
+    EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty))
   /* for {
     ls <-EitherT.liftF(str.compile.toList)
     rdf <- EitherT.fromEither[F](RDFAsJenaModel.fromString(ls.mkString, "TURTLE", None))
   } yield rdf */
 
+  private def fromIO[A](io: IO[A]): EitherT[F, String, A] = EitherT.liftF(LiftIO[F].liftIO(io))
+
   private def generateDot(rdf: RDFReader, maybeDot: Boolean): EitherT[F, String, Option[String]] =
     if (maybeDot) for {
-      sgraph <- EitherT.fromEither[F](RDF2SGraph.rdf2sgraph(rdf))  // .bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
+      sgraph <- fromIO(RDF2SGraph.rdf2sgraph(rdf))  // .bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
     } yield Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs))
     else
       EitherT.pure(None)
@@ -355,7 +358,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
                           rdf: RDFReader,
                           maybeDot: Option[String]
                          ): EitherT[F, String, Json] = for {
-    serialized <- EitherT.fromEither[F](rdf.serialize("TURTLE"))
+    serialized <- fromIO(rdf.serialize("TURTLE"))
   } yield Json.fromFields(List(
     ("entity", Json.fromString(entity)),
     ("uri", Json.fromString(uri.toString)),
@@ -433,7 +436,7 @@ class WikidataService[F[_]: ConcurrentEffect](blocker: Blocker,
 }
 
 object WikidataService {
-  def apply[F[_]: Effect: ConcurrentEffect: ContextShift](blocker: Blocker,
+  def apply[F[_]: Effect: ConcurrentEffect: ContextShift: LiftIO](blocker: Blocker,
                                                           client: Client[F]
                                                          ): WikidataService[F] =
     new WikidataService[F](blocker, client)

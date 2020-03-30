@@ -17,6 +17,7 @@ import java.nio.file._
 // import es.weso.quickstart.QuickStartMain
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
+import es.weso.server.utils.IOUtils._
 
 object Main extends App with LazyLogging {
     try {
@@ -45,12 +46,12 @@ object Main extends App with LazyLogging {
 
     val base = Some(FileUtils.currentFolderURL)
 
-    val validateOptions: EitherT[IO, String, (RDFReader, Schema, ValidationTrigger)] = for {
+    val validateOptions: ESIO[(RDFReader, Schema, ValidationTrigger)] = for {
       rdf <- getRDFReader(opts, baseFolder)
       schema <- getSchema(opts, baseFolder, rdf)
       triggerName = opts.trigger.toOption.getOrElse(ValidationTrigger.default.name)
       shapeMapStr <- getShapeMapStr(opts)
-      trigger <- EitherT.fromEither[IO](ValidationTrigger.findTrigger(triggerName, shapeMapStr, base,
+      trigger <- either2es(ValidationTrigger.findTrigger(triggerName, shapeMapStr, base,
         opts.node.toOption, opts.shapeLabel.toOption,
         rdf.getPrefixMap(), schema.pm))
     } yield (rdf, schema, trigger)
@@ -63,17 +64,17 @@ object Main extends App with LazyLogging {
         if (opts.showData()) {
           // If not specified uses the input schema format
           val outDataFormat = opts.outDataFormat.getOrElse(opts.dataFormat())
-          rdf.serialize(outDataFormat) match {
-            case Left(msg) => println(s"Error serializing to $outDataFormat: $msg")
+          rdf.serialize(outDataFormat).attempt.unsafeRunSync() match {
+            case Left(e) => println(s"Error serializing to $outDataFormat: ${e.getMessage}")
             case Right(str) => println(str)
           }
         }
         if (opts.showSchema()) {
           // If not specified uses the input schema format
           val outSchemaFormat = opts.outSchemaFormat.getOrElse(opts.schemaFormat())
-          schema.serialize(outSchemaFormat) match {
+          schema.serialize(outSchemaFormat).attempt.unsafeRunSync match {
             case Right(str) => println(str)
-            case Left(e) => println(s"Error showing schema $schema with format $outSchemaFormat: $e")
+            case Left(e) => println(s"Error showing schema $schema with format $outSchemaFormat: ${e.getMessage}")
           }
         }
 
@@ -87,25 +88,27 @@ object Main extends App with LazyLogging {
 
         if (opts.showLog()) {
           logger.info("Show log info = true")
-          logger.info(s"JSON result: ${result.toJsonString2spaces}")
+          logger.info(s"JSON result: ${result.unsafeRunSync().toJsonString2spaces}")
         }
 
         if (opts.showResult() || opts.outputFile.isDefined) {
-          val resultSerialized = result.serialize(opts.resultFormat())
+          val resultSerialized = result.unsafeRunSync().serialize(opts.resultFormat())
           if (opts.showResult()) println(resultSerialized)
           if (opts.outputFile.isDefined)
             FileUtils.writeFile(opts.outputFile(), resultSerialized)
         }
 
         if (opts.showValidationReport()) {
-          val vr = result.validationReport
-          (for {
+          val vr = result.unsafeRunSync().validationReport
+          for {
             rdf <- vr
-            str <- rdf.serialize(opts.validationReportFormat())
-          } yield str).fold(
-            e => println(s"Error: $e"),
+            str = rdf.serialize(opts.validationReportFormat()).unsafeRunSync()
+          } yield str
+
+            /*.fold(
+            e => println(s"Error: ${e.getMessage}"),
             println(_)
-          )
+          )*/
         }
 
         if (opts.cnvEngine.isDefined) {
@@ -153,26 +156,20 @@ object Main extends App with LazyLogging {
     } else EitherT.pure[IO,String]("")
   }
 
-  def getRDFReader(opts: MainOpts, baseFolder: Path): EitherT[IO,String, RDFReader] = {
+  def getRDFReader(opts: MainOpts, baseFolder: Path): ESIO[RDFReader] = {
     val base = Some(IRI(FileUtils.currentFolderURL))
     if (opts.data.isDefined) {
       val path = baseFolder.resolve(opts.data())
       for {
-        rdf <- RDFAsJenaModel.fromFileIO(path.toFile(), opts.dataFormat(), base)
-      } yield {
-        if (opts.inference.isDefined) {
-          rdf.applyInference(opts.inference()) match {
-            case Right(newRdf) => newRdf
-            case Left(msg) => {
-              logger.info(s"Error applying inference: $msg")
-              rdf
-            }
-          }
-        } else rdf
-      }
+        rdf <- io2es(RDFAsJenaModel.fromFile(path.toFile(), opts.dataFormat(), base))
+        newRdf <- if (opts.inference.isDefined) {
+          io2es(rdf.applyInference(opts.inference()))
+        } else
+          ok_es(rdf)
+      } yield newRdf
     } else {
       logger.info("RDF Data option not specified")
-      EitherT.liftF[IO,String,RDFReader](RDFAsJenaModel.emptyIO)
+      EitherT.liftF[IO,String,RDFReader](RDFAsJenaModel.empty)
     }
   }
 

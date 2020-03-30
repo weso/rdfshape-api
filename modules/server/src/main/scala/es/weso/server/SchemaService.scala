@@ -22,6 +22,7 @@ import org.http4s.headers._
 import org.http4s.multipart.Multipart
 import es.weso.server.ApiHelper.SchemaInfoReply
 import org.log4s.getLogger
+import es.weso.server.utils.IOUtils._
 
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
@@ -124,7 +125,13 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).value)
         r <- either.fold(
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
-          schema => Ok(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine).toJson)
+          schema => {
+            for {
+              s <- io2f(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine))
+              r <- Ok(s.toJson)
+            } yield r
+          } 
+            // Ok(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine).toJson)
         )
       } yield r 
     }
@@ -134,16 +141,16 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST info partsMap. $partsMap")
-        val r: EitherT[F, String, Json] = for {
+        val r: ESF[Json,F] = for {
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, sp) = schemaPair
-        } yield {
-          println(s"schema / convert ---target: ${sp.targetSchemaFormat}, ${sp.targetSchemaEngine}")
-          convertSchema(schema, 
-            sp.schema, 
+          converted <- io2esf(convertSchema(schema, sp.schema, 
             sp.schemaFormat.getOrElse(defaultSchemaFormat), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
             sp.targetSchemaFormat, sp.targetSchemaEngine
-            ).toJson
+            ))
+        } yield {
+          // println(s"schema / convert ---target: ${sp.targetSchemaFormat}, ${sp.targetSchemaEngine}")
+          converted.toJson
         }
         for {
           e <- r.value
@@ -293,17 +300,21 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             optShapeMapFormat, // TODO: Maybe a more specific param for File format?
             optActiveShapeMapTab
           )
-          val (dataStr, eitherRDF) = dp.getData(relativeBase)
 
-          val eitherResult: EitherT[F, String, F[Response[F]]] = for {
-            rdf <- EitherT.fromEither[F](eitherRDF)
+          // val (dataStr, eitherRDF) = 
+
+          val eitherResult: ESF[F[Response[F]], F] = for {
+            pairData <- esio2esf(dp.getData(relativeBase))
+            (dataStr, rdf) = pairData
+            //rdf <- either2ef(eitherRDF)
             pair <- EitherT.liftF[F,String,(Option[String],Either[String,Schema])](L.liftIO(sp.getSchema(Some(rdf))))
             (schemaStr, eitherSchema) = pair
             schema <- EitherT.fromEither[F](eitherSchema)
+            res <- io2esf(validate(rdf, dp, schema, sp, tp, relativeBase))
           } yield {
-            println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<Cannot serialize RDF>")}")
-            println(s"Schema: ${schema.serialize("ShExC",None).getOrElse("<Cannot serialize schema")}")
-            val (result, maybeTrigger, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
+            // println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<Cannot serialize RDF>")}")
+            // println(s"Schema: ${schema.serialize("ShExC",None).getOrElse("<Cannot serialize schema")}")
+            val (result, maybeTrigger, time) = res
             println(s">>>> maybeTrigger: $maybeTrigger")
             println(s">>>> result: $result")
             Ok(result.toJson)
@@ -318,7 +329,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         {
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST validate partsMap. $partsMap")
-          val r: EitherT[F, String, Result] = for {
+          val r: ESF[Result,F] = for {
             _ <- info(s"Parsing partsMap: ${partsMap}")
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (rdf, dp) = dataPair
@@ -326,11 +337,12 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
             (schema, sp) = schemaPair
             tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
+            res <- io2esf(validate(rdf, dp, schema, sp, tp, relativeBase))
           } yield {
             // val schemaEmbedded = getSchemaEmbedded(sp)
-            println(s"Trigger mode: $tp")
-            println(s"Schema: ${schema.serialize("ShExC").getOrElse("Error serializing schema")}")
-            val (result, maybeTriggerMode, time) = validate(rdf, dp, schema, sp, tp, relativeBase)
+            // println(s"Trigger mode: $tp")
+            //println(s"Schema: ${schema.serialize("ShExC").getOrElse("Error serializing schema")}")
+            val (result, maybeTriggerMode, time) = res
             result
           }
           for {
