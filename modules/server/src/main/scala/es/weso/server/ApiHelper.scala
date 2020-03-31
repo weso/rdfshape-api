@@ -29,7 +29,7 @@ import es.weso.utils.json.JsonUtilsServer._
 import es.weso.server.Defaults._
 import org.http4s.dsl._
 import scala.util.Try
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.shapeMaps.ResultShapeMap
 
 object ApiHelper {

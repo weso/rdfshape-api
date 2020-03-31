@@ -22,7 +22,7 @@ import org.http4s.headers._
 import org.http4s.multipart.Multipart
 import es.weso.server.ApiHelper.SchemaInfoReply
 import org.log4s.getLogger
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])

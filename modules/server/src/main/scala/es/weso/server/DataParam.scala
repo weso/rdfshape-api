@@ -12,7 +12,7 @@ import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.server.helper.DataFormat
 import org.log4s.getLogger
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 case class DataParam(data: Option[String],
                      dataURL: Option[String],

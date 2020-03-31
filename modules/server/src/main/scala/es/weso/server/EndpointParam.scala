@@ -14,7 +14,7 @@ import es.weso.server.helper.DataFormat
 import io.circe.Json
 import org.log4s.getLogger
 import scalaj.http._
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 case class EndpointInfo(msg: String, status: Option[String] = None) {
   def asJson: Json = Json.fromFields(

@@ -14,7 +14,7 @@ import APIDefinitions._
 import cats.Applicative
 import org.http4s.circe._
 import org.http4s.client.Client
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 class EndpointService[F[_]:Applicative](blocker: Blocker,
                                         client: Client[F])(implicit F: Effect[F],
