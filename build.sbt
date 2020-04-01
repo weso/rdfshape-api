@@ -31,7 +31,7 @@ scalafmt: {
 // Local dependencies 
 // lazy val shaclexVersion        = "0.1.47" 
 lazy val utilsVersion          = "0.1.67" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.53"
+lazy val umlShaclexVersion     = "0.0.54"
 
 
 lazy val any23Version          = "2.2"
