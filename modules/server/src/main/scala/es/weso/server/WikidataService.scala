@@ -13,6 +13,7 @@ import es.weso.server.values._
 import io.circe._
 import fs2._
 import org.http4s._
+import org.http4s.Uri
 import org.http4s.Charset._
 import org.http4s.circe._
 import org.http4s.client._
@@ -23,6 +24,15 @@ import org.http4s.twirl._
 import org.http4s.implicits._
 import es.weso.rdf.sgraph._
 import APIDefinitions._
+import es.weso.utils.IOUtils._
+import org.http4s.client.middleware.FollowRedirect
+import es.weso.shapeMaps.NodeSelector
+import es.weso.shapeMaps.RDFNodeSelector
+import es.weso.rdf.nodes.IRI
+import es.weso.schemaInfer.SchemaInfer
+import es.weso.shapeMaps.ResultShapeMap
+import es.weso.schema.Schema
+import es.weso.schemaInfer.InferOptions
 
 class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
@@ -34,6 +44,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
   val wikidataUri: Uri = uri"https://query.wikidata.org/sparql"
   val defaultLimit = 20
   val defaultContinue = 0
+  val redirectClient = FollowRedirect(3)(client)
 
 
   def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
@@ -97,7 +108,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         withQueryParam("continue",continue).
         withQueryParam("format","json")
 
-      println(s"wikidata/searchEntityx: ${uri.toString}")
+      println(s"wikidata/searchEntity: ${uri.toString}")
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
@@ -278,7 +289,62 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
     case req@GET -> Root / "wdSchema" => Ok("Not implemented wikidata schema yet")
     case req@GET -> Root / "wdValidate" => Ok("Not implemented wikidata validate yet")
-    case req@GET -> Root / "wdExtract" => Ok("Not implemented wikidata extract yet")
+    
+    case req @ POST -> Root / `api` / "wikidata" / "extract" => {
+      println(s"POST /api/wikidata/extract, Request: $req")
+      req.decode[Multipart[F]] { m =>
+        val partsMap = PartsMap(m.parts)
+        val r: EitherT[F,String,Response[F]] = for {
+          label <- EitherT(partsMap.eitherPartValue("entity"))
+          info <- either2ef[InfoEntity,F](cnvEntity(label))
+          _ <- { println(s"URI: ${info.uri}"); ok_esf[Unit,F](())}
+          strRdf <- f2es(redirectClient.expect[String](info.uri))
+          rdf <- io2esf(RDFAsJenaModel.fromString(strRdf,"TURTLE"))
+          rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
+          _ <- { println(s"RDF Serialized\n${rdfSerialized}"); ok_esf[Unit,F](())}
+          nodeSelector = RDFNodeSelector(IRI(label))
+          eitherInferred <- io2esf(SchemaInfer.runInferSchema(rdf,nodeSelector,"ShEx",IRI(s"http://example.org/Shape_${label}"),InferOptions.defaultOptions.copy(maxFollowOn=3)))
+          pair <- either2ef[(Schema,ResultShapeMap),F](eitherInferred)
+          shExCStr <- io2esf({ 
+            val (schema,_) = pair
+            schema.serialize("SHEXC")
+          })
+          _ <- { println(s"ShExC str: ${shExCStr}"); ok_esf[Unit,F](())}
+          resp <- f2es(Ok(mkExtractAnswer(shExCStr, label)))
+        } yield resp
+        for {
+          either <- r.value
+          resp <- either.fold(s => Ok(errExtract(s)), r => F.pure(r))
+        } yield resp
+      }
+    }
+
+  }
+
+  private def errExtract[F[_]](msg: String): Json = {
+    Json.fromFields(List(
+      ("error", Json.fromString(msg))
+    ))
+  }
+
+  private def mkExtractAnswer(result: String, entity: String): Json = {
+    Json.fromFields(List(
+      ("entity", Json.fromString(entity)),
+      ("result", Json.fromString(result))
+    ))
+  }
+
+  private case class InfoEntity(localName: String, uri: Uri)
+
+  private def cnvEntity(entity: String): Either[String, InfoEntity] = {
+    val wdRegex = "http://www.wikidata.org/entity/(.*)".r
+    entity match {
+      case wdRegex(localName) => { 
+        val uri = uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName  + ".ttl")
+        InfoEntity(localName,uri).asRight[String]
+      }
+      case _ => s"Entity: $entity doesn't match regular expression: ${wdRegex}".asLeft[InfoEntity]
+    }
   }
 
   private def wdEntity(optEntity: Option[String], withDot: Boolean): F[Option[Json]] = {
@@ -325,10 +391,6 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
   private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
     EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty))
-  /* for {
-    ls <-EitherT.liftF(str.compile.toList)
-    rdf <- EitherT.fromEither[F](RDFAsJenaModel.fromString(ls.mkString, "TURTLE", None))
-  } yield rdf */
 
   private def fromIO[A](io: IO[A]): EitherT[F, String, A] = EitherT.liftF(LiftIO[F].liftIO(io))
 
