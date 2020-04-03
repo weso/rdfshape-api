@@ -10,6 +10,7 @@ import es.weso.shapeMaps.ResultShapeMap
 import es.weso.uml.UML
 import es.weso.utils.json.JsonUtilsServer._
 import io.circe.Json
+import cats.effect.IO
 
 case class DataExtractResult private(msg: String,
                                      optData: Option[String],
@@ -19,13 +20,14 @@ case class DataExtractResult private(msg: String,
                                      optSchema: Option[Schema],
                                      optResultShapeMap: Option[ResultShapeMap],
                                     ) {
-  def toJson: Json = optSchema match {
-    case None => Json.fromFields(List(("msg", Json.fromString(msg))))
+  def toJson: IO[Json] = optSchema match {
+    case None => IO(Json.fromFields(List(("msg", Json.fromString(msg)))))
     case Some(schema) => {
       val engine = optSchemaEngine.getOrElse(defaultSchemaEngine)
       val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
-      val schemaStr = schema.serialize(schemaFormat).getOrElse("")
-      Json.fromFields(List(
+      for {
+        schemaStr <- schema.serialize(schemaFormat)
+      } yield Json.fromFields(List(
          ("msg", Json.fromString(msg)),
          ("inferedShape", Json.fromString(schemaStr)),
          ("schemaFormat", Json.fromString(schemaFormat)),

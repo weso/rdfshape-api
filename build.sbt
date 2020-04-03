@@ -30,31 +30,32 @@ scalafmt: {
 
 // Local dependencies 
 // lazy val shaclexVersion        = "0.1.47" 
-lazy val utilsVersion          = "0.1.63" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.49"
+lazy val utilsVersion          = "0.1.67" // for utilsTest
+lazy val umlShaclexVersion     = "0.0.54"
 
 
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
 // Dependency versions
-lazy val catsVersion           = "2.0.0"
+lazy val catsVersion           = "2.1.1"
 lazy val commonsTextVersion    = "1.7"
 lazy val circeVersion          = "0.12.0-M4"
 lazy val graphvizJavaVersion   = "0.5.2"
-lazy val http4sVersion         = "0.21.0-M4"
+lazy val http4sVersion         = "0.21.2"
 lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
 lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
-lazy val scalacticVersion      = "3.0.8"
 lazy val scalaGraphVersion     = "1.11.5"
-lazy val scalajVersion         = "2.4.2"
-lazy val scalaTestVersion      = "3.0.8"
+// lazy val scalajVersion         = "2.4.2"
+lazy val scalacticVersion      = "3.1.1"
+lazy val scalaTestVersion      = "3.1.1"
+lazy val scalatestplusVersion  = "3.1.0.0"
 lazy val scalatagsVersion      = "0.7.0"
-lazy val scallopVersion        = "3.3.2"
-lazy val seleniumVersion       = "2.35.0"
+lazy val scallopVersion        = "3.3.1"
+lazy val seleniumVersion       = "2.45.0"
 lazy val silencerVersion       = "1.4.2"
 lazy val typesafeConfigVersion = "1.3.4"
 
@@ -84,10 +85,11 @@ lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"    
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
 lazy val scalactic         = "org.scalactic"              %% "scalactic"           % scalacticVersion
 lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"          % scalacheckVersion
-lazy val scalaj            = "org.scalaj"                 %% "scalaj-http"         % scalajVersion
+// lazy val scalaj            = "org.scalaj"                 %% "scalaj-http"         % scalajVersion
 lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
+lazy val scalatestPlusSelenium = "org.scalatestplus"      %% "selenium-2-45"       % scalatestplusVersion
 lazy val umlShaclex        = "es.weso"                    %% "umlshaclex"          % umlShaclexVersion
 lazy val utilsTest         = "es.weso"                    %% "utilstest"           % utilsVersion
 
@@ -156,7 +158,7 @@ lazy val server = project
       rdf4j_runtime,
       plantuml,
       graphvizJava,
-      scalaj,
+      // scalaj,
       utilsTest % Test, 
       // webJars
       jquery,
@@ -195,7 +197,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  //  scalaVersion := "2.13.0",
+  scalaVersion := "2.13.1",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.

@@ -10,7 +10,8 @@ import org.apache.any23.extractor.microdata.MicrodataExtractor
 import org.apache.any23.extractor.rdfa.{RDFa11Extractor, RDFa11ExtractorFactory}
 import org.apache.any23.source.{HTTPDocumentSource, StringDocumentSource}
 import org.apache.any23.writer._
-
+import es.weso.utils.IOUtils._
+import cats.effect.IO
 import scala.util.Try
 // import org.apache.jena.rdf.model._
 import org.apache.jena.rdf.model.{
@@ -43,34 +44,25 @@ object HTML2RDF {
     val name = extractor.getDescription.getExtractorName
   }
 
-  def extractFromString(htmlStr: String, extractorName: String): Either[String,RDFReasoner] = {
-    println(s"Extracting RDF from string:\n$htmlStr")
-    Try {
-    val model = ModelFactory.createDefaultModel()
-    val any23 = new Any23(extractorName)
-    any23.setHTTPUserAgent("test-user-agent");
-    val httpClient = any23.getHTTPClient();
-    val source     = new StringDocumentSource(htmlStr, "http://example.org")
-    val handler = JenaTripleHandler(model)
-    println("Initialization ready for extractor...")
-    try {
-      any23.extract(source, handler)
-    } finally {
-      handler.close
-    }
-    // val n3: String = out.toString("UTF-8")
-     val rdf = RDFAsJenaModel(model)
-      println(s"${rdf.serialize("TURTLE").getOrElse(s"Error serializing $rdf")}")
-     rdf
-    }.fold(e => {
-      println(s"Exception!!")
-      Left(s"Exception obtaining RDF from String: ${e.getMessage}\nString:\n$htmlStr")
-    },
-      rdf => Right(rdf)
-    )
-  }
+  def extractFromString(htmlStr: String, extractorName: String): ESIO[RDFReasoner] = {
+      Try {
+      val model = ModelFactory.createDefaultModel()
+      val any23 = new Any23(extractorName)
+      any23.setHTTPUserAgent("test-user-agent");
+      val httpClient = any23.getHTTPClient();
+      val source     = new StringDocumentSource(htmlStr, "http://example.org")
+      val handler = JenaTripleHandler(model)
+      println("Initialization ready for extractor...")
+      try {
+        any23.extract(source, handler)
+      } finally {
+        handler.close
+      }
+      RDFAsJenaModel(model)
+     }.fold(e => fail_es(e.getMessage()), ok_es(_))
+  } 
 
-  def extractFromUrl(uri: String, extractorName: String): Either[String,RDFReasoner] = {
+  def extractFromUrl(uri: String, extractorName: String): ESIO[RDFReasoner] = {
     Try {
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
@@ -88,8 +80,8 @@ object HTML2RDF {
       println(s"Model: ${model}")
       RDFAsJenaModel(model)
     }.fold(e =>
-      Left(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri"),
-      rdf => Right(rdf)
+      fail_es(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri"),
+      ok_es(_)
     )
   }
 

@@ -30,7 +30,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 * After some time downloading and compiling the source code it will start the application, which can be accessed at: [http://localhost:8080](localhost)
 
-* If you want a different port run `sbt run --port <PortNumber>`
+* If you want a different port run `sbt "run --server --port <PortNumber>"`
 
 ## Build a docker image
 
