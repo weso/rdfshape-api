@@ -303,7 +303,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
           rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
           _ <- { println(s"RDF Serialized\n${rdfSerialized}"); ok_esf[Unit,F](())}
           nodeSelector = RDFNodeSelector(IRI(label))
-          eitherInferred <- io2esf(SchemaInfer.runInferSchema(rdf,nodeSelector,"ShEx",IRI(s"http://example.org/Shape_${label}"),InferOptions.defaultOptions.copy(maxFollowOn=3)))
+          eitherInferred <- io2esf(SchemaInfer.runInferSchema(rdf,nodeSelector,"ShEx",IRI(s"http://example.org/Shape_${info.localName}"),InferOptions.defaultOptions.copy(maxFollowOn=3)))
           pair <- either2ef[(Schema,ResultShapeMap),F](eitherInferred)
           shExCStr <- io2esf({ 
             val (schema,_) = pair
