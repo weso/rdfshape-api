@@ -14,7 +14,8 @@ import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
 import guru.nidi.graphviz.parse.Parser
 import javax.imageio.ImageIO
-
+import cats.effect.IO
+import es.weso.utils.IOUtils._
 import scala.util.Try
 
 object DataConverter extends LazyLogging {
@@ -71,7 +72,7 @@ object DataConverter extends LazyLogging {
   private[server] def dataConvert(data: String,
                                   dataFormat: DataFormat,
                                   targetFormat: String
-                                 ): Either[String,DataConversionResult] = {
+                                 ): IO[DataConversionResult] = {
     println(s"Converting $data with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat")
     for {
       rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name,None)
@@ -83,8 +84,8 @@ object DataConverter extends LazyLogging {
                                  data: Option[String],
                                  dataFormat: DataFormat,
                                  targetFormat: String
-                                 ): Either[String,DataConversionResult] = for {
-    converted <- targetFormat.toUpperCase match {
+                                 ): IO[DataConversionResult] = {
+   val doConversion: IO[String] = targetFormat.toUpperCase match {
       case "JSON" => for {
         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
       } yield sgraph.toJson.spaces2
@@ -92,15 +93,24 @@ object DataConverter extends LazyLogging {
         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
       } yield sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
       case t if rdfDataFormats.contains(t) => rdf.serialize(t)
-      case t if availableGraphFormatNames.contains(t) =>for {
+      case t if availableGraphFormatNames.contains(t) => {
+        val doS: IO[String] = for {
         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-        format <- getTargetFormat(t)
+        eitherFormat <- either2io(getTargetFormat(t))
         dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-        converted <- dotConverter(dotStr,format)
-      } yield converted
-      case t => Left(s"Unsupported format: ${t}")
+        eitherConverted <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), 
+         format => either2io(dotConverter(dotStr,format))
+        ) 
+        c <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), _ => IO(dotStr))
+       } yield c
+       doS
+      } 
+      case t => IO.raiseError(new RuntimeException(s"Unsupported format: ${t}"))
     }
-  } yield DataConversionResult("Conversion successful!",data, dataFormat, targetFormat, converted)
 
+   for {
+    converted <- doConversion
+  } yield DataConversionResult("Conversion successful!",data, dataFormat, targetFormat, converted)
+  }
 
 }
