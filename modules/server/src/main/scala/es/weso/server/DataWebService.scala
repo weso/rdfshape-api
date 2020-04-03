@@ -18,6 +18,10 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.log4s.getLogger
+import es.weso.utils.IOUtils._
+import es.weso.rdf.RDFReader
+import h.pair
+import es.weso.rdf.RDFReasoner
 
 class DataWebService[F[_]](blocker: Blocker,
                            client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
@@ -64,8 +68,8 @@ class DataWebService[F[_]](blocker: Blocker,
             optEndpoint,
             optActiveDataTab.getOrElse(defaultActiveDataTab)
           )
-          val (maybeStr, eitherRDF) = dp.getData(relativeBase)
-          println(s"GET dataConversions: $maybeStr\nEitherRDF:${eitherRDF}\ndp: ${dp}\ndv: $dv")
+//          val (maybeStr, eitherRDF) = dp.getData(relativeBase)
+//          println(s"GET dataConversions: $maybeStr\nEitherRDF:${eitherRDF}\ndp: ${dp}\ndv: $dv")
           val multipart = Multipart(Vector(
             Part.formData[F]("data",dp.data.getOrElse("")),
             Part.formData[F]("dataFormat", dp.dataFormat.map(_.name).getOrElse(DataFormats.defaultFormatName)),
@@ -144,6 +148,7 @@ class DataWebService[F[_]](blocker: Blocker,
       InferenceParam(optInference) +&
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) => {
+
       val either: Either[String, Option[DataFormat]] =  for {
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
@@ -157,7 +162,26 @@ class DataWebService[F[_]](blocker: Blocker,
               None,  //no dataFormatFile
               optInference,
               None, optActiveDataTab)
-          val (maybeStr, eitherRDF) = dp.getData(relativeBase)
+          for {
+            either <- run_esiof(dp.getData(relativeBase))
+            ok <- either.fold(str => BadRequest(str), pair => {
+             val (maybeStr, rdf) = pair
+             val dv = DataValue(optData,
+                optDataURL,
+                optDataFormat.getOrElse(defaultDataFormat),
+                availableDataFormats,
+                optInference.getOrElse(defaultInference),
+                availableInferenceEngines,
+                optEndpoint,
+                optActiveDataTab.getOrElse(defaultActiveDataTab)
+              )
+              for {
+                json <- io2f(dataInfo(rdf, maybeStr, optDataFormat))
+                resp <- Ok(html.dataInfo(Some(json),dv)) 
+              } yield resp
+            }) 
+          } yield ok
+/*          val (maybeStr, eitherRDF) = dp.getData(relativeBase)
           eitherRDF.fold(
             str => BadRequest(str),
             rdf => {
@@ -172,8 +196,9 @@ class DataWebService[F[_]](blocker: Blocker,
               )
               Ok(html.dataInfo(Some(dataInfo(rdf, maybeStr, optDataFormat)),dv))
             })
-        }
+        } */
       }
+    }
     }
 
     case req@POST -> Root / "dataInfo" => {
@@ -183,7 +208,7 @@ class DataWebService[F[_]](blocker: Blocker,
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
           response <- maybeData match {
             case Left(str) =>
-              BadRequest (s"Error obtaining data: $str")
+              BadRequest (s"Error obtaining data: $str") 
             case Right((rdf,dp)) => {
               val dv = DataValue(
                 dp.data, dp.dataURL,
@@ -192,8 +217,11 @@ class DataWebService[F[_]](blocker: Blocker,
                 dp.maybeEndpoint,
                 dp.activeDataTab.getOrElse(defaultActiveDataTab)
               )
-              Ok(html.dataInfo(Some(dataInfo(rdf,dp.data,dp.dataFormat)),dv))
-            }
+              for {
+                json <- io2f(dataInfo(rdf,dp.data,dp.dataFormat))
+                ok <- Ok(html.dataInfo(Some(json),dv))
+              } yield ok
+            } 
           }
         } yield response
       }
@@ -241,21 +269,21 @@ class DataWebService[F[_]](blocker: Blocker,
                                optInference,
                                None,
                                optActiveDataTab)
-            val (maybeStr, eitherRDF) = dp.getData(relativeBase)
-            eitherRDF.fold(
-              str => BadRequest(str),
-              rdf => {
-                val targetFormat = dp.targetDataFormat.getOrElse(Svg)
-                val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
-                DataConverter
-                  .rdfConvert(rdf,dp.data,dataFormat,targetFormat.name)
-                  .fold(
-                    e => BadRequest(s"Error in conversion to $targetDataFormat: $e\nRDF:\n${rdf.serialize("TURTLE")}"),
-                    result => Ok(result.toJson).map(_.withContentType(`Content-Type`(targetDataFormat.mimeType)))
-                  )
-
+            for {
+              either <- run_esiof(dp.getData(relativeBase))
+              resp <- either match {
+                case Left(msg) => BadRequest(msg)
+                case Right(pair) => {
+                  val (maybeStr,rdf) = pair
+                  val targetFormat = dp.targetDataFormat.getOrElse(Svg)
+                  val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
+                  for {
+                   cnv <- io2f(DataConverter.rdfConvert(rdf,dp.data,dataFormat,targetFormat.name))
+                   res <- Ok(cnv.toJson).map(_.withContentType(`Content-Type`(targetDataFormat.mimeType)))
+                  } yield res
+                }
               }
-            )
+            } yield resp
           }
         }
       }
@@ -279,10 +307,14 @@ class DataWebService[F[_]](blocker: Blocker,
               ) */
               val targetFormat = dp.targetDataFormat.getOrElse(Svg)
               val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
-              DataConverter.rdfConvert(rdf,dp.data,dataFormat,targetFormat.name).
+              for {
+               cnv <- io2f(DataConverter.rdfConvert(rdf,dp.data,dataFormat,targetFormat.name))
+               res <- Ok(cnv.toJson).map(_.withContentType(`Content-Type`(targetFormat.mimeType)))
+              } yield res 
+/*              .
                 fold(e => BadRequest(s"Error in conversion to $targetFormat: $e\nRDF:\n${rdf.serialize("TURTLE")}"),
                   result => Ok(result.toJson).map(_.withContentType(`Content-Type`(targetFormat.mimeType)))
-                )
+                ) */
             }
           }
         } yield response
@@ -320,19 +352,23 @@ class DataWebService[F[_]](blocker: Blocker,
       tp.activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
     )
 
-    val validationReport: Option[Either[String,String]] =
-      Some(result.validationReport.flatMap(_.serialize("TURTLE")))
-
-    logger.info(s"Validation report: $validationReport")
-
-    Ok(html.validate(Some(result),time,
-      validationReport,
+    for {
+      eitherVr <- result.validationReport match {
+        case Left(msg) => F.pure(Some(Left(msg)))
+        case Right(vr) => io2f(
+          for { 
+            str <- vr.serialize("TURTLE")
+          } yield Some(Right(str))
+        )
+      }
+      ok <- Ok(html.validate(Some(result),time,
+      eitherVr,
       dv, sv,
       availableTriggerModes,
       tp.triggerMode.getOrElse(defaultTriggerMode),
       smv,
-      getSchemaEmbedded(sp)
-    ))
+      getSchemaEmbedded(sp)))
+    } yield ok
   }
 
   private def allNone(maybes: Option[String]*) = {

@@ -7,13 +7,14 @@ import org.http4s.multipart._
 import cats.data.EitherT
 import cats.implicits._
 import io.circe.Json
+import cats.Applicative
 import org.http4s.dsl._
 import org.http4s.implicits._
-import org.log4s.getLogger
-import APIDefinitions._
-import cats.Applicative
 import org.http4s.circe._
 import org.http4s.client.Client
+import es.weso.utils.IOUtils._
+import org.log4s.getLogger
+import APIDefinitions._
 
 class EndpointService[F[_]:Applicative](blocker: Blocker,
                                         client: Client[F])(implicit F: Effect[F],
@@ -38,7 +39,7 @@ class EndpointService[F[_]:Applicative](blocker: Blocker,
           optQueryStr = qp.query.map(_.str)
           json <- {
             println(s"Query to endpoint ${endpoint}: ${optQueryStr.getOrElse("")}")
-            EitherT.fromEither[F](endpoint.queryAsJson(optQueryStr.getOrElse("")))
+            io2esf(endpoint.queryAsJson(optQueryStr.getOrElse("")))
           }
         } yield json
 

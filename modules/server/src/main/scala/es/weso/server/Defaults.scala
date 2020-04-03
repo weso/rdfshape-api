@@ -6,6 +6,7 @@ import es.weso.schema.Schemas
 import es.weso.shapeMaps.ShapeMap
 import es.weso.schema._
 import es.weso.server.helper.DataFormat
+import cats.effect.IO
 
 object Defaults {
 
@@ -17,7 +18,7 @@ object Defaults {
   val defaultSchemaEngine = Schemas.defaultSchemaName
   val availableTriggerModes = Schemas.availableTriggerModes
   val defaultTriggerMode = ShapeMapTrigger(ShapeMap.empty).name
-  val availableInferenceEngines = RDFAsJenaModel.empty.availableInferenceEngines
+  val availableInferenceEngines = RDFAsJenaModel.empty.map(_.availableInferenceEngines).unsafeRunSync
   val defaultSchemaEmbedded = false
   val defaultInference = "None"
   val defaultActiveDataTab = "#dataTextArea"

@@ -1,7 +1,8 @@
 package es.weso.server
 
 import org.scalatest._
-import org.scalatestplus.selenium.HtmlUnit
+//import org.scalatestplus.selenium.HtmlUnit
+import org.openqa.selenium.htmlunit.HtmlUnitDriver
 import cats._
 import org.http4s._
 import org.http4s.dsl.io._
@@ -24,11 +25,13 @@ import scala.concurrent.ExecutionContext
 
 
 
+
 class WebServiceTest extends FunSpec
   with Matchers
   with EitherValues
-  with BeforeAndAfter
-  with HtmlUnit {
+  with BeforeAndAfter 
+  with WebBrowser {
+  implicit val webDriver: WebDriver = new HtmlUnitDriver
   val ip = "0.0.0.0"
   val port = 8080
   implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
