@@ -11,6 +11,7 @@ import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, Lim
 import es.weso.server.utils.Http4sUtils._
 import es.weso.server.values._
 import io.circe._
+import io.circe.parser._
 import fs2._
 import org.http4s._
 import org.http4s.Uri
@@ -33,6 +34,13 @@ import es.weso.schemaInfer.SchemaInfer
 import es.weso.shapeMaps.ResultShapeMap
 import es.weso.schema.Schema
 import es.weso.schemaInfer.InferOptions
+import es.weso.shex.ResolvedSchema
+import es.weso.shex.validator.Validator
+import es.weso.shapeMaps.ShapeMap
+import es.weso.shapeMaps.Start
+import es.weso.shapeMaps.FixedShapeMap
+import es.weso.schema.ShapeMapTrigger
+import es.weso.utils.internal.CollectionCompat._
 
 class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
@@ -319,6 +327,78 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
       }
     }
 
+    // This one doesn't work. It gives a timeout response
+    case req @ POST -> Root / `api` / "wikidata" / "shexer" => {
+      println(s"POST /api/wikidata/shexer, Request: $req")
+      req.decode[Multipart[F]] { m =>
+        val partsMap = PartsMap(m.parts)
+        val r: EitherT[F,String,Response[F]] = for {
+          label <- EitherT(partsMap.eitherPartValue("entity"))
+          jsonParams <- either2ef[Json,F](mkShexerParams(label))
+          postRequest = Request[F](method = POST, 
+             uri = uri"http://156.35.86.6:8080/shexer").
+             withHeaders(`Content-Type`(MediaType.application.`json`)).
+             withEntity[Json](jsonParams
+             )
+          _ <- { println(s"URI: ${jsonParams.spaces2}"); ok_esf[Unit,F](())}
+          result <- f2es(redirectClient.expect[Json](postRequest))
+          _ <- { println(s"Result\n${result.spaces2}"); ok_esf[Unit,F](())}
+          resp <- f2es(Ok(result))
+        } yield resp
+        for {
+          either <- r.value
+          resp <- either.fold(s => Ok(errExtract(s)), r => F.pure(r))
+        } yield resp
+      }
+    }
+
+    case req @ POST -> Root / `api` / "wikidata" / "validate" => {
+      println(s"POST /api/wikidata/validate, Request: $req")
+      req.decode[Multipart[F]] { m =>
+        val partsMap = PartsMap(m.parts)
+        val r: EitherT[F,String,Response[F]] = for {
+          item <- EitherT(partsMap.eitherPartValue("item"))
+          entitySchema <- EitherT(partsMap.eitherPartValue("entitySchema"))
+          info <- either2ef[InfoEntity,F](cnvEntity2(item))
+          strRdf <- f2es(redirectClient.expect[String](info.uri))
+          rdf <- io2esf(RDFAsJenaModel.fromString(strRdf,"TURTLE"))
+          rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
+          shortRdfSerialized = rdfSerialized.linesIterator.take(5).mkString("\n")
+          _ <- { 
+            println(s"Entity schema: ${entitySchema}")
+            println(s"URI: ${info.uri}")
+            println(s"RDF Serialized\n${shortRdfSerialized}\n..."); 
+            println(s"Item to validate: $item")
+            ok_esf[Unit,F](())
+          }
+          uriSchema = cnvEntitySchema(entitySchema)
+          _ <- { println(s"URI: ${uriSchema}"); ok_esf[Unit,F](()) } 
+          reqSchema: Request[F] = Request(method = GET, uri = uriSchema)
+          schemaStr <- f2es(redirectClient.expect[String](reqSchema))
+          _ <- { println(s"SchemaStr\n${schemaStr}"); ok_esf[Unit,F](()) }
+          schema <- esio2esf(es.weso.schema.Schemas.fromString(schemaStr,"ShEXC","ShEx"))
+          iriItem <- either2ef[IRI,F](IRI.fromString(info.sourceUri))
+          shapeMap <- either2ef[ShapeMap,F](ShapeMap.empty.add(iriItem,Start))
+          triggerMode = ShapeMapTrigger(shapeMap)
+          result <- io2esf(schema.validate(rdf,triggerMode))
+          _ <- { println(s"Result of validation \n${result.toJson.spaces2}"); ok_esf[Unit,F](()) }
+          resp <- f2es(Ok(result.toJson))
+        } yield resp
+        println(s"End of validation")
+        for {
+          either2 <- r.value.attempt
+          resp <- either2.fold(s => { 
+            println(s"Error validating: $s")
+            Ok(errExtract(s.getMessage))
+          }, 
+          either => either.fold(s => {
+            println(s"Left value validating: $s")
+            Ok(errExtract(s))
+          }, (r: Response[F]) => F.pure(r)))
+        } yield resp
+      }
+    }
+
   }
 
   private def errExtract[F[_]](msg: String): Json = {
@@ -334,18 +414,74 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
     ))
   }
 
-  private case class InfoEntity(localName: String, uri: Uri)
+  private def wikidataPrefixes: Either[String,Json] = {
+    val json = """{
+    "http://wikiba.se/ontology#": "wikibase",
+    "http://www.bigdata.com/rdf#": "bd",
+    "http://www.wikidata.org/entity/": "wd",
+    "http://www.wikidata.org/prop/direct/": "wdt",
+    "http://www.wikidata.org/prop/direct-normalized/": "wdtn",
+    "http://www.wikidata.org/entity/statement/": "wds",
+    "http://www.wikidata.org/prop/": "p",
+    "http://www.wikidata.org/reference/": "wdref",
+    "http://www.wikidata.org/value/": "wdv",
+    "http://www.wikidata.org/prop/statement/": "ps",
+    "http://www.wikidata.org/prop/statement/value/": "psv",
+    "http://www.wikidata.org/prop/statement/value-normalized/": "psn",
+    "http://www.wikidata.org/prop/qualifier/": "pq",
+    "http://www.wikidata.org/prop/qualifier/value/": "pqv",
+    "http://www.wikidata.org/prop/qualifier/value-normalized/": "pqn",
+    "http://www.wikidata.org/prop/reference/": "pr",
+    "http://www.wikidata.org/prop/reference/value/": "prv",
+    "http://www.wikidata.org/prop/reference/value-normalized/": "prn",
+    "http://www.wikidata.org/prop/novalue/": "wdno"
+   }"""
+   parse(json).leftMap(e => s"Error parsing prefixes: $e")
+  }
+
+  private def mkShexerParams(entity: String): Either[String,Json] = for {
+    prefixes <- wikidataPrefixes
+  } yield Json.fromFields(List(
+   ("prefixes", prefixes),
+   ("shape_map", Json.fromString("SPARQL'SELECT DISTINCT ?virus WHERE {   VALUES ?virus {  wd:Q82069695  }  }'@<Virus>  ")),
+   ( "endpoint", Json.fromString("https://query.wikidata.org/sparql")),
+   ( "all_classes", Json.False),
+   ( "query_depth", Json.fromInt(1)),
+   ( "threshold", Json.fromInt(0)),
+   ( "instantiation_prop", Json.fromString("http://www.wikidata.org/prop/direct/P31")),
+   ( "disable_comments", Json.True),
+   ( "shape_qualifiers_mode", Json.True),
+   ( "namespaces_for_qualifiers", 
+      Json.arr(Json.fromString("http://www.wikidata.org/prop/")
+      ))
+  ))
+  
+
+  private case class InfoEntity(localName: String, uri: Uri, sourceUri: String)
 
   private def cnvEntity(entity: String): Either[String, InfoEntity] = {
     val wdRegex = "http://www.wikidata.org/entity/(.*)".r
     entity match {
       case wdRegex(localName) => { 
         val uri = uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName  + ".ttl")
-        InfoEntity(localName,uri).asRight[String]
+        InfoEntity(localName,uri,entity).asRight[String]
       }
       case _ => s"Entity: $entity doesn't match regular expression: ${wdRegex}".asLeft[InfoEntity]
     }
   }
+
+  private def cnvEntity2(entity: String): Either[String, InfoEntity] = {
+    val wdRegex = "<(http://www.wikidata.org/entity/(.*))>".r
+    val matches = wdRegex.findAllIn(entity)
+    if (matches.groupCount == 2) {
+      val localName = matches.group(2)
+      val sourceUri = matches.group(1)
+      val uri = uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName  + ".ttl")
+      InfoEntity(localName,uri, sourceUri).asRight[String]
+    }
+    else s"Entity: $entity doesn't match regular expression: ${wdRegex}".asLeft[InfoEntity]
+  }
+
 
   private def wdEntity(optEntity: Option[String], withDot: Boolean): F[Option[Json]] = {
     optEntity match {
@@ -481,7 +617,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
     ))))
   } yield converted
 
-  def cnvLanguages(json:Json): Either[String, Json] = for {
+  private def cnvLanguages(json:Json): Either[String, Json] = for {
     // query <- .focus.toRight(s"Error obtaining query at ${json.spaces2}" )
     languagesObj <- json.hcursor.downField("query").downField("wbcontentlanguages").focus.toRight(s"Error obtaining query/wbcontentlanguages at ${json.spaces2}" )
     keys <- languagesObj.hcursor.keys.toRight(s"Error obtaining values from languages: ${languagesObj.spaces2}")
@@ -494,6 +630,12 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
   } yield {
     converted
   }
+
+ private def cnvEntitySchema(wdSchema: String): Uri = { 
+   val uri = uri"https://www.wikidata.org".
+         withPath(s"/wiki/Special:EntitySchemaText/${wdSchema}")
+   uri      
+ }
 
 }
 
