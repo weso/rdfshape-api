@@ -8,7 +8,7 @@ import es.weso.rdf.RDFReasoner
 import es.weso.schema.{Schema, Schemas}
 import scala.io.Source
 import scala.util.Try
-import org.log4s.getLogger
+import org.log4s._
 
 case class SchemaParam(schema: Option[String],
                        schemaURL: Option[String],
@@ -23,7 +23,6 @@ case class SchemaParam(schema: Option[String],
                        activeSchemaTab: Option[String]
                       ) {
 
-  private val logger = getLogger
   
   sealed abstract class SchemaInputType {
     val id: String
@@ -64,7 +63,7 @@ case class SchemaParam(schema: Option[String],
   }
 
   def getSchema(data: Option[RDFReasoner]): IO[(Option[String], Either[String, Schema])] = {
-    logger.info(s"SchemaEmbedded: ${schemaEmbedded}")
+    getLogger.info(s"SchemaEmbedded: ${schemaEmbedded}")
     schemaEmbedded match {
       case Some(true) => data match {
         case None => IO((None, Left(s"Schema embedded but no data found")))
@@ -142,8 +141,6 @@ case class SchemaParam(schema: Option[String],
 
 object SchemaParam {
 
-  private val logger = getLogger
-
   private[server] def mkSchema[F[_]:Effect](partsMap: PartsMap[F],
                                data: Option[RDFReasoner]
                       ): EitherT[F, String, (Schema, SchemaParam)] = {
@@ -151,12 +148,12 @@ object SchemaParam {
     val L = implicitly[LiftIO[F]]
     val r: F[Either[String, (Schema,SchemaParam)]] = for {
       sp <- {
-        logger.info(s"PartsMap: $partsMap")
+        getLogger.info(s"PartsMap: $partsMap")
         mkSchemaParam(partsMap)
       }
       p <- L.liftIO(sp.getSchema(data))
     } yield {
-      logger.info(s"SchemaParam: $sp")
+      getLogger.info(s"SchemaParam: $sp")
       val (maybeStr, maybeSchema) = p // sp.getSchema(data)
       maybeSchema match {
         case Left(str) => Left(str)

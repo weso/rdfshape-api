@@ -7,7 +7,7 @@ import es.weso._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.streams.Streams
-import es.weso.server.QueryParams.{ContinueParam, LabelParam, LanguageParam, LimitParam, OptEndpointParam, OptEntityParam, OptWithDotParam, SchemaEngineParam, WdEntityParam, WdSchemaParam}
+import es.weso.server.QueryParams._
 import es.weso.server.utils.Http4sUtils._
 import es.weso.server.values._
 import io.circe._
@@ -358,25 +358,26 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         val partsMap = PartsMap(m.parts)
         val r: EitherT[F,String,Response[F]] = for {
           item <- EitherT(partsMap.eitherPartValue("item"))
-          entitySchema <- EitherT(partsMap.eitherPartValue("entitySchema"))
           info <- either2ef[InfoEntity,F](cnvEntity2(item))
           strRdf <- f2es(redirectClient.expect[String](info.uri))
           rdf <- io2esf(RDFAsJenaModel.fromString(strRdf,"TURTLE"))
           rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
           shortRdfSerialized = rdfSerialized.linesIterator.take(5).mkString("\n")
           _ <- { 
-            println(s"Entity schema: ${entitySchema}")
             println(s"URI: ${info.uri}")
             println(s"RDF Serialized\n${shortRdfSerialized}\n..."); 
             println(s"Item to validate: $item")
             ok_esf[Unit,F](())
           }
-          uriSchema = cnvEntitySchema(entitySchema)
-          _ <- { println(s"URI: ${uriSchema}"); ok_esf[Unit,F](()) } 
-          reqSchema: Request[F] = Request(method = GET, uri = uriSchema)
-          schemaStr <- f2es(redirectClient.expect[String](reqSchema))
-          _ <- { println(s"SchemaStr\n${schemaStr}"); ok_esf[Unit,F](()) }
-          schema <- esio2esf(es.weso.schema.Schemas.fromString(schemaStr,"ShEXC","ShEx"))
+//          entitySchema <- EitherT(partsMap.eitherPartValue("entitySchema"))
+          pair <- WikibaseSchemaParam.mkSchema(partsMap,Some(rdf), client)
+          (schema,wbp) = pair
+          // uriSchema = cnvEntitySchema(entitySchema)
+          // _ <- { println(s"URI: ${uriSchema}"); ok_esf[Unit,F](()) } 
+          // reqSchema: Request[F] = Request(method = GET, uri = uriSchema)
+          // schemaStr <- f2es(redirectClient.expect[String](reqSchema))
+          _ <- { println(s"SchemaStr\n${wbp.schemaStr.getOrElse("")}"); ok_esf[Unit,F](()) }
+          // schema <- esio2esf(es.weso.schema.Schemas.fromString(schemaStr,"ShEXC","ShEx"))
           iriItem <- either2ef[IRI,F](IRI.fromString(info.sourceUri))
           shapeMap <- either2ef[ShapeMap,F](ShapeMap.empty.add(iriItem,Start))
           triggerMode = ShapeMapTrigger(shapeMap)
