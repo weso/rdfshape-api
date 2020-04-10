@@ -213,11 +213,20 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         None,
         None,
         optActiveSchemaTab)
-      for {
-        pair <- L.liftIO(sp.getSchema(None))
+      println(s">>>>>>>>>>>>>>>>>>>Before...")  
+      val r: EitherT[IO,String,String] = for {
+        _ <- { println(s"#####<<<< Before...getSchema"); ok_es(())}
+        pair <- EitherT(sp.getSchema(None).attempt.map(_.leftMap(s => s"Error obtaining schema: ${s.getMessage}")))
+        _ <- { println(s"#####<<<< After...getSchema"); ok_es(())}
         (_,either: Either[String,Schema]) = pair
-        v <- either.fold(s => errJson(s"Error obtaining schema $s"), schema => {
-          val (svg,_) = schema2SVG(schema)
+        svg <- either.fold(s => fail_es(s"Error parsing schema: $s"), schema => {
+                      val (svg,_) = schema2SVG(schema)  
+                      ok_es(svg)
+        })
+      } yield svg
+      for {
+        either <- L.liftIO(run_es(r))
+        v <- either.fold(s => errJson(s"Error obtaining schema $s"), svg => {
           Ok(svg).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
         })
       } yield v
