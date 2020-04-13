@@ -41,6 +41,7 @@ import es.weso.shapeMaps.Start
 import es.weso.shapeMaps.FixedShapeMap
 import es.weso.schema.ShapeMapTrigger
 import es.weso.utils.internal.CollectionCompat._
+import es.weso.wikibaserdf.WikibaseRDF
 
 class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
@@ -359,18 +360,19 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         val r: EitherT[F,String,Response[F]] = for {
           item <- EitherT(partsMap.eitherPartValue("item"))
           info <- either2ef[InfoEntity,F](cnvEntity2(item))
-          strRdf <- f2es(redirectClient.expect[String](info.uri))
-          rdf <- io2esf(RDFAsJenaModel.fromString(strRdf,"TURTLE"))
-          rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
-          shortRdfSerialized = rdfSerialized.linesIterator.take(5).mkString("\n")
-          _ <- { 
-            println(s"URI: ${info.uri}")
-            println(s"RDF Serialized\n${shortRdfSerialized}\n..."); 
-            println(s"Item to validate: $item")
-            ok_esf[Unit,F](())
-          }
+          // strRdf <- f2es(redirectClient.expect[String](info.uri))
+          // rdf <- io2esf(RDFAsJenaModel.fromString(strRdf,"TURTLE"))
+          rdf <- io2esf(WikibaseRDF.wikidata)
+          // rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
+          // shortRdfSerialized = rdfSerialized.linesIterator.take(5).mkString("\n")
+          //_ <- { 
+          //  println(s"URI: ${info.uri}")
+          //  println(s"RDF Serialized\n${shortRdfSerialized}\n..."); 
+          //  println(s"Item to validate: $item")
+          //  ok_esf[Unit,F](())
+          //}
 //          entitySchema <- EitherT(partsMap.eitherPartValue("entitySchema"))
-          pair <- WikibaseSchemaParam.mkSchema(partsMap,Some(rdf), client)
+          pair <- WikibaseSchemaParam.mkSchema(partsMap,None, client)
           (schema,wbp) = pair
           // uriSchema = cnvEntitySchema(entitySchema)
           // _ <- { println(s"URI: ${uriSchema}"); ok_esf[Unit,F](()) } 
@@ -399,7 +401,6 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         } yield resp
       }
     }
-
   }
 
   private def errExtract[F[_]](msg: String): Json = {

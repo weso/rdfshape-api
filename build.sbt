@@ -31,7 +31,8 @@ scalafmt: {
 // Local dependencies 
 // lazy val shaclexVersion        = "0.1.47" 
 lazy val utilsVersion          = "0.1.67" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.55"
+lazy val umlShaclexVersion     = "0.0.56"
+lazy val shexsVersion          = "0.1.60"
 
 
 lazy val any23Version          = "2.2"
@@ -40,7 +41,7 @@ lazy val rdf4jVersion          = "2.2.4"
 // Dependency versions
 lazy val catsVersion           = "2.1.1"
 lazy val commonsTextVersion    = "1.7"
-lazy val circeVersion          = "0.12.0-M4"
+lazy val circeVersion          = "0.12.3"
 lazy val graphvizJavaVersion   = "0.5.2"
 lazy val http4sVersion         = "0.21.2"
 lazy val jgraphtVersion        = "1.3.1"
@@ -90,8 +91,10 @@ lazy val scalaTest         = "org.scalatest"              %% "scalatest"        
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
 lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
 lazy val scalatestPlusSelenium = "org.scalatestplus"      %% "selenium-2-45"       % scalatestplusVersion
+
 lazy val umlShaclex        = "es.weso"                    %% "umlshaclex"          % umlShaclexVersion
 lazy val utilsTest         = "es.weso"                    %% "utilstest"           % utilsVersion
+lazy val wikibaserdf       = "es.weso"                    %% "wikibaserdf"         % shexsVersion
 
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
@@ -154,6 +157,7 @@ lazy val server = project
       scalatags,
       selenium,
       umlShaclex,
+      wikibaserdf,
       any23_core, any23_api, any23_scraper,
       rdf4j_runtime,
       plantuml,
