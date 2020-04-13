@@ -18,7 +18,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.log4s.getLogger
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.rdf.RDFReader
 import h.pair
 import es.weso.rdf.RDFReasoner

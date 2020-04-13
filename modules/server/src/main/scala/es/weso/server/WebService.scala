@@ -26,7 +26,7 @@ import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
 import org.http4s.server.staticcontent.webjarService
 import org.http4s.server.staticcontent.WebjarService.{WebjarAsset, Config}
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.rdf.RDFReader
 
 class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])

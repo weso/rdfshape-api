@@ -8,12 +8,13 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.dsl.io._
 import org.http4s.implicits._
 import org.http4s.{Request, Response, Uri, Query => HQuery}
-import org.scalatest._
+import org.scalatest.funspec._
+import org.scalatest.matchers.should._
 import es.weso.utils.test._
 
 import scala.concurrent.ExecutionContext.global
 
-class APIServiceTest extends FunSpec with Matchers with EitherValues with JsonMatchers {
+class APIServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
 
   describe(s"API Service") {
     it("Should obtain JSON data from RDF") {

@@ -32,7 +32,7 @@ import es.weso.html
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 import scala.util.Try
 
@@ -172,10 +172,17 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       DataFormatParam(optDataFormat) +&
       TargetDataFormatParam(optResultDataFormat) => {
       for {
-        dataFormat <- io2f(either2io(DataFormat.fromString(optDataFormat.getOrElse(defaultDataFormat.name))))
-        result <- io2f(DataConverter.dataConvert(data,dataFormat,optResultDataFormat.getOrElse(defaultDataFormat.name)))
-        ok <- Ok(result.toJson)
-      } yield ok
+        eitherDataFormat <- either2ef[DataFormat,F](DataFormat.fromString(optDataFormat.getOrElse(defaultDataFormat.name))).value
+        result <- eitherDataFormat.fold(
+          e => BadRequest(e),
+          dataFormat => for {
+            r <- io2f(DataConverter.dataConvert(data,dataFormat,optResultDataFormat.getOrElse(defaultDataFormat.name)))
+            ok <- Ok(r.toJson)
+          } yield ok
+        )
+        // io2f(DataConverter.dataConvert(data,dataFormat,optResultDataFormat.getOrElse(defaultDataFormat.name)))
+        // ok <- Ok(result.toJson)
+      } yield result
     }
 
     case req @ POST -> Root / `api` / "data" / "query" => {

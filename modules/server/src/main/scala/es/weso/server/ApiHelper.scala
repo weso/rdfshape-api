@@ -29,7 +29,7 @@ import es.weso.utils.json.JsonUtilsServer._
 import es.weso.server.Defaults._
 import org.http4s.dsl._
 import scala.util.Try
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.shapeMaps.ResultShapeMap
 
 object ApiHelper {
@@ -50,15 +50,15 @@ object ApiHelper {
     Json.fromFields(pm.pm.map { case (prefix, iri) => (prefix.str, Json.fromString(iri.getLexicalForm)) })
   }
 
-  private[server] def resolveUri(baseUri: Uri, urlStr: String): Either[String, Option[String]] = {
+  private[server] def resolveUri(baseUri: Uri, urlStr: String): IO[String] = {
     println(s"Handling Uri: $urlStr")
     // TODO: handle timeouts
     Uri.fromString(urlStr).fold(
       fail => {
         logger.info(s"Error parsing $urlStr")
-        Left(fail.message)
+        IO.raiseError[String](new RuntimeException(s"Error resolving ${urlStr} as URL: ${fail.message}"))
       },
-      uri => Try {
+      uri => {
         // TODO: The following code is unsafe...
         implicit val cs: ContextShift[IO] = IO.contextShift(global)
         implicit val timer: Timer[IO] = IO.timer(global)
@@ -67,8 +67,8 @@ object ApiHelper {
         val httpClient: Client[IO] = JavaNetClientBuilder[IO](blocker).create
         val resolvedUri = baseUri.resolve(uri)
         logger.info(s"Resolved: $resolvedUri")
-        httpClient.expect[String](resolvedUri).unsafeRunSync()
-      }.toEither.leftMap(_.getMessage).map(Some(_))
+        httpClient.expect[String](resolvedUri)
+      }
     )
   }
 
