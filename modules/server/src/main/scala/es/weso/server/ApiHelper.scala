@@ -269,12 +269,13 @@ object ApiHelper {
          result <- either2es(eitherResult)
          (schemaInfer, resultMap) = result
          maybePair <- if (withUml) either2es(Schema2UML.schema2UML(schemaInfer).map(Some(_))) else ok_es(None)
-         svg = maybePair.map{ 
-           pair => {
+         maybeSvg <- io2es(maybePair match {
+           case None => IO.pure(None)
+           case Some(pair) => {
              val (uml,warnings) = pair
-             uml.toSVG(options)
-            }
-        }
+             uml.toSVG(options).map(Some(_))
+           }
+         })
          str <- io2es(schemaInfer.serialize(schemaFormat))
        } yield Json.fromFields(
          List(
@@ -288,7 +289,7 @@ object ApiHelper {
                val (uml,warnings) = pair
                Json.fromString(uml.toPlantUML(options)) }
            ) ++
-           maybeField(svg, "svg", Json.fromString(_))
+           maybeField(maybeSvg, "svg", Json.fromString(_))
        )
      }
    }
@@ -363,14 +364,18 @@ object ApiHelper {
     ).toJson
   }
 
-  private[server] def schema2SVG(schema: Schema): (String,String) = {
+  private[server] def schema2SVG(schema: Schema): IO[(String,String)] = {
     val eitherUML = Schema2UML.schema2UML(schema)
     eitherUML.fold(
-      e => (s"SVG conversion: $e", s"UML Error convertins: $e"),
+      e => IO.pure((s"SVG conversion: $e", s"Error converting UML: $e")),
       pair => {
         val (uml,warnings) = pair
         // println(s"UML converted: $uml")
-        (uml.toSVG(options), uml.toPlantUML(options))
+        (for {
+          str <- uml.toSVG(options) 
+        } yield {
+          (str, uml.toPlantUML(options))
+        }).handleErrorWith(e => IO.pure((s"SVG conversion error: ${e.getMessage()}",uml.toPlantUML(options))))
       }
     )
   }
@@ -388,8 +393,10 @@ object ApiHelper {
     )
   }
 
-  private[server] def schemaVisualize(schema:Schema): Json = {
-    val (svg,plantuml) = schema2SVG(schema)
+  private[server] def schemaVisualize(schema:Schema): IO[Json] = for {
+    pair <- schema2SVG(schema)
+  } yield {
+    val (svg,plantuml) = pair
     val info = schema.info
     val fields: List[(String,Json)] =
       List(
