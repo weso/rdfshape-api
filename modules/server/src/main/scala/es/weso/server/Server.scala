@@ -21,15 +21,14 @@ import scala.concurrent.duration._
 
 object Server {
 
-  def context[F[_]: Sync]: F[SSLContext] =
+/*  def context[F[_]: Sync]: F[SSLContext] =
     SSLHelper.loadContextFromClasspath(SSLHelper.keystorePassword, SSLHelper.keyManagerPassword)
 
   def builder[F[_]: ConcurrentEffect: ContextShift: Timer](port: Int): F[BlazeServerBuilder[F]] =
-    context.map { sslContext =>
-      BlazeServerBuilder[F](global)
-        .bindHttp(port)
-//        .withSslContext(sslContext)
-    }
+   context.map { sslContext =>
+     BlazeServerBuilder[F](global).bindHttp(port)
+       .withSslContext(sslContext)
+  } */
 
   def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
 //    HelloService[F](blocker).routes <+>
@@ -58,12 +57,9 @@ object Server {
         
   def stream[F[_]: ConcurrentEffect](blocker:Blocker, port: Int, ip: String)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     for {
-      client <- BlazeClientBuilder[F](global)
-      // .withConnectTimeout(3.minute)
-      // .withIdleTimeout(3.minute)
-      .withRequestTimeout(5.minute)
-//      .withSslContext(SSLContext.getDefault)
-      .stream
+      client <- BlazeClientBuilder[F](global).withRequestTimeout(5.minute)
+        //      .withSslContext(SSLContext.getDefault)
+        .stream
       app = (
         // HelloService[F](blocker).routes
 	      // HSTS( 
@@ -71,14 +67,14 @@ object Server {
         // )
       ).orNotFound
       finalHttpApp = Logger.httpApp(true, false)(app)
-      b <- Stream.eval(builder(port))
-      exitCode <- b.withHttpApp(finalHttpApp).serve 
-/*      BlazeServerBuilder[F](global)
+      /* b <- Stream.eval(builder(port))
+      exitCode <- b.withHttpApp(finalHttpApp).serve  */
+      exitCode <- BlazeServerBuilder[F](global)
         .bindHttp(port,ip)
         .withIdleTimeout(10.minutes)
         .withHttpApp(finalHttpApp)
         .withSslContext(SSLContext.getDefault)
-        .serve */
+        .serve 
     } yield exitCode
     }.drain
 
