@@ -28,7 +28,7 @@ object Server {
     context.map { sslContext =>
       BlazeServerBuilder[F](global)
         .bindHttp(port)
-//        .withSslContext(sslContext)
+        .withSslContext(sslContext)
     }
 
   def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
