@@ -13,15 +13,15 @@ import org.http4s.headers.{Host, Location}
 import org.http4s.server.SSLKeyStoreSupport.StoreInfo
 
 object SSLHelper {
-  val keystorePassword: String = "wesopassword"
-  val keyManagerPassword: String = ""
+  val keystorePassword: String = "password"
+  val keyManagerPassword: String = "wesopassword"
 
   // val keystorePath: String = Paths.get("../server.jks").toAbsolutePath.toString
 
   // val storeInfo: StoreInfo = StoreInfo(keystorePath, keystorePassword)
-  def handler(e: Throwable): IO[SSLContext] = for {
+  /*def handler(e: Throwable): IO[SSLContext] = for {
     _ <- IO( println(s"Exception: $e"))
-  } yield SSLContext.getDefault
+  } yield SSLContext.getDefault */
 
   def loadContextFromClasspath[F[_]](keystorePassword: String, keyManagerPass: String)(
     implicit F: Sync[F]): F[SSLContext] =
