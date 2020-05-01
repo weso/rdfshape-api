@@ -96,8 +96,10 @@ object RDFShapeServer extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode]  = {
     val blocker = Blocker.liftExecutionContext(global)
-    // new RDFShapeServer[IO](ip,port).
     Server.stream[IO](blocker,port,ip).compile.drain.as(ExitCode.Success)
+    /* for {
+     sslCtx <- SSLHelper.getContextFromClassPath("password", "alno631")
+    } yield ExitCode.Success */
   }
 
 

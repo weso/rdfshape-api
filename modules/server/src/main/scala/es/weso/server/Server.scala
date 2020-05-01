@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 object Server {
 
   def context[F[_]: Sync]: F[SSLContext] =
-    ssl.loadContextFromClasspath(ssl.keystorePassword, ssl.keyManagerPassword)
+    SSLHelper.loadContextFromClasspath(SSLHelper.keystorePassword, SSLHelper.keyManagerPassword)
 
   def builder[F[_]: ConcurrentEffect: ContextShift: Timer](port: Int): F[BlazeServerBuilder[F]] =
     context.map { sslContext =>
