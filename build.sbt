@@ -28,8 +28,6 @@ scalafmt: {
 }
  */
 
-// Local dependencies 
-// lazy val shaclexVersion        = "0.1.47" 
 lazy val utilsVersion          = "0.1.67" // for utilsTest
 lazy val umlShaclexVersion     = "0.0.57"
 lazy val shexsVersion          = "0.1.60"
@@ -114,6 +112,8 @@ lazy val rdfshape = project
   .in(file("."))
   .enablePlugins(
     ScalaUnidocPlugin,
+    SiteScaladocPlugin, 
+    AsciidoctorPlugin, 
     SbtNativePackager,
     WindowsPlugin,
     JavaAppPackaging,
@@ -124,7 +124,12 @@ lazy val rdfshape = project
   .dependsOn(server)
   .settings(
     dockerExposedPorts ++= Seq(80),
+    siteSubdirName in ScalaUnidoc := "scaladoc/latest",
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(noDocProjects: _*),
+    mappings in makeSite ++= Seq(
+      file("src/assets/favicon.ico") -> "favicon.ico"
+    ),
     libraryDependencies ++= Seq(
       logbackClassic,
       scalaLogging,
@@ -201,7 +206,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  scalaVersion := "2.13.1",
+  scalaVersion := "2.12.11",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.

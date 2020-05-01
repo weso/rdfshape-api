@@ -3,8 +3,8 @@ dist: xenial
 language: scala
 
 scala:
-   - 2.13.1
-   - 2.12.10
+   - 2.13.2
+   - 2.12.11
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
@@ -20,10 +20,13 @@ cache:
 
 install:
   - pip install --user codecov
+  - sudo apt-get install graphviz
   - rvm use 2.6.0 --install --fuzzy
   - gem update --system
   - gem install sass
   - gem install jekyll -v 3.8.5  
+  - wget 'http://sourceforge.net/projects/plantuml/files/plantuml.1.2018.2.jar/download' -O /tmp/plantuml.1.2018.2.jar  
+  - gem install asciidoctor asciidoctor-diagram
 
 script:
 #  - sbt clean coverage test 
@@ -37,3 +40,13 @@ script:
 jdk:
   - oraclejdk12
   - openjdk12
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  keep_history: true
+  local_dir: target/site
+  on:
+    branch: master
+    condition: $TRAVIS_SCALA_VERSION = 2.13.2 AND $JAVA_HOME = /home/travis/openjdk12  
