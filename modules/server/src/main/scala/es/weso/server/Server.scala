@@ -21,7 +21,15 @@ import scala.concurrent.duration._
 
 object Server {
 
-  lazy val sslContext: SSLContext = SSLContext.getDefault
+  def context[F[_]: Sync]: F[SSLContext] =
+    ssl.loadContextFromClasspath(ssl.keystorePassword, ssl.keyManagerPassword)
+
+  def builder[F[_]: ConcurrentEffect: ContextShift: Timer](port: Int): F[BlazeServerBuilder[F]] =
+    context.map { sslContext =>
+      BlazeServerBuilder[F](global)
+        .bindHttp(port)
+        .withSslContext(sslContext)
+    }
 
   def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
 //    HelloService[F](blocker).routes <+>
@@ -37,6 +45,16 @@ object Server {
     DataWebService[F](blocker, client).routes <+>
     StaticService[F](blocker).routes <+>
     LinksService[F](blocker).routes
+
+/*  def context[F[_]: Sync] =
+    ssl.loadContextFromClasspath(ssl.keystorePassword, ssl.keyManagerPassword)
+
+  def builder[F[_]: ConcurrentEffect: ContextShift: Timer]: F[BlazeServerBuilder[F]] =
+    context.map { sslContext =>
+      BlazeServerBuilder[F](global)
+        .bindHttp(8443)
+        .withSslContext(sslContext)
+    } */
         
   def stream[F[_]: ConcurrentEffect](blocker:Blocker, port: Int, ip: String)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     for {
@@ -44,18 +62,21 @@ object Server {
       // .withConnectTimeout(3.minute)
       // .withIdleTimeout(3.minute)
       .withRequestTimeout(5.minute)
+//      .withSslContext(SSLContext.getDefault)
       .stream
       app = (
         // HelloService[F](blocker).routes
 	      HSTS( routesService[F](blocker,client) )
       ).orNotFound
       finalHttpApp = Logger.httpApp(true, false)(app)
-      exitCode <- BlazeServerBuilder[F](global)
+      b <- Stream.eval(builder(port))
+      exitCode <- b.withHttpApp(finalHttpApp).serve 
+/*      BlazeServerBuilder[F](global)
         .bindHttp(port,ip)
         .withIdleTimeout(10.minutes)
         .withHttpApp(finalHttpApp)
-        .withSslContext(sslContext)
-        .serve
+        .withSslContext(SSLContext.getDefault)
+        .serve */
     } yield exitCode
     }.drain
 
