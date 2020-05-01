@@ -66,7 +66,9 @@ object Server {
       .stream
       app = (
         // HelloService[F](blocker).routes
-	      HSTS( routesService[F](blocker,client) )
+	      // HSTS( 
+          routesService[F](blocker,client) 
+        // )
       ).orNotFound
       finalHttpApp = Logger.httpApp(true, false)(app)
       b <- Stream.eval(builder(port))
