@@ -3,7 +3,9 @@ dist: xenial
 language: scala
 
 scala:
-   - 2.13.2
+# Removed 2.13.2 because it fails with 
+# java.lang.NoSuchMethodError: scala.tools.nsc.Global.reporter()Lscala/tools/nsc/reporters/Reporter;
+#   - 2.13.2
    - 2.12.11
 
 before_cache:
@@ -32,9 +34,9 @@ script:
 #  - sbt clean coverage test 
   - if [[ "$TRAVIS_SCALA_VERSION" == 2.12.* ]];
     then
-      sbt ++$TRAVIS_SCALA_VERSION  clean coverage test coverageReport && bash <(curl -s https://codecov.io/bash);
+      sbt ++$TRAVIS_SCALA_VERSION  clean coverage test coverageReport makeSite && bash <(curl -s https://codecov.io/bash);
     else 
-      sbt ++$TRAVIS_SCALA_VERSION  clean test && echo "Skipping code coverage reporting and docs on 2.13";
+      sbt ++$TRAVIS_SCALA_VERSION  clean test && echo "Skipping code coverage reporting on 2.13";
     fi  
 
 jdk:
@@ -49,4 +51,4 @@ deploy:
   local_dir: target/site
   on:
     branch: master
-    condition: $TRAVIS_SCALA_VERSION = 2.13.2 AND $JAVA_HOME = /home/travis/openjdk12  
+    condition: $TRAVIS_SCALA_VERSION = 2.12.11 AND $JAVA_HOME = /home/travis/openjdk12  
