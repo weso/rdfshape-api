@@ -10,6 +10,7 @@ import cats.effect._
 import cats.implicits._
 import es.weso.quickstart.{HelloWorld, TestRoutes}
 import fs2.Stream
+import javax.net.ssl.SSLContext
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.dsl.Http4sDsl
@@ -19,6 +20,8 @@ import scala.util.Properties.envOrNone
 import scala.concurrent.duration._
 
 object Server {
+
+  lazy val sslContext: SSLContext = SSLContext.getDefault
 
   def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
 //    HelloService[F](blocker).routes <+>
@@ -46,12 +49,12 @@ object Server {
         // HelloService[F](blocker).routes
 	      HSTS( routesService[F](blocker,client) )
       ).orNotFound
-      // .orNotFound
       finalHttpApp = Logger.httpApp(true, false)(app)
-      exitCode <- BlazeServerBuilder[F]
+      exitCode <- BlazeServerBuilder[F](global)
         .bindHttp(port,ip)
         .withIdleTimeout(10.minutes)
         .withHttpApp(finalHttpApp)
+        .withSslContext(sslContext)
         .serve
     } yield exitCode
     }.drain
