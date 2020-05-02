@@ -73,8 +73,7 @@ object Server {
         .bindHttp(port,ip)
         .withIdleTimeout(10.minutes)
         .withHttpApp(finalHttpApp)
-        // .withSslContext(SSLContext.getDefault)
-        .serve 
+        .serve
     } yield exitCode
     }.drain
 

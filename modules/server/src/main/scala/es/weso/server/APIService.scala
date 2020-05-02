@@ -59,6 +59,17 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       Ok(Json.fromString(dataFormat))
     }
 
+    case GET -> Root / `api` / "data" / "inferenceEngines" => {
+      val inferenceEngines = Defaults.availableInferenceEngines
+      val json = Json.fromValues(inferenceEngines.map(Json.fromString(_)))
+      Ok(json)
+    }
+
+    case GET -> Root / `api` / "data" / "inferenceEngines" / "default" => {
+      val defaultInferenceEngine = Defaults.defaultInference
+      Ok(Json.fromString(defaultInferenceEngine))
+    }
+
     case GET -> Root / `api` / "data" / "visualize" / "formats" => {
       val formats = DataConverter.availableGraphFormatNames ++
         List(
