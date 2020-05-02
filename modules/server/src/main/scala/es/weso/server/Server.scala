@@ -35,6 +35,7 @@ object Server {
     CORS (
       SchemaService[F](blocker,client).routes <+>
       APIService[F](blocker, client).routes <+>
+      DataService[F](blocker, client).routes <+>
       ShExService[F](blocker,client).routes <+>
       ShapeMapService[F](blocker,client).routes <+>
       WikidataService[F](blocker, client).routes <+>

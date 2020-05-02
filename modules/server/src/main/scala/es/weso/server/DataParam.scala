@@ -13,6 +13,7 @@ import es.weso.rdf.nodes.IRI
 import es.weso.server.helper.DataFormat
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
+import es.weso.server.merged.CompoundData
 
 case class DataParam(data: Option[String],
                      dataURL: Option[String],
@@ -24,7 +25,8 @@ case class DataParam(data: Option[String],
                      dataFormatFile: Option[DataFormat],
                      inference: Option[String],
                      targetDataFormat: Option[DataFormat],
-                     activeDataTab: Option[String]
+                     activeDataTab: Option[String],
+                     compoundData: Option[String]
                     ) {
   private[this] val logger = getLogger
 
@@ -42,6 +44,9 @@ case class DataParam(data: Option[String],
   }
   case object dataTextAreaType extends DataInputType {
     override val id = "#dataTextArea"
+  }
+  case object compoundDataType extends DataInputType {
+    override val id = "#compoundData"
   }
 
   def parseDataTab(tab: String): Either[String, DataInputType] = {
@@ -93,6 +98,7 @@ case class DataParam(data: Option[String],
     println(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case Some(a) => parseDataTab(a)
+      case None if compoundData.isDefined => Right(compoundDataType)
       case None if data.isDefined => Right(dataTextAreaType)
       case None if dataURL.isDefined => Right(dataUrlType)
       case None if dataFile.isDefined => Right(dataFileType)
@@ -168,29 +174,13 @@ case class DataParam(data: Option[String],
               optStr = eitherStr.toOption
             } yield (optStr,newRdf)
           }}}
-/*            rdfFromString(data, dataFormat, base) match {
-              case Left(msg) => (Some(data), Left(msg))
-              case Right(rdf) => {
-                extendWithInference(rdf, inference) match {
-                  case Left(msg) => err(s"Error applying inference: $msg")
-                  case Right(newRdf) => {
-                    val maybeRdfStr = newRdf.serialize(dataFormat.name,relativeBase).toOption
-                    maybeEndpoint match {
-                      case None =>
-                        (maybeRdfStr, Right(newRdf))
-                      case Some(endpoint) =>
-                        Endpoint.fromString(endpoint) match {
-                          case Left(msg) => err(s"Error applying inference: $msg")
-                          case Right(endpoint) => Compound(List(endpoint, newRdf))
-                        }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } */
-      
+      case Right(`compoundDataType`) => { 
+       println(s"###Compound data") 
+       for { 
+         cd <- either2es(CompoundData.fromString(compoundData.getOrElse("")))
+         rdf <- cd.toRDF()
+       } yield (None,rdf)
+      }
       case Right(other) => fail_es(s"Unknown value for activeDataTab: $other")
       case Left(msg) => fail_es(msg)
     }
@@ -276,6 +266,7 @@ object DataParam {
   private[server] def mkDataParam[F[_]:Effect](partsMap: PartsMap[F]
   ): F[DataParam] = for {
     data <- partsMap.optPartValue("data")
+    compoundData <- partsMap.optPartValue("compoundData")
     dataURL <- partsMap.optPartValue("dataURL")
     dataFile <- partsMap.optPartValue("dataFile")
     endpoint <- partsMap.optPartValue("endpoint")
@@ -288,6 +279,7 @@ object DataParam {
     activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
   } yield {
     println(s"<<<***Data: $data")
+    println(s"<<<***CompoundData: $compoundData")
     println(s"<<<***Data Format: $dataFormatValue")
     println(s"<<<***Data Format TextArea: $dataFormatTextArea")
     println(s"<<<***Data Format Url: $dataFormatUrl")
@@ -313,13 +305,13 @@ object DataParam {
 
     DataParam(data,dataURL,dataFile,finalEndpoint,dataFormatValue,
       dataFormatTextArea,dataFormatUrl,dataFormatFile,
-      inference,targetDataFormat,finalActiveDataTab
+      inference,targetDataFormat,finalActiveDataTab,compoundData
     )
   }
 
  
   private[server] def empty: DataParam =
-    DataParam(None,None,None,None,None,None,None,None,None,None,None)
+    DataParam(None,None,None,None,None,None,None,None,None,None,None,None)
 
 
 }

@@ -237,6 +237,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           OptDataParam(optData) +&
             OptDataURLParam(optDataURL) +&
             DataFormatParam(maybeDataFormat) +&
+            CompoundDataParam(optCompoundData) +&
             OptSchemaParam(optSchema) +&
             SchemaURLParam(optSchemaURL) +&
             SchemaFormatParam(optSchemaFormat) +&
@@ -274,7 +275,8 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
                              None,
                              optInference,
                              None,
-                             optActiveDataTab)
+                             optActiveDataTab, 
+                             optCompoundData)
           val sp = SchemaParam(optSchema,
                                optSchemaURL,
                                None,

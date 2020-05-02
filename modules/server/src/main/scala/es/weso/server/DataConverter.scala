@@ -17,6 +17,7 @@ import javax.imageio.ImageIO
 import cats.effect.IO
 import es.weso.utils.IOUtils._
 import scala.util.Try
+import es.weso.server.merged.CompoundData
 
 object DataConverter extends LazyLogging {
 
@@ -69,16 +70,34 @@ object DataConverter extends LazyLogging {
 
   private case class GraphFormat(name: String, mime: String, fmt: Format)
 
-  private[server] def dataConvert(data: String,
+  private[server] def dataConvert(maybeData: Option[String],
                                   dataFormat: DataFormat,
+                                  maybeCompoundData: Option[String],
                                   targetFormat: String
                                  ): IO[DataConversionResult] = {
-    println(s"Converting $data with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat")
-    for {
-      rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name,None)
-      result <- rdfConvert(rdf,Some(data),dataFormat,targetFormat)
-    } yield result
+    println(s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat")
+    maybeData match {
+      case None => maybeCompoundData match {
+        case None => IO.raiseError(new RuntimeException(s"dataConvert: no data and no compoundData parameters"))
+        case Some(compoundDataStr) => for {
+          ecd <- either2io(CompoundData.fromString(compoundDataStr))
+          cd <- cnvEither(ecd, str => s"dataConvert: Error: $str")
+          eitherRdf <- cd.toRDF.value
+          rdf <- cnvEither(eitherRdf,str => s"Error converting compound to RDF: $str")
+          result <- rdfConvert(rdf,None,dataFormat,targetFormat)
+        } yield result
+      }
+      case Some(data) => {
+        for {
+          rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name,None)
+          result <- rdfConvert(rdf,Some(data),dataFormat,targetFormat)
+        } yield result
+      }
+    }
   }
+
+  private def cnvEither[A](e: Either[String, A], cnv: String => String): IO[A] = 
+    e.fold(s => IO.raiseError(new RuntimeException(cnv(s))), IO.pure(_))
 
   private[server] def rdfConvert(rdf: RDFReasoner,
                                  data: Option[String],
