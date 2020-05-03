@@ -58,11 +58,15 @@ case class DataParam(data: Option[String],
     }
   }
 
-  val dataFormat: Option[DataFormat] = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab)) match {
-    case Right(`dataUrlType`) => dataFormatUrl
-    case Right(`dataFileType`) => dataFormatFile
-    case Right(`dataTextAreaType`) => dataFormatTextarea
-    case _ => dataFormatValue
+  val dataFormat: Option[DataFormat] = { 
+    val dataTab = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab)) 
+    pprint.log(dataTab)
+    dataTab match {
+     case Right(`dataUrlType`) => dataFormatUrl orElse dataFormatValue
+     case Right(`dataFileType`) => dataFormatFile orElse dataFormatValue
+     case Right(`dataTextAreaType`) => dataFormatTextarea orElse dataFormatValue
+     case _ => dataFormatValue
+    }
   }
 
   private def applyInference(rdf: RDFReasoner,
@@ -256,7 +260,7 @@ object DataParam {
     case None => None
     case Some(str) => DataFormat.fromString(str).fold(
       err => {
-        logger.error(s"Unsupported dataFormat: $str")
+        pprint.log(s"Unsupported dataFormat for ${name}: $str")
         None
       },
       df => Some(df)
@@ -278,15 +282,16 @@ object DataParam {
     targetDataFormat <- getDataFormat("targetDataFormat",partsMap)
     activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
   } yield {
-    println(s"<<<***Data: $data")
-    println(s"<<<***CompoundData: $compoundData")
-    println(s"<<<***Data Format: $dataFormatValue")
-    println(s"<<<***Data Format TextArea: $dataFormatTextArea")
-    println(s"<<<***Data Format Url: $dataFormatUrl")
-    println(s"<<<***Data Format File: $dataFormatFile")
-    println(s"<<<***Data URL: $dataURL")
-    println(s"<<<***Endpoint: $endpoint")
-    println(s"<<<***ActiveDataTab: $activeDataTab")
+    pprint.log(data)
+    pprint.log(compoundData)
+    pprint.log(dataFormatValue)
+    pprint.log(dataFormatTextArea)
+    pprint.log(dataFormatUrl)
+    pprint.log(dataFormatFile)
+    pprint.log(dataURL)
+    pprint.log(endpoint)
+    pprint.log(activeDataTab)
+    pprint.log(targetDataFormat)
     val endpointRegex = "Endpoint: (.+)".r
     val finalEndpoint = endpoint.fold(data match {
       case None => None
@@ -301,12 +306,14 @@ object DataParam {
         else activeDataTab
       case None => activeDataTab
     } */
-    println(s"<<<***Endpoint: $finalEndpoint")
+    pprint.log(finalEndpoint)
 
-    DataParam(data,dataURL,dataFile,finalEndpoint,dataFormatValue,
+    val dp = DataParam(data,dataURL,dataFile,finalEndpoint,dataFormatValue,
       dataFormatTextArea,dataFormatUrl,dataFormatFile,
       inference,targetDataFormat,finalActiveDataTab,compoundData
     )
+    pprint.log(dp)
+    dp
   }
 
  

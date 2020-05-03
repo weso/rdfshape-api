@@ -48,6 +48,11 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
   val routes = HttpRoutes.of[F] {
 
+    case req @ GET -> Root / `api` / "health" => for { 
+      _ <- LiftIO[F].liftIO (IO { pprint.log(req) })
+      resp <- Ok("OK")
+    } yield resp
+
     case req @ GET -> Root / `api` / "endpoint" / "outgoing" :?
       OptEndpointParam(optEndpoint) +&
       OptNodeParam(optNode) +&

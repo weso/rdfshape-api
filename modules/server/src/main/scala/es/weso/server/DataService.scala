@@ -23,12 +23,11 @@ import org.http4s.headers._
 import org.http4s.multipart.Multipart
 import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
-
 import scala.concurrent.duration._
 import APIDefinitions._
 import cats.Monad
 import cats.data.EitherT
-import es.weso.html
+// import es.weso.html
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
@@ -45,14 +44,22 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
   val routes = HttpRoutes.of[F] {
 
-    case GET -> Root / `api` / "data" / "formats" => {
-      val formats = DataFormats.formatNames
+    // Input RDF data formats include html-microdata, turtle, json-ld...
+    case GET -> Root / `api` / "data" / "formats" / "input" => {
+      val formats = DataFormat.availableDataFormats.map(_.name)
+      val json = Json.fromValues(formats.map(Json.fromString(_)))
+      Ok(json)
+    }
+
+    // Output RDF data conversion formats
+    case GET -> Root / `api` / "data" / "formats" / "output" => {
+      val formats = DataFormats.availableFormats.map(_.name)
       val json = Json.fromValues(formats.map(Json.fromString(_)))
       Ok(json)
     }
 
     case GET -> Root / `api` / "data" / "formats" / "default" => {
-      val dataFormat = DataFormats.defaultFormatName
+      val dataFormat = DataFormat.default.name
       Ok(Json.fromString(dataFormat))
     }
 
@@ -167,7 +174,8 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
             case Right((rdf, dp)) => {
               val targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name
               val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
-              // println(s"### POST DataFormat = ${dataFormat}")
+              pprint.log(dp)
+              pprint.log(dataFormat)
               for {
                 result <- io2f(DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat))
                 ok <- Ok(result.toJson)
@@ -209,9 +217,11 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                resp <- maybePair match {
                 case Left(err) => errJson(s"Error obtaining Query data $err")
                 case Right((queryStr,qp)) => {
+                  pprint.log(qp);
                   val optQueryStr = qp.query.map(_.str)
                   for {
                    json <- io2f(rdf.queryAsJson(optQueryStr.getOrElse("")))
+                   _ <- io2f (IO { pprint.log(json) } )
                    v <- Ok(json)
                   } yield v
                 }
