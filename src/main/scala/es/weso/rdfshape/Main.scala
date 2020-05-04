@@ -17,7 +17,7 @@ import java.nio.file._
 // import es.weso.quickstart.QuickStartMain
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 object Main extends App with LazyLogging {
     try {

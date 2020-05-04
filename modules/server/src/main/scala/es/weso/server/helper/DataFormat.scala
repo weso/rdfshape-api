@@ -28,6 +28,7 @@ object DataFormat {
     availableDataFormats.map(df => (df.name.toLowerCase,df)).toMap
 
   lazy val default: DataFormat = Turtle
+
 }
 
 case object JsonDataFormat extends DataFormat {

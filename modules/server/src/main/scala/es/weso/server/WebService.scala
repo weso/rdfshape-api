@@ -26,7 +26,7 @@ import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
 import org.http4s.server.staticcontent.webjarService
 import org.http4s.server.staticcontent.WebjarService.{WebjarAsset, Config}
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.rdf.RDFReader
 
 class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
@@ -164,8 +164,10 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
                 sp.schemaEngine.getOrElse(defaultSchemaEngine), availableSchemaEngines,
                 sp.activeSchemaTab.getOrElse(defaultActiveSchemaTab)
               )
-              val info = schemaVisualize(schema)
-              Ok(html.schemaVisualize(Some(info),sv))
+              for {
+                info <- io2f(schemaVisualize(schema))
+                r <- Ok(html.schemaVisualize(Some(info),sv))
+              } yield r  
             }
           }
         } yield response
@@ -193,10 +195,13 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       for {
         pair <- L.liftIO(sp.getSchema(None))
         (_,either: Either[String,Schema]) = pair
-        v <- either.fold(e => BadRequest(s"Error obtaining schema: $e"), schema => {
-          val info = schemaVisualize(schema)
-          Ok(html.schemaVisualize(Some(info),sv))
-        })
+        v <- either.fold(e => 
+          BadRequest(s"Error obtaining schema: $e"), 
+          schema => for {
+          info <- io2f(schemaVisualize(schema))
+          r <- Ok(html.schemaVisualize(Some(info),sv))
+          } yield r
+        )
       } yield v 
     }
 

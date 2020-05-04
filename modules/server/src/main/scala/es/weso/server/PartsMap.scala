@@ -1,5 +1,4 @@
 package es.weso.server
-
 import cats._
 import cats.effect.{Effect, IO}
 import data._
@@ -32,6 +31,12 @@ case class PartsMap[F[_]: Effect] private(map: Map[String,Part[F]]) {
     case None => Effect[F].point(None)
   }
 
+  def partValue(key:String): F[String] = for {
+    eitherValue <- eitherPartValue(key)
+    value <- eitherValue.fold(
+      s => MonadError[F,Throwable].raiseError(new RuntimeException(s)), 
+      Monad[F].pure(_))
+  } yield value
 }
 
 object PartsMap {

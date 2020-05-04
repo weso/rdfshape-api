@@ -18,7 +18,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.log4s.getLogger
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.rdf.RDFReader
 import h.pair
 import es.weso.rdf.RDFReasoner
@@ -38,6 +38,7 @@ class DataWebService[F[_]](blocker: Blocker,
       OptDataURLParam(optDataURL) +&
       DataFormatParam(maybeDataFormat) +&
       InferenceParam(optInference) +&
+      CompoundDataParam(optCompoundData) +&
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) +&
       TargetDataFormatParam(maybeTargetDataFormat) => {
@@ -57,7 +58,7 @@ class DataWebService[F[_]](blocker: Blocker,
               None,  //no dataFormatFile
               optInference,
               optTargetDataFormat,
-              optActiveDataTab)
+              optActiveDataTab,optCompoundData)
 
           val dv = DataValue(optData,
             optDataURL,
@@ -146,6 +147,7 @@ class DataWebService[F[_]](blocker: Blocker,
       OptDataURLParam(optDataURL) +&
       DataFormatParam(maybeDataFormat) +&
       InferenceParam(optInference) +&
+      CompoundDataParam(optCompoundData) +& 
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) => {
 
@@ -161,7 +163,7 @@ class DataWebService[F[_]](blocker: Blocker,
               optDataFormat, optDataFormat, optDataFormat,
               None,  //no dataFormatFile
               optInference,
-              None, optActiveDataTab)
+              None, optActiveDataTab, optCompoundData)
           for {
             either <- run_esiof(dp.getData(relativeBase))
             ok <- either.fold(str => BadRequest(str), pair => {
@@ -234,6 +236,7 @@ class DataWebService[F[_]](blocker: Blocker,
         InferenceParam(optInference) +&
         OptEndpointParam(optEndpoint) +&
         OptActiveDataTabParam(optActiveDataTab) +&
+        CompoundDataParam(optCompoundData) +&
         TargetDataFormatParam(maybeTargetDataFormat) => {
 
         val either: Either[String, (Option[DataFormat], Option[DataFormat])] = for {
@@ -268,7 +271,7 @@ class DataWebService[F[_]](blocker: Blocker,
                                None,
                                optInference,
                                None,
-                               optActiveDataTab)
+                               optActiveDataTab, optCompoundData)
             for {
               either <- run_esiof(dp.getData(relativeBase))
               resp <- either match {
