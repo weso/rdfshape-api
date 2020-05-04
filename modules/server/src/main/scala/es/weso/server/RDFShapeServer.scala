@@ -33,7 +33,10 @@ object HelloService {
 }
 */
 
-class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
+/**
+ * RDFShape server
+ **/
+/* class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
   private val logger = getLogger
 
   logger.info(s"Starting RDFShape on '$host:$port'")
@@ -79,7 +82,7 @@ class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(impl
     } yield server
 */
 //  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
-}
+} */
 
 object RDFShapeServer extends IOApp {
 
@@ -93,8 +96,10 @@ object RDFShapeServer extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode]  = {
     val blocker = Blocker.liftExecutionContext(global)
-    // new RDFShapeServer[IO](ip,port).
     Server.stream[IO](blocker,port,ip).compile.drain.as(ExitCode.Success)
+    /* for {
+     sslCtx <- SSLHelper.getContextFromClassPath("password", "alno631")
+    } yield ExitCode.Success */
   }
 
 

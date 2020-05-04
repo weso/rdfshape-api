@@ -168,8 +168,9 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           val r: EitherT[F, String, Json] = for {
             schemaPair <- SchemaParam.mkSchema(partsMap, None)
             (schema, _) = schemaPair
+            v <- io2esf(schemaVisualize(schema))
           } yield {
-            schemaVisualize(schema)
+            v
           }
           for {
             e <- r.value
@@ -213,15 +214,15 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         None,
         None,
         optActiveSchemaTab)
-      println(s">>>>>>>>>>>>>>>>>>>Before...")  
       val r: EitherT[IO,String,String] = for {
         _ <- { println(s"#####<<<< Before...getSchema"); ok_es(())}
         pair <- EitherT(sp.getSchema(None).attempt.map(_.leftMap(s => s"Error obtaining schema: ${s.getMessage}")))
         _ <- { println(s"#####<<<< After...getSchema"); ok_es(())}
         (_,either: Either[String,Schema]) = pair
-        svg <- either.fold(s => fail_es(s"Error parsing schema: $s"), schema => {
-                      val (svg,_) = schema2SVG(schema)  
-                      ok_es(svg)
+        svg <- either.fold(s => 
+          fail_es(s"Error parsing schema: $s"), 
+          schema => {
+            io2es(schema2SVG(schema).map(_._1))
         })
       } yield svg
       for {
@@ -236,6 +237,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           OptDataParam(optData) +&
             OptDataURLParam(optDataURL) +&
             DataFormatParam(maybeDataFormat) +&
+            CompoundDataParam(optCompoundData) +&
             OptSchemaParam(optSchema) +&
             SchemaURLParam(optSchemaURL) +&
             SchemaFormatParam(optSchemaFormat) +&
@@ -273,7 +275,8 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
                              None,
                              optInference,
                              None,
-                             optActiveDataTab)
+                             optActiveDataTab, 
+                             optCompoundData)
           val sp = SchemaParam(optSchema,
                                optSchemaURL,
                                None,

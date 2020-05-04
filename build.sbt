@@ -28,10 +28,8 @@ scalafmt: {
 }
  */
 
-// Local dependencies 
-// lazy val shaclexVersion        = "0.1.47" 
 lazy val utilsVersion          = "0.1.67" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.56"
+lazy val umlShaclexVersion     = "0.0.57"
 lazy val shexsVersion          = "0.1.60"
 
 
@@ -42,8 +40,8 @@ lazy val rdf4jVersion          = "2.2.4"
 lazy val catsVersion           = "2.1.1"
 lazy val commonsTextVersion    = "1.7"
 lazy val circeVersion          = "0.12.3"
-lazy val graphvizJavaVersion   = "0.5.4"
-lazy val http4sVersion         = "0.21.2"
+lazy val graphvizJavaVersion   = "0.5.2"
+lazy val http4sVersion         = "0.21.4"
 lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
@@ -114,6 +112,8 @@ lazy val rdfshape = project
   .in(file("."))
   .enablePlugins(
     ScalaUnidocPlugin,
+    SiteScaladocPlugin, 
+    AsciidoctorPlugin, 
     SbtNativePackager,
     WindowsPlugin,
     JavaAppPackaging,
@@ -124,7 +124,12 @@ lazy val rdfshape = project
   .dependsOn(server)
   .settings(
     dockerExposedPorts ++= Seq(80),
+    siteSubdirName in ScalaUnidoc := "scaladoc/latest",
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(noDocProjects: _*),
+    mappings in makeSite ++= Seq(
+      file("src/assets/favicon.ico") -> "favicon.ico"
+    ),
     libraryDependencies ++= Seq(
       logbackClassic,
       scalaLogging,
@@ -201,7 +206,7 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  scalaVersion := "2.13.1",
+  scalaVersion := "2.12.11",
   // format: off
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.

@@ -7,6 +7,7 @@ import org.http4s.dsl.io.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMat
 
 object QueryParams {
   lazy val data = "data"
+  lazy val compoundData = "compoundData"
   lazy val dataURL = "dataURL"
   lazy val endpoint = "endpoint"
   lazy val endpoints = "endpoints"
@@ -19,11 +20,12 @@ object QueryParams {
   lazy val schemaURL = "schemaURL"
   lazy val schemaFormat = "schemaFormat"
   lazy val shape = "shape"
-  object DataParameter extends QueryParamDecoderMatcher[String](data)
+  object DataParameter extends OptionalQueryParamDecoderMatcher[String](data)
   object OptDataParam extends OptionalQueryParamDecoderMatcher[String](data)
   object OptEndpointParam extends OptionalQueryParamDecoderMatcher[String](endpoint)
   object OptDataURLParam extends OptionalQueryParamDecoderMatcher[String](dataURL)
   object DataFormatParam extends OptionalQueryParamDecoderMatcher[String](dataFormat)
+  object CompoundDataParam extends OptionalQueryParamDecoderMatcher[String](compoundData)
   object TargetDataFormatParam extends OptionalQueryParamDecoderMatcher[String](targetDataFormat)
   object OptSchemaParam extends OptionalQueryParamDecoderMatcher[String](schema)
   object OptEntityParam extends OptionalQueryParamDecoderMatcher[String](entity)
