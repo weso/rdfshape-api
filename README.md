@@ -53,3 +53,5 @@ Contributions are greatly appreciated. Please fork this repository and open a pu
 
 * [Issues about RDFShape online demo](https://github.com/labra/rdfshape/issues)
 * [Issues about SHACLex validation library](https://github.com/labra/shaclex/issues)
+
+```Made with [contributors-img](https://contributors-img.web.app).
