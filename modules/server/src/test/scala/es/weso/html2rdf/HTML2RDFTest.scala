@@ -1,11 +1,14 @@
 package es.weso.html2rdf
 import es.weso.rdf.jena.RDFAsJenaModel
-import org.scalatest._
+import org.scalatest.funspec._
+import org.scalatest.matchers.should._
+import es.weso.utils.IOUtils._
+import es.weso.rdf.RDFReader
 
-class HTML2RDFTest extends FunSpec with Matchers {
+class HTML2RDFTest extends AnyFunSpec with Matchers {
   describe(s"Extract RDF data from HTML") {
 
-/*    shouldExtract(
+    shouldExtract(
       """|<body prefix = "xsd: http://www.w3.org/2001/XMLSchema#"
          |      vocab = "http://schema.org/" >
          |<div resource="http://example.org/post" typeOf="Blog">
@@ -54,7 +57,7 @@ class HTML2RDFTest extends FunSpec with Matchers {
          |] .
       """.stripMargin, "html-microdata"
     )
-*/
+
     shouldExtract(
       """|<div itemscope
          |     itemtype="http://schema.org/Person"
@@ -86,23 +89,25 @@ class HTML2RDFTest extends FunSpec with Matchers {
 
     def shouldExtract(html: String, expected: String, extractorName: String): Unit = {
       it(s"Should extract from $html and obtain $expected with extractor $extractorName") {
-        val r = for {
+        val r: ESIO[(Boolean,String,String)] = for {
           expected     <- {
             println(s"## Before parsing RDF\n${expected}\n---")
-            RDFAsJenaModel.fromChars(expected, "TURTLE")
+            io2es(RDFAsJenaModel.fromChars(expected, "TURTLE"))
           }
+          expectedStr <- io2es(expected.serialize("TURTLE"))
           rdf          <- {
-            println(s"Expected: \n ${expected.serialize("TURTLE").getOrElse("")}")
+            println(s"Expected: \n ${expectedStr}")
             println(s"## Before extraction with $extractorName")
             HTML2RDF.extractFromString(html,extractorName)
           }
+          rdfObtained <- io2es(rdf.serialize("TURTLE"))
           isIsomorphic <- {
-            println(s"RDF extracted: \n ${rdf.serialize("TURTLE").getOrElse("")}")
-            rdf.isIsomorphicWith(expected)
+            println(s"RDF extracted: \n ${rdfObtained}")
+            io2es(rdf.isIsomorphicWith(expected))
           }
-        } yield (isIsomorphic, rdf, expected)
+        } yield (isIsomorphic, rdfObtained, expectedStr)
 
-        r.fold(
+        run_es(r).unsafeRunSync.fold(
           e => fail(s"Error extracting: $e"),
           pair => {
             val (ok, rdf, expected) = pair
@@ -112,9 +117,9 @@ class HTML2RDFTest extends FunSpec with Matchers {
               fail(
                 s"""Model extracted is not isomorphic with expected one:
                    |Model extracted
-                   |${rdf.serialize("Turtle").getOrElse("")}
+                   |${expected}
                    |Model expected
-                   |${expected.serialize("Turtle").getOrElse("")}
+                   |${rdf}
                    |""".stripMargin)
             }
           }

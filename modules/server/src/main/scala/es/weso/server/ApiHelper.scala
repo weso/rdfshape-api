@@ -29,7 +29,7 @@ import es.weso.utils.json.JsonUtilsServer._
 import es.weso.server.Defaults._
 import org.http4s.dsl._
 import scala.util.Try
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import es.weso.shapeMaps.ResultShapeMap
 
 object ApiHelper {
@@ -50,15 +50,15 @@ object ApiHelper {
     Json.fromFields(pm.pm.map { case (prefix, iri) => (prefix.str, Json.fromString(iri.getLexicalForm)) })
   }
 
-  private[server] def resolveUri(baseUri: Uri, urlStr: String): Either[String, Option[String]] = {
+  private[server] def resolveUri(baseUri: Uri, urlStr: String): IO[String] = {
     println(s"Handling Uri: $urlStr")
     // TODO: handle timeouts
     Uri.fromString(urlStr).fold(
       fail => {
         logger.info(s"Error parsing $urlStr")
-        Left(fail.message)
+        IO.raiseError[String](new RuntimeException(s"Error resolving ${urlStr} as URL: ${fail.message}"))
       },
-      uri => Try {
+      uri => {
         // TODO: The following code is unsafe...
         implicit val cs: ContextShift[IO] = IO.contextShift(global)
         implicit val timer: Timer[IO] = IO.timer(global)
@@ -67,8 +67,8 @@ object ApiHelper {
         val httpClient: Client[IO] = JavaNetClientBuilder[IO](blocker).create
         val resolvedUri = baseUri.resolve(uri)
         logger.info(s"Resolved: $resolvedUri")
-        httpClient.expect[String](resolvedUri).unsafeRunSync()
-      }.toEither.leftMap(_.getMessage).map(Some(_))
+        httpClient.expect[String](resolvedUri)
+      }
     )
   }
 
@@ -269,12 +269,13 @@ object ApiHelper {
          result <- either2es(eitherResult)
          (schemaInfer, resultMap) = result
          maybePair <- if (withUml) either2es(Schema2UML.schema2UML(schemaInfer).map(Some(_))) else ok_es(None)
-         svg = maybePair.map{ 
-           pair => {
+         maybeSvg <- io2es(maybePair match {
+           case None => IO.pure(None)
+           case Some(pair) => {
              val (uml,warnings) = pair
-             uml.toSVG(options)
-            }
-        }
+             uml.toSVG(options).map(Some(_))
+           }
+         })
          str <- io2es(schemaInfer.serialize(schemaFormat))
        } yield Json.fromFields(
          List(
@@ -288,7 +289,7 @@ object ApiHelper {
                val (uml,warnings) = pair
                Json.fromString(uml.toPlantUML(options)) }
            ) ++
-           maybeField(svg, "svg", Json.fromString(_))
+           maybeField(maybeSvg, "svg", Json.fromString(_))
        )
      }
    }
@@ -363,14 +364,18 @@ object ApiHelper {
     ).toJson
   }
 
-  private[server] def schema2SVG(schema: Schema): (String,String) = {
+  private[server] def schema2SVG(schema: Schema): IO[(String,String)] = {
     val eitherUML = Schema2UML.schema2UML(schema)
     eitherUML.fold(
-      e => (s"SVG conversion: $e", s"UML Error convertins: $e"),
+      e => IO.pure((s"SVG conversion: $e", s"Error converting UML: $e")),
       pair => {
         val (uml,warnings) = pair
         // println(s"UML converted: $uml")
-        (uml.toSVG(options), uml.toPlantUML(options))
+        (for {
+          str <- uml.toSVG(options) 
+        } yield {
+          (str, uml.toPlantUML(options))
+        }).handleErrorWith(e => IO.pure((s"SVG conversion error: ${e.getMessage()}",uml.toPlantUML(options))))
       }
     )
   }
@@ -388,8 +393,10 @@ object ApiHelper {
     )
   }
 
-  private[server] def schemaVisualize(schema:Schema): Json = {
-    val (svg,plantuml) = schema2SVG(schema)
+  private[server] def schemaVisualize(schema:Schema): IO[Json] = for {
+    pair <- schema2SVG(schema)
+  } yield {
+    val (svg,plantuml) = pair
     val info = schema.info
     val fields: List[(String,Json)] =
       List(

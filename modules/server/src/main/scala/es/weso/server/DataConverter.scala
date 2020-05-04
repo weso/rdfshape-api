@@ -15,8 +15,9 @@ import guru.nidi.graphviz.model.MutableGraph
 import guru.nidi.graphviz.parse.Parser
 import javax.imageio.ImageIO
 import cats.effect.IO
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 import scala.util.Try
+import es.weso.server.merged.CompoundData
 
 object DataConverter extends LazyLogging {
 
@@ -69,23 +70,41 @@ object DataConverter extends LazyLogging {
 
   private case class GraphFormat(name: String, mime: String, fmt: Format)
 
-  private[server] def dataConvert(data: String,
+  private[server] def dataConvert(maybeData: Option[String],
                                   dataFormat: DataFormat,
+                                  maybeCompoundData: Option[String],
                                   targetFormat: String
                                  ): IO[DataConversionResult] = {
-    println(s"Converting $data with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat")
-    for {
-      rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name,None)
-      result <- rdfConvert(rdf,Some(data),dataFormat,targetFormat)
-    } yield result
+    println(s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat")
+    maybeData match {
+      case None => maybeCompoundData match {
+        case None => IO.raiseError(new RuntimeException(s"dataConvert: no data and no compoundData parameters"))
+        case Some(compoundDataStr) => for {
+          ecd <- either2io(CompoundData.fromString(compoundDataStr))
+          cd <- cnvEither(ecd, str => s"dataConvert: Error: $str")
+          eitherRdf <- cd.toRDF.value
+          rdf <- cnvEither(eitherRdf,str => s"Error converting compound to RDF: $str")
+          result <- rdfConvert(rdf,None,dataFormat,targetFormat)
+        } yield result
+      }
+      case Some(data) => {
+        for {
+          rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name,None)
+          result <- rdfConvert(rdf,Some(data),dataFormat,targetFormat)
+        } yield result
+      }
+    }
   }
+
+  private def cnvEither[A](e: Either[String, A], cnv: String => String): IO[A] = 
+    e.fold(s => IO.raiseError(new RuntimeException(cnv(s))), IO.pure(_))
 
   private[server] def rdfConvert(rdf: RDFReasoner,
                                  data: Option[String],
                                  dataFormat: DataFormat,
                                  targetFormat: String
-                                 ): IO[DataConversionResult] = for {
-    converted <- targetFormat.toUpperCase match {
+                                 ): IO[DataConversionResult] = {
+   val doConversion: IO[String] = targetFormat.toUpperCase match {
       case "JSON" => for {
         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
       } yield sgraph.toJson.spaces2
@@ -93,15 +112,24 @@ object DataConverter extends LazyLogging {
         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
       } yield sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
       case t if rdfDataFormats.contains(t) => rdf.serialize(t)
-      case t if availableGraphFormatNames.contains(t) =>for {
+      case t if availableGraphFormatNames.contains(t) => {
+        val doS: IO[String] = for {
         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-        format <- either2io(getTargetFormat(t))
+        eitherFormat <- either2io(getTargetFormat(t))
         dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-        converted <- either2io(dotConverter(dotStr,format))
-      } yield converted
+        eitherConverted <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), 
+         format => either2io(dotConverter(dotStr,format))
+        ) 
+        c <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), _ => IO(dotStr))
+       } yield c
+       doS
+      } 
       case t => IO.raiseError(new RuntimeException(s"Unsupported format: ${t}"))
     }
-  } yield DataConversionResult("Conversion successful!",data, dataFormat, targetFormat, converted)
 
+   for {
+    converted <- doConversion
+  } yield DataConversionResult("Conversion successful!",data, dataFormat, targetFormat, converted)
+  }
 
 }

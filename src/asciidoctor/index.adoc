@@ -1,0 +1,19 @@
+= RDFShape
+:toc: right
+
+RDFShape is a server library that implements both 
+link:http://shex.io/[ShEx]
+and 
+link:https://www.w3.org/TR/shacl/[SHACL].
+
+- link:https://github.com/weso/rdfshape/issues[Issues about the server application]
+- link:https://github.com/weso/rdfshape[Source code of the server]
+- link:https://github.com/weso/rdfshape-client[Source code of the React client]
+- link:scaladoc/latest/es/weso/index.html[ScalaDoc]
+- link:https://bintray.com/labra/maven/shaclex[Binary Jars and Javadocs]
+- link:https://github.com/labra/shaclex/wiki[SHaclEX wiki]
+
+== About ShEx and SHACL 
+
+- link:http://book.validatingrdf.com/[Validating RDF data book]. The HTML version of the book is freely available online.
+

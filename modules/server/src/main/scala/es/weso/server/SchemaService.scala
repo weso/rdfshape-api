@@ -22,7 +22,7 @@ import org.http4s.headers._
 import org.http4s.multipart.Multipart
 import es.weso.server.ApiHelper.SchemaInfoReply
 import org.log4s.getLogger
-import es.weso.server.utils.IOUtils._
+import es.weso.utils.IOUtils._
 
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
@@ -168,8 +168,9 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           val r: EitherT[F, String, Json] = for {
             schemaPair <- SchemaParam.mkSchema(partsMap, None)
             (schema, _) = schemaPair
+            v <- io2esf(schemaVisualize(schema))
           } yield {
-            schemaVisualize(schema)
+            v
           }
           for {
             e <- r.value
@@ -213,11 +214,20 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         None,
         None,
         optActiveSchemaTab)
-      for {
-        pair <- L.liftIO(sp.getSchema(None))
+      val r: EitherT[IO,String,String] = for {
+        _ <- { println(s"#####<<<< Before...getSchema"); ok_es(())}
+        pair <- EitherT(sp.getSchema(None).attempt.map(_.leftMap(s => s"Error obtaining schema: ${s.getMessage}")))
+        _ <- { println(s"#####<<<< After...getSchema"); ok_es(())}
         (_,either: Either[String,Schema]) = pair
-        v <- either.fold(s => errJson(s"Error obtaining schema $s"), schema => {
-          val (svg,_) = schema2SVG(schema)
+        svg <- either.fold(s => 
+          fail_es(s"Error parsing schema: $s"), 
+          schema => {
+            io2es(schema2SVG(schema).map(_._1))
+        })
+      } yield svg
+      for {
+        either <- L.liftIO(run_es(r))
+        v <- either.fold(s => errJson(s"Error obtaining schema $s"), svg => {
           Ok(svg).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
         })
       } yield v
@@ -227,6 +237,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           OptDataParam(optData) +&
             OptDataURLParam(optDataURL) +&
             DataFormatParam(maybeDataFormat) +&
+            CompoundDataParam(optCompoundData) +&
             OptSchemaParam(optSchema) +&
             SchemaURLParam(optSchemaURL) +&
             SchemaFormatParam(optSchemaFormat) +&
@@ -264,7 +275,8 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
                              None,
                              optInference,
                              None,
-                             optActiveDataTab)
+                             optActiveDataTab, 
+                             optCompoundData)
           val sp = SchemaParam(optSchema,
                                optSchemaURL,
                                None,
