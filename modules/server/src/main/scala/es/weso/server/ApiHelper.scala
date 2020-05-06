@@ -20,7 +20,7 @@ import org.http4s._
 import org.log4s.getLogger
 import es.weso.uml._
 import es.weso.schemaInfer._
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import es.weso.shapeMaps.{NodeSelector, ShapeMap}
 import org.http4s.client.{Client, JavaNetClientBuilder}
 import es.weso.shacl.converter.Shacl2ShEx

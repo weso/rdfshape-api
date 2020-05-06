@@ -9,7 +9,7 @@ import es.weso.server.ApiHelper._
 import results._
 import es.weso.server.Defaults.{availableDataFormats, availableInferenceEngines, defaultActiveDataTab, defaultDataFormat, defaultInference}
 import es.weso.server.QueryParams._
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import es.weso.server.utils.Http4sUtils._
 import io.circe._
 import io.circe.generic.auto._
@@ -46,7 +46,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     // Input RDF data formats include html-microdata, turtle, json-ld...
     case GET -> Root / `api` / "data" / "formats" / "input" => {
-      val formats = DataFormat.availableDataFormats.map(_.name)
+      val formats = DataFormat.default.availableFormats.map(_.name)
       val json = Json.fromValues(formats.map(Json.fromString(_)))
       Ok(json)
     }
@@ -135,7 +135,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) => {
 
-      val either: Either[String, Option[DataFormat]] = for {
+      val either: Either[String, Option[Format]] = for {
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
 

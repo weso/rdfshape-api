@@ -16,7 +16,7 @@ import ApiHelper._
 import Defaults._
 import ApiHelper._
 import cats.data.EitherT
-import es.weso.server.helper.{DataFormat, Svg}
+import es.weso.server.format.{DataFormat, Svg}
 import io.circe.Json
 import org.http4s.headers.`Content-Type`
 import cats.implicits._
@@ -129,7 +129,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
 
       val sp = SchemaParam(optSchema, optSchemaURL, None,
         optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine,
-        None, None, None, optActiveSchemaTab)
+        None, None, None, None, optActiveSchemaTab)
 
       val sv = SchemaValue(optSchema, optSchemaURL,
         optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
@@ -185,7 +185,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
 
       val sp = SchemaParam(optSchema, optSchemaURL, None,
         optSchemaFormat, optSchemaFormat, optSchemaFormat, optSchemaEngine,
-        None, None, None, optActiveSchemaTab)
+        None, None, None, None, optActiveSchemaTab)
 
       val sv = SchemaValue(optSchema, optSchemaURL,
         optSchemaFormat.getOrElse(defaultSchemaFormat), availableSchemaFormats,
@@ -516,7 +516,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
                                        tp: TriggerModeParam): ESF[Response[F],F] = {
     val dv = DataValue(
       dp.data, dp.dataURL,
-      dp.dataFormat.getOrElse(defaultDataFormat), availableDataFormats,
+      dp.dataFormat.getOrElse(DataFormat.default), DataFormat.default.availableFormats,
       dp.inference.getOrElse(defaultInference), availableInferenceEngines,
       dp.maybeEndpoint,
       dp.activeDataTab.getOrElse(defaultActiveDataTab)

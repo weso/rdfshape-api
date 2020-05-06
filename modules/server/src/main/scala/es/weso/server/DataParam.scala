@@ -10,7 +10,7 @@ import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
 import es.weso.server.merged.CompoundData
@@ -58,7 +58,7 @@ case class DataParam(data: Option[String],
     }
   }
 
-  val dataFormat: Option[DataFormat] = { 
+  val dataFormat: Option[Format] = { 
     val dataTab = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab)) 
     pprint.log(dataTab)
     dataTab match {
@@ -71,7 +71,7 @@ case class DataParam(data: Option[String],
 
   private def applyInference(rdf: RDFReasoner,
                              inference: Option[String],
-                             dataFormat: DataFormat
+                             dataFormat: Format
                             ): IO[RDFReasoner] = for {
     newRdf <- extendWithInference(rdf, inference) 
 //    str <- rdf.serialize(dataFormat.name)
@@ -140,7 +140,7 @@ case class DataParam(data: Option[String],
         dataFile match {
           case None => fail_es(s"No value for dataFile")
           case Some(dataStr) =>
-            val dataFormat = dataFormatFile.getOrElse(defaultDataFormat)
+            val dataFormat: Format = dataFormatFile.getOrElse(DataFormat.default)
             io2es(for {
               iriBase <- mkBase(base)
               rdf <- RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase)
@@ -170,7 +170,7 @@ case class DataParam(data: Option[String],
           } yield (None, empty)
           // fromIO(RDFAsJenaModel.empty)
           case Some(data) => {
-            val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(defaultDataFormat))
+            val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
             for {
               rdf <- rdfFromString(data, dataFormat, base)
               newRdf <- io2es(extendWithInference(rdf, inference))
@@ -192,7 +192,7 @@ case class DataParam(data: Option[String],
 
 
   private def rdfFromString(str: String,
-                            format: DataFormat,
+                            format: Format,
                             base: Option[String]
                            ): ESIO[RDFReasoner] = {
     println(s"Format: $format")
@@ -208,7 +208,7 @@ case class DataParam(data: Option[String],
   }
 
   private def rdfFromUri(uri: URI,
-                         format: DataFormat,
+                         format: Format,
                          base: Option[String]
                         ): ESIO[RDFReasoner] = {
     format.name.toLowerCase match {
@@ -258,7 +258,7 @@ object DataParam {
     maybeStr <- partsMap.optPartValue(name)
   } yield maybeStr match {
     case None => None
-    case Some(str) => DataFormat.fromString(str).fold(
+    case Some(str) => DataFormat.default.fromString(str).fold(
       err => {
         pprint.log(s"Unsupported dataFormat for ${name}: $str")
         None
