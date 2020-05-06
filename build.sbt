@@ -59,7 +59,7 @@ lazy val silencerVersion       = "1.4.2"
 lazy val typesafeConfigVersion = "1.3.4"
 
 // WebJars
-lazy val jqueryVersion         = "3.4.1"
+lazy val jqueryVersion         = "3.5.1"
 lazy val bootstrapVersion      = "4.3.1"
 
 // Compiler plugin dependency versions
