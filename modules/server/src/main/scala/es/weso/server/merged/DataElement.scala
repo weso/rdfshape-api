@@ -22,7 +22,7 @@ case class DataElement(
 ) {
  def toRDF: EitherT[IO,String,RDFAsJenaModel] = activeDataTab match {
       case DataTextArea => for {
-        rdf <- io2es(RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name))
+        rdf <- io2es(RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name,None,false))
       } yield rdf
       case _ => fail_es(s"Not implemented yet compound with activeDataTab: ${activeDataTab}")
   }  
