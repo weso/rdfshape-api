@@ -33,7 +33,7 @@ case class MergedModels(members: List[RDFAsJenaModel])
       def cmb(v: RDFAsJenaModel, r: RDFAsJenaModel): RDFAsJenaModel = RDFAsJenaModel(model = r.model.add(v.model))
       members.foldRight(zero)(cmb)
   }
-
+exit
   lazy val prefixMap: PrefixMap = {
       val zero: PrefixMap = PrefixMap.empty
       def cmb(v: RDFAsJenaModel, pm: PrefixMap): PrefixMap = pm.addPrefixMap(v.getPrefixMap())
@@ -54,7 +54,7 @@ case class MergedModels(members: List[RDFAsJenaModel])
   override def fromString(cs: CharSequence,
                           format: String,
                           base: Option[IRI]): RDFRead[MergedModels] = for {
-    rdf <- RDFAsJenaModel.fromString(cs.toString, format,base)
+    rdf <- RDFAsJenaModel.fromString(cs.toString, format, base)
   } yield MergedModels(List(rdf))
 
   override def serialize(format: String, base: Option[IRI]): RDFRead[String] = mergedRdf.serialize(format,base)

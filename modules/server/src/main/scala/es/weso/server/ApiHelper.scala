@@ -308,7 +308,8 @@ object ApiHelper {
     either.fold(e => DataInfoResult.fromMsg(e).toJson, identity)
   }
 
-  private[server] def dataInfo(rdf: RDFReasoner, data: Option[String], dataFormat: Option[DataFormat]): IO[Json] =  {
+  private[server] def dataInfo(rdf: RDFReasoner, 
+    data: Option[String], dataFormat: Option[DataFormat]): IO[Json] =  {
     val either: ESIO[DataInfoResult] = for {
       numberStatements <- io2es(rdf.getNumberOfStatements)
       preds <- stream2es(rdf.predicates)
