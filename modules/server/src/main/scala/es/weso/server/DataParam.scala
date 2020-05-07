@@ -189,7 +189,6 @@ case class DataParam(data: Option[String],
 
       case Left(msg) => fail_es(msg)
     }
-    pprint.log(x)
     x 
   }
 

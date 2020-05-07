@@ -48,13 +48,16 @@ case class SchemaParam(schema: Option[String],
     }
   }
 
-  val schemaFormat: Option[SchemaFormat] = 
-    parseSchemaTab(activeSchemaTab.getOrElse(defaultActiveSchemaTab)) match {
-      case Right(`SchemaUrlType`) => schemaFormatUrl
-      case Right(`SchemaFileType`) => schemaFormatFile
-      case Right(`SchemaTextAreaType`) => schemaFormatTextArea
-      case _ => None
+  val schemaFormat: Option[SchemaFormat] = {
+    val schemaTab = parseSchemaTab(activeSchemaTab.getOrElse(defaultActiveSchemaTab))
+    pprint.log(schemaTab)
+    schemaTab match {
+      case Right(`SchemaUrlType`) => schemaFormatUrl orElse schemaFormatValue
+      case Right(`SchemaFileType`) => schemaFormatFile orElse schemaFormatValue
+      case Right(`SchemaTextAreaType`) => schemaFormatTextArea orElse schemaFormatValue
+      case _ => schemaFormatValue
     }
+  }
 
   private def chooseSchemaTab: String = {
     (schema, schemaURL) match {
@@ -142,7 +145,6 @@ case class SchemaParam(schema: Option[String],
         }
       }
     }
-   println(s"getSchema: Result: ${v}") 
    v 
   }
 
