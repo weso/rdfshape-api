@@ -1,5 +1,6 @@
 package es.weso.server
 
+import cats._
 import cats.effect._
 import cats.implicits._
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
@@ -32,6 +33,7 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
 import es.weso.utils.IOUtils._
+import es.weso.server.utils.OptEitherF._
 
 import scala.util.Try
 
@@ -46,7 +48,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     // Input RDF data formats include html-microdata, turtle, json-ld...
     case GET -> Root / `api` / "data" / "formats" / "input" => {
-      val formats = DataFormat.default.availableFormats.map(_.name)
+      val formats = DataFormat.availableFormats.map(_.name)
       val json = Json.fromValues(formats.map(Json.fromString(_)))
       Ok(json)
     }
@@ -135,7 +137,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) => {
 
-      val either: Either[String, Option[Format]] = for {
+      val either: Either[String, Option[DataFormat]] = for {
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
 
@@ -239,11 +241,12 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         for {
           maybeData <- DataParam.mkData(partsMap, relativeBase).value
           schemaEngine <- partsMap.optPartValue("schemaEngine")
-          schemaFormat <- partsMap.optPartValue("schemaFormat")
+          optSchemaFormatStr <- partsMap.optPartValue("schemaFormat")
           inference <- partsMap.optPartValue("inference")
           label <- partsMap.optPartValue("labelName")
           optBaseStr <- partsMap.optPartValue("base")
           nodeSelector <- partsMap.optPartValue("nodeSelector")
+          schemaFormat <- optEither2f(optSchemaFormatStr, SchemaFormat.fromString)
           response <- maybeData match {
             case Left(err) => for {
               res <- io2f(DataExtractResult.fromMsg(s"Error obtaining data: $err").toJson)

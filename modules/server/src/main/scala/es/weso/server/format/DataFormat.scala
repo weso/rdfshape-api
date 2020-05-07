@@ -4,20 +4,32 @@ import org.http4s.MediaType
 import org.http4s.MediaType._
 
 trait DataFormat extends Format {
-  override val default: DataFormat = Turtle 
- 
-  override lazy val availableFormats: List[DataFormat] =
-    List(Turtle,JsonLd,NTriples,RdfXml,RdfJson,Trig,
-      HtmlMicrodata,HtmlRdfa11,
-      Dot,Svg,Png,JsonDataFormat)
-
-
+  val default: DataFormat = Turtle 
 }
 
 object DataFormat {
-    val default: DataFormat = Turtle
 
-    def fromString(s: String): Either[String,DataFormat] = default.fromString(s:String)
+val default: DataFormat = Turtle
+
+def fromString(name: String): Either[String,DataFormat] =
+    if (name == "") Right(default)
+    else {
+    formatsMap.get(name.toLowerCase) match {
+      case None => Left(s"Not found format: $name. Available formats: ${availableFormats.mkString(",")}")
+      case Some(df) => Right(df)
+    }
+}
+
+private def formatsMap: Map[String, DataFormat] = {
+    def toPair(f: DataFormat): (String, DataFormat) = (f.name.toLowerCase(), f)   
+    availableFormats.map(toPair).toMap
+}
+
+lazy val availableFormats: List[DataFormat] =
+    List(Turtle,JsonLd,NTriples,RdfXml,RdfJson,Trig,
+      HtmlMicrodata,HtmlRdfa11,
+      Dot,Svg,Png,JsonDataFormat)
+    
 }
 
 case object JsonDataFormat extends DataFormat {

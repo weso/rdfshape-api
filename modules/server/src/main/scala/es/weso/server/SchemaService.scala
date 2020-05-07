@@ -1,6 +1,7 @@
 package es.weso.server
 
-import cats.data.EitherT
+import cats._
+import cats.data._
 import cats.effect._
 import cats.implicits._
 import es.weso.rdf.streams.Streams
@@ -23,7 +24,7 @@ import org.http4s.multipart.Multipart
 import es.weso.server.ApiHelper.SchemaInfoReply
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
-
+import es.weso.server.utils.OptEitherF._
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
     extends Http4sDsl[F] {
@@ -116,18 +117,20 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
          TargetSchemaFormatParam(optResultSchemaFormat) +&
          TargetSchemaEngineParam(optResultSchemaEngine) => {
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
-      val schemaFormat = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
       val schemaStr = optSchema match {
         case None         => ""
         case Some(schema) => schema
       }
       for {
-        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).value)
+        maybeSchemaFormat <- optEither2f(optSchemaFormat,SchemaFormat.fromString)
+        schemaFormat = maybeSchemaFormat.getOrElse(defaultSchemaFormat)
+        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, None).value)
         r <- either.fold(
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
           schema => {
             for {
-              s <- io2f(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optResultSchemaFormat, optResultSchemaEngine))
+              optTargetSchemaFormat <- optEither2f(optResultSchemaFormat,SchemaFormat.fromString)
+              s <- io2f(convertSchema(schema, optSchema, schemaFormat, schemaEngine, optTargetSchemaFormat, optResultSchemaEngine))
               r <- Ok(s.toJson)
             } yield r
           } 
@@ -144,9 +147,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         val r: ESF[Json,F] = for {
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, sp) = schemaPair
+          // targetSchemaFormat <- optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)
+          targetSchemaFormat <- f2es(optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)) 
           converted <- io2esf(convertSchema(schema, sp.schema, 
-            sp.schemaFormat.getOrElse(SchemaFormat.default.name), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
-            sp.targetSchemaFormat, sp.targetSchemaEngine
+            sp.schemaFormat.getOrElse(SchemaFormat.default), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
+            targetSchemaFormat, sp.targetSchemaEngine
             ))
         } yield {
           // println(s"schema / convert ---target: ${sp.targetSchemaFormat}, ${sp.targetSchemaEngine}")
@@ -200,22 +205,23 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     case req @ GET -> Root / `api` / "schema" / "visualize" :?
         SchemaURLParam(optSchemaURL) +&
         OptSchemaParam(optSchema) +&
-        SchemaFormatParam(optSchemaFormat) +&
+        SchemaFormatParam(optSchemaFormatStr) +&
         SchemaEngineParam(optSchemaEngine) +&
         OptActiveSchemaTabParam(optActiveSchemaTab) => {
-      val sp = SchemaParam(optSchema,
+      val r: EitherT[IO,String,String] = for {
+        optSchemaFormat <- optEither2es(optSchemaFormatStr, SchemaFormat.fromString)
+        sp = SchemaParam(optSchema,
         optSchemaURL,
         None,
         optSchemaFormat,
         optSchemaFormat,
         optSchemaFormat,
+        optSchemaFormat,
         optSchemaEngine,
-        None, 
         None,
         None,
         None,
-        optActiveSchemaTab)
-      val r: EitherT[IO,String,String] = for {
+        optActiveSchemaTab)        
         _ <- { println(s"#####<<<< Before...getSchema"); ok_es(())}
         pair <- EitherT(sp.getSchema(None).attempt.map(_.leftMap(s => s"Error obtaining schema: ${s.getMessage}")))
         _ <- { println(s"#####<<<< After...getSchema"); ok_es(())}
@@ -237,11 +243,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     case req @ GET -> Root / `api` / "schema" / "validate" :?
           OptDataParam(optData) +&
             OptDataURLParam(optDataURL) +&
-            DataFormatParam(maybeDataFormat) +&
+            DataFormatParam(maybeDataFormatStr) +&
             CompoundDataParam(optCompoundData) +&
             OptSchemaParam(optSchema) +&
             SchemaURLParam(optSchemaURL) +&
-            SchemaFormatParam(optSchemaFormat) +&
+            SchemaFormatParam(maybeSchemaFormatStr) +&
             SchemaEngineParam(optSchemaEngine) +&
             OptTriggerModeParam(optTriggerMode) +&
             ShapeMapParameterAlt(optShapeMapAlt) +&
@@ -256,13 +262,15 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             OptActiveDataTabParam(optActiveDataTab) +&
             OptActiveSchemaTabParam(optActiveSchemaTab) +&
             OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
-      val either: Either[String, Option[DataFormat]] = for {
-        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
-      } yield df
+      val either: Either[String, (Option[DataFormat], Option[SchemaFormat])] = for {
+        df <- maybeDataFormatStr.map(DataFormat.fromString(_)).sequence
+        sf <- maybeSchemaFormatStr.map(SchemaFormat.fromString(_)).sequence
+      } yield (df,sf)
 
       either match {
         case Left(str) => errJson(str)
-        case Right(optDataFormat) => {
+        case Right(pair) => {
+          val (optDataFormat,optSchemaFormat) = pair
           val baseUri = req.uri
           logger.info(s"BaseURI: $baseUri")
           logger.info(s"Endpoint: $optEndpoint")
@@ -379,6 +387,10 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
   private def pp[A](v:A): EitherT[F,String,Unit] = {
     EitherT.liftF[F,String, Unit](LiftIO[F].liftIO(IO{ pprint.log(v) }))
   }
+
+  private def either2f[A](e: Either[String,A]): F[A] = ???
+
+  // private def 
 
 }
 

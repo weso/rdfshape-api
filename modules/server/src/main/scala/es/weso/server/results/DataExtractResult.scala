@@ -24,7 +24,7 @@ case class DataExtractResult private(msg: String,
     case None => IO(Json.fromFields(List(("msg", Json.fromString(msg)))))
     case Some(schema) => {
       val engine = optSchemaEngine.getOrElse(defaultSchemaEngine)
-      val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
+      val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat.name)
       for {
         schemaStr <- schema.serialize(schemaFormat)
       } yield Json.fromFields(List(

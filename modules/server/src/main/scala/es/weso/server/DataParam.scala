@@ -12,7 +12,7 @@ import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.server.format._
 import org.log4s.getLogger
-import es.weso.utils.IOUtils._
+import es.weso.utils.IOUtils.{io2es => _, _}
 import es.weso.server.merged.CompoundData
 
 case class DataParam(data: Option[String],
@@ -58,7 +58,7 @@ case class DataParam(data: Option[String],
     }
   }
 
-  val dataFormat: Option[Format] = { 
+  val dataFormat: Option[DataFormat] = { 
     val dataTab = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab)) 
     pprint.log(dataTab)
     dataTab match {
@@ -110,7 +110,7 @@ case class DataParam(data: Option[String],
       case None => Right(dataTextAreaType)
     }
     println(s"Input type: $inputType")
-    inputType match {
+    val x: ESIO[(Option[String],RDFReasoner)] = inputType match {
       case Right(`dataUrlType`) => {
         dataURL match {
           case None => fail_es(s"Non value for dataURL")
@@ -163,12 +163,12 @@ case class DataParam(data: Option[String],
         }
       }
       case Right(`dataTextAreaType`) => {
-        println(s"Obtaining data from textArea")
+        pprint.log(s"Obtaining data from textArea")
+        pprint.log(data)
         data match {
           case None => for {
             empty <- io2es(RDFAsJenaModel.empty)
           } yield (None, empty)
-          // fromIO(RDFAsJenaModel.empty)
           case Some(data) => {
             val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
             for {
@@ -186,8 +186,11 @@ case class DataParam(data: Option[String],
        } yield (None,rdf)
       }
       case Right(other) => fail_es(s"Unknown value for activeDataTab: $other")
+
       case Left(msg) => fail_es(msg)
     }
+    pprint.log(x)
+    x 
   }
 
 
@@ -195,7 +198,7 @@ case class DataParam(data: Option[String],
                             format: Format,
                             base: Option[String]
                            ): ESIO[RDFReasoner] = {
-    println(s"Format: $format")
+    pprint.log(format)
     format.name match {
       case f if HTML2RDF.availableExtractorNames contains f => for {
         eitherRdf <- HTML2RDF.extractFromString(str,f)
@@ -234,6 +237,17 @@ case class DataParam(data: Option[String],
     )
   }
 
+  def io2es[A](io:IO[A]): ESIO[A] = for { 
+    either <- EitherT.liftF(io.attempt)
+    resp <- either.fold(
+      e => { 
+        pprint.log(e)
+        fail_es(s"Error: ${e.getMessage}")
+     }, 
+     ok_es(_)
+    )
+  } yield resp
+
 }
 
 object DataParam {
@@ -258,7 +272,7 @@ object DataParam {
     maybeStr <- partsMap.optPartValue(name)
   } yield maybeStr match {
     case None => None
-    case Some(str) => DataFormat.default.fromString(str).fold(
+    case Some(str) => DataFormat.fromString(str).fold(
       err => {
         pprint.log(s"Unsupported dataFormat for ${name}: $str")
         None

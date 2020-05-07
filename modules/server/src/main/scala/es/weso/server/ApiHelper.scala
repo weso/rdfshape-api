@@ -119,7 +119,7 @@ object ApiHelper {
   private[server] def validateStr(data: String,
                                   optDataFormat: Option[DataFormat],
                                   optSchema: Option[String],
-                                  optSchemaFormat: Option[String],
+                                  optSchemaFormat: Option[SchemaFormat],
                                   optSchemaEngine: Option[String],
                                   tp: TriggerModeParam,
                                   optInference: Option[String],
@@ -177,7 +177,7 @@ object ApiHelper {
                                   optNodeSelector: Option[String],
                                   optInference: Option[String],
                                   optEngine: Option[String],
-                                  optSchemaFormat: Option[String],
+                                  optSchemaFormat: Option[SchemaFormat],
                                   optLabelName: Option[String],
                                   relativeBase: Option[IRI],
                                  ): IO[DataExtractResult] = {
@@ -219,7 +219,7 @@ object ApiHelper {
           err => DataExtractResult.fromMsg(err),
           pair => {
             val (schema, resultShapeMap) = pair
-            DataExtractResult.fromExtraction(optData, optDataFormat, schemaFormat, engine, schema, resultShapeMap)
+            DataExtractResult.fromExtraction(optData, optDataFormat, schemaFormat.name, engine, schema, resultShapeMap)
           })
       }
     }
@@ -227,18 +227,18 @@ object ApiHelper {
 
   private[server] def convertSchema(schema: Schema,
                                     schemaStr: Option[String],
-                                    schemaFormat: String,
+                                    schemaFormat: SchemaFormat,
                                     schemaEngine: String,
-                                    optTargetSchemaFormat: Option[String],
+                                    optTargetSchemaFormat: Option[SchemaFormat],
                                     optTargetSchemaEngine: Option[String]
                                    ): IO[SchemaConversionResult] = {
     val result:ESIO[SchemaConversionResult] = for {
-      resultStr <- schema.convert(optTargetSchemaFormat, optTargetSchemaEngine, None)
+      resultStr <- schema.convert(optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, None)
       sourceStr <- schemaStr match {
-        case None => io2es(schema.serialize(schemaFormat))
+        case None => io2es(schema.serialize(schemaFormat.name))
         case Some(source) => ok_es(source)
       }
-    } yield SchemaConversionResult.fromConversion(sourceStr, schemaFormat, schemaEngine, optTargetSchemaFormat, optTargetSchemaEngine, resultStr, ShapeMap.empty)
+    } yield SchemaConversionResult.fromConversion(sourceStr, schemaFormat.name, schemaEngine, optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, resultStr, ShapeMap.empty)
 
     for {
       either <- run_es(result)
@@ -249,7 +249,7 @@ object ApiHelper {
                                  optNodeSelector: Option[String],
                                  optInference: Option[String],
                                  optEngine: Option[String],
-                                 optSchemaFormat: Option[String],
+                                 optSchemaFormat: Option[SchemaFormat],
                                  optLabelName: Option[String],
                                  relativeBase: Option[IRI],
                                  withUml: Boolean
@@ -276,11 +276,11 @@ object ApiHelper {
              uml.toSVG(options).map(Some(_))
            }
          })
-         str <- io2es(schemaInfer.serialize(schemaFormat))
+         str <- io2es(schemaInfer.serialize(schemaFormat.name))
        } yield Json.fromFields(
          List(
            ("inferedShape", Json.fromString(str)),
-           ("format", Json.fromString(schemaFormat)),
+           ("format", Json.fromString(schemaFormat.name)),
            ("engine", Json.fromString(engine)),
            ("nodeSelector", Json.fromString(nodeSelector))
          ) ++
@@ -323,7 +323,7 @@ object ApiHelper {
     val schemaFormat = sv.currentSchemaFormat
     val schemaStr = sv.schema.getOrElse("")
     val base = Some(FileUtils.currentFolderURL)
-    Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
+    Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, base)
   }
 
   case class SchemaInfoReply(schemaName: Option[String],
