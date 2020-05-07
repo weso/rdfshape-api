@@ -9,7 +9,7 @@ import es.weso.server.APIDefinitions._
 import es.weso.server.ApiHelper._
 import es.weso.server.Defaults._
 import es.weso.server.QueryParams._
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import es.weso.server.results._
 import io.circe._
 import io.circe.generic.auto._
@@ -145,7 +145,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, sp) = schemaPair
           converted <- io2esf(convertSchema(schema, sp.schema, 
-            sp.schemaFormat.getOrElse(defaultSchemaFormat), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
+            sp.schemaFormat.getOrElse(SchemaFormat.default.name), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
             sp.targetSchemaFormat, sp.targetSchemaEngine
             ))
         } yield {
@@ -210,6 +210,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         optSchemaFormat,
         optSchemaFormat,
         optSchemaEngine,
+        None, 
         None,
         None,
         None,
@@ -283,6 +284,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
                                optSchemaFormat,
                                optSchemaFormat,
                                optSchemaFormat,
+                               optSchemaFormat,
                                optSchemaEngine,
                                optSchemaEmbedded,
                                None,
@@ -340,15 +342,17 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       req.decode[Multipart[F]] { m =>
         {
           val partsMap = PartsMap(m.parts)
-          logger.info(s"POST validate partsMap. $partsMap")
           val r: ESF[Result,F] = for {
-            _ <- info(s"Parsing partsMap: ${partsMap}")
+            _ <- pp(partsMap)
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (rdf, dp) = dataPair
-            _ <- info(s"Data param parsed: ${dp}")
+            _ <- pp(dp)
             schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
             (schema, sp) = schemaPair
+            _ <- pp(sp)
+            _ <- pp(schema)
             tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
+            _ <- pp(tp)
             res <- io2esf(validate(rdf, dp, schema, sp, tp, relativeBase))
           } yield {
             // val schemaEmbedded = getSchemaEmbedded(sp)
@@ -371,6 +375,10 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
 
   private def info(msg: String): EitherT[F,String,Unit] = 
     EitherT.liftF[F,String,Unit](LiftIO[F].liftIO(IO(println(msg))))  
+
+  private def pp[A](v:A): EitherT[F,String,Unit] = {
+    EitherT.liftF[F,String, Unit](LiftIO[F].liftIO(IO{ pprint.log(v) }))
+  }
 
 }
 

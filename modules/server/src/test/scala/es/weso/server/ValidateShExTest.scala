@@ -12,12 +12,13 @@ import io.circe.parser._
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.{Request, Response, Uri}
 import org.http4s.{Query => HQuery}
-import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.http4s.dsl.io._
 
 import scala.concurrent.ExecutionContext.global
 
-class ValidateShExTest extends FunSpec with Matchers with EitherValues {
+class ValidateShExTest extends AnyFunSpec with Matchers with EitherValues {
 
   val ip = "0.0.0.0"
   val port = 8080

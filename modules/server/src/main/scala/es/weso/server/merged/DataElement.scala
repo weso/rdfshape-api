@@ -3,9 +3,8 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe._
-import es.weso.server.helper.DataFormat
 import es.weso.server.Defaults
-import es.weso.server.helper.DataFormat
+import es.weso.server.format.DataFormat
 import es.weso.utils.IOUtils._
 import es.weso.rdf.jena.RDFAsJenaModel
 import cats.effect.IO
