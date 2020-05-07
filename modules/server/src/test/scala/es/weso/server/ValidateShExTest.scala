@@ -18,7 +18,7 @@ import org.http4s.dsl.io._
 
 import scala.concurrent.ExecutionContext.global
 
-class ValidateShExTest extends AnyFunSpec with Matchers with EitherValues {
+class ValidateShExTest extends AnyFunSpec with Matchers {
 
   val ip = "0.0.0.0"
   val port = 8080

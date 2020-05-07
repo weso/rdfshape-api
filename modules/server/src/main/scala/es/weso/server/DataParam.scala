@@ -12,7 +12,7 @@ import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.server.format._
 import org.log4s.getLogger
-import es.weso.utils.IOUtils.{io2es => _, _}
+import es.weso.utils.IOUtils._
 import es.weso.server.merged.CompoundData
 
 case class DataParam(data: Option[String],
@@ -237,16 +237,6 @@ case class DataParam(data: Option[String],
     )
   }
 
-  def io2es[A](io:IO[A]): ESIO[A] = for { 
-    either <- EitherT.liftF(io.attempt)
-    resp <- either.fold(
-      e => { 
-        pprint.log(e)
-        fail_es(s"Error: ${e.getMessage}")
-     }, 
-     ok_es(_)
-    )
-  } yield resp
 
 }
 
