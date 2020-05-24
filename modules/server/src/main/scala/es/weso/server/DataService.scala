@@ -103,6 +103,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap, relativeBase).value
+          _ <- { pprint.log(maybeData); Monad[F].pure(()) } 
           response <- maybeData match {
             case Left(err) => errJson(
               s"""|Error obtaining RDF data
@@ -118,10 +119,11 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                 case None => for {
                   str <- io2f(rdf.serialize("TURTLE"))
                   ok <- Ok(DataInfoResult.fromMsg(s"No data, but RDF=${str}").toJson)
-                } yield ok
+                } yield ok 
               }
             }
           }
+          _ <- { pprint.log(response); Monad[F].pure(()) } 
         } yield response
       }
     }

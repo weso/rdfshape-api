@@ -96,10 +96,9 @@ case class DataParam(data: Option[String],
     *         if it has string representation and the second parameter
     *         is the RDF data
     */
-  def getData(relativeBase: Option[IRI]
-  ): ESIO[(Option[String], RDFReasoner)] = {
+  def getData(relativeBase: Option[IRI]): ESIO[(Option[String], RDFReasoner)] = {
     val base = relativeBase.map(_.str)
-    println(s"ActiveDataTab: $activeDataTab")
+    pprint.log(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case Some(a) => parseDataTab(a)
       case None if compoundData.isDefined => Right(compoundDataType)
@@ -163,7 +162,7 @@ case class DataParam(data: Option[String],
         }
       }
       case Right(`dataTextAreaType`) => {
-        println(s"Obtaining data from textArea")
+        pprint.log(data)
         data match {
           case None => for {
             empty <- io2es(RDFAsJenaModel.empty)
@@ -195,7 +194,7 @@ case class DataParam(data: Option[String],
                             format: DataFormat,
                             base: Option[String]
                            ): ESIO[RDFReasoner] = {
-    println(s"Format: $format")
+    pprint.log(format)
     format.name match {
       case f if HTML2RDF.availableExtractorNames contains f => for {
         eitherRdf <- HTML2RDF.extractFromString(str,f)
@@ -246,13 +245,23 @@ object DataParam {
 
     val r: ESF[(RDFReasoner, DataParam),F] = for {
       dp <- f2es(mkDataParam[F](partsMap))
+      _ <- { pprint.log(dp); ok_esf[Unit,F](()) }
       pair <- esio2esf(dp.getData(relativeBase))
+      _ <- { pprint.log(pair); ok_esf[Unit,F](()) }
     } yield {
       val (optStr, rdf) = pair
       (rdf, dp.copy(data = optStr))
     }
     r
   }
+
+/*  private def io2esf[A, F[_]: Effect](e: ESIO[A]): ESF[A,F] = {
+      for {
+        either <- io2esf[Either[String,A],F](e.value)
+        r <- either2ef[A,F](either)  
+      } yield r
+  } */
+
 
   private def getDataFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[DataFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
