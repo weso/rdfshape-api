@@ -1,6 +1,6 @@
 package es.weso.server.results
 
-import es.weso.server.helper.DataFormat
+import es.weso.server.format.DataFormat
 import io.circe.Json
 import es.weso.utils.json.JsonUtilsServer._
 

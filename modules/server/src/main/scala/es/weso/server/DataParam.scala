@@ -10,7 +10,7 @@ import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
 import es.weso.server.merged.CompoundData
@@ -71,7 +71,7 @@ case class DataParam(data: Option[String],
 
   private def applyInference(rdf: RDFReasoner,
                              inference: Option[String],
-                             dataFormat: DataFormat
+                             dataFormat: Format
                             ): IO[RDFReasoner] = for {
     newRdf <- extendWithInference(rdf, inference) 
 //    str <- rdf.serialize(dataFormat.name)
@@ -109,7 +109,7 @@ case class DataParam(data: Option[String],
       case None => Right(dataTextAreaType)
     }
     println(s"Input type: $inputType")
-    inputType match {
+    val x: ESIO[(Option[String],RDFReasoner)] = inputType match {
       case Right(`dataUrlType`) => {
         dataURL match {
           case None => fail_es(s"Non value for dataURL")
@@ -139,7 +139,7 @@ case class DataParam(data: Option[String],
         dataFile match {
           case None => fail_es(s"No value for dataFile")
           case Some(dataStr) =>
-            val dataFormat = dataFormatFile.getOrElse(defaultDataFormat)
+            val dataFormat: Format = dataFormatFile.getOrElse(DataFormat.default)
             io2es(for {
               iriBase <- mkBase(base)
               rdf <- RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase)
@@ -167,9 +167,8 @@ case class DataParam(data: Option[String],
           case None => for {
             empty <- io2es(RDFAsJenaModel.empty)
           } yield (None, empty)
-          // fromIO(RDFAsJenaModel.empty)
           case Some(data) => {
-            val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(defaultDataFormat))
+            val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
             for {
               rdf <- rdfFromString(data, dataFormat, base)
               newRdf <- io2es(extendWithInference(rdf, inference))
@@ -185,13 +184,15 @@ case class DataParam(data: Option[String],
        } yield (None,rdf)
       }
       case Right(other) => fail_es(s"Unknown value for activeDataTab: $other")
+
       case Left(msg) => fail_es(msg)
     }
+    x 
   }
 
 
   private def rdfFromString(str: String,
-                            format: DataFormat,
+                            format: Format,
                             base: Option[String]
                            ): ESIO[RDFReasoner] = {
     pprint.log(format)
@@ -207,7 +208,7 @@ case class DataParam(data: Option[String],
   }
 
   private def rdfFromUri(uri: URI,
-                         format: DataFormat,
+                         format: Format,
                          base: Option[String]
                         ): ESIO[RDFReasoner] = {
     format.name.toLowerCase match {
@@ -232,6 +233,7 @@ case class DataParam(data: Option[String],
       (iri: IRI) => IO(Some(iri))
     )
   }
+
 
 }
 

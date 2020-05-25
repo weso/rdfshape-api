@@ -1,13 +1,14 @@
 @import es.weso.utils.json.JsonTwirl
 @import es.weso.server.DataValue
+@import es.weso.server.format.SchemaFormat
 @import io.circe._
 
 @(result: Option[Json],
   dv: DataValue,
   engines: List[String],
   currentEngine: String,
-  schemaFormats: List[String],
-  schemaFormat: String,
+  schemaFormats: List[SchemaFormat],
+  schemaFormat: SchemaFormat,
   nodeSelector: String,
   label: String,
  )
