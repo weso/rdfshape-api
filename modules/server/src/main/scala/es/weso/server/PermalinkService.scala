@@ -25,7 +25,7 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
       // Request the shortened URL
       try {
         val res = Http(urlShortenerEndpoint)
-          .param("key", "d6c48cdf3cffc08cbb36c8819d7aca857ebfd")
+          .param("key", sys.env.getOrElse("CUTTLY_API_KEY", ""))
           .param("short", url)
           .asString
 
