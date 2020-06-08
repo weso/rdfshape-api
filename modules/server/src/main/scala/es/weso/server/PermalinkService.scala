@@ -12,7 +12,8 @@ import scalaj.http.Http
 class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
-  val urlShortenerEndpoint = "https://api-ssl.bitly.com/v4/shorten"
+  val urlShortenerEndpoint = "https://cutt.ly/api/api.php"
+  val urlShortenerAcceptCode = 7
 
   case class RequestData(domain: String, url: String)
 
@@ -23,17 +24,16 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
       UrlParam(url) =>
       // Request the shortened URL
       try {
-        val res = Http(urlShortenerEndpoint).postData(s"""{ "long_url": "$url" }""")
-          .header("Content-Type", "application/json")
-          .header("Accept", "application/json")
-          .header("Authorization", "8e4c5fc54b280e5bc969fc0ef7a0f759317b7c64")
+        val res = Http(urlShortenerEndpoint)
+          .param("key", "d6c48cdf3cffc08cbb36c8819d7aca857ebfd")
+          .param("short", url)
           .asString
 
         val jsonRes = PJson.parse(res.body)
-
         // Return the short URL if possible
-        if (res.code >= 200 && res.code < 300 && (jsonRes \ "link").isDefined)
-          Ok(s"${(jsonRes \ "link").as[String]}")
+        if (res.code == 200 && (jsonRes \ "url" \ "status").isDefined
+          && (jsonRes \ "url" \ "status").isDefined && (jsonRes \ "url" \ "status").as[Int] == urlShortenerAcceptCode)
+            Ok(s"${(jsonRes \ "url" \ "shortLink").as[String]}")
         else
           InternalServerError (url)
       }
