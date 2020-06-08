@@ -1,8 +1,8 @@
 @import io.circe._
 @import es.weso.server.SchemaValue
-
+@import es.weso.server.format.SchemaFormat
 @(sv: SchemaValue,
-  currentTargetSchemaFormat: String,
+  currentTargetSchemaFormat: SchemaFormat,
   currentTargetSchemaEngine: String,
   result: Either[String, Option[String]]
  )

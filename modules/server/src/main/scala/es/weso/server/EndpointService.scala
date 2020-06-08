@@ -1,20 +1,19 @@
 package es.weso.server
+import cats.Applicative
+import cats.data.EitherT
 import cats.effect._
+import cats.implicits._
+import es.weso.server.APIDefinitions._
 import es.weso.server.QueryParams._
 import es.weso.server.{Query => ServerQuery}
-import org.http4s._
-import org.http4s.multipart._
-import cats.data.EitherT
-import cats.implicits._
+import es.weso.utils.IOUtils._
 import io.circe.Json
-import cats.Applicative
-import org.http4s.dsl._
-import org.http4s.implicits._
+import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
-import es.weso.utils.IOUtils._
+import org.http4s.dsl._
+import org.http4s.multipart._
 import org.log4s.getLogger
-import APIDefinitions._
 
 class EndpointService[F[_]:Applicative](blocker: Blocker,
                                         client: Client[F])(implicit F: Effect[F],

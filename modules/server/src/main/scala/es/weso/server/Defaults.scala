@@ -5,15 +5,15 @@ import es.weso.rdf.nodes.IRI
 import es.weso.schema.Schemas
 import es.weso.shapeMaps.ShapeMap
 import es.weso.schema._
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import cats.effect.IO
 
 object Defaults {
 
-  val availableDataFormats = DataFormat.availableDataFormats
+  val availableDataFormats: List[DataFormat] = DataFormat.availableFormats
   val defaultDataFormat = DataFormat.default
-  val availableSchemaFormats = Schemas.availableFormats
-  val defaultSchemaFormat = Schemas.defaultSchemaFormat
+  val availableSchemaFormats = SchemaFormat.availableFormats
+  val defaultSchemaFormat = SchemaFormat.default
   val availableSchemaEngines = Schemas.availableSchemaNames
   val defaultSchemaEngine = Schemas.defaultSchemaName
   val availableTriggerModes = Schemas.availableTriggerModes

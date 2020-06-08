@@ -8,7 +8,7 @@ import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.server.DataConverter.GraphFormat
-import es.weso.server.helper.DataFormat
+import es.weso.server.format.DataFormat
 import es.weso.server.results.DataConversionResult
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph

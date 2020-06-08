@@ -105,8 +105,10 @@ object TriggerModeParam {
       optShapeMapFormatFile <- partsMap.optPartValue("shapeMapFormatFile")
       optActiveShapeMapTab <- partsMap.optPartValue("shapeMapActiveTab")
     } yield {
-      println(s"### Parsing triggerMode params")
-      println(s"### ShapeMapFormatFile: $optShapeMapFormatFile")
+      pprint.log(optTriggerMode)
+      pprint.log(optShapeMap)
+      pprint.log(optActiveShapeMapTab)
+      pprint.log(optShapeMapFormatFile)
       TriggerModeParam(
         optTriggerMode,
         optShapeMap,

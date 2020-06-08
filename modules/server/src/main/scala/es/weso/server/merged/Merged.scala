@@ -54,7 +54,7 @@ case class MergedModels(members: List[RDFAsJenaModel])
   override def fromString(cs: CharSequence,
                           format: String,
                           base: Option[IRI]): RDFRead[MergedModels] = for {
-    rdf <- RDFAsJenaModel.fromString(cs.toString, format,base)
+    rdf <- RDFAsJenaModel.fromString(cs.toString, format, base)
   } yield MergedModels(List(rdf))
 
   override def serialize(format: String, base: Option[IRI]): RDFRead[String] = mergedRdf.serialize(format,base)

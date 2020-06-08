@@ -1,13 +1,12 @@
 package es.weso.server
 import cats.effect._
 import es.weso.schema._
+import es.weso.server.APIDefinitions._
 import io.circe._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
-import org.log4s.getLogger
-import APIDefinitions._
 
 class ShExService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                                                client: Client[F])(implicit cs: ContextShift[F])

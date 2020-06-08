@@ -28,10 +28,9 @@ scalafmt: {
 }
  */
 
-lazy val utilsVersion          = "0.1.67" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.57"
-lazy val shexsVersion          = "0.1.60"
-
+lazy val utilsVersion          = "0.1.69" // for utilsTest
+lazy val umlShaclexVersion     = "0.0.59"
+lazy val shexsVersion          = "0.1.64"
 
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
@@ -62,8 +61,14 @@ lazy val typesafeConfigVersion = "1.3.4"
 lazy val jqueryVersion         = "3.4.1"
 lazy val bootstrapVersion      = "4.3.1"
 
+// Scalaj
+lazy val scalajVersion         = "2.4.2"
+
+// Parsing utils
+lazy val  playVersion    = "2.9.0"
+
 // Compiler plugin dependency versions
-lazy val scalaMacrosVersion   = "2.1.1"
+lazy val scalaMacrosVersion    = "2.1.1"
 
 // Dependency modules
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
@@ -98,6 +103,9 @@ lazy val any23_core        = "org.apache.any23"           % "apache-any23-core" 
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
 lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
+
+lazy val scalaj            ="org.scalaj"                  %% "scalaj-http"         % scalajVersion
+lazy val play             = "com.typesafe.play"           %% "play-json"           % playVersion
 
 lazy val jquery            = "org.webjars"                % "jquery"               % jqueryVersion
 lazy val bootstrap         = "org.webjars"                % "bootstrap"            % bootstrapVersion
@@ -167,8 +175,9 @@ lazy val server = project
       rdf4j_runtime,
       plantuml,
       graphvizJava,
-      // scalaj,
-      utilsTest % Test, 
+      scalaj,
+      play,
+      utilsTest % Test,
       // webJars
       jquery,
       bootstrap
