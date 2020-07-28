@@ -8,6 +8,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import play.api.libs.json.{Json => PJson}
 import scalaj.http.Http
+import java.net.URL
 
 class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
@@ -29,17 +30,18 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
           .param("short", url)
           .asString
 
-        val jsonRes = PJson.parse(res.body)
-        // Return the short URL if possible
-        if (res.code == 200 && (jsonRes \ "url" \ "status").isDefined
-          && (jsonRes \ "url" \ "status").isDefined && (jsonRes \ "url" \ "status").as[Int] == urlShortenerAcceptCode)
-            Ok(s"${(jsonRes \ "url" \ "shortLink").as[String]}")
+        val responseJson = PJson.parse(res.body)
+        // Check for a valid response
+        if (res.code == 200 && (responseJson \ "url" \ "status").as[Int] == urlShortenerAcceptCode) {
+          val url = new URL(s"${(responseJson \ "url" \ "shortLink").as[String]}").toURI
+          Ok(url.toString)
+        }
         else
-          InternalServerError (url)
+          InternalServerError(url)
       }
       catch {
-        case e: Exception =>
-          InternalServerError (url)
+        case _: Exception =>
+          InternalServerError(url)
       }
     }
 }
