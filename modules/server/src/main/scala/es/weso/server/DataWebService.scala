@@ -94,7 +94,7 @@ class DataWebService[F[_]](blocker: Blocker,
               ))) */
           println(s"Request: $req")
           for {
-            either <- client.fetch(req) {
+            either <- client.run(req).use {
               case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
               case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
             }
@@ -129,7 +129,7 @@ class DataWebService[F[_]](blocker: Blocker,
               val body = entity.body
               val req = Request(method = POST, uri = apiDataUri / "convert", body = body, headers = multipart.headers)
               for {
-                either <- client.fetch(req) {
+                either <- client.run(req).use {
                   case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
                   case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
                 }

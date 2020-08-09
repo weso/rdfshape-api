@@ -68,7 +68,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         val uri = Uri.unsafeFromString(s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=${entity}&languages=${language}&format=json")
         val req: Request[F] = Request(method = GET, uri = uri)
          for {
-          either <- client.fetch(req) {
+          either <- client.run(req).use {
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
             case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
           }
@@ -84,7 +84,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
       println(s"wikidata/schemaContent: ${uri.toString}")
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[String].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[String])
         }
@@ -121,7 +121,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -155,7 +155,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -191,7 +191,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -217,7 +217,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
       val req: Request[F] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -243,7 +243,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                .withHeaders(
                  `Accept`(MediaType.application.`json`)
                )
-          eitherValue <- client.fetch(req) {
+          eitherValue <- client.run(req).use {
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
             case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
           }
