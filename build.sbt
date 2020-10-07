@@ -101,7 +101,7 @@ lazy val wikibaserdf       = "es.weso"                    %% "wikibaserdf"      
 
 lazy val any23_core        = "org.apache.any23"           % "apache-any23-core"    % any23Version
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
-lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
+lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.4"
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 
 lazy val scalaj            ="org.scalaj"                  %% "scalaj-http"         % scalajVersion
