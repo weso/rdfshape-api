@@ -1,5 +1,6 @@
 package es.weso.server
 
+import cats._
 import cats.effect._
 import cats.implicits._
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
@@ -9,7 +10,7 @@ import es.weso.server.ApiHelper._
 import results._
 import es.weso.server.Defaults.{availableDataFormats, availableInferenceEngines, defaultActiveDataTab, defaultDataFormat, defaultInference}
 import es.weso.server.QueryParams._
-import es.weso.server.helper.DataFormat
+import es.weso.server.format._
 import es.weso.server.utils.Http4sUtils._
 import io.circe._
 import io.circe.generic.auto._
@@ -32,6 +33,7 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
 import es.weso.utils.IOUtils._
+import es.weso.server.utils.OptEitherF._
 
 import scala.util.Try
 
@@ -46,7 +48,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     // Input RDF data formats include html-microdata, turtle, json-ld...
     case GET -> Root / `api` / "data" / "formats" / "input" => {
-      val formats = DataFormat.availableDataFormats.map(_.name)
+      val formats = DataFormat.availableFormats.map(_.name)
       val json = Json.fromValues(formats.map(Json.fromString(_)))
       Ok(json)
     }
@@ -108,17 +110,17 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
               s"""|Error obtaining RDF data
                   |$err""".stripMargin
             )
-            case Right((rdf, dp)) => {
+            case Right((res, dp)) => {
               val dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
               dp.data match {
                 case Some(data) => for {
                   r <- io2f(dataInfoFromString(data, dataFormat))
                   ok <- Ok(r)
                 } yield ok
-                case None => for {
+                case None => res.use(rdf => for {
                   str <- io2f(rdf.serialize("TURTLE"))
                   ok <- Ok(DataInfoResult.fromMsg(s"No data, but RDF=${str}").toJson)
-                } yield ok
+                } yield ok)
               }
             }
           }
@@ -126,7 +128,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       }
     }
 
-    case req@GET -> Root / `api` / "data" / "info" :?
+/*    case req@GET -> Root / `api` / "data" / "info" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
       CompoundDataParam(optCompoundData) +&
@@ -239,11 +241,12 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         for {
           maybeData <- DataParam.mkData(partsMap, relativeBase).value
           schemaEngine <- partsMap.optPartValue("schemaEngine")
-          schemaFormat <- partsMap.optPartValue("schemaFormat")
+          optSchemaFormatStr <- partsMap.optPartValue("schemaFormat")
           inference <- partsMap.optPartValue("inference")
           label <- partsMap.optPartValue("labelName")
           optBaseStr <- partsMap.optPartValue("base")
           nodeSelector <- partsMap.optPartValue("nodeSelector")
+          schemaFormat <- optEither2f(optSchemaFormatStr, SchemaFormat.fromString)
           response <- maybeData match {
             case Left(err) => for {
               res <- io2f(DataExtractResult.fromMsg(s"Error obtaining data: $err").toJson)
@@ -259,8 +262,8 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         } yield response
       }
     }
-
-  }
+*/
+  } 
 
   private def parseInt(s: String): Either[String, Int] =
     Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))

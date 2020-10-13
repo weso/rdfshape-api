@@ -12,7 +12,7 @@ import org.http4s.circe._
 import cats.implicits._
 import es.weso.server.ApiHelper._
 import es.weso.server.Defaults._
-import es.weso.server.helper.{DataFormat, Svg}
+import es.weso.server.format.{DataFormat, Svg}
 import io.circe.Json
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
@@ -33,18 +33,18 @@ class DataWebService[F[_]](blocker: Blocker,
 
   val routes = HttpRoutes.of[F] {
 
-    case req@GET -> Root / "dataConversions" :?
+  case req@GET -> Root / "dataConversions" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
-      DataFormatParam(maybeDataFormat) +&
+      DataFormatParam(maybeDataFormatStr) +&
       InferenceParam(optInference) +&
       CompoundDataParam(optCompoundData) +&
       OptEndpointParam(optEndpoint) +&
       OptActiveDataTabParam(optActiveDataTab) +&
-      TargetDataFormatParam(maybeTargetDataFormat) => {
+      TargetDataFormatParam(maybeTargetDataFormatStr) => {
       val either: Either[String, (Option[DataFormat],Option[DataFormat])] =  for {
-         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
-         tdf <- maybeTargetDataFormat.map(DataFormat.fromString(_)).sequence
+         df <- maybeDataFormatStr.map(DataFormat.fromString(_)).sequence
+         tdf <- maybeTargetDataFormatStr.map(DataFormat.fromString(_)).sequence
        } yield (df, tdf)
 
       either match {

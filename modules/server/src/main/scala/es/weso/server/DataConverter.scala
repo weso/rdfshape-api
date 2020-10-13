@@ -8,7 +8,7 @@ import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.server.DataConverter.GraphFormat
-import es.weso.server.helper.DataFormat
+import es.weso.server.format.DataFormat
 import es.weso.server.results.DataConversionResult
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
@@ -78,20 +78,16 @@ object DataConverter extends LazyLogging {
     println(s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat")
     maybeData match {
       case None => maybeCompoundData match {
-        case None => IO.raiseError(new RuntimeException(s"dataConvert: no data and no compoundData parameters"))
+        case None => err(s"dataConvert: no data and no compoundData parameters")
         case Some(compoundDataStr) => for {
           ecd <- either2io(CompoundData.fromString(compoundDataStr))
           cd <- cnvEither(ecd, str => s"dataConvert: Error: $str")
-          eitherRdf <- cd.toRDF.value
-          rdf <- cnvEither(eitherRdf,str => s"Error converting compound to RDF: $str")
-          result <- rdfConvert(rdf,None,dataFormat,targetFormat)
+          result <- cd.toRDF.use(rdf => rdfConvert(rdf,None,dataFormat,targetFormat))
         } yield result
       }
       case Some(data) => {
-        for {
-          rdf <- RDFAsJenaModel.fromChars(data,dataFormat.name,None)
-          result <- rdfConvert(rdf,Some(data),dataFormat,targetFormat)
-        } yield result
+        RDFAsJenaModel.fromChars(data,dataFormat.name,None).use(rdf => 
+          rdfConvert(rdf,Some(data),dataFormat,targetFormat))
       }
     }
   }

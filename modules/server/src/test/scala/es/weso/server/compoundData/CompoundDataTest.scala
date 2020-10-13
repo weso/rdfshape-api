@@ -12,9 +12,7 @@ import io.circe.syntax._
 import es.weso.server.merged.CompoundData
 import es.weso.server.merged.DataElement
 import es.weso.server.merged.DataTextArea
-import es.weso.server.helper.DataFormat
-import es.weso.server.helper.Turtle
-import es.weso.server.helper.JsonLd
+import es.weso.server.format._
 
 class CompoundDataTest extends AnyFunSpec with Matchers {
   describe(s"Compound data") {

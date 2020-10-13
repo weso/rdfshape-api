@@ -5,7 +5,7 @@ import es.weso.rdf.nodes.IRI
 import es.weso.schema.Schema
 import es.weso.server.ApiHelper
 import es.weso.server.Defaults.{defaultSchemaEngine, defaultSchemaFormat}
-import es.weso.server.helper._
+import es.weso.server.format._
 import es.weso.shapeMaps.ResultShapeMap
 import es.weso.uml.UML
 import es.weso.utils.json.JsonUtilsServer._
@@ -24,7 +24,7 @@ case class DataExtractResult private(msg: String,
     case None => IO(Json.fromFields(List(("msg", Json.fromString(msg)))))
     case Some(schema) => {
       val engine = optSchemaEngine.getOrElse(defaultSchemaEngine)
-      val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
+      val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat.name)
       for {
         schemaStr <- schema.serialize(schemaFormat)
       } yield Json.fromFields(List(
