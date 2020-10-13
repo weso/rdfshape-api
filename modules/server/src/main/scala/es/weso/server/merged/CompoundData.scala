@@ -7,13 +7,14 @@ import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
 import DataElement._
-import cats.effect.IO
+import cats.effect._
 
 
 case class CompoundData(elems: List[DataElement]) {
-    def toRDF(): EitherT[IO,String,RDFReasoner] = for { 
+    def toRDF: Resource[IO,RDFReasoner] = for { 
         vs <- elems.map(_.toRDF).sequence
-    } yield MergedModels(vs) 
+        merged <- Resource.liftF(MergedModels.fromList(vs))
+    } yield merged
 }
 
 object CompoundData {

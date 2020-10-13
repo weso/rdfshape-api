@@ -110,17 +110,17 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
               s"""|Error obtaining RDF data
                   |$err""".stripMargin
             )
-            case Right((rdf, dp)) => {
+            case Right((res, dp)) => {
               val dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
               dp.data match {
                 case Some(data) => for {
                   r <- io2f(dataInfoFromString(data, dataFormat))
                   ok <- Ok(r)
                 } yield ok
-                case None => for {
+                case None => res.use(rdf => for {
                   str <- io2f(rdf.serialize("TURTLE"))
                   ok <- Ok(DataInfoResult.fromMsg(s"No data, but RDF=${str}").toJson)
-                } yield ok
+                } yield ok)
               }
             }
           }
@@ -128,7 +128,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       }
     }
 
-    case req@GET -> Root / `api` / "data" / "info" :?
+/*    case req@GET -> Root / `api` / "data" / "info" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
       CompoundDataParam(optCompoundData) +&
@@ -262,8 +262,8 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         } yield response
       }
     }
-
-  }
+*/
+  } 
 
   private def parseInt(s: String): Either[String, Int] =
     Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))

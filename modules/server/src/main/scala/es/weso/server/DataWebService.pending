@@ -33,7 +33,7 @@ class DataWebService[F[_]](blocker: Blocker,
 
   val routes = HttpRoutes.of[F] {
 
-    case req@GET -> Root / "dataConversions" :?
+  case req@GET -> Root / "dataConversions" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
       DataFormatParam(maybeDataFormatStr) +&

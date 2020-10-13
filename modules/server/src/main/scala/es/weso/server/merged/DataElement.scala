@@ -7,7 +7,7 @@ import es.weso.server.Defaults
 import es.weso.server.format.DataFormat
 import es.weso.utils.IOUtils._
 import es.weso.rdf.jena.RDFAsJenaModel
-import cats.effect.IO
+import cats.effect._
 import es.weso.rdf.RDFReader
 import es.weso.rdf.RDFReasoner
 
@@ -19,11 +19,11 @@ case class DataElement(
     dataFormat: DataFormat,
     activeDataTab: ActiveDataTab
 ) {
- def toRDF: EitherT[IO,String,RDFAsJenaModel] = activeDataTab match {
+ def toRDF: Resource[IO,RDFAsJenaModel] = activeDataTab match {
       case DataTextArea => for {
-        rdf <- io2es(RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name,None,false))
+        rdf <- RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name,None,false)
       } yield rdf
-      case _ => fail_es(s"Not implemented yet compound with activeDataTab: ${activeDataTab}")
+      case _ => Resource.liftF(IO.raiseError(new RuntimeException(s"Not implemented yet compound with activeDataTab: ${activeDataTab}")))
   }  
 }
 

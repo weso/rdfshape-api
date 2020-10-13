@@ -1,5 +1,5 @@
-lazy val scala212 = "2.12.11"
-lazy val scala213 = "2.13.1"
+lazy val scala212 = "2.12.12"
+lazy val scala213 = "2.13.3"
 lazy val supportedScalaVersions = List(scala213, scala212)
 
 /*
@@ -29,16 +29,16 @@ scalafmt: {
  */
 
 lazy val utilsVersion          = "0.1.69" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.59"
-lazy val shexsVersion          = "0.1.64"
+lazy val umlShaclexVersion     = "0.0.60"
+lazy val shexsVersion          = "0.1.68"
 
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
 // Dependency versions
-lazy val catsVersion           = "2.1.1"
+lazy val catsVersion           = "2.2.0"
 lazy val commonsTextVersion    = "1.7"
-lazy val circeVersion          = "0.12.3"
+lazy val circeVersion          = "0.14.0-M1"
 lazy val graphvizJavaVersion   = "0.5.2"
 lazy val http4sVersion         = "0.21.4"
 lazy val jgraphtVersion        = "1.3.1"
@@ -48,8 +48,8 @@ lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
 lazy val scalaGraphVersion     = "1.11.5"
 // lazy val scalajVersion         = "2.4.2"
-lazy val scalacticVersion      = "3.1.1"
-lazy val scalaTestVersion      = "3.1.1"
+lazy val scalacticVersion      = "3.2.0"
+lazy val scalaTestVersion      = "3.2.0"
 lazy val scalatestplusVersion  = "3.1.0.0"
 lazy val scalatagsVersion      = "0.7.0"
 lazy val scallopVersion        = "3.3.1"
@@ -67,7 +67,7 @@ lazy val scalaMacrosVersion   = "2.1.1"
 // Dependency modules
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
-lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
+// lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion

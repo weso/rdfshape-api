@@ -72,7 +72,7 @@ object ApiHelper {
     )
   }
 
-  private[server] def schemaConvert(optSchema: Option[String],
+/* pending  private[server] def schemaConvert(optSchema: Option[String],
                   optSchemaFormat: Option[String],
                   optSchemaEngine: Option[String],
                   optTargetSchemaFormat: Option[String],
@@ -89,9 +89,9 @@ object ApiHelper {
         result <- schema.convert(optTargetSchemaFormat,optTargetSchemaEngine,base.map(IRI(_)))
       } yield Some(result)
     }
-  }
+  } */
 
-  private[server] def validate(rdf: RDFReasoner,
+/*  private[server] def validate(rdf: RDFReasoner,
                                dp:DataParam,
                                schema: Schema,
                                sp: SchemaParam,
@@ -147,12 +147,12 @@ object ApiHelper {
 
     result.value.flatMap(_.fold(e => err(e),IO.pure(_)))
   }
-
+*/
 
   private def err(msg: String) =
     IO((Result.errStr(s"Error: $msg"), None, NoTime))
 
-  private[server] def query(data: String,
+/*  private[server] def query(data: String,
             optDataFormat: Option[DataFormat],
             optQuery: Option[String],
             optInference: Option[String]
@@ -170,8 +170,8 @@ object ApiHelper {
       }
     }
   }
-
-  private[server] def dataExtract(rdf: RDFReasoner,
+*/
+/*  private[server] def dataExtract(rdf: RDFReasoner,
                                   optData: Option[String],
                                   optDataFormat: Option[DataFormat],
                                   optNodeSelector: Option[String],
@@ -244,7 +244,7 @@ object ApiHelper {
       either <- run_es(result)
     } yield either.fold(err => SchemaConversionResult.fromMsg(s"convertSchema: error: $err"), identity)
   }
-
+*/
   private[server] def shapeInfer(rdf: RDFReasoner,
                                  optNodeSelector: Option[String],
                                  optInference: Option[String],
@@ -261,7 +261,8 @@ object ApiHelper {
      case None => ok_es(Json.Null)
      case Some(nodeSelector) => {
        for {
-         selector <- either2es(NodeSelector.fromString(nodeSelector, base, rdf.getPrefixMap()))
+         pm <- io2es(rdf.getPrefixMap)
+         selector <- either2es(NodeSelector.fromString(nodeSelector, base, pm))
          eitherResult <- io2es {
            println(s"Selector: $selector")
            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
@@ -301,8 +302,9 @@ object ApiHelper {
   private[server] def dataInfoFromString(data: String, dataFormatStr: String): IO[Json] =  {
     val either: ESIO[Json] = for {
       dataFormat <- either2es(DataFormat.fromString(dataFormatStr))
-      rdf <- io2es(RDFAsJenaModel.fromChars(data,dataFormat.name))
-      json <- io2es(dataInfo(rdf, Some(data), Some(dataFormat)))
+      json <- io2es(RDFAsJenaModel.fromChars(data,dataFormat.name).use(rdf => 
+        dataInfo(rdf, Some(data), Some(dataFormat))
+      ))
     } yield json
 
     either.fold(e => DataInfoResult.fromMsg(e).toJson, identity)
@@ -313,18 +315,19 @@ object ApiHelper {
     val either: ESIO[DataInfoResult] = for {
       numberStatements <- io2es(rdf.getNumberOfStatements)
       preds <- stream2es(rdf.predicates)
-    } yield DataInfoResult.fromData(data, dataFormat, preds.toSet, numberStatements, rdf.getPrefixMap)
+      pm <- io2es(rdf.getPrefixMap)
+    } yield DataInfoResult.fromData(data, dataFormat, preds.toSet, numberStatements, pm)
     either.fold(e => DataInfoResult.fromMsg(e).toJson, _.toJson)
   }
 
 
-  private[server] def getSchema(sv: SchemaValue): EitherT[IO,String,Schema] = {
+/*  private[server] def getSchema(sv: SchemaValue): EitherT[IO,String,Schema] = {
     val schemaEngine = sv.currentSchemaEngine
     val schemaFormat = sv.currentSchemaFormat
     val schemaStr = sv.schema.getOrElse("")
     val base = Some(FileUtils.currentFolderURL)
     Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, base)
-  }
+  } */
 
   case class SchemaInfoReply(schemaName: Option[String],
                              schemaEngine: Option[String],
@@ -412,13 +415,13 @@ object ApiHelper {
     Json.fromFields(fields)
   }
 
-  private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
+ /* private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
     sp.schemaEmbedded match {
       case Some(true) => true
       case Some(false) => false
       case None => defaultSchemaEmbedded
     }
-  }
+  } */
 
   private[server] def mkJsonErr(msg: String) = Json.fromFields(List(("error", Json.fromString(msg))))
   
