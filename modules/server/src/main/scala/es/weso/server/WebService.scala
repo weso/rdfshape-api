@@ -3,7 +3,7 @@ package es.weso.server
 import java.util.concurrent.Executors
 
 import es.weso.schema._
-import org.http4s.HttpService
+// import org.http4s.HttpService
 import org.http4s.dsl.io._
 import cats.effect._
 import org.http4s._

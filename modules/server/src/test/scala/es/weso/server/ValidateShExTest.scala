@@ -15,8 +15,9 @@ import org.http4s.{Query => HQuery}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.http4s.dsl.io._
-
 import scala.concurrent.ExecutionContext.global
+import org.http4s.Uri.{Path => UriPath}
+
 
 class ValidateShExTest extends AnyFunSpec with Matchers {
 
@@ -99,7 +100,7 @@ class ValidateShExTest extends AnyFunSpec with Matchers {
         val ioResponse = serve(Request(
           GET,
           Uri(
-            path = "/api/schema/validate",
+            path = UriPath.fromString("/api/schema/validate"),
             query = HQuery.fromPairs(
               ("data", dataStr),
               ("schema", schemaStr),
@@ -137,7 +138,7 @@ class ValidateShExTest extends AnyFunSpec with Matchers {
         val ioResponse = serve(Request(
           GET,
           Uri(
-            path = "/api/schema/validate",
+            path = UriPath.fromString("/api/schema/validate"),
             query = HQuery.fromPairs(
               ("data", dataStr),
               ("schema", schemaStr),

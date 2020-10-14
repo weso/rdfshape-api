@@ -11,7 +11,7 @@ import org.http4s.{Request, Response, Uri, Query => HQuery}
 import org.scalatest.funspec._
 import org.scalatest.matchers.should._
 import es.weso.utils.test._
-
+import org.http4s.Uri.{Path => UriPath}
 import scala.concurrent.ExecutionContext.global
 
 class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
@@ -31,7 +31,7 @@ class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
         Request(
           GET,
           Uri(
-            path = "/api/data/convert",
+            path = UriPath.fromString("/api/data/convert"),
             query = HQuery.fromPairs(
               (QueryParams.compoundData, compoundData),
               (QueryParams.targetDataFormat, "Turtle")
@@ -75,7 +75,7 @@ class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
         Request(
           GET,
           Uri(
-            path = "/api/data/convert",
+            path = UriPath.fromString("/api/data/convert"),
             query = HQuery.fromPairs(
               (QueryParams.data, dataStr),
               (QueryParams.dataFormat, "Turtle"),
