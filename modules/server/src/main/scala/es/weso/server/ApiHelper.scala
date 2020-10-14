@@ -2,35 +2,28 @@ package es.weso.server
 
 import java.util.concurrent.Executors
 
-import cats.implicits._
 import cats.data.EitherT
 import cats.effect._
-import results._
-
-import scala.concurrent.ExecutionContext.global
-import es.weso.rdf.PrefixMap
+import cats.implicits._
+import es.weso.rdf.{PrefixMap, RDFReasoner}
 import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.schema._
-import es.weso.server.Defaults._
-import es.weso.utils.FileUtils
-import es.weso.rdf.RDFReasoner
 import es.weso.rdf.nodes._
+import es.weso.schema._
+import es.weso.schemaInfer._
+import es.weso.server.Defaults._
+import es.weso.server.format._
+import es.weso.server.results._
+import es.weso.shapeMaps.{NodeSelector, ResultShapeMap, ShapeMap}
+import es.weso.uml._
+import es.weso.utils.FileUtils
+import es.weso.utils.IOUtils._
+import es.weso.utils.json.JsonUtilsServer._
 import io.circe._
 import org.http4s._
-import org.log4s.getLogger
-import es.weso.uml._
-import es.weso.schemaInfer._
-import es.weso.server.format._
-import es.weso.shapeMaps.{NodeSelector, ShapeMap}
 import org.http4s.client.{Client, JavaNetClientBuilder}
-import es.weso.shacl.converter.Shacl2ShEx
-import es.weso.shex.converter.ShEx2Shacl
-import es.weso.utils.json.JsonUtilsServer._
-import es.weso.server.Defaults._
-import org.http4s.dsl._
-import scala.util.Try
-import es.weso.utils.IOUtils._
-import es.weso.shapeMaps.ResultShapeMap
+import org.log4s.getLogger
+
+import scala.concurrent.ExecutionContext.global
 
 object ApiHelper {
 
@@ -56,7 +49,7 @@ object ApiHelper {
     Uri.fromString(urlStr).fold(
       fail => {
         logger.info(s"Error parsing $urlStr")
-        IO.raiseError[String](new RuntimeException(s"Error resolving ${urlStr} as URL: ${fail.message}"))
+        IO.raiseError[String](new RuntimeException(s"Error resolving $urlStr as URL: ${fail.message}"))
       },
       uri => {
         // TODO: The following code is unsafe...
@@ -72,15 +65,15 @@ object ApiHelper {
     )
   }
 
-  private[server] def schemaConvert(optSchema: Option[String],
+private[server] def schemaConvert(optSchema: Option[String],
                   optSchemaFormat: Option[String],
                   optSchemaEngine: Option[String],
                   optTargetSchemaFormat: Option[String],
                   optTargetSchemaEngine: Option[String],
-                  base: Option[String]): EitherT[IO, String, Option[String]] =
+                  base: Option[String]): IO[Option[String]] =
    optSchema match {
-    case None => either2es(None.asRight[String])
-    case Some(schemaStr) => {
+    case None => IO(None)
+    case Some(schemaStr) =>
       val schemaFormat = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       // val x: EitherT[IO,String,Schema] = Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
@@ -88,10 +81,9 @@ object ApiHelper {
         schema <- Schemas.fromString(schemaStr, schemaFormat, schemaEngine, base)
         result <- schema.convert(optTargetSchemaFormat,optTargetSchemaEngine,base.map(IRI(_)))
       } yield Some(result)
-    }
-  }
+  } 
 
-  private[server] def validate(rdf: RDFReasoner,
+private[server] def validate(rdf: RDFReasoner,
                                dp:DataParam,
                                schema: Schema,
                                sp: SchemaParam,
@@ -101,10 +93,13 @@ object ApiHelper {
     println(s"APIHelper: validate")
     val base = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
     val triggerMode = tp.triggerMode
-    val (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(rdf.getPrefixMap,schema.pm)
-    ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
+    for {
+      pm <- rdf.getPrefixMap
+      (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(pm,schema.pm)
+      pair <- 
+        ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
          optShapeMapStr.getOrElse(""), base, None, None,
-         rdf.getPrefixMap, schema.pm) match {
+         pm, schema.pm) match {
          case Left(msg) =>
             err(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg")
          case Right(trigger) => for {
@@ -113,7 +108,8 @@ object ApiHelper {
              endTime <- IO { System.nanoTime() }
              time: Long = endTime - startTime
          } yield (result,Some(trigger),time)
-    }
+        }
+    } yield pair
   }
 
   private[server] def validateStr(data: String,
@@ -136,30 +132,32 @@ object ApiHelper {
       schemaEngine = optSchemaEngine
     )
     
-    val result: ESIO[(Result, Option[ValidationTrigger], Long)] = for {
+    val result: IO[(Result, Option[ValidationTrigger], Long)] = for {
      pair <- dp.getData(relativeBase)
-     (maybeStr,rdf) = pair
-     pair <- io2es(sp.getSchema(Some(rdf)))
-     (_,eitherSchema) = pair
-     schema <- either2es(eitherSchema)
-     result <- io2es(validate(rdf,dp,schema,sp,tp, relativeBase))
-    } yield result
+     (maybeStr,resourceRdf) = pair
+     result <- resourceRdf.use(rdf => for {
+       pairSchema <- sp.getSchema(Some(rdf))
+       (_,eitherSchema) = pairSchema
+       schema <- IO.fromEither(eitherSchema.leftMap(s => new RuntimeException(s"Error obtaining schema: $s")))
+       res <- validate(rdf,dp,schema,sp,tp, relativeBase)
+    } yield res)
+   } yield result
 
-    result.value.flatMap(_.fold(e => err(e),IO.pure(_)))
+    result.attempt.flatMap(_.fold(e => err(e.getMessage),IO.pure))
   }
 
 
   private def err(msg: String) =
     IO((Result.errStr(s"Error: $msg"), None, NoTime))
 
-  private[server] def query(data: String,
+/*  private[server] def query(data: String,
             optDataFormat: Option[DataFormat],
             optQuery: Option[String],
             optInference: Option[String]
            ): IO[Json] = {
     optQuery match {
       case None => IO(Json.Null)
-      case Some(queryStr) => {
+      case Some(queryStr) =>
         val dataFormat = optDataFormat.getOrElse(defaultDataFormat)
         val base = Some(IRI(FileUtils.currentFolderURL))
         for {
@@ -167,11 +165,10 @@ object ApiHelper {
           rdf <- basicRdf.applyInference(optInference.getOrElse("None"))
           json <- rdf.queryAsJson(queryStr)
         } yield json
-      }
     }
   }
-
-  private[server] def dataExtract(rdf: RDFReasoner,
+*/
+ private[server] def dataExtract(rdf: RDFReasoner,
                                   optData: Option[String],
                                   optDataFormat: Option[DataFormat],
                                   optNodeSelector: Option[String],
@@ -186,9 +183,10 @@ object ApiHelper {
     val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
     optNodeSelector match {
       case None => IO.pure(DataExtractResult.fromMsg("DataExtract: Node selector not specified"))
-      case Some(nodeSelector) => {
+      case Some(nodeSelector) =>
         val es: ESIO[(Schema,ResultShapeMap)] = for {
-          selector <- either2es(NodeSelector.fromString(nodeSelector, base, rdf.getPrefixMap()))
+          pm <- io2es(rdf.getPrefixMap)
+          selector <- either2es(NodeSelector.fromString(nodeSelector, base, pm))
           eitherResult <- {
             println(s"Node selector: $selector")
             val inferOptions: InferOptions = InferOptions(
@@ -200,9 +198,9 @@ object ApiHelper {
               followOnThreshold = Some(1),
               sortFunction = InferOptions.orderByIRI
             )
-            io2es(SchemaInfer.runInferSchema(rdf, 
-               selector, 
-               engine, 
+            io2es(SchemaInfer.runInferSchema(rdf,
+               selector,
+               engine,
                optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel),
                inferOptions
             ))
@@ -221,7 +219,6 @@ object ApiHelper {
             val (schema, resultShapeMap) = pair
             DataExtractResult.fromExtraction(optData, optDataFormat, schemaFormat.name, engine, schema, resultShapeMap)
           })
-      }
     }
   }
 
@@ -232,16 +229,16 @@ object ApiHelper {
                                     optTargetSchemaFormat: Option[SchemaFormat],
                                     optTargetSchemaEngine: Option[String]
                                    ): IO[SchemaConversionResult] = {
-    val result:ESIO[SchemaConversionResult] = for {
+    val result:IO[SchemaConversionResult] = for {
       resultStr <- schema.convert(optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, None)
       sourceStr <- schemaStr match {
-        case None => io2es(schema.serialize(schemaFormat.name))
-        case Some(source) => ok_es(source)
+        case None => schema.serialize(schemaFormat.name)
+        case Some(source) => IO(source)
       }
     } yield SchemaConversionResult.fromConversion(sourceStr, schemaFormat.name, schemaEngine, optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, resultStr, ShapeMap.empty)
 
     for {
-      either <- run_es(result)
+      either <- result.attempt
     } yield either.fold(err => SchemaConversionResult.fromMsg(s"convertSchema: error: $err"), identity)
   }
 
@@ -259,9 +256,10 @@ object ApiHelper {
    val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
    optNodeSelector match {
      case None => ok_es(Json.Null)
-     case Some(nodeSelector) => {
+     case Some(nodeSelector) =>
        for {
-         selector <- either2es(NodeSelector.fromString(nodeSelector, base, rdf.getPrefixMap()))
+         pm <- io2es(rdf.getPrefixMap)
+         selector <- either2es(NodeSelector.fromString(nodeSelector, base, pm))
          eitherResult <- io2es {
            println(s"Selector: $selector")
            SchemaInfer.runInferSchema(rdf, selector, engine, optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel))
@@ -271,10 +269,9 @@ object ApiHelper {
          maybePair <- if (withUml) either2es(Schema2UML.schema2UML(schemaInfer).map(Some(_))) else ok_es(None)
          maybeSvg <- io2es(maybePair match {
            case None => IO.pure(None)
-           case Some(pair) => {
+           case Some(pair) =>
              val (uml,warnings) = pair
              uml.toSVG(options).map(Some(_))
-           }
          })
          str <- io2es(schemaInfer.serialize(schemaFormat.name))
        } yield Json.fromFields(
@@ -289,9 +286,8 @@ object ApiHelper {
                val (uml,warnings) = pair
                Json.fromString(uml.toPlantUML(options)) }
            ) ++
-           maybeField(maybeSvg, "svg", Json.fromString(_))
+           maybeField(maybeSvg, "svg", Json.fromString)
        )
-     }
    }
   }
 
@@ -301,30 +297,34 @@ object ApiHelper {
   private[server] def dataInfoFromString(data: String, dataFormatStr: String): IO[Json] =  {
     val either: ESIO[Json] = for {
       dataFormat <- either2es(DataFormat.fromString(dataFormatStr))
-      rdf <- io2es(RDFAsJenaModel.fromChars(data,dataFormat.name))
-      json <- io2es(dataInfo(rdf, Some(data), Some(dataFormat)))
+      json <- io2es(RDFAsJenaModel.fromChars(data,dataFormat.name).use(rdf => 
+        dataInfo(rdf, Some(data), Some(dataFormat))
+      ))
     } yield json
 
     either.fold(e => DataInfoResult.fromMsg(e).toJson, identity)
   }
 
-  private[server] def dataInfo(rdf: RDFReasoner, 
-    data: Option[String], dataFormat: Option[DataFormat]): IO[Json] =  {
-    val either: ESIO[DataInfoResult] = for {
-      numberStatements <- io2es(rdf.getNumberOfStatements)
-      preds <- stream2es(rdf.predicates)
-    } yield DataInfoResult.fromData(data, dataFormat, preds.toSet, numberStatements, rdf.getPrefixMap)
-    either.fold(e => DataInfoResult.fromMsg(e).toJson, _.toJson)
+  private[server] def dataInfo(
+      rdf: RDFReasoner, 
+      data: Option[String], 
+      dataFormat: Option[DataFormat]): IO[Json] =  {
+    val either: IO[Either[Throwable,DataInfoResult]] = (for {
+      numberStatements <- rdf.getNumberOfStatements
+      preds <- rdf.predicates.compile.toList
+      pm <- rdf.getPrefixMap
+    } yield DataInfoResult.fromData(data, dataFormat, preds.toSet, numberStatements, pm)).attempt
+    either.map(_.fold(e => DataInfoResult.fromMsg(e.getMessage).toJson, _.toJson))
   }
 
 
-  private[server] def getSchema(sv: SchemaValue): EitherT[IO,String,Schema] = {
+/*  private[server] def getSchema(sv: SchemaValue): EitherT[IO,String,Schema] = {
     val schemaEngine = sv.currentSchemaEngine
     val schemaFormat = sv.currentSchemaFormat
     val schemaStr = sv.schema.getOrElse("")
     val base = Some(FileUtils.currentFolderURL)
     Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, base)
-  }
+  } */
 
   case class SchemaInfoReply(schemaName: Option[String],
                              schemaEngine: Option[String],
@@ -334,15 +334,15 @@ object ApiHelper {
                              errors: List[String]
                              ) {
     def toJson: Json = Json.fromFields(List(
-      ("schemaName", schemaName.fold(Json.Null)(Json.fromString(_))),
-      ("schemaEngine", schemaEngine.fold(Json.Null)(Json.fromString(_))),
+      ("schemaName", schemaName.fold(Json.Null)(Json.fromString)),
+      ("schemaEngine", schemaEngine.fold(Json.Null)(Json.fromString)),
       ("wellFormed", Json.fromBoolean(wellFormed)),
-      ("shapes", Json.fromValues(shapes.map(Json.fromString(_)))),
+      ("shapes", Json.fromValues(shapes.map(Json.fromString))),
       ("shapesPrefixMap", Json.fromValues(shapesPrefixMap.map(pair => Json.fromFields(List(
         ("prefix", Json.fromString(pair._1)),
         ("uri", Json.fromString(pair._2))
       ))))),
-      ("errors", Json.fromValues(errors.map(Json.fromString(_))))
+      ("errors", Json.fromValues(errors.map(Json.fromString)))
     ))
   }
 
@@ -404,7 +404,7 @@ object ApiHelper {
         ("schemaName", Json.fromString(info.schemaName)),
         ("schemaEngine", Json.fromString(info.schemaEngine)),
         ("wellFormed", Json.fromBoolean(info.isWellFormed)),
-        ("errors", Json.fromValues(info.errors.map(Json.fromString(_)))),
+        ("errors", Json.fromValues(info.errors.map(Json.fromString))),
         ("parsed", Json.fromString("Parsed OK")),
         ("svg", Json.fromString(svg)),
         ("plantUML", Json.fromString(plantuml))
@@ -412,13 +412,13 @@ object ApiHelper {
     Json.fromFields(fields)
   }
 
-  private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
+ /* private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
     sp.schemaEmbedded match {
       case Some(true) => true
       case Some(false) => false
       case None => defaultSchemaEmbedded
     }
-  }
+  } */
 
   private[server] def mkJsonErr(msg: String) = Json.fromFields(List(("error", Json.fromString(msg))))
   

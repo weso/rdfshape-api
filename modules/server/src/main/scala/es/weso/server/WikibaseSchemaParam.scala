@@ -48,12 +48,12 @@ case class WikibaseSchemaParam(
       client: Client[F]
   ): F[(Option[String], Either[String, Schema])] = {
     val uriSchema = wikibase.schemaEntityUri(es)
-    val r: EitherT[F, String, (Schema, String)] = for {
+    val r: F[(Schema, String)] = for {
       strSchema <- deref(uriSchema, client)
-      schema    <- esio2esf(Schemas.fromString(strSchema, "ShEXC", "ShEx"))
+      schema    <- io2f(Schemas.fromString(strSchema, "ShEXC", "ShEx"))
     } yield (schema, strSchema)
-    r.value.map(_ match {
-      case Left(s) => (None, Left(s))
+    r.attempt.map(_ match {
+      case Left(t) => (None, Left(t.getMessage))
       case Right(pair) => {
         val (schema, str) = pair
         (Some(str), Right(schema))
@@ -62,9 +62,9 @@ case class WikibaseSchemaParam(
 
   }
 
-  private def deref[F[_]: Effect](uri: Uri, client: Client[F]): EitherT[F, String, String] = {
+  private def deref[F[_]: Effect](uri: Uri, client: Client[F]): F[String] = {
     val reqSchema: Request[F] = Request(method = GET, uri = uri)
-    f2es(client.expect[String](reqSchema))
+    client.expect[String](reqSchema)
   }
 }
 
@@ -74,18 +74,17 @@ object WikibaseSchemaParam {
       partsMap: PartsMap[F],
       data: Option[RDFReasoner],
       client: Client[F]
-  ): EitherT[F, String, (Schema, WikibaseSchemaParam)] = {
-    val r: F[Either[String, (Schema, WikibaseSchemaParam)]] = for {
+  ): F[(Schema, WikibaseSchemaParam)] = {
+    val r: F[(Schema, WikibaseSchemaParam)] = for {
       sp <- mkWikibaseSchemaParam(partsMap)
       p  <- sp.getSchema(data, client)
-    } yield {
-      val (maybeStr, maybeSchema) = p
-      maybeSchema match {
-        case Left(str)     => Left(str)
-        case Right(schema) => Right((schema, sp.copy(schemaStr = maybeStr)))
+      (maybeStr, maybeSchema) = p
+      res <- maybeSchema match {
+        case Left(str)     => MonadError[F,Throwable].raiseError(new RuntimeException(s"Error obtaining wikibase parameters: $str"))
+        case Right(schema) => Monad[F].pure((schema, sp.copy(schemaStr = maybeStr)))
       }
-    }
-    EitherT(r)
+    } yield res
+    r
   }
 
   private[server] def mkWikibaseSchemaParam[F[_]: Effect](partsMap: PartsMap[F]): F[WikibaseSchemaParam] =

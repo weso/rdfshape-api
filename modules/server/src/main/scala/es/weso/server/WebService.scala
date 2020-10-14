@@ -47,7 +47,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     case req@POST -> Root / "schemaConversions" =>
       req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
-        for {
+        /*for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
           optTargetSchemaFormatStr <- partsMap.optPartValue("targetSchemaFormat")
           optTargetSchemaFormat <- optEither2f(optTargetSchemaFormatStr, SchemaFormat.fromString)
@@ -67,7 +67,8 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
               } yield ok
             }
           }
-        } yield response
+        } yield response */
+        Ok(s"Web functionality disabled")
       }
       }
 
@@ -80,7 +81,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         TargetSchemaEngineParam(optTargetSchemaEngine) +&
         OptActiveSchemaTabParam(optActiveSchemaTab) => {
 
-                 
+      /*           
       val schemaFormat = optSchemaFormat match { 
         case None => defaultSchemaFormat 
         case Some(sf) => SchemaFormat.fromString(sf).getOrElse(
@@ -105,13 +106,14 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       for {
         cnv <- L.liftIO(schemaConvert(optSchema,optSchemaFormat,optSchemaEngine,optTargetSchemaFormat,optTargetSchemaEngine,ApiHelper.getBase).value)
         ok <- Ok(html.schemaConversions(sv,targetSchemaFormat, targetSchemaEngine, cnv))
-       } yield ok
+       } yield ok */
+       Ok(s"Web Functionality disabled. Use rdfshape-client")
     }
 
     case req@POST -> Root / "schemaInfo" =>
       req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
-        for {
+/*        for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
           response <- maybePair match {
            case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
@@ -126,7 +128,8 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
              Ok(html.schemaInfo(Some(info),sv))
            }
         }
-      } yield response
+      } yield response */
+      Ok(s"Web Functionality disabled. Use rdfshape-cliend")
     }
     }
 
@@ -175,7 +178,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     case req@POST -> Root / "schemaVisualize" =>
       req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
-        for {
+/*        for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
           response <- maybePair match {
             case Left(msg) => BadRequest(s"Error obtaining schema: $msg")
@@ -192,7 +195,8 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
               } yield r  
             }
           }
-        } yield response
+        } yield response */
+        Ok(s"Web functionality disabled. Use rdfshape-client")
       }
       }
 
@@ -266,7 +270,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     case req@POST -> Root / "validate" =>
       req.decode[Multipart[F]] { m => {
         val partsMap = PartsMap(m.parts)
-        logger.info(s"POST validate partsMap. $partsMap")
+/*        logger.info(s"POST validate partsMap. $partsMap")
         val r: ESF[Response[F],F] = for {
           dataPair <- DataParam.mkData(partsMap,relativeBase)
           (rdf, dp) = dataPair
@@ -279,8 +283,9 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         } yield {
           ok
         }
-        r.value.flatMap(_.fold(e => BadRequest(e), F.pure(_)))
-      }
+        r.value.flatMap(_.fold(e => BadRequest(e), F.pure(_))) */
+        Ok(s"Web functionality disabled in favour of rdfshape-client")
+      } 
   }
 
   case req@GET -> Root / "validate" :?
@@ -539,7 +544,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     Left(str)
   }
 
-  private[server] def validateResponse(result: Result,
+/*  private[server] def validateResponse(result: Result,
                                        time: Long,
                                        dp: DataParam,
                                        sp: SchemaParam,
@@ -571,7 +576,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       smv,getSchemaEmbedded(sp))))
     } yield ok
     r
-  }
+  } */
 
   private def allNone(maybes: Option[String]*) = {
     maybes.forall(_.isEmpty)

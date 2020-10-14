@@ -3,9 +3,11 @@ package es.weso.server
 import java.net.URI
 
 import Defaults._
+
 import cats.data.EitherT
+import cats.arrow.FunctionK
 import cats.implicits._
-import cats.effect.{Effect, IO}
+import cats.effect._
 import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena._
@@ -13,7 +15,10 @@ import es.weso.rdf.nodes.IRI
 import es.weso.server.format._
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
+import es.weso.utils.FUtils._
+
 import es.weso.server.merged.CompoundData
+
 
 case class DataParam(data: Option[String],
                      dataURL: Option[String],
@@ -69,26 +74,25 @@ case class DataParam(data: Option[String],
     }
   }
 
-  private def applyInference(rdf: RDFReasoner,
+  private def applyInference(rdf: Resource[IO,RDFReasoner],
                              inference: Option[String],
                              dataFormat: Format
-                            ): IO[RDFReasoner] = for {
-    newRdf <- extendWithInference(rdf, inference) 
-//    str <- rdf.serialize(dataFormat.name)
-  } yield newRdf
+                            ): Resource[IO,RDFReasoner] = 
+    extendWithInference(rdf, inference) 
 
-  private def extendWithInference(rdf: RDFReasoner,
+  private def extendWithInference(resourceRdf: Resource[IO,RDFReasoner],
                                   optInference: Option[String]
-                                 ): IO[RDFReasoner] = {
+                                 ): Resource[IO,RDFReasoner] = {
     logger.debug(s"############# Applying inference $optInference")
-    optInference.fold(IO(rdf))(rdf.applyInference(_)) /*.fold(
+    optInference match {
+      case None => resourceRdf
+      case Some(str) => Resource.liftF(resourceRdf.use(rdf => rdf.applyInference(str)))
+    } 
+    /*.fold(
       msg => Left(s"Error applying inference to RDF: $msg"),
       (newRdf: RDFReasoner) => Right(newRdf)
     ) */
   }
-
-//  private def err[A](msg:String): EitherT[IO,String,A] = EitherT.fromEither(msg.asLeft[A])
-//  private def fromIO[A](io:IO[A]): EitherT[IO,String,A] = EitherT.liftF(io)
 
   /**
     * get RDF data from data parameters
@@ -96,7 +100,8 @@ case class DataParam(data: Option[String],
     *         if it has string representation and the second parameter
     *         is the RDF data
     */
-  def getData(relativeBase: Option[IRI]): ESIO[(Option[String], RDFReasoner)] = {
+  def getData(relativeBase: Option[IRI]
+  ): IO[(Option[String], Resource[IO,RDFReasoner])] = {
     val base = relativeBase.map(_.str)
     pprint.log(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
@@ -109,18 +114,18 @@ case class DataParam(data: Option[String],
       case None => Right(dataTextAreaType)
     }
     println(s"Input type: $inputType")
-    val x: ESIO[(Option[String],RDFReasoner)] = inputType match {
+    val x: IO[(Option[String],Resource[IO,RDFReasoner])] = inputType match {
       case Right(`dataUrlType`) => {
         dataURL match {
-          case None => fail_es(s"Non value for dataURL")
+          case None => err(s"Non value for dataURL")
           case Some(dataUrl) => {
             val dataFormat = dataFormatUrl.getOrElse(DataFormat.default)
             for {
               rdf <- rdfFromUri(new URI(dataUrl), dataFormat,base)
-              newRdf <- io2es(applyInference(rdf, inference, dataFormat))
-              eitherStr <- io2es(newRdf.serialize(dataFormat.name,None).attempt)
-              optStr = eitherStr.toOption
-            } yield (optStr, newRdf)
+              // newRdf <- Resource.liftF(applyInference(rdf, inference, dataFormat))
+              // eitherStr <- Resource.liftF(newRdf.serialize(dataFormat.name,None).attempt)
+              // optStr = eitherStr.toOption
+            } yield (None , rdf)
 
 /*            rdfFromUri(new URI(dataUrl), dataFormat,base) match {
               case Left(str) => err(s"Error obtaining $dataUrl with $dataFormat: $str")
@@ -137,55 +142,55 @@ case class DataParam(data: Option[String],
       }
       case Right(`dataFileType`) => {
         dataFile match {
-          case None => fail_es(s"No value for dataFile")
+          case None => err(s"No value for dataFile")
           case Some(dataStr) =>
             val dataFormat: Format = dataFormatFile.getOrElse(DataFormat.default)
-            io2es(for {
+            /*io2es(RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase).use(rdf => for {
               iriBase <- mkBase(base)
-              rdf <- RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase)
               newRdf <- extendWithInference(rdf, inference)
               eitherStr <- newRdf.serialize(dataFormat.name,None).attempt
               optStr = eitherStr.toOption              
-            } yield (optStr,newRdf))
+            } yield (optStr,newRdf))) */
+           for {
+              iriBase <- mkBase(base)
+            } yield (None,RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase))
         }
       }
 
       case Right(`dataEndpointType`) => {
         maybeEndpoint match {
-          case None => fail_es(s"No value for endpoint")
+          case None => err(s"No value for endpoint")
           case Some(endpointUrl) => {
             for {
-              endpoint <- io2es(Endpoint.fromString(endpointUrl))
-              newRdf <- io2es(extendWithInference(endpoint, inference))
-            } yield (None,newRdf)
+              endpoint <- Endpoint.fromString(endpointUrl)
+              // newRdf <- extendWithInference(endpoint, inference)
+            } yield (None,Resource.pure[IO,RDFReasoner](endpoint))
           }
         }
       }
       case Right(`dataTextAreaType`) => {
         pprint.log(data)
         data match {
-          case None => for {
-            empty <- io2es(RDFAsJenaModel.empty)
-          } yield (None, empty)
-          case Some(data) => {
+          case None => IO((None, RDFAsJenaModel.empty))
+          case d@Some(data) => {
             val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
             for {
               rdf <- rdfFromString(data, dataFormat, base)
-              newRdf <- io2es(extendWithInference(rdf, inference))
-              eitherStr <- io2es(newRdf.serialize(dataFormat.name,None).attempt)
-              optStr = eitherStr.toOption
-            } yield (optStr,newRdf)
+              // newRdf <- io2es(extendWithInference(rdf, inference))
+              // eitherStr <- io2es(newRdf.serialize(dataFormat.name,None).attempt)
+              // optStr = eitherStr.toOption
+            } yield (d,rdf)
           }}}
+
       case Right(`compoundDataType`) => { 
        println(s"###Compound data") 
        for { 
-         cd <- either2es(CompoundData.fromString(compoundData.getOrElse("")))
-         rdf <- cd.toRDF()
-       } yield (None,rdf)
+         cd <- IO.fromEither(CompoundData.fromString(compoundData.getOrElse("")).leftMap(s => new RuntimeException(s)))
+       } yield (None,cd.toRDF)
       }
-      case Right(other) => fail_es(s"Unknown value for activeDataTab: $other")
+      case Right(other) => err(s"Unknown value for activeDataTab: $other")
 
-      case Left(msg) => fail_es(msg)
+      case Left(msg) => err(msg)
     }
     x 
   }
@@ -194,30 +199,28 @@ case class DataParam(data: Option[String],
   private def rdfFromString(str: String,
                             format: Format,
                             base: Option[String]
-                           ): ESIO[RDFReasoner] = {
+                           ): IO[Resource[IO,RDFReasoner]] = {
     pprint.log(format)
     format.name match {
-      case f if HTML2RDF.availableExtractorNames contains f => for {
-        eitherRdf <- HTML2RDF.extractFromString(str,f)
-      } yield eitherRdf
+      case f if HTML2RDF.availableExtractorNames contains f => IO(HTML2RDF.extractFromString(str,f)) /*for {
+        eitherRdf <- 
+      } yield eitherRdf */
       case _ => for {
-        baseIri <- io2es(mkBase(base))
-        rdf <- io2es(RDFAsJenaModel.fromChars(str,format.name,baseIri))
-      } yield rdf
+        baseIri <- mkBase(base)
+      } yield RDFAsJenaModel.fromChars(str,format.name,baseIri)
     }
   }
 
   private def rdfFromUri(uri: URI,
                          format: Format,
                          base: Option[String]
-                        ): ESIO[RDFReasoner] = {
+                        ): IO[Resource[IO,RDFReasoner]] = {
     format.name.toLowerCase match {
       case f if HTML2RDF.availableExtractorNames contains f =>
-        HTML2RDF.extractFromUrl(uri.toString, f)
+        IO(HTML2RDF.extractFromUrl(uri.toString, f))
       case _ => for {
-       baseIri <- io2es(mkBase(base))
-       rdf <- io2es(RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri))
-      } yield rdf
+       baseIri <- mkBase(base)
+      } yield RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri) 
     }
   }
 
@@ -238,18 +241,17 @@ case class DataParam(data: Option[String],
 }
 
 object DataParam {
+
   private[this] val logger = getLogger
 
   private[server] def mkData[F[_]:Effect](
      partsMap: PartsMap[F],
      relativeBase: Option[IRI]
-    ): ESF[(RDFReasoner,DataParam),F] = {
+    ): F[(Resource[IO,RDFReasoner],DataParam)] = {
 
-    val r: ESF[(RDFReasoner, DataParam),F] = for {
-      dp <- f2es(mkDataParam[F](partsMap))
-      _ <- { pprint.log(dp); ok_esf[Unit,F](()) }
-      pair <- esio2esf(dp.getData(relativeBase))
-      _ <- { pprint.log(pair); ok_esf[Unit,F](()) }
+    val r: F[(Resource[IO,RDFReasoner], DataParam)] = for {
+      dp <- mkDataParam(partsMap)
+      pair <- io2f(dp.getData(relativeBase))
     } yield {
       val (optStr, rdf) = pair
       (rdf, dp.copy(data = optStr))

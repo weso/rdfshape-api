@@ -18,7 +18,7 @@ object Defaults {
   val defaultSchemaEngine = Schemas.defaultSchemaName
   val availableTriggerModes = Schemas.availableTriggerModes
   val defaultTriggerMode = ShapeMapTrigger(ShapeMap.empty).name
-  val availableInferenceEngines = RDFAsJenaModel.empty.map(_.availableInferenceEngines).unsafeRunSync
+  val availableInferenceEngines = List("NONE", "RDFS", "OWL") // TODO: Obtain from RDFAsJenaModel.empty.map(_.availableInferenceEngines).unsafeRunSync
   val defaultSchemaEmbedded = false
   val defaultInference = availableInferenceEngines.head
   val defaultActiveDataTab = "#dataTextArea"

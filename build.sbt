@@ -1,5 +1,5 @@
-lazy val scala212 = "2.12.11"
-lazy val scala213 = "2.13.1"
+lazy val scala212 = "2.12.12"
+lazy val scala213 = "2.13.3"
 lazy val supportedScalaVersions = List(scala213, scala212)
 
 /*
@@ -29,16 +29,16 @@ scalafmt: {
  */
 
 lazy val utilsVersion          = "0.1.69" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.59"
-lazy val shexsVersion          = "0.1.64"
+lazy val umlShaclexVersion     = "0.0.60"
+lazy val shexsVersion          = "0.1.68"
 
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"
 
 // Dependency versions
-lazy val catsVersion           = "2.1.1"
+lazy val catsVersion           = "2.2.0"
 lazy val commonsTextVersion    = "1.7"
-lazy val circeVersion          = "0.12.3"
+lazy val circeVersion          = "0.14.0-M1"
 lazy val graphvizJavaVersion   = "0.5.2"
 lazy val http4sVersion         = "0.21.4"
 lazy val jgraphtVersion        = "1.3.1"
@@ -48,8 +48,8 @@ lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
 lazy val scalaGraphVersion     = "1.11.5"
 // lazy val scalajVersion         = "2.4.2"
-lazy val scalacticVersion      = "3.1.1"
-lazy val scalaTestVersion      = "3.1.1"
+lazy val scalacticVersion      = "3.2.0"
+lazy val scalaTestVersion      = "3.2.0"
 lazy val scalatestplusVersion  = "3.1.0.0"
 lazy val scalatagsVersion      = "0.7.0"
 lazy val scallopVersion        = "3.3.1"
@@ -61,13 +61,19 @@ lazy val typesafeConfigVersion = "1.3.4"
 lazy val jqueryVersion         = "3.4.1"
 lazy val bootstrapVersion      = "4.3.1"
 
+// Scalaj
+lazy val scalajVersion         = "2.4.2"
+
+// Parsing utils
+lazy val  playVersion    = "2.9.0"
+
 // Compiler plugin dependency versions
-lazy val scalaMacrosVersion   = "2.1.1"
+lazy val scalaMacrosVersion    = "2.1.1"
 
 // Dependency modules
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
-lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
+// lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
@@ -97,6 +103,9 @@ lazy val any23_core        = "org.apache.any23"           % "apache-any23-core" 
 lazy val any23_api         = "org.apache.any23"           % "apache-any23-api"     % any23Version
 lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-scraper" % "2.2"
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
+
+lazy val scalaj            ="org.scalaj"                  %% "scalaj-http"         % scalajVersion
+lazy val play             = "com.typesafe.play"           %% "play-json"           % playVersion
 
 lazy val jquery            = "org.webjars"                % "jquery"               % jqueryVersion
 lazy val bootstrap         = "org.webjars"                % "bootstrap"            % bootstrapVersion
@@ -166,8 +175,9 @@ lazy val server = project
       rdf4j_runtime,
       plantuml,
       graphvizJava,
-      // scalaj,
-      utilsTest % Test, 
+      scalaj,
+      play,
+      utilsTest % Test,
       // webJars
       jquery,
       bootstrap
