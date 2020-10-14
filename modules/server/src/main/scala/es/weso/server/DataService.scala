@@ -26,16 +26,16 @@ import org.http4s.server.staticcontent.{ResourceService, resourceService}
 import org.log4s.getLogger
 import scala.concurrent.duration._
 import APIDefinitions._
-import cats.Monad
 import cats.data.EitherT
 // import es.weso.html
 import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
 import es.weso.utils.IOUtils._
+import es.weso.utils.FUtils._
 import es.weso.server.utils.OptEitherF._
-
 import scala.util.Try
+import es.weso.rdf.RDFReasoner
 
 class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                                                client: Client[F])(implicit cs: ContextShift[F])
@@ -104,31 +104,35 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap, relativeBase).value
-          response <- maybeData match {
-            case Left(err) => errJson(
-              s"""|Error obtaining RDF data
-                  |$err""".stripMargin
-            )
-            case Right((res, dp)) => {
-              val dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
-              dp.data match {
-                case Some(data) => for {
+          dataParam <- DataParam.mkData(partsMap, relativeBase)
+          (resource,dp) = dataParam
+          dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
+          response <- dp.data match {
+              case Some(data) => {
+               val x:F[Response[F]] = for {
                   r <- io2f(dataInfoFromString(data, dataFormat))
                   ok <- Ok(r)
-                } yield ok
-                case None => res.use(rdf => for {
-                  str <- io2f(rdf.serialize("TURTLE"))
-                  ok <- Ok(DataInfoResult.fromMsg(s"No data, but RDF=${str}").toJson)
-                } yield ok)
+                } yield ok 
+               x 
               }
-            }
+           case None => {
+             def action(rdf: RDFReasoner): IO[Json] = for {
+               // str <- rdf.serialize(dataFormat)
+               r <- dataInfo(rdf,None,dp.dataFormat)
+             } yield r
+             val resp: IO[Json] = resource.use(rdf => action(rdf))
+             val x: F[Response[F]] = for {
+               json <- io2f(resp)
+               ok <- Ok(json)
+             } yield ok
+             x
+           } 
           }
         } yield response
       }
     }
 
-/*    case req@GET -> Root / `api` / "data" / "info" :?
+    case req@GET -> Root / `api` / "data" / "info" :?
       OptDataParam(optData) +&
       OptDataURLParam(optDataURL) +&
       CompoundDataParam(optCompoundData) +&
@@ -141,9 +145,9 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
       } yield df
 
-      either match {
-        case Left(str) => errJson(str)
-        case Right(optDataFormat) => {
+      val r: F[Response[F]] = either.fold(
+        str => errJson(str), 
+        optDataFormat => {
           val dp =
             DataParam(optData, optDataURL, None, optEndpoint,
               optDataFormat, optDataFormat, optDataFormat,
@@ -152,39 +156,30 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
               None, optActiveDataTab,
               optCompoundData)
           for {
-            eitherData <- io2f(dp.getData(relativeBase).value)
-            r <- eitherData.fold(err => errJson(err), pair  => { 
-              val (maybeStr,rdf) = pair
-              for {
-                s <- io2f(dataInfo(rdf, maybeStr, optDataFormat))
-                ok <- Ok(s)
-              } yield ok
-            })
-          } yield r
+            dataParam <- io2f(dp.getData(relativeBase))
+            (maybeStr,res) = dataParam
+            json <- io2f(res.use(rdf => dataInfo(rdf,maybeStr,optDataFormat)))
+            ok <- Ok(json)            
+          } yield ok
         }
-      }
-    }
+      ) 
+      r
+    } 
 
     case req @ POST -> Root / `api` / "data" / "convert" => {
       println(s"POST /api/data/convert, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap, relativeBase).value
-          response <- maybeData match {
-            case Left(msg) => errJson(s"Error obtaining data: $msg")
-            case Right((rdf, dp)) => {
-              val targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name
-              val dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
-              pprint.log(dp)
-              pprint.log(dataFormat)
-              for {
-                result <- io2f(DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat))
-                ok <- Ok(result.toJson)
-              } yield ok
-            }
-          }
-        } yield response
+          dataParam <- DataParam.mkData(partsMap, relativeBase)
+          (resourceRdf, dp) = dataParam
+          targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name
+          dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
+          result <- io2f(resourceRdf.use(rdf => 
+            DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat))
+          )
+          ok <- Ok(result.toJson)
+        } yield ok
       }
     }
 
@@ -210,27 +205,21 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap, relativeBase).value
-          response <- maybeData match {
-            case Left(err) => errJson(s"Error obtaining RDF data $err")
-            case Right((rdf, dp)) => 
-             for {
-               maybePair <- SparqlQueryParam.mkQuery(partsMap)
-               resp <- maybePair match {
-                case Left(err) => errJson(s"Error obtaining Query data $err")
-                case Right((queryStr,qp)) => {
+          dataParam <- DataParam.mkData(partsMap, relativeBase)
+          (resourceRdf, dp) = dataParam
+          maybePair <- SparqlQueryParam.mkQuery(partsMap)
+          resp <- maybePair match {
+            case Left(err) => errJson(s"Error obtaining Query data $err")
+            case Right((queryStr,qp)) => {
                   pprint.log(qp);
                   val optQueryStr = qp.query.map(_.str)
                   for {
-                   json <- io2f(rdf.queryAsJson(optQueryStr.getOrElse("")))
-                   _ <- io2f (IO { pprint.log(json) } )
+                   json <- io2f(resourceRdf.use(rdf => rdf.queryAsJson(optQueryStr.getOrElse(""))))
                    v <- Ok(json)
                   } yield v
                 }
-               }
-             } yield resp
-          }
-        } yield response
+            }
+        } yield resp
       }
     }
 
@@ -239,7 +228,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData <- DataParam.mkData(partsMap, relativeBase).value
+          maybeData <- DataParam.mkData(partsMap, relativeBase).attempt
           schemaEngine <- partsMap.optPartValue("schemaEngine")
           optSchemaFormatStr <- partsMap.optPartValue("schemaFormat")
           inference <- partsMap.optPartValue("inference")
@@ -249,12 +238,12 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           schemaFormat <- optEither2f(optSchemaFormatStr, SchemaFormat.fromString)
           response <- maybeData match {
             case Left(err) => for {
-              res <- io2f(DataExtractResult.fromMsg(s"Error obtaining data: $err").toJson)
+              res <- io2f(DataExtractResult.fromMsg(s"Error obtaining data: ${err.getMessage}").toJson)
               ok <- Ok(res)
             } yield ok 
             // Ok(DataExtractResult.fromMsg(s"Error obtaining data: $err").toJson)
-            case Right((rdf, dp)) => for {
-              d <- io2f(dataExtract(rdf, dp.data, dp.dataFormatValue, nodeSelector, inference, schemaEngine, schemaFormat, label, None))
+            case Right((resourceRdf, dp)) => for {
+              d <- io2f(resourceRdf.use(rdf => dataExtract(rdf, dp.data, dp.dataFormatValue, nodeSelector, inference, schemaEngine, schemaFormat, label, None)))
               json <- io2f(d.toJson)
               ok <- Ok(json)
              } yield ok
@@ -262,7 +251,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         } yield response
       }
     }
-*/
+
   } 
 
   private def parseInt(s: String): Either[String, Int] =

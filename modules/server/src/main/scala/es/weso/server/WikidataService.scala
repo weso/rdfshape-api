@@ -1,5 +1,6 @@
 package es.weso.server
 
+import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
@@ -41,7 +42,9 @@ import es.weso.shapeMaps.Start
 import es.weso.shapeMaps.FixedShapeMap
 import es.weso.schema.ShapeMapTrigger
 import es.weso.utils.internal.CollectionCompat._
-import es.weso.wikibaserdf.WikibaseRDF
+// import es.weso.wikibaserdf.WikibaseRDF
+import scala.util.control.NoStackTrace
+import scala.util.matching.Regex
 
 class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
@@ -308,11 +311,18 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
           info <- either2ef[InfoEntity,F](cnvEntity(label))
           _ <- { println(s"URI: ${info.uri}"); ok_esf[Unit,F](())}
           strRdf <- f2es(redirectClient.expect[String](info.uri))
-          rdf <- io2esf(RDFAsJenaModel.fromString(strRdf,"TURTLE"))
-          rdfSerialized <- io2esf(rdf.serialize("TURTLE"))
-          _ <- { println(s"RDF Serialized\n${rdfSerialized}"); ok_esf[Unit,F](())}
-          nodeSelector = RDFNodeSelector(IRI(label))
-          eitherInferred <- io2esf(SchemaInfer.runInferSchema(rdf,nodeSelector,"ShEx",IRI(s"http://example.org/Shape_${info.localName}"),InferOptions.defaultOptions.copy(maxFollowOn=3)))
+          eitherInferred <- io2esf(
+            RDFAsJenaModel.fromString(strRdf,"TURTLE").use(rdf => for {
+             rdfSerialized <- rdf.serialize("TURTLE")
+             nodeSelector = RDFNodeSelector(IRI(label))
+             inferred <- SchemaInfer.runInferSchema(
+               rdf,
+               nodeSelector,
+               "ShEx",
+               IRI(s"http://example.org/Shape_${info.localName}"),
+               InferOptions.defaultOptions.copy(maxFollowOn=3))
+            } yield inferred)
+          )
           pair <- either2ef[(Schema,ResultShapeMap),F](eitherInferred)
           shExCStr <- io2esf({ 
             val (schema,_) = pair
@@ -357,34 +367,36 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
       println(s"POST /api/wikidata/validate, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
-        val r: EitherT[F,String,Response[F]] = for {
-          item <- EitherT(partsMap.eitherPartValue("item"))
-          info <- either2ef[InfoEntity,F](cnvEntity2(item))
-          rdf <- io2esf(WikibaseRDF.wikidata)
+        val r: F[Response[F]] = for {
+          eitherItem <- partsMap.eitherPartValue("item")
+          _ <- { pprint.log(eitherItem); F.pure(()) }
+          item <- fromEither(eitherItem)
+          _ <- { pprint.log(item); F.pure(()) }
+          info <- fromEither(cnvEntity2(item))
+          _ <- { pprint.log(info); F.pure(()) }
           pair <- WikibaseSchemaParam.mkSchema(partsMap,None, client)
+          _ <- { pprint.log(pair); F.pure(()) }
           (schema,wbp) = pair
-          _ <- { pprint.log(wbp); ok_esf[Unit,F](()) }
-          iriItem <- either2ef[IRI,F](IRI.fromString(info.sourceUri))
-          shapeMap <- either2ef[ShapeMap,F](ShapeMap.empty.add(iriItem,Start))
+          iriItem <- fromEither(IRI.fromString(info.sourceUri))
+          shapeMap <- fromEither(ShapeMap.empty.add(iriItem,Start))
           triggerMode = ShapeMapTrigger(shapeMap)
-          result <- io2esf(schema.validate(rdf,triggerMode))
-          _ <- { println(s"Result of validation \n${result.toJson.spaces2}"); ok_esf[Unit,F](()) }
-          resp <- f2es(Ok(result.toJson))
+          result <- io2f(WikibaseRDF.wikidata.use(rdf => for {
+            r <- schema.validate(rdf,triggerMode)
+          } yield r
+          ))
+          resp <- Ok(result.toJson)
         } yield resp
-        println(s"End of validation")
-        for {
-          either2 <- r.value.attempt
-          resp <- either2.fold(s => { 
-            println(s"Error validating: $s")
-            Ok(errExtract(s.getMessage))
-          }, 
-          either => either.fold(s => {
-            println(s"Left value validating: $s")
-            Ok(errExtract(s))
-          }, (r: Response[F]) => F.pure(r)))
-        } yield resp
+        r.attempt.flatMap(_.fold(s => Ok(errExtract(s.getMessage)), F.pure(_)))
       }
     }
+  }
+
+  case class WikibaseServiceError(msg: String) 
+    extends RuntimeException(msg) 
+    with NoStackTrace
+
+  private def fromEither[A](either: Either[String,A]): F[A] = {
+    either.fold(s => MonadError[F,Throwable].raiseError(WikibaseServiceError(s)), Monad[F].pure(_))
   }
 
   private def errExtract[F[_]](msg: String): Json = {
@@ -457,15 +469,22 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
   }
 
   private def cnvEntity2(entity: String): Either[String, InfoEntity] = {
-    val wdRegex = "<(http://www.wikidata.org/entity/(.*))>".r
-    val matches = wdRegex.findAllIn(entity)
-    if (matches.groupCount == 2) {
-      val localName = matches.group(2)
-      val sourceUri = matches.group(1)
-      val uri = uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName  + ".ttl")
-      InfoEntity(localName,uri, sourceUri).asRight[String]
+    val wdRegex: Regex = "<(http://www.wikidata.org/entity/(.*))>".r
+    entity match {
+      case wdRegex(_,_) => {
+       val matches = wdRegex.findAllIn(entity)
+       pprint.log(matches)
+       if (matches.groupCount == 2) {
+        val localName = matches.group(2)
+        val sourceUri = matches.group(1)
+        val uri = uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName  + ".ttl")
+        pprint.log(uri)
+        InfoEntity(localName,uri, sourceUri).asRight[String]
+       } else
+        s"Entity: $entity doesn't match regular expression: ${wdRegex}".asLeft[InfoEntity]
+      }
+      case _ => s"Entity: $entity doesn't match regular expression: ${wdRegex}".asLeft[InfoEntity]
     }
-    else s"Entity: $entity doesn't match regular expression: ${wdRegex}".asLeft[InfoEntity]
   }
 
 
@@ -511,8 +530,8 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
     } yield data
   }
 
-  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
-    EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty))
+/*  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
+    EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty)) */
 
   private def fromIO[A](io: IO[A]): EitherT[F, String, A] = EitherT.liftF(LiftIO[F].liftIO(io))
 

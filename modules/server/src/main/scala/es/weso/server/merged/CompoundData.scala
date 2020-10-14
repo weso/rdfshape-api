@@ -8,7 +8,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import DataElement._
 import cats.effect._
-
+import cats.syntax.list._
 
 case class CompoundData(elems: List[DataElement]) {
     def toRDF: Resource[IO,RDFReasoner] = for { 

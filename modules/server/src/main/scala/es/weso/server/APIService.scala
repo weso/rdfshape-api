@@ -33,8 +33,8 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 import org.http4s.dsl.io.Ok
 import es.weso.utils.IOUtils._
-
 import scala.util.Try
+import org.http4s.Uri.{Path => UriPath}
 
 class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
                                                client: Client[F])(implicit cs: ContextShift[F])
@@ -64,7 +64,7 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
 
     // Contents on /swagger are directly mapped to /swagger
-    case r @ GET -> _ if r.pathInfo.startsWith("/swagger/") => swagger(r).getOrElseF(NotFound())
+    case r @ GET -> _ if r.pathInfo.startsWith(UriPath.fromString("/swagger/")) => swagger(r).getOrElseF(NotFound())
 
   }
 

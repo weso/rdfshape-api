@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf._
 import io.circe.Json
 import cats._
+import cats.syntax.list._
 import cats.effect._
 import cats.effect.concurrent._
 import fs2._
@@ -32,7 +33,6 @@ case class MergedModels( members: NonEmptyList[RDFAsJenaModel],
      with LazyLogging {
 
   type Rdf = MergedModels
-
 
   def getModel: IO[RDFAsJenaModel] = mergedModel.get
 
@@ -152,5 +152,23 @@ case class MergedModels( members: NonEmptyList[RDFAsJenaModel],
 }
 
 object MergedModels {
-  def fromList(ls: List[RDFReasoner]): IO[MergedModels] = ???
+  def fromList(ls: List[RDFAsJenaModel]): IO[RDFReasoner] = NonEmptyList.fromList(ls) match {
+    case Some(nel) => for {
+     rdfModel <- mergeModels(ls)
+     refRdfModel <- Ref.of[IO,RDFAsJenaModel](rdfModel)
+    } yield MergedModels(nel,refRdfModel)
+    case None => for { 
+      ref <- Ref.of[IO,Model](ModelFactory.createDefaultModel())
+    } yield RDFAsJenaModel(ref,None,None)
+  }
+
+ private def mergeModels(ls: List[RDFAsJenaModel]): IO[RDFAsJenaModel] = {
+      val zero: Model = ModelFactory.createDefaultModel()
+      def cmb(v: Model, r: Model): Model = r.add(v)
+   for { 
+     model <- ls.map(_.getModel).sequence.map(_.foldLeft(zero)(cmb))
+     r <- Ref.of[IO,Model](model)
+   } yield RDFAsJenaModel(r,None,None)
+ }
+
 }
