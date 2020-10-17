@@ -24,6 +24,7 @@ import org.http4s.multipart.Multipart
 import es.weso.server.ApiHelper.SchemaInfoReply
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
+import es.weso.utils.FUtils._
 import es.weso.server.utils.OptEitherF._
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
@@ -51,11 +52,14 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     case GET -> Root / `api` / "schema" / "formats" :?
       SchemaEngineParam(optSchemaEngine) => {
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
-      val json = Schemas.lookupSchema(schemaEngine) match {
-        case Right(schema) => Json.fromValues(schema.formats.toList.map(Json.fromString(_)))
-        case Left(_) => Json.fromFields(List(("error", Json.fromString(s"Schema engine: ${schemaEngine} not found. Available engines = ${Schemas.availableSchemaNames.mkString(",")}"))))
-      }
-      Ok(json)
+      val r: IO[Json] = Schemas.lookupSchema(schemaEngine).attempt.map(_.fold(
+        err => Json.fromFields(List(
+          ("error", 
+           Json.fromString(s"Schema engine: ${schemaEngine} not found. Available engines = ${Schemas.availableSchemaNames.mkString(",")}"))
+          )
+          ),
+        schema => Json.fromValues(schema.formats.toList.map(Json.fromString(_)))))
+      io2f(r).flatMap(json => Ok(json))  
     }
 
     case GET -> Root / `api` / "schema" / "triggerModes" => {
@@ -75,7 +79,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         case Some(schema) => schema
       }
       for {
-        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).value)
+        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).attempt)
         r <- either.fold(
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"), 
           schema => {
@@ -94,17 +98,16 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         {
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
-          val r: EitherT[F, String, Json] = for {
+          val r: F[Json] = for {
             schemaPair <- SchemaParam.mkSchema(partsMap,None)
             (schema, sp) = schemaPair
           } yield {
             schemaInfo(schema)
           }
           for {
-            e <- r.value
-            v <- e.fold(msg => {
-              println(s"###### Error $msg")
-              Ok(SchemaInfoReply.fromError(msg).toJson)
+            e <- r.attempt
+            v <- e.fold(t => {
+              Ok(SchemaInfoReply.fromError(t.getMessage).toJson)
             }, Ok(_))
           } yield v
         }
@@ -124,7 +127,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       for {
         maybeSchemaFormat <- optEither2f(optSchemaFormat,SchemaFormat.fromString)
         schemaFormat = maybeSchemaFormat.getOrElse(defaultSchemaFormat)
-        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, None).value)
+        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, None).attempt)
         r <- either.fold(
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
           schema => {
@@ -144,12 +147,12 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST info partsMap. $partsMap")
-        val r: ESF[Json,F] = for {
+        val r: F[Json] = for {
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, sp) = schemaPair
           // targetSchemaFormat <- optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)
-          targetSchemaFormat <- f2es(optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)) 
-          converted <- io2esf(convertSchema(schema, sp.schema, 
+          targetSchemaFormat <- optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)
+          converted <- io2f(convertSchema(schema, sp.schema, 
             sp.schemaFormat.getOrElse(SchemaFormat.default), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
             targetSchemaFormat, sp.targetSchemaEngine
             ))
@@ -158,8 +161,8 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           converted.toJson
         }
         for {
-          e <- r.value
-          v <- e.fold((s:String) => Ok(SchemaConversionResult.fromMsg(s).toJson), Ok(_))
+          e <- r.attempt
+          v <- e.fold(t => Ok(SchemaConversionResult.fromMsg(t.getMessage).toJson), Ok(_))
         } yield v
       }
       }
@@ -170,16 +173,16 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         {
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
-          val r: EitherT[F, String, Json] = for {
+          val r: F[Json] = for {
             schemaPair <- SchemaParam.mkSchema(partsMap, None)
             (schema, _) = schemaPair
-            v <- io2esf(schemaVisualize(schema))
+            v <- io2f(schemaVisualize(schema))
           } yield {
             v
           }
           for {
-            e <- r.value
-            v <- e.fold(errJson(_), Ok(_))
+            e <- r.attempt
+            v <- e.fold(t => errJson(t.getMessage), Ok(_))
           } yield v
         }
       }
@@ -189,15 +192,15 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST info partsMap. $partsMap")
-        val r: EitherT[F, String, Json] = for {
+        val r: F[Json] = for {
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, _) = schemaPair
         } yield {
           schemaCytoscape(schema)
         }
         for {
-          e <- r.value
-          v <- e.fold(errJson(_), Ok(_))
+          e <- r.attempt
+          v <- e.fold(t => errJson(t.getMessage), Ok(_))
         } yield v
       }
       }
@@ -325,23 +328,32 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
 
           // val (dataStr, eitherRDF) = 
 
-          val eitherResult: ESF[F[Response[F]], F] = for {
-            pairData <- esio2esf(dp.getData(relativeBase))
-            (dataStr, rdf) = pairData
+          val eitherResult: F[Response[F]] = for {
+            pairData <- io2f(dp.getData(relativeBase))
+            (dataStr, resourceRdf) = pairData
             //rdf <- either2ef(eitherRDF)
-            pair <- EitherT.liftF[F,String,(Option[String],Either[String,Schema])](L.liftIO(sp.getSchema(Some(rdf))))
+            response <- io2f(resourceRdf.use(rdf => for {
+              pair <- sp.getSchema(Some(rdf))
+              (schemaStr, eitherSchema) = pair
+              schema <- IO.fromEither(eitherSchema.leftMap(s => new RuntimeException(s"Error obtaining schema: $s")))
+              res <- validate(rdf, dp, schema, sp, tp, relativeBase)
+            } yield res))
+/*              L.liftIO(sp.getSchema(Some(rdf)))
             (schemaStr, eitherSchema) = pair
             schema <- EitherT.fromEither[F](eitherSchema)
-            res <- io2esf(validate(rdf, dp, schema, sp, tp, relativeBase))
+            res <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase)) */
+            (result, maybeTrigger, time) = response
+            v <- Ok(result.toJson)
           } yield {
             // println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<Cannot serialize RDF>")}")
             // println(s"Schema: ${schema.serialize("ShExC",None).getOrElse("<Cannot serialize schema")}")
-            val (result, maybeTrigger, time) = res
-            println(s">>>> maybeTrigger: $maybeTrigger")
-            println(s">>>> result: $result")
-            Ok(result.toJson)
+            
+            // println(s">>>> maybeTrigger: $maybeTrigger")
+            // println(s">>>> result: $result")
+            v
           }
-          eitherResult.foldF(e => errJson(s"Error: $e"), identity)
+          eitherResult
+          //TODO: eitherResult.attempt.foldF(e => errJson(s"Error: $e"), identity)
         }
       }
     }
@@ -350,32 +362,42 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       req.decode[Multipart[F]] { m =>
         {
           val partsMap = PartsMap(m.parts)
-          val r: ESF[Result,F] = for {
-            _ <- pp(partsMap)
+
+
+          val r: F[Result] = for {
+            //_ <- pp(partsMap)
             dataPair <- DataParam.mkData(partsMap, relativeBase)
-            (rdf, dp) = dataPair
-            _ <- pp(dp)
-            schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
-            (schema, sp) = schemaPair
-            _ <- pp(sp)
-            _ <- pp(schema)
+            (resourceRdf, dp) = dataPair
+            //_ <- pp(dp)
+            res <- cnvResource(resourceRdf).use(rdf => for {
+              schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
+              (schema, sp) = schemaPair
+              tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
+              r <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase))
+            } yield r)
+            (result, _, _) = res
+          } yield result
+               
+         /*   (schema, sp) = schemaPair
+            //_ <- pp(sp)
+            //_ <- pp(schema)
             tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
-            _ <- pp(tp)
-            res <- io2esf(validate(rdf, dp, schema, sp, tp, relativeBase))
+            //_ <- pp(tp)
+            res <- validate(rdf, dp, schema, sp, tp, relativeBase)
           } yield {
             // val schemaEmbedded = getSchemaEmbedded(sp)
             // println(s"Trigger mode: $tp")
             //println(s"Schema: ${schema.serialize("ShExC").getOrElse("Error serializing schema")}")
             val (result, maybeTriggerMode, time) = res
             result
-          }
+          } */
           for {
-            e <- r.value
-            v <- e.fold(errJson(_), r => Ok(r.toJson))
+            e <- r.attempt
+            v <- e.fold(t => errJson(t.getMessage), r => Ok(r.toJson))
           } yield v
         }
-      }
-  }
+      } 
+  } 
 
   // TODO: Move this method to a more generic place...
   private def errJson(msg: String): F[Response[F]] =
@@ -384,11 +406,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
   private def info(msg: String): EitherT[F,String,Unit] = 
     EitherT.liftF[F,String,Unit](LiftIO[F].liftIO(IO(println(msg))))  
 
-  private def pp[A](v:A): EitherT[F,String,Unit] = {
-    EitherT.liftF[F,String, Unit](LiftIO[F].liftIO(IO{ pprint.log(v) }))
+  private def pp[A](v:A): F[Unit] = {
+    LiftIO[F].liftIO(IO{ pprint.log(v) })
   }
 
-  private def either2f[A](e: Either[String,A]): F[A] = ???
+//  private def either2f[A](e: Either[String,A]): F[A] = ???
 
   // private def 
 

@@ -1,9 +1,12 @@
 package es.weso.html2rdf
+
 import es.weso.rdf.jena.RDFAsJenaModel
 import org.scalatest.funspec._
 import org.scalatest.matchers.should._
 import es.weso.utils.IOUtils._
 import es.weso.rdf.RDFReader
+import cats.implicits._
+import cats.effect.IO
 
 class HTML2RDFTest extends AnyFunSpec with Matchers {
   describe(s"Extract RDF data from HTML") {
@@ -24,7 +27,7 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
          |prefix schema: <http://schema.org/>
          |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
          |
-         |<http://example.org>  rdfa:usesVocabulary schema: .
+         |<http://example.org/>  rdfa:usesVocabulary schema: .
          |
          |<http://example.org/post> a schema:Blog ;
          |         schema:created "2018-10-30"^^xsd:date .
@@ -40,7 +43,7 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
        |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
        |prefix : <http://example.org/>
        |
-       |<http://example.org>  md:item :eliza .
+       |<http://example.org/>  md:item :eliza .
        |:eliza schema:name "Elizabeth" .
     """.stripMargin, "html-microdata"
     )
@@ -52,7 +55,7 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
          |""".stripMargin,
       """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
          |
-         |<http://example.org>  md:item [
+         |<http://example.org/>  md:item [
          |  a  <https://vocab.example.net/book>
          |] .
       """.stripMargin, "html-microdata"
@@ -68,49 +71,44 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
       """.stripMargin,
       """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
          |prefix person: <http://person.info/>
-         |<http://example.org>  md:item person:alice .
+         |<http://example.org/>  md:item person:alice .
          |person:alice a <http://schema.org/Person> ;
          |  <http://schema.org/Person/name> "Alice" .
          |""".stripMargin,
-      "html-microdata")
+      "html-microdata") 
 
-/* TODO: Checkwhy this test fails   shouldExtract(
+/* TODO: Check why this test fails 
+  shouldExtract(
       """|<dl itemscope
          |    itemtype="https://vocab.example.net/book">
          |</dl>
          |""".stripMargin,
       """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
          |
-         |<http://example.org>  md:item [
+         |<http://example.org/>  md:item [
          |  a  <https://vocab.example.net/book>
          |] .
       """.stripMargin, "html-microdata"
     ) */
 
     def shouldExtract(html: String, expected: String, extractorName: String): Unit = {
-      it(s"Should extract from $html and obtain $expected with extractor $extractorName") {
-        val r: ESIO[(Boolean,String,String)] = for {
-          expected     <- {
-            println(s"## Before parsing RDF\n${expected}\n---")
-            io2es(RDFAsJenaModel.fromChars(expected, "TURTLE"))
-          }
-          expectedStr <- io2es(expected.serialize("TURTLE"))
-          rdf          <- {
-            println(s"Expected: \n ${expectedStr}")
-            println(s"## Before extraction with $extractorName")
-            HTML2RDF.extractFromString(html,extractorName)
-          }
-          rdfObtained <- io2es(rdf.serialize("TURTLE"))
-          isIsomorphic <- {
-            println(s"RDF extracted: \n ${rdfObtained}")
-            io2es(rdf.isIsomorphicWith(expected))
-          }
-        } yield (isIsomorphic, rdfObtained, expectedStr)
+      it(s"Should extract from \n$html\n and obtain\n$expected\nExtractor $extractorName") {
+        val r: IO[(Boolean,String,String)] = (
+          HTML2RDF.extractFromString(html,extractorName), 
+          RDFAsJenaModel.fromChars(expected, "TURTLE")
+         ).tupled.use{ case (rdf,expected) => for {
+          //_ <- { pprint.log(rdf); IO(())} 
+          expectedStr <- expected.serialize("TURTLE")
+          //_ <- { pprint.log(expectedStr); IO(())} 
+          rdfObtained <- rdf.serialize("TURTLE")
+          //_ <- { pprint.log(rdfObtained); IO(())} 
+          isIsomorphic <- rdf.isIsomorphicWith(expected)
+        } yield (isIsomorphic, rdfObtained, expectedStr) }
 
-        run_es(r).unsafeRunSync.fold(
-          e => fail(s"Error extracting: $e"),
-          pair => {
-            val (ok, rdf, expected) = pair
+        r.attempt.unsafeRunSync.fold(
+          e => fail(s"Error extracting: ${e.getMessage}"),
+          t => {
+            val (ok, rdf, expected) = t
             if (ok) {
               info(s"Model extracted isomorphic with expected")
             } else {

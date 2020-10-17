@@ -68,13 +68,14 @@ case class SchemaParam(schema: Option[String],
     }
   }
 
-  def getSchema(data: Option[RDFReasoner]): IO[(Option[String], Either[String, Schema])] = {
+  def getSchema(data: Option[RDFReasoner]): 
+     IO[(Option[String], Either[String, Schema])] = {
     pprint.log(schemaEmbedded)
-    val v = schemaEmbedded match {
+    val v: IO[(Option[String],Either[String,Schema])] = schemaEmbedded match {
       case Some(true) => data match {
         case None => IO((None, Left(s"Schema embedded but no data found")))
         case Some(rdf) => for {
-          eitherSchema <- Schemas.fromRDF(rdf, schemaEngine.getOrElse(defaultSchemaEngine)).value  
+          eitherSchema <- Schemas.fromRDF(rdf, schemaEngine.getOrElse(defaultSchemaEngine)).attempt
           resp <- eitherSchema match {
             case Left(str) => 
               IO((None, Left(s"Error obtaining schema from RDF $rdf")))
@@ -99,21 +100,20 @@ case class SchemaParam(schema: Option[String],
             schemaURL match {
               case None => IO((None, Left(s"Non value for schemaURL")))
               case Some(schemaUrl) => { 
-              val v: IO[Either[Throwable,String]] = IO(Try(Source.fromURL(schemaUrl).mkString).toEither)  
-              val e: EitherT[IO,String,(String,Schema)] = for {
-                str <- EitherT(v).leftMap(err => s"Error obtaining schema from url $schemaUrl: ${err.getMessage}")
+              val e: IO[(String,Schema)] = for {
+                str <- IO.fromEither(Try(Source.fromURL(schemaUrl).mkString).toEither)
                 schema <- Schemas.fromString(
                   str,schemaFormat.getOrElse(SchemaFormat.default).name,
                   schemaEngine.getOrElse(defaultSchemaEngine),
-                  ApiHelper.getBase).leftMap(s => s"Error parsing contents of $schemaUrl: $s\nContents:\n$str")
+                  ApiHelper.getBase)  // .leftMap(s => s"Error parsing contents of $schemaUrl: $s\nContents:\n$str")
               } yield (str,schema)
-              e.fold(
-                s => ((none[String], s.asLeft[Schema])),
+              e.attempt.map(_.fold(
+                s => ((none[String], s.getMessage.asLeft[Schema])),
                 pair => { 
                   val (str,schema) = pair
                   ((Some(str), Right(schema)))
                 }
-              )
+              ))
             }
            }
           }
@@ -123,10 +123,10 @@ case class SchemaParam(schema: Option[String],
               case Some(schemaStr) =>
                 val schemaFormatStr = schemaFormat.getOrElse(SchemaFormat.default).name
                 val schemaEngineStr = schemaEngine.getOrElse(defaultSchemaEngine)
-                Schemas.fromString(schemaStr, schemaFormatStr, schemaEngineStr, ApiHelper.getBase).fold(
+                Schemas.fromString(schemaStr, schemaFormatStr, schemaEngineStr, ApiHelper.getBase).attempt.map(_.fold(
                   s => (Some(schemaStr), Left(s"Error parsing file: $s")),
                   schema => (Some(schemaStr), Right(schema))
-                )
+                ))
             }
           }
           case Right(`SchemaTextAreaType`) => {
@@ -135,10 +135,10 @@ case class SchemaParam(schema: Option[String],
             Schemas.fromString(schemaStr,
               schemaFormat.getOrElse(SchemaFormat.default).name,
               schemaEngine.getOrElse(defaultSchemaEngine),
-              ApiHelper.getBase).fold(
-                s => (Some(schemaStr), Left(s)), 
+              ApiHelper.getBase).attempt.map(_.fold(
+                s => (Some(schemaStr), Left(s.getMessage)), 
                 schema => (Some(schemaStr), Right(schema))
-              ) 
+              )) 
           }
           case Right(other) => IO((None, Left(s"Unknown value for activeSchemaTab: $other")))
           case Left(msg) => IO((None, Left(msg)))
@@ -155,11 +155,11 @@ object SchemaParam {
 
   private[server] def mkSchema[F[_]:Effect](partsMap: PartsMap[F],
                                data: Option[RDFReasoner]
-                      ): EitherT[F, String, (Schema, SchemaParam)] = {
+                      ): F[(Schema, SchemaParam)] = {
     val L = implicitly[LiftIO[F]]
+    val E = implicitly[MonadError[F,Throwable]]
     val r: F[Either[String, (Schema,SchemaParam)]] = for {
       sp <- {
-        getLogger.info(s"PartsMap: $partsMap")
         mkSchemaParam(partsMap)
       }
       eitherPair <- L.liftIO(sp.getSchema(data).attempt)
@@ -173,8 +173,32 @@ object SchemaParam {
           }
         })
       } yield resp
-    EitherT(r)
+    r.flatMap(_.fold(
+      str => E.raiseError(new RuntimeException(s"Error obtaining schema: $str")),
+      Monad[F].pure(_)
+      )
+    )
   }
+
+/*    private[server] def mkSchemaIO[F[_]:Effect](partsMap: PartsMap[F],
+                               data: Option[RDFReasoner]
+                      ): IO[Either[String,(Schema, SchemaParam)]] = {
+    val L = implicitly[LiftIO[F]]
+    val r: IO[Either[String,(Schema,SchemaParam)]] = for {
+      sp <- mkSchemaParam(partsMap)
+      eitherPair <- sp.getSchema(data).attempt
+      resp <- eitherPair.fold(
+        s => IO.pure(Left(s"Error: $s")), 
+        pair => {
+          val (maybeStr, maybeSchema) = pair
+          maybeSchema match {
+            case Left(str) => IO.pure(Left(str))
+            case Right(schema) => IO.pure(Right((schema, sp.copy(schema = maybeStr)))) 
+          }
+        })
+      } yield resp
+    r
+  } */
 
   private def getSchemaFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[SchemaFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
@@ -203,7 +227,6 @@ object SchemaParam {
     activeSchemaTab <- partsMap.optPartValue("activeSchemaTab")
     schemaEmbedded <- partsMap.optPartValueBoolean("schemaEmbedded")
   } yield {
-    println(s"mkSchemaParam => schemaURL = ${schemaURL}")
     SchemaParam(schema, schemaURL, schemaFile,
       schemaFormatTextArea, 
       schemaFormatUrl, 

@@ -2,6 +2,7 @@ package es.weso.server
 
 import cats.effect.{Effect, IO}
 import Defaults._
+import cats._
 import cats.data._
 import cats.implicits._
 import es.weso.rdf.PrefixMap
@@ -94,7 +95,7 @@ case class TriggerModeParam(triggerMode: Option[String],
 
 object TriggerModeParam {
 
-  def mkTriggerModeParam[F[_]:Effect](partsMap: PartsMap[F]): EitherT[F,String,TriggerModeParam] = {
+  def mkTriggerModeParam[F[_]:Effect](partsMap: PartsMap[F]): F[TriggerModeParam] = {
     val tp: F[TriggerModeParam] = for {
       optTriggerMode <- partsMap.optPartValue("triggerMode")
       optShapeMap <- partsMap.optPartValue("shapeMap")
@@ -105,10 +106,10 @@ object TriggerModeParam {
       optShapeMapFormatFile <- partsMap.optPartValue("shapeMapFormatFile")
       optActiveShapeMapTab <- partsMap.optPartValue("shapeMapActiveTab")
     } yield {
-      pprint.log(optTriggerMode)
-      pprint.log(optShapeMap)
-      pprint.log(optActiveShapeMapTab)
-      pprint.log(optShapeMapFormatFile)
+//      pprint.log(optTriggerMode)
+//      pprint.log(optShapeMap)
+//      pprint.log(optActiveShapeMapTab)
+//      pprint.log(optShapeMapFormatFile)
       TriggerModeParam(
         optTriggerMode,
         optShapeMap,
@@ -120,6 +121,9 @@ object TriggerModeParam {
         optActiveShapeMapTab)
     }
     val r: F[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
-    EitherT(r)
+    r.flatMap(_.fold(
+      str => MonadError[F,Throwable].raiseError(new RuntimeException(s"Error obtaining validation trigger: $str")), 
+      Monad[F].pure(_)
+    ))
   }
 }

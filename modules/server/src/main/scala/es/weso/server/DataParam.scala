@@ -15,7 +15,10 @@ import es.weso.rdf.nodes.IRI
 import es.weso.server.format._
 import org.log4s.getLogger
 import es.weso.utils.IOUtils._
+import es.weso.utils.FUtils._
+
 import es.weso.server.merged.CompoundData
+
 
 case class DataParam(data: Option[String],
                      dataURL: Option[String],
@@ -100,7 +103,7 @@ case class DataParam(data: Option[String],
   def getData(relativeBase: Option[IRI]
   ): IO[(Option[String], Resource[IO,RDFReasoner])] = {
     val base = relativeBase.map(_.str)
-    println(s"ActiveDataTab: $activeDataTab")
+    pprint.log(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case Some(a) => parseDataTab(a)
       case None if compoundData.isDefined => Right(compoundDataType)
@@ -148,7 +151,7 @@ case class DataParam(data: Option[String],
               eitherStr <- newRdf.serialize(dataFormat.name,None).attempt
               optStr = eitherStr.toOption              
             } yield (optStr,newRdf))) */
-            for {
+           for {
               iriBase <- mkBase(base)
             } yield (None,RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase))
         }
@@ -166,25 +169,24 @@ case class DataParam(data: Option[String],
         }
       }
       case Right(`dataTextAreaType`) => {
-        pprint.log(s"Obtaining data from textArea")
         pprint.log(data)
         data match {
           case None => IO((None, RDFAsJenaModel.empty))
-          case Some(data) => {
+          case d@Some(data) => {
             val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
             for {
               rdf <- rdfFromString(data, dataFormat, base)
               // newRdf <- io2es(extendWithInference(rdf, inference))
               // eitherStr <- io2es(newRdf.serialize(dataFormat.name,None).attempt)
               // optStr = eitherStr.toOption
-            } yield (None,rdf)
+            } yield (d,rdf)
           }}}
 
       case Right(`compoundDataType`) => { 
        println(s"###Compound data") 
        for { 
          cd <- IO.fromEither(CompoundData.fromString(compoundData.getOrElse("")).leftMap(s => new RuntimeException(s)))
-       } yield (None,cd.toRDF) 
+       } yield (None,cd.toRDF)
       }
       case Right(other) => err(s"Unknown value for activeDataTab: $other")
 
@@ -239,27 +241,31 @@ case class DataParam(data: Option[String],
 }
 
 object DataParam {
+
   private[this] val logger = getLogger
 
   private[server] def mkData[F[_]:Effect](
      partsMap: PartsMap[F],
      relativeBase: Option[IRI]
-    ): ESF[(Resource[F,RDFReasoner],DataParam),F] = {
+    ): F[(Resource[IO,RDFReasoner],DataParam)] = {
 
-    val r: ESF[(Resource[F,RDFReasoner], DataParam),F] = for {
-      dp <- f2es(mkDataParam[F](partsMap))
-      pair <- io2esf(dp.getData(relativeBase))
+    val r: F[(Resource[IO,RDFReasoner], DataParam)] = for {
+      dp <- mkDataParam(partsMap)
+      pair <- io2f(dp.getData(relativeBase))
     } yield {
       val (optStr, rdf) = pair
-      (cnvResource(rdf), dp.copy(data = optStr))
+      (rdf, dp.copy(data = optStr))
     }
     r
   }
 
-  private def cnvResource[A, F[_]: Effect](r: Resource[IO,A]):Resource[F,A] = r.mapK(cnv)
-  private def cnv[A,F[_]: Effect]: FunctionK[IO,F] = new FunctionK[IO,F] {
-    def apply[A](ioa: IO[A]): F[A] = io2f(ioa)
-  }
+/*  private def io2esf[A, F[_]: Effect](e: ESIO[A]): ESF[A,F] = {
+      for {
+        either <- io2esf[Either[String,A],F](e.value)
+        r <- either2ef[A,F](either)  
+      } yield r
+  } */
+
 
   private def getDataFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[DataFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
