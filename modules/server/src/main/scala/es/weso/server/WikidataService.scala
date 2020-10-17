@@ -380,10 +380,10 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
           iriItem <- fromEither(IRI.fromString(info.sourceUri))
           shapeMap <- fromEither(ShapeMap.empty.add(iriItem,Start))
           triggerMode = ShapeMapTrigger(shapeMap)
-          result <- io2f(WikibaseRDF.wikidata.use(rdf => for {
-            r <- schema.validate(rdf,triggerMode)
-          } yield r
-          ))
+          result <- io2f((WikibaseRDF.wikidata, RDFAsJenaModel.empty).tupled.use{ case (rdf,builder) => for {
+            r <- schema.validate(rdf,triggerMode,builder)
+           } yield r
+          })
           resp <- Ok(result.toJson)
         } yield resp
         r.attempt.flatMap(_.fold(s => Ok(errExtract(s.getMessage)), F.pure(_)))

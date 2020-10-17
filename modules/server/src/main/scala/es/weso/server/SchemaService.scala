@@ -26,6 +26,7 @@ import org.log4s.getLogger
 import es.weso.utils.IOUtils._
 import es.weso.utils.FUtils._
 import es.weso.server.utils.OptEitherF._
+import es.weso.rdf.jena.RDFAsJenaModel
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
     extends Http4sDsl[F] {
@@ -332,12 +333,12 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             pairData <- io2f(dp.getData(relativeBase))
             (dataStr, resourceRdf) = pairData
             //rdf <- either2ef(eitherRDF)
-            response <- io2f(resourceRdf.use(rdf => for {
+            response <- io2f((resourceRdf, RDFAsJenaModel.empty).tupled.use{ case (rdf,builder) => for {
               pair <- sp.getSchema(Some(rdf))
               (schemaStr, eitherSchema) = pair
               schema <- IO.fromEither(eitherSchema.leftMap(s => new RuntimeException(s"Error obtaining schema: $s")))
-              res <- validate(rdf, dp, schema, sp, tp, relativeBase)
-            } yield res))
+              res <- validate(rdf, dp, schema, sp, tp, relativeBase,builder)
+            } yield res})
 /*              L.liftIO(sp.getSchema(Some(rdf)))
             (schemaStr, eitherSchema) = pair
             schema <- EitherT.fromEither[F](eitherSchema)
@@ -369,12 +370,12 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             //_ <- pp(dp)
-            res <- cnvResource(resourceRdf).use(rdf => for {
+            res <- (cnvResource(resourceRdf), cnvResource(RDFAsJenaModel.empty)).tupled.use { case (rdf,builder) => for {
               schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
               (schema, sp) = schemaPair
               tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
-              r <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase))
-            } yield r)
+              r <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase,builder))
+            } yield r }
             (result, _, _) = res
           } yield result
                

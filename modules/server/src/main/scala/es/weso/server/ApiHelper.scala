@@ -24,6 +24,7 @@ import org.http4s.client.{Client, JavaNetClientBuilder}
 import org.log4s.getLogger
 
 import scala.concurrent.ExecutionContext.global
+import es.weso.rdf.RDFBuilder
 
 object ApiHelper {
 
@@ -84,11 +85,12 @@ private[server] def schemaConvert(optSchema: Option[String],
   } 
 
 private[server] def validate(rdf: RDFReasoner,
-                               dp:DataParam,
-                               schema: Schema,
-                               sp: SchemaParam,
-                               tp: TriggerModeParam,
-                               relativeBase: Option[IRI]
+                             dp:DataParam,
+                             schema: Schema,
+                             sp: SchemaParam,
+                             tp: TriggerModeParam,
+                             relativeBase: Option[IRI],
+                             builder: RDFBuilder
               ): IO[(Result, Option[ValidationTrigger], Long)] = {
     println(s"APIHelper: validate")
     val base = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
@@ -104,7 +106,7 @@ private[server] def validate(rdf: RDFReasoner,
             err(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg")
          case Right(trigger) => for {
              startTime <- IO { System.nanoTime() }
-             result <- schema.validate(rdf, trigger)
+             result <- schema.validate(rdf, trigger,builder)
              endTime <- IO { System.nanoTime() }
              time: Long = endTime - startTime
          } yield (result,Some(trigger),time)
@@ -119,7 +121,8 @@ private[server] def validate(rdf: RDFReasoner,
                                   optSchemaEngine: Option[String],
                                   tp: TriggerModeParam,
                                   optInference: Option[String],
-                                  relativeBase: Option[IRI]
+                                  relativeBase: Option[IRI],
+                                  builder: RDFBuilder
                                  ): IO[(Result, Option[ValidationTrigger], Long)] = {
     val dp = DataParam.empty.copy(
       data = Some(data),
@@ -139,7 +142,7 @@ private[server] def validate(rdf: RDFReasoner,
        pairSchema <- sp.getSchema(Some(rdf))
        (_,eitherSchema) = pairSchema
        schema <- IO.fromEither(eitherSchema.leftMap(s => new RuntimeException(s"Error obtaining schema: $s")))
-       res <- validate(rdf,dp,schema,sp,tp, relativeBase)
+       res <- validate(rdf, dp, schema, sp, tp, relativeBase, builder)
     } yield res)
    } yield result
 
