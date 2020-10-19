@@ -333,12 +333,15 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             pairData <- io2f(dp.getData(relativeBase))
             (dataStr, resourceRdf) = pairData
             //rdf <- either2ef(eitherRDF)
-            response <- io2f((resourceRdf, RDFAsJenaModel.empty).tupled.use{ case (rdf,builder) => for {
+            response <- io2f(for {
+              res2 <- RDFAsJenaModel.empty
+              vv <- (resourceRdf, res2).tupled.use{ case (rdf,builder) => for {
               pair <- sp.getSchema(Some(rdf))
               (schemaStr, eitherSchema) = pair
               schema <- IO.fromEither(eitherSchema.leftMap(s => new RuntimeException(s"Error obtaining schema: $s")))
               res <- validate(rdf, dp, schema, sp, tp, relativeBase,builder)
-            } yield res})
+             } yield res}
+            } yield vv) 
 /*              L.liftIO(sp.getSchema(Some(rdf)))
             (schemaStr, eitherSchema) = pair
             schema <- EitherT.fromEither[F](eitherSchema)
@@ -370,12 +373,16 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             //_ <- pp(dp)
-            res <- (cnvResource(resourceRdf), cnvResource(RDFAsJenaModel.empty)).tupled.use { case (rdf,builder) => for {
+            res <- for {
+             e <- io2f(RDFAsJenaModel.empty)
+             vv <- (cnvResource(resourceRdf), cnvResource(e)).tupled.use { case (rdf,builder) => for {
               schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
               (schema, sp) = schemaPair
               tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
               r <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase,builder))
             } yield r }
+            } yield vv 
+             
             (result, _, _) = res
           } yield result
                

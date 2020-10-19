@@ -42,9 +42,9 @@ import es.weso.shapeMaps.Start
 import es.weso.shapeMaps.FixedShapeMap
 import es.weso.schema.ShapeMapTrigger
 import es.weso.utils.internal.CollectionCompat._
-// import es.weso.wikibaserdf.WikibaseRDF
 import scala.util.control.NoStackTrace
 import scala.util.matching.Regex
+import es.weso.wikibaserdf._
 
 class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
@@ -312,7 +312,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
           _ <- { println(s"URI: ${info.uri}"); ok_esf[Unit,F](())}
           strRdf <- f2es(redirectClient.expect[String](info.uri))
           eitherInferred <- io2esf(
-            RDFAsJenaModel.fromString(strRdf,"TURTLE").use(rdf => for {
+            RDFAsJenaModel.fromString(strRdf,"TURTLE").flatMap(_.use(rdf => for {
              rdfSerialized <- rdf.serialize("TURTLE")
              nodeSelector = RDFNodeSelector(IRI(label))
              inferred <- SchemaInfer.runInferSchema(
@@ -321,7 +321,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                "ShEx",
                IRI(s"http://example.org/Shape_${info.localName}"),
                InferOptions.defaultOptions.copy(maxFollowOn=3))
-            } yield inferred)
+            } yield inferred))
           )
           pair <- either2ef[(Schema,ResultShapeMap),F](eitherInferred)
           shExCStr <- io2esf({ 
@@ -380,10 +380,13 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
           iriItem <- fromEither(IRI.fromString(info.sourceUri))
           shapeMap <- fromEither(ShapeMap.empty.add(iriItem,Start))
           triggerMode = ShapeMapTrigger(shapeMap)
-          result <- io2f((WikibaseRDF.wikidata, RDFAsJenaModel.empty).tupled.use{ case (rdf,builder) => for {
+          result <- io2f(for {
+            res1 <- WikibaseRDF.wikidata
+            res2 <- RDFAsJenaModel.empty
+            vv <- (res1, res2).tupled.use{ case (rdf,builder) => for {
             r <- schema.validate(rdf,triggerMode,builder)
-           } yield r
-          })
+           } yield r}
+          } yield vv)
           resp <- Ok(result.toJson)
         } yield resp
         r.attempt.flatMap(_.fold(s => Ok(errExtract(s.getMessage)), F.pure(_)))

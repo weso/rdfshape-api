@@ -82,12 +82,12 @@ object DataConverter extends LazyLogging {
         case Some(compoundDataStr) => for {
           ecd <- either2io(CompoundData.fromString(compoundDataStr))
           cd <- cnvEither(ecd, str => s"dataConvert: Error: $str")
-          result <- cd.toRDF.use(rdf => rdfConvert(rdf,None,dataFormat,targetFormat))
+          result <- cd.toRDF.flatMap(_.use(rdf => rdfConvert(rdf,None,dataFormat,targetFormat)))
         } yield result
       }
       case Some(data) => {
-        RDFAsJenaModel.fromChars(data,dataFormat.name,None).use(rdf => 
-          rdfConvert(rdf,Some(data),dataFormat,targetFormat))
+        RDFAsJenaModel.fromChars(data,dataFormat.name,None).flatMap(_.use(rdf => 
+          rdfConvert(rdf,Some(data),dataFormat,targetFormat)))
       }
     }
   }

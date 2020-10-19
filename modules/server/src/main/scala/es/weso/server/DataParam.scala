@@ -153,7 +153,8 @@ case class DataParam(data: Option[String],
             } yield (optStr,newRdf))) */
            for {
               iriBase <- mkBase(base)
-            } yield (None,RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase))
+              res <- RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase)
+            } yield (None,res)
         }
       }
 
@@ -171,22 +172,23 @@ case class DataParam(data: Option[String],
       case Right(`dataTextAreaType`) => {
         pprint.log(data)
         data match {
-          case None => IO((None, RDFAsJenaModel.empty))
+          case None => RDFAsJenaModel.empty.flatMap(e => IO((None,e)))
           case d@Some(data) => {
             val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
             for {
-              rdf <- rdfFromString(data, dataFormat, base)
+              res <- rdfFromString(data, dataFormat, base)
               // newRdf <- io2es(extendWithInference(rdf, inference))
               // eitherStr <- io2es(newRdf.serialize(dataFormat.name,None).attempt)
               // optStr = eitherStr.toOption
-            } yield (d,rdf)
+            } yield (d,res)
           }}}
 
       case Right(`compoundDataType`) => { 
        println(s"###Compound data") 
        for { 
          cd <- IO.fromEither(CompoundData.fromString(compoundData.getOrElse("")).leftMap(s => new RuntimeException(s)))
-       } yield (None,cd.toRDF)
+         res <- cd.toRDF
+       } yield (None,res)
       }
       case Right(other) => err(s"Unknown value for activeDataTab: $other")
 
@@ -207,7 +209,8 @@ case class DataParam(data: Option[String],
       } yield eitherRdf */
       case _ => for {
         baseIri <- mkBase(base)
-      } yield RDFAsJenaModel.fromChars(str,format.name,baseIri)
+        res <- RDFAsJenaModel.fromChars(str,format.name,baseIri) 
+      } yield res
     }
   }
 

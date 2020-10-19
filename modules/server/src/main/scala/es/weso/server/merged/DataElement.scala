@@ -19,11 +19,11 @@ case class DataElement(
     dataFormat: DataFormat,
     activeDataTab: ActiveDataTab
 ) {
- def toRDF: Resource[IO,RDFAsJenaModel] = activeDataTab match {
+ def toRDF: IO[Resource[IO,RDFAsJenaModel]] = activeDataTab match {
       case DataTextArea => for {
         rdf <- RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name,None,false)
       } yield rdf
-      case _ => Resource.liftF(IO.raiseError(new RuntimeException(s"Not implemented yet compound with activeDataTab: ${activeDataTab}")))
+      case _ => IO.raiseError(new RuntimeException(s"Not implemented yet compound with activeDataTab: ${activeDataTab}"))
   }  
 }
 

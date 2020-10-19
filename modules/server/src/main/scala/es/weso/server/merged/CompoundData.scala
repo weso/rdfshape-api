@@ -9,12 +9,15 @@ import io.circe.syntax._
 import DataElement._
 import cats.effect._
 import cats.syntax.list._
+import es.weso.rdf.jena.RDFAsJenaModel
 
 case class CompoundData(elems: List[DataElement]) {
-    def toRDF: Resource[IO,RDFReasoner] = for { 
-        vs <- elems.map(_.toRDF).sequence
-        merged <- Resource.liftF(MergedModels.fromList(vs))
-    } yield merged
+    def toRDF: IO[Resource[IO,RDFReasoner]] = {
+       val rs = elems.map(_.toRDF).sequence
+       def combine(ls: List[Resource[IO,RDFAsJenaModel]]): Resource[IO,List[RDFAsJenaModel]] = ls.sequence
+       val v = rs.flatMap(lsRs => IO(combine(lsRs).evalMap(ls => MergedModels.fromList(ls))))
+       v
+    } 
 }
 
 object CompoundData {

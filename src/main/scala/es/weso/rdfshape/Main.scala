@@ -153,12 +153,12 @@ object Main extends App with LazyLogging {
     } else EitherT.pure[IO,String]("")
   } */
 
-  def getRDFReader(opts: MainOpts, baseFolder: Path): Resource[IO,RDFReader] = {
+  def getRDFReader(opts: MainOpts, baseFolder: Path): IO[Resource[IO,RDFReader]] = {
     val base = Some(IRI(FileUtils.currentFolderURL))
     if (opts.data.isDefined) {
       val path = baseFolder.resolve(opts.data())
       for {
-        rdf <- RDFAsJenaModel.fromFile(path.toFile(), opts.dataFormat(), base)
+        rdf <- IO(RDFAsJenaModel.fromFile(path.toFile(), opts.dataFormat(), base))
 /*        newRdf <- if (opts.inference.isDefined) {
           io2es(rdf.applyInference(opts.inference()))
         } else

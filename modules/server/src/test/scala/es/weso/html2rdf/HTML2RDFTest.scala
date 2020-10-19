@@ -93,17 +93,18 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
 
     def shouldExtract(html: String, expected: String, extractorName: String): Unit = {
       it(s"Should extract from \n$html\n and obtain\n$expected\nExtractor $extractorName") {
-        val r: IO[(Boolean,String,String)] = (
-          HTML2RDF.extractFromString(html,extractorName), 
-          RDFAsJenaModel.fromChars(expected, "TURTLE")
-         ).tupled.use{ case (rdf,expected) => for {
-          //_ <- { pprint.log(rdf); IO(())} 
-          expectedStr <- expected.serialize("TURTLE")
-          //_ <- { pprint.log(expectedStr); IO(())} 
-          rdfObtained <- rdf.serialize("TURTLE")
-          //_ <- { pprint.log(rdfObtained); IO(())} 
-          isIsomorphic <- rdf.isIsomorphicWith(expected)
-        } yield (isIsomorphic, rdfObtained, expectedStr) }
+        val r: IO[(Boolean,String,String)] = for {
+          res1 <- IO(HTML2RDF.extractFromString(html,extractorName)) 
+          res2 <- RDFAsJenaModel.fromChars(expected, "TURTLE") 
+          vv <- (res1,res2).tupled.use{ case (rdf,expected) => for {
+           //_ <- { pprint.log(rdf); IO(())} 
+           expectedStr <- expected.serialize("TURTLE")
+           //_ <- { pprint.log(expectedStr); IO(())} 
+           rdfObtained <- rdf.serialize("TURTLE")
+           //_ <- { pprint.log(rdfObtained); IO(())} 
+           isIsomorphic <- rdf.isIsomorphicWith(expected)
+          } yield (isIsomorphic, rdfObtained, expectedStr) }
+        } yield vv 
 
         r.attempt.unsafeRunSync.fold(
           e => fail(s"Error extracting: ${e.getMessage}"),

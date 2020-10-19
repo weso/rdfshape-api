@@ -23,12 +23,28 @@ import java.io.ByteArrayOutputStream
 import io.circe.Json
 import io.circe.parser.parse
 
+/*
 case class CachedState(iris: Set[IRI], rdf: RDFAsJenaModel) 
 
 object CachedState {
-  def initial: Resource[IO,CachedState] = for {
+  def initial: Resource[IO,CachedState] = 
+    (RDFAsJenaModel.empty.evalMap(rdf => for {
+      modelRef <- rdf.getModel
+      _ <- IO { pprint.pprintln(s"/// CachedState.initial")}
+      _ <- IO { pprint.pprintln(s"Model is closed? ${modelRef.isClosed}")}
+      _ <- IO { pprint.pprintln(s"CachedState.initial: ${rdf} ${modelRef} Closed?:${modelRef.isClosed}")}
+    } yield CachedState(Set(),rdf)).onFinalize(IO{pprint.pprintln(s"---Closed CachedStateInitial!!")})
+  )
+  /*for {
     rdf <- RDFAsJenaModel.empty
-  } yield CachedState(Set(),rdf)
+    _ <- { pprint.pprintln(s"CachedState.initial: ${rdf} ${rdf.modelRef}"); Resource.liftF(IO.pure(()))}
+    model <- Resource.liftF(rdf.getModel)
+    _ <- { pprint.pprintln(s"CachedState.initial...obtaining RDF empty..."); Resource.liftF(IO.pure(())) }
+    _ <- { pprint.pprintln(s"CachedState.initial: Obtained RDF: $rdf, Model: ${model} closed?: ${model.isClosed}"); Resource.liftF(IO.pure(())) }
+  } yield {
+//    pprint.log(rdf)
+    CachedState(Set(),rdf)
+  } */
 }
 
 case class WikibaseRDF(
@@ -60,7 +76,9 @@ case class WikibaseRDF(
 
  private def addNodeCache(iri: IRI, newRdf: RDFAsJenaModel): IO[Unit] = for {
    cachedState <- refCached.get
+   _ <- showCachedState("Befora adding newRDF")
    merged  <- cachedState.rdf.merge(newRdf)
+   _ <- showCachedState("After adding newRDF")
    _ <- refCached.modify(cachedState => { 
       val newIris = cachedState.iris + iri
       (CachedState(newIris,merged),())
@@ -74,25 +92,38 @@ case class WikibaseRDF(
      case subj: IRI => for {
          cachedState <- Stream.eval(refCached.get)
          r <- if (cachedState.iris contains subj) {
-           println(s"Node ${node} already in cache")
+           pprint.pprintln(s"Node ${node} already in cache!!!")
            cachedState.rdf.triplesWithSubject(node) 
-         } else for {
-//           _ <- Stream.eval { IO { println(s"Dereferentiating ${node}") ; IO.pure(())} }
+         } else {
+          pprint.pprintln(s"Dereferentiating ${node}") 
+          for {
+           _ <- Stream.eval { IO { pprint.pprintln(s"Before Stream.resource ${node}") ; IO.pure(())} }
+           _ <- Stream.eval(showCachedState("Before...Stream.resource"))
            rdfNode <- Stream.resource(derefRDFJava(subj))
+           _ <- Stream.eval { IO { pprint.pprintln(s"Before adding node to cache") ; IO.pure(())} }
+           _ <- Stream.eval(showCachedState("Before...Stream.addNodeCache"))
            _ <- Stream.eval(addNodeCache(subj, rdfNode))
+           _ <- Stream.eval { IO { pprint.pprintln(s"Before obtaining triples") ; IO.pure(())} }
            rs <- rdfNode.triplesWithSubject(subj)
-           } yield rs
+           } yield rs}
           } yield r   
      case other => cachedState.rdf.triplesWithSubject(other)
    }
  } yield ts
+
+
+ private def showCachedState(msg: String): IO[Unit] = for {
+   cachedState <- getCachedState
+   model <- cachedState.rdf.getModel
+   _ <- IO(pprint.pprintln(s"$msg: CachedState: ${cachedState} Closed RDF: ${model.isClosed}"))
+ } yield ()
  
 
  override def asRDFBuilder: IO[RDFBuilder] = err(s"No RDFBuilder for WikibaseRDF")
  override def availableParseFormats: List[String] = List()
  override def availableSerializeFormats: List[String] = List()
 
- override def checkDatatype(node: RDFNode,datatype: IRI): IO[Boolean] = for {
+ override def checkDatatype(node: RDFNode, datatype: IRI): IO[Boolean] = for {
    cachedState <- refCached.get
    b <- cachedState.rdf.checkDatatype(node,datatype)
  } yield b
@@ -233,7 +264,8 @@ case class WikibaseRDF(
 
  override def sourceIRI: Option[IRI] = None
 
- override def subjectsWithPath(p: SHACLPath,o: RDFNode): Stream[IO,RDFNode] = errStream(s"Not implemented subjectsWithPath for WikibaseRDF")
+ override def subjectsWithPath(p: SHACLPath,o: RDFNode): Stream[IO,RDFNode] = 
+  errStream(s"Not implemented subjectsWithPath for WikibaseRDF")
 
 
 }
@@ -244,12 +276,21 @@ object WikibaseRDF {
   val wdt = IRI("http://www.wikidata.org/prop/direct/")
   val wikidataEndpoint = IRI("https://query.wikidata.org/sparql")
 
-  val wikidata : Resource[IO,WikibaseRDF] = for {
+  val wikidata : Resource[IO,WikibaseRDF] = 
+    CachedState.initial.evalMap(initial => for {
+      ref <- Ref[IO].of(initial)
+      _ <- IO(pprint.log(ref, "WikibaseRDF.wikidata"))
+    } yield WikibaseRDF(wikidataEndpoint,prefixMap = PrefixMap(Map(
+    Prefix("wd") -> wd,
+    Prefix("wdt") -> wdt
+   )), ref))
+  
+/*  for {
     initial <- CachedState.initial
     ref <- Resource.liftF(Ref[IO].of(initial))
   } yield WikibaseRDF(wikidataEndpoint,prefixMap = PrefixMap(Map(
     Prefix("wd") -> wd,
     Prefix("wdt") -> wdt
-   )), ref)
+   )), ref) */
 
-}
+}*/

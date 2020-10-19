@@ -300,9 +300,9 @@ private[server] def validate(rdf: RDFReasoner,
   private[server] def dataInfoFromString(data: String, dataFormatStr: String): IO[Json] =  {
     val either: ESIO[Json] = for {
       dataFormat <- either2es(DataFormat.fromString(dataFormatStr))
-      json <- io2es(RDFAsJenaModel.fromChars(data,dataFormat.name).use(rdf => 
+      json <- io2es(RDFAsJenaModel.fromChars(data,dataFormat.name).flatMap(_.use(rdf => 
         dataInfo(rdf, Some(data), Some(dataFormat))
-      ))
+      )))
     } yield json
 
     either.fold(e => DataInfoResult.fromMsg(e).toJson, identity)
