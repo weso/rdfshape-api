@@ -204,21 +204,21 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       println(s"POST /api/data/query, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
+        pprint.log(partsMap)
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
           (resourceRdf, dp) = dataParam
           maybePair <- SparqlQueryParam.mkQuery(partsMap)
           resp <- maybePair match {
             case Left(err) => errJson(s"Error obtaining Query data $err")
-            case Right((queryStr,qp)) => {
-                  pprint.log(qp);
-                  val optQueryStr = qp.query.map(_.str)
-                  for {
+            case Right((queryStr,qp)) =>
+              val optQueryStr = qp.query.map(_.str)
+              pprint.log(optQueryStr)
+              for {
                    json <- io2f(resourceRdf.use(rdf => rdf.queryAsJson(optQueryStr.getOrElse(""))))
                    v <- Ok(json)
                   } yield v
-                }
-            }
+          }
         } yield resp
       }
     }
