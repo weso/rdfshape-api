@@ -110,6 +110,14 @@ case class DataParam(data: Option[String],
     }
     println(s"Input type: $inputType")
     val x: IO[(Option[String],Resource[IO,RDFReasoner])] = inputType match {
+
+      case Right(`compoundDataType`) =>
+        println(s"###Compound data")
+        for {
+          cd <- IO.fromEither(CompoundData.fromString(compoundData.getOrElse("")).leftMap(s => new RuntimeException(s)))
+          res <- cd.toRDF
+        } yield (None,res)
+
       case Right(`dataUrlType`) =>
         dataURL match {
           case None => err(s"Non value for dataURL")
@@ -173,12 +181,7 @@ case class DataParam(data: Option[String],
             } yield (d,res)
         }
 
-      case Right(`compoundDataType`) =>
-        println(s"###Compound data")
-        for {
-         cd <- IO.fromEither(CompoundData.fromString(compoundData.getOrElse("")).leftMap(s => new RuntimeException(s)))
-         res <- cd.toRDF
-       } yield (None,res)
+
       case Right(other) => err(s"Unknown value for activeDataTab: $other")
 
       case Left(msg) => err(msg)
@@ -285,7 +288,7 @@ object DataParam {
     dataFormatValue <- getDataFormat("dataFormat", partsMap)
     inference <- partsMap.optPartValue("inference")
     targetDataFormat <- getDataFormat("targetDataFormat",partsMap)
-    activeDataTab <- partsMap.optPartValue("rdfDataActiveTab")
+    activeDataTab <- partsMap.optPartValue("activeTab")
   } yield {
     pprint.log(data)
     pprint.log(compoundData)
@@ -317,7 +320,6 @@ object DataParam {
       dataFormatTextArea,dataFormatUrl,dataFormatFile,
       inference,targetDataFormat,finalActiveDataTab,compoundData
     )
-    pprint.log(dp)
     dp
   }
 

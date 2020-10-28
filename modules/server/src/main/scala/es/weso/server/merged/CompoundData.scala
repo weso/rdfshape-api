@@ -35,10 +35,9 @@ object CompoundData {
   final def apply(c: HCursor): Decoder.Result[CompoundData] = {
       c.values match {
           case None => DecodingFailure("Empty list for compound data", List()).asLeft[CompoundData]
-          case Some(vs) => { 
-              val xs: Decoder.Result[List[DataElement]] = vs.toList.map(_.as[DataElement]).sequence 
-              xs.map(CompoundData(_))
-        }
+          case Some(vs) =>
+            val xs: Decoder.Result[List[DataElement]] = vs.toList.map(_.as[DataElement]).sequence
+            xs.map(CompoundData(_))
       }
   }
  }

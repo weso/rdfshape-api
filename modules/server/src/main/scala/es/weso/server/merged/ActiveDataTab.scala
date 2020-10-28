@@ -22,13 +22,15 @@ case object DataFile extends ActiveDataTab {
 
 object ActiveDataTab {
    val values = List(DataTextArea,DataUrl,DataFile,DataEndpoint)
-   val default = values.head
+   val default: ActiveDataTab = values.head
  
-   def fromString(str: String): Either[String,ActiveDataTab] = 
-      values.collectFirst {
-          case v if v.id == str => v 
-      } match { 
-          case None => Left(s"Unknown value for activeDataTab: $str. Available values: ${values.map(_.id).mkString(",")}") 
-          case Some(v) => Right(v)
-    } 
+   def fromString(str: String): Either[String,ActiveDataTab] = {
+
+     values.collectFirst {
+       case v if v.id == str => v
+     } match {
+       case None => Left(s"Unknown value for activeDataTab: $str. Available values: ${values.map(_.id).mkString(",")}")
+       case Some(v) => Right(v)
+     }
+   }
 }
