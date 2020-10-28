@@ -332,32 +332,22 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           val eitherResult: F[Response[F]] = for {
             pairData <- io2f(dp.getData(relativeBase))
             (dataStr, resourceRdf) = pairData
-            //rdf <- either2ef(eitherRDF)
             response <- io2f(for {
-              res2 <- RDFAsJenaModel.empty
-              vv <- (resourceRdf, res2).tupled.use{ case (rdf,builder) => for {
+              resBuilder <- RDFAsJenaModel.empty
+              vv <- (resourceRdf, resBuilder).tupled.use{ case (rdf,builder) => for {
               pair <- sp.getSchema(Some(rdf))
               (schemaStr, eitherSchema) = pair
               schema <- IO.fromEither(eitherSchema.leftMap(s => new RuntimeException(s"Error obtaining schema: $s")))
               res <- validate(rdf, dp, schema, sp, tp, relativeBase,builder)
-             } yield res}
+              (result, maybeTrigger, time) = res
+              json <- result2json(res._1)
+             } yield json }
             } yield vv) 
-/*              L.liftIO(sp.getSchema(Some(rdf)))
-            (schemaStr, eitherSchema) = pair
-            schema <- EitherT.fromEither[F](eitherSchema)
-            res <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase)) */
-            (result, maybeTrigger, time) = response
-            v <- Ok(result.toJson)
+            v <- Ok(response)
           } yield {
-            // println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<Cannot serialize RDF>")}")
-            // println(s"Schema: ${schema.serialize("ShExC",None).getOrElse("<Cannot serialize schema")}")
-            
-            // println(s">>>> maybeTrigger: $maybeTrigger")
-            // println(s">>>> result: $result")
             v
           }
           eitherResult
-          //TODO: eitherResult.attempt.foldF(e => errJson(s"Error: $e"), identity)
         }
       }
     }
@@ -366,10 +356,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       req.decode[Multipart[F]] { m =>
         {
           val partsMap = PartsMap(m.parts)
-
-
-          val r: F[Result] = for {
-            //_ <- pp(partsMap)
+          val r: F[Json] = for {
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             //_ <- pp(dp)
@@ -380,28 +367,16 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
               (schema, sp) = schemaPair
               tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
               r <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase,builder))
-            } yield r }
+              json <- io2f(result2json(r._1))
+            } yield json }
             } yield vv 
-             
-            (result, _, _) = res
-          } yield result
-               
-         /*   (schema, sp) = schemaPair
-            //_ <- pp(sp)
-            //_ <- pp(schema)
-            tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
-            //_ <- pp(tp)
-            res <- validate(rdf, dp, schema, sp, tp, relativeBase)
-          } yield {
-            // val schemaEmbedded = getSchemaEmbedded(sp)
-            // println(s"Trigger mode: $tp")
-            //println(s"Schema: ${schema.serialize("ShExC").getOrElse("Error serializing schema")}")
-            val (result, maybeTriggerMode, time) = res
-            result
-          } */
+          } yield res
+
           for {
             e <- r.attempt
-            v <- e.fold(t => errJson(t.getMessage), r => Ok(r.toJson))
+            v <- e.fold(
+              t => errJson(t.getMessage), 
+              json => Ok(json))
           } yield v
         }
       } 

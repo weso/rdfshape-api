@@ -20,10 +20,13 @@
 <body>
 @navBar()
 <div class="container">
-<div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.map(_.toJson).getOrElse(Json.Null)))}'
-    data-validationreport='@{validationReport.getOrElse(Left("")).fold(e=> s"Error: $e", vr => vr)}'
-    data-validationreportactive='@{if (validationReport.isDefined && validationReport.get.isRight) "true" else "false"}'
-></div>
+@** -- Commented because result.toJson now requires a parameter...it needs refactoring
+ * <div id="resultDiv" data-result='@{Html(JsonTwirl.json2htmlAttr(result.map(_.toJson).getOrElse(Json.Null)))}'
+ *    data-validationreport='@{validationReport.getOrElse(Left("")).fold(e=> s"Error: $e", vr => vr)}'
+ *    data-validationreportactive='@{if (validationReport.isDefined && validationReport.get.isRight) "true" else "false"}'
+ * ></div> 
+ *@
+
 <form action="/validate" method="POST" enctype="multipart/form-data" id="validate">
     <fieldset>
         @selectSchemaEngine("validate", sv.availableSchemaEngines,sv.currentSchemaEngine)

@@ -415,6 +415,13 @@ private[server] def validate(rdf: RDFReasoner,
     Json.fromFields(fields)
   }
 
+  def result2json(result: Result): IO[Json] = for {
+    emptyRes <- RDFAsJenaModel.empty
+    json <- emptyRes.use(emptyBuilder => 
+       result.toJson(emptyBuilder)
+    )
+  } yield json
+
  /* private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
     sp.schemaEmbedded match {
       case Some(true) => true
