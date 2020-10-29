@@ -33,12 +33,6 @@ case class DataElement(
           rdf <- IO(RDFAsJenaModel.fromURI(dataUrl.getOrElse(""), dataFormat.name, None))
         } yield rdf
 
-      case DataFile =>
-        pprint.log("DATA FILE ELEMENT")
-        for {
-        rdf <- IO(RDFAsJenaModel.fromIRI(new IRI(new URI(dataFile.getOrElse("")))))
-      } yield rdf
-
       case _ =>
         pprint.log("ERROR DATA ELEMENT")
         IO.raiseError(new RuntimeException(s"Not implemented yet compound with activeTab: ${activeDataTab}"))
