@@ -8,10 +8,10 @@ import scala.io.Source
 import scala.util.Try
 
 case class SparqlQueryParam(query: Option[Query],
-                      queryURL: Option[String],
-                      queryFile: Option[String],
-                      activeQueryTab: Option[String]
-                     ) {
+                            queryURL: Option[String],
+                            queryFile: Option[String],
+                            activeQueryTab: Option[String]
+                           ) {
 
   def getQuery: (Option[String], Either[String, Query]) = {
     activeQueryTab.getOrElse(defaultActiveQueryTab) match {
@@ -19,8 +19,11 @@ case class SparqlQueryParam(query: Option[Query],
         queryURL match {
           case None => (None, Left(s"No value for queryURL"))
           case Some(queryUrl) => Try {
-            val uri = new java.net.URI(queryUrl)
-            Source.fromURI(uri).mkString
+            val url = new java.net.URL(queryUrl)
+            val src = Source.fromURL(url)
+            val str = src.mkString
+            src.close()
+            str
           }.toEither match {
             case Left(err) => (None, Left(s"Error obtaining data from url $queryUrl: ${err.getMessage} "))
             case Right(str) => (Some(str), Right(Query(str)))
@@ -51,7 +54,7 @@ case class SparqlQueryParam(query: Option[Query],
 object SparqlQueryParam {
 
   private[server] def mkQuery[F[_]:Effect](partsMap: PartsMap[F]
-                     ): F[Either[String, (Query, SparqlQueryParam)]] = for {
+                                          ): F[Either[String, (Query, SparqlQueryParam)]] = for {
     qp <- mkQueryParam(partsMap)
   } yield {
     val (maybeStr, maybeQuery) = qp.getQuery
@@ -66,6 +69,6 @@ object SparqlQueryParam {
     queryURL <- partsMap.optPartValue("queryURL")
     queryFile <- partsMap.optPartValue("queryFile")
     activeQueryTab <- partsMap.optPartValue("activeQueryTab")
-  } yield SparqlQueryParam(queryStr.map(Query(_)), queryURL, queryFile, activeQueryTab)
+  } yield SparqlQueryParam(queryStr.map(Query), queryURL, queryFile, activeQueryTab)
 
 }

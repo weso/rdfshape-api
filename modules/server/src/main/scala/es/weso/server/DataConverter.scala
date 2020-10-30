@@ -100,28 +100,31 @@ object DataConverter extends LazyLogging {
                                  dataFormat: DataFormat,
                                  targetFormat: String
                                  ): IO[DataConversionResult] = {
-   val doConversion: IO[String] = targetFormat.toUpperCase match {
-      case "JSON" => for {
-        sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-      } yield sgraph.toJson.spaces2
-      case "DOT" => for {
-        sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-      } yield sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-      case t if rdfDataFormats.contains(t) => rdf.serialize(t)
-      case t if availableGraphFormatNames.contains(t) => {
-        val doS: IO[String] = for {
-        sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-        eitherFormat <- either2io(getTargetFormat(t))
-        dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-        eitherConverted <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), 
-         format => either2io(dotConverter(dotStr,format))
-        ) 
-        c <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), _ => IO(dotStr))
-       } yield c
-       doS
-      } 
-      case t => IO.raiseError(new RuntimeException(s"Unsupported format: ${t}"))
-    }
+   val doConversion: IO[String] = {
+     pprint.log(targetFormat)
+     targetFormat.toUpperCase match {
+       case "JSON" => for {
+         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
+       } yield sgraph.toJson.spaces2
+       case "DOT" => for {
+         sgraph <- RDF2SGraph.rdf2sgraph(rdf)
+       } yield sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
+       case t if rdfDataFormats.contains(t) => rdf.serialize(t)
+       case t if availableGraphFormatNames.contains(t) => {
+         val doS: IO[String] = for {
+           sgraph <- RDF2SGraph.rdf2sgraph(rdf)
+           eitherFormat <- either2io(getTargetFormat(t))
+           dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
+           eitherConverted <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)),
+             format => either2io(dotConverter(dotStr, format))
+           )
+           c <- eitherFormat.fold(e => IO.raiseError(new RuntimeException(e)), _ => IO(dotStr))
+         } yield c
+         doS
+       }
+       case t => IO.raiseError(new RuntimeException(s"Unsupported format: ${t}"))
+     }
+   }
 
    for {
     converted <- doConversion

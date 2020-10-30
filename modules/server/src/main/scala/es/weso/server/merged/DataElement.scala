@@ -1,15 +1,17 @@
 package es.weso.server.merged
+import java.net.URI
+
 import cats._
 import cats.data._
 import cats.implicits._
 import io.circe._
 import es.weso.server.Defaults
-import es.weso.server.format.DataFormat
-import es.weso.utils.IOUtils._
+import es.weso.server.format.{DataFormat, Format}
 import es.weso.rdf.jena.RDFAsJenaModel
 import cats.effect._
-import es.weso.rdf.RDFReader
+import es.weso.html2rdf.HTML2RDF
 import es.weso.rdf.RDFReasoner
+import es.weso.rdf.nodes.IRI
 
 case class DataElement(
     data: Option[String],
@@ -20,11 +22,21 @@ case class DataElement(
     activeDataTab: ActiveDataTab
 ) {
  def toRDF: IO[Resource[IO,RDFAsJenaModel]] = activeDataTab match {
-      case DataTextArea => for {
-        rdf <- RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name,None,false)
-      } yield rdf
-      case _ => IO.raiseError(new RuntimeException(s"Not implemented yet compound with activeDataTab: ${activeDataTab}"))
-  }  
+
+      case DataTextArea =>
+        for {
+          rdf <- RDFAsJenaModel.fromString(data.getOrElse(""), dataFormat.name, None, useBNodeLabels = false)
+        } yield rdf
+
+      case DataUrl =>
+        for {
+          rdf <- IO(RDFAsJenaModel.fromURI(dataUrl.getOrElse(""), dataFormat.name, None))
+        } yield rdf
+
+      case _ =>
+        pprint.log("ERROR DATA ELEMENT")
+        IO.raiseError(new RuntimeException(s"Not implemented yet compound with activeTab: ${activeDataTab}"))
+ }
 }
 
 object DataElement {
@@ -36,25 +48,25 @@ object DataElement {
       case DataTextArea =>
         Json.obj(
           ("data", Json.fromString(a.data.getOrElse(""))),
-          ("activeDataTab", Json.fromString(a.activeDataTab.id)),
+          ("activeTab", Json.fromString(a.activeDataTab.id)),
           ("dataFormat", Json.fromString(a.dataFormat.name))
         )
       case DataUrl =>
         Json.obj(
-          ("dataUrl", Json.fromString(a.dataUrl.getOrElse(""))),
-          ("activeDataTab", Json.fromString(a.activeDataTab.id)),
+          ("dataURL", Json.fromString(a.dataUrl.getOrElse(""))),
+          ("activeTab", Json.fromString(a.activeDataTab.id)),
           ("dataFormat", Json.fromString(a.dataFormat.name))
         )
       case DataFile =>
         Json.obj(
           ("dataFile", Json.fromString(a.dataFile.getOrElse(""))),
-          ("activeDataTab", Json.fromString(a.activeDataTab.id)),
+          ("activeTab", Json.fromString(a.activeDataTab.id)),
           ("dataFormat", Json.fromString(a.dataFormat.name))
         )
       case DataEndpoint =>
         Json.obj(
           ("endpoint", Json.fromString(a.endpoint.getOrElse(""))),
-          ("activeDataTab", Json.fromString(a.activeDataTab.id)),
+          ("activeTab", Json.fromString(a.activeDataTab.id)),
           ("dataFormat", Json.fromString(a.dataFormat.name))
         )
     }
@@ -65,19 +77,21 @@ object DataElement {
       for {
         dataActiveTab <- parseActiveTab(c)
         dataFormat    <- parseDataFormat(c)
-        base = DataElement.empty.copy(dataFormat = dataFormat)
+        base = DataElement.empty.copy(dataFormat = dataFormat, activeDataTab = dataActiveTab)
         rest <- dataActiveTab match {
           case DataTextArea =>
             for {
               data <- c.downField("data").as[String]
             } yield base.copy(data = Some(data))
           case DataFile =>
+            // TODO: either send the file text through the request (bad idea) or decode the file appropriately
+            pprint.log(c.downField("dataFile"))
             for {
               dataFile <- c.downField("dataFile").as[String]
             } yield base.copy(dataFile = Some(dataFile))
           case DataUrl =>
             for {
-              dataUrl <- c.downField("dataUrl").as[String]
+              dataUrl <- c.downField("dataURL").as[String]
             } yield base.copy(dataUrl = Some(dataUrl))
           case DataEndpoint =>
             for {
@@ -87,11 +101,12 @@ object DataElement {
       } yield rest
     }
 
-    private def parseActiveTab(c: HCursor): Decoder.Result[ActiveDataTab] =
+    private def parseActiveTab(c: HCursor): Decoder.Result[ActiveDataTab] = {
       for {
-        str <- c.downField("activeDataTab").as[String] orElse Right(ActiveDataTab.default.id)
-        a   <- ActiveDataTab.fromString(str).leftMap(DecodingFailure(_, List()))
+        str <- c.downField("activeTab").as[String] orElse Right(ActiveDataTab.default.id)
+        a <- ActiveDataTab.fromString(str).leftMap(DecodingFailure(_, List()))
       } yield a
+    }
 
     private def parseDataFormat(c: HCursor): Decoder.Result[DataFormat] = 
       for {

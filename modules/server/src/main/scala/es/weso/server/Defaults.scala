@@ -11,23 +11,23 @@ import cats.effect.IO
 object Defaults {
 
   val availableDataFormats: List[DataFormat] = DataFormat.availableFormats
-  val defaultDataFormat = DataFormat.default
-  val availableSchemaFormats = SchemaFormat.availableFormats
-  val defaultSchemaFormat = SchemaFormat.default
-  val availableSchemaEngines = Schemas.availableSchemaNames
-  val defaultSchemaEngine = Schemas.defaultSchemaName
-  val availableTriggerModes = Schemas.availableTriggerModes
-  val defaultTriggerMode = ShapeMapTrigger(ShapeMap.empty).name
+  val defaultDataFormat: DataFormat = DataFormat.default
+  val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
+  val defaultSchemaFormat: SchemaFormat = SchemaFormat.default
+  val availableSchemaEngines: List[String] = Schemas.availableSchemaNames
+  val defaultSchemaEngine: String = Schemas.defaultSchemaName
+  val availableTriggerModes: List[String] = Schemas.availableTriggerModes
+  val defaultTriggerMode: String = ShapeMapTrigger(ShapeMap.empty).name
   val availableInferenceEngines = List("NONE", "RDFS", "OWL") // TODO: Obtain from RDFAsJenaModel.empty.map(_.availableInferenceEngines).unsafeRunSync
   val defaultSchemaEmbedded = false
-  val defaultInference = availableInferenceEngines.head
+  val defaultInference: String = availableInferenceEngines.head
   val defaultActiveDataTab = "#dataTextArea"
   val defaultActiveSchemaTab = "#schemaTextArea"
   val defaultActiveQueryTab = "#queryTextArea"
-  val defaultShapeMapFormat = ShapeMap.defaultFormat
-  val availableShapeMapFormats = ShapeMap.formats
+  val defaultShapeMapFormat: String = ShapeMap.defaultFormat
+  val availableShapeMapFormats: List[String] = ShapeMap.formats
   val defaultActiveShapeMapTab = "#shapeMapTextArea"
-  val defaultShapeLabel = IRI("Shape")
-  val relativeBase = Some(IRI("internal://base/"))
+  val defaultShapeLabel: IRI = IRI("Shape")
+  val relativeBase: Some[IRI] = Some(IRI("internal://base/"))
 
 }

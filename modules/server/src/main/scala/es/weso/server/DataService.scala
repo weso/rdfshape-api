@@ -142,7 +142,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       OptActiveDataTabParam(optActiveDataTab) => {
 
       val either: Either[String, Option[DataFormat]] = for {
-        df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
+        df <- maybeDataFormat.map(DataFormat.fromString).sequence
       } yield df
 
       val r: F[Response[F]] = either.fold(
@@ -166,7 +166,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       r
     } 
 
-    case req @ POST -> Root / `api` / "data" / "convert" => {
+    case req @ POST -> Root / `api` / "data" / "convert" =>
       println(s"POST /api/data/convert, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
@@ -175,13 +175,12 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           (resourceRdf, dp) = dataParam
           targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name
           dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
-          result <- io2f(resourceRdf.use(rdf => 
+          result <- io2f(resourceRdf.use(rdf =>
             DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat))
           )
           ok <- Ok(result.toJson)
         } yield ok
       }
-    }
 
     case req @ GET -> Root / `api` / "data" / "convert" :?
       DataParameter(data) +&
@@ -200,28 +199,27 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       } yield result
     }
 
-    case req @ POST -> Root / `api` / "data" / "query" => {
+    case req @ POST -> Root / `api` / "data" / "query" =>
       println(s"POST /api/data/query, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
+        pprint.log(partsMap)
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
           (resourceRdf, dp) = dataParam
           maybePair <- SparqlQueryParam.mkQuery(partsMap)
           resp <- maybePair match {
             case Left(err) => errJson(s"Error obtaining Query data $err")
-            case Right((queryStr,qp)) => {
-                  pprint.log(qp);
-                  val optQueryStr = qp.query.map(_.str)
-                  for {
+            case Right((queryStr,qp)) =>
+              val optQueryStr = qp.query.map(_.str)
+              pprint.log(optQueryStr)
+              for {
                    json <- io2f(resourceRdf.use(rdf => rdf.queryAsJson(optQueryStr.getOrElse(""))))
                    v <- Ok(json)
                   } yield v
-                }
-            }
+          }
         } yield resp
       }
-    }
 
     case req @ POST -> Root / `api` / "data" / "extract" => {
       println(s"POST /api/data/extract, Request: $req")
