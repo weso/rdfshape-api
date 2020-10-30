@@ -45,7 +45,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     }
 
     case GET -> Root / `api` / "schema" / "engines" / "shacl" => {
-      val shaclSchemas = List(Schemas.shaclex,Schemas.jenaShacl)
+      val shaclSchemas = List(Schemas.shaclex,Schemas.jenaShacl, Schemas.shaclTQ)
       val json    = Json.fromValues(shaclSchemas.map(_.name).map(str => Json.fromString(str)))
       Ok(json)
     }
