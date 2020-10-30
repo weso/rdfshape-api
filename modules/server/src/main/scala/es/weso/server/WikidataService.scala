@@ -45,6 +45,7 @@ import es.weso.utils.internal.CollectionCompat._
 import scala.util.control.NoStackTrace
 import scala.util.matching.Regex
 import es.weso.wikibaserdf._
+import ApiHelper._
 
 class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                                               client: Client[F]
@@ -385,9 +386,10 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
             res2 <- RDFAsJenaModel.empty
             vv <- (res1, res2).tupled.use{ case (rdf,builder) => for {
             r <- schema.validate(rdf,triggerMode,builder)
-           } yield r}
+            json <- result2json(r)
+           } yield json}
           } yield vv)
-          resp <- Ok(result.toJson)
+          resp <- Ok(result)
         } yield resp
         r.attempt.flatMap(_.fold(s => Ok(errExtract(s.getMessage)), F.pure(_)))
       }

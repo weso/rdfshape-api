@@ -22,9 +22,10 @@ import io.circe._
 import org.http4s._
 import org.http4s.client.{Client, JavaNetClientBuilder}
 import org.log4s.getLogger
-
 import scala.concurrent.ExecutionContext.global
 import es.weso.rdf.RDFBuilder
+import es.weso.shacl.converter.Shacl2ShEx
+import es.weso.shex.implicits.showShEx
 
 object ApiHelper {
 
@@ -225,6 +226,33 @@ private[server] def validate(rdf: RDFReasoner,
     }
   }
 
+  private def doSchemaConversion(schema: Schema, targetSchemaFormat: Option[String], optTargetSchemaEngine: Option[String]
+   ): IO[(String, ShapeMap)] = { 
+   pprint.log(schema.name)  
+   val default = for {
+        str <- schema.convert(targetSchemaFormat, optTargetSchemaEngine, None)
+   } yield (str, ShapeMap.empty)
+   schema match {
+    case shacl: ShaclexSchema => optTargetSchemaEngine.map(_.toUpperCase()) match {
+      case Some("SHEX") => {
+        pprint.log(s"SHACLEX -> SHEX")
+        Shacl2ShEx.shacl2ShEx(shacl.schema).fold(
+          e => IO.raiseError(new RuntimeException(s"Error converting SHACL -> ShEx: ${e}")),
+          pair => {
+            val (schema,shapeMap) = pair
+            pprint.log(shapeMap)
+            for {
+              emptyBuilder <- RDFAsJenaModel.empty
+              str <- emptyBuilder.use(builder => es.weso.shex.Schema.serialize(schema,targetSchemaFormat.getOrElse("SHEXC"), None, builder))
+            } yield (str,shapeMap)
+        })
+      }
+      case _ => default
+    }
+    case _ => default
+  }
+ }
+
   private[server] def convertSchema(schema: Schema,
                                     schemaStr: Option[String],
                                     schemaFormat: SchemaFormat,
@@ -233,12 +261,13 @@ private[server] def validate(rdf: RDFReasoner,
                                     optTargetSchemaEngine: Option[String]
                                    ): IO[SchemaConversionResult] = {
     val result:IO[SchemaConversionResult] = for {
-      resultStr <- schema.convert(optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, None)
+      pair <- doSchemaConversion(schema, optTargetSchemaFormat.map(_.name), optTargetSchemaEngine)
       sourceStr <- schemaStr match {
         case None => schema.serialize(schemaFormat.name)
         case Some(source) => IO(source)
       }
-    } yield SchemaConversionResult.fromConversion(sourceStr, schemaFormat.name, schemaEngine, optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, resultStr, ShapeMap.empty)
+      (resultStr, resultShapeMap) = pair
+    } yield SchemaConversionResult.fromConversion(sourceStr, schemaFormat.name, schemaEngine, optTargetSchemaFormat.map(_.name), optTargetSchemaEngine, resultStr, resultShapeMap)
 
     for {
       either <- result.attempt
@@ -414,6 +443,13 @@ private[server] def validate(rdf: RDFReasoner,
       )
     Json.fromFields(fields)
   }
+
+  def result2json(result: Result): IO[Json] = for {
+    emptyRes <- RDFAsJenaModel.empty
+    json <- emptyRes.use(emptyBuilder => 
+       result.toJson(emptyBuilder)
+    )
+  } yield json
 
  /* private[server] def getSchemaEmbedded(sp: SchemaParam): Boolean = {
     sp.schemaEmbedded match {

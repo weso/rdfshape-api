@@ -75,7 +75,9 @@ case class SchemaParam(schema: Option[String],
       case Some(true) => data match {
         case None => IO((None, Left(s"Schema embedded but no data found")))
         case Some(rdf) => for {
-          eitherSchema <- Schemas.fromRDF(rdf, schemaEngine.getOrElse(defaultSchemaEngine)).attempt
+          eitherSchema <- {
+            Schemas.fromRDF(rdf, schemaEngine.getOrElse(defaultSchemaEngine)).attempt
+          }
           resp <- eitherSchema match {
             case Left(str) => 
               IO((None, Left(s"Error obtaining schema from RDF $rdf")))
@@ -87,6 +89,7 @@ case class SchemaParam(schema: Option[String],
       }
       case _ => {
         pprint.log(activeSchemaTab)
+        pprint.log(schemaEngine, "@@@@ Schema Engine")
         val inputType = activeSchemaTab match {
           case Some(a) => parseSchemaTab(a)
           case None if schema.isDefined => Right(SchemaTextAreaType)
@@ -106,6 +109,7 @@ case class SchemaParam(schema: Option[String],
                   str,schemaFormat.getOrElse(SchemaFormat.default).name,
                   schemaEngine.getOrElse(defaultSchemaEngine),
                   ApiHelper.getBase)  // .leftMap(s => s"Error parsing contents of $schemaUrl: $s\nContents:\n$str")
+                _ <- IO { pprint.log(schema,s"Schema parsed") }
               } yield (str,schema)
               e.attempt.map(_.fold(
                 s => ((none[String], s.getMessage.asLeft[Schema])),
@@ -132,13 +136,19 @@ case class SchemaParam(schema: Option[String],
           case Right(`SchemaTextAreaType`) => {
             pprint.log(schemaFormat)
             val schemaStr = schema.getOrElse("")
-            Schemas.fromString(schemaStr,
-              schemaFormat.getOrElse(SchemaFormat.default).name,
-              schemaEngine.getOrElse(defaultSchemaEngine),
-              ApiHelper.getBase).attempt.map(_.fold(
+            for { 
+              pair <- Schemas.fromString(schemaStr, schemaFormat.getOrElse(SchemaFormat.default).name,
+                                                      schemaEngine.getOrElse(defaultSchemaEngine),
+                                                      ApiHelper.getBase).attempt.map(_.fold(
                 s => (Some(schemaStr), Left(s.getMessage)), 
                 schema => (Some(schemaStr), Right(schema))
-              )) 
+              ))
+              (str,eitherSchema) = pair
+              nameSchema = eitherSchema.map(_.name).getOrElse(s"No schema")
+              _ <- IO { pprint.log(nameSchema, s"@@@ Schema ") }
+              foundSchema <- Schemas.lookupSchema(schemaEngine.getOrElse(defaultSchemaEngine))
+              _ <- IO { pprint.log(foundSchema.name, s"Found schema")}
+            } yield pair
           }
           case Right(other) => IO((None, Left(s"Unknown value for activeSchemaTab: $other")))
           case Left(msg) => IO((None, Left(msg)))

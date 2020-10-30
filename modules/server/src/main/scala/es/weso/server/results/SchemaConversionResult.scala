@@ -3,6 +3,7 @@ package es.weso.server.results
 import es.weso.shapeMaps.{ResultShapeMap, ShapeMap}
 import es.weso.utils.json.JsonUtilsServer.{maybeField, _}
 import io.circe.Json
+import io.circe.syntax._
 
 case class SchemaConversionResult(
   msg: String,
@@ -24,8 +25,8 @@ case class SchemaConversionResult(
     maybeField(schemaEngine,"schemaEngine", Json.fromString(_)) ++
     maybeField(targetSchemaFormat,"targetSchemaFormat", Json.fromString(_)) ++
     maybeField(targetSchemaEngine,"targetSchemaEngine", Json.fromString(_)) ++
-    maybeField(result,"result", Json.fromString(_) )
-     //  maybeField(resultShapeMap,"shapeMap", (sm: ShapeMap) => sm.toJson)
+    maybeField(result,"result", Json.fromString(_) ) ++
+    maybeField(resultShapeMap,"shapeMap", (sm: ShapeMap) => sm.toString.asJson)
   )
 }
 
