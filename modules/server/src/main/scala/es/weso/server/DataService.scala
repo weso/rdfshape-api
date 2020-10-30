@@ -199,7 +199,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       } yield result
     }
 
-    case req @ POST -> Root / `api` / "data" / "query" => {
+    case req @ POST -> Root / `api` / "data" / "query" =>
       println(s"POST /api/data/query, Request: $req")
       req.decode[Multipart[F]] { m =>
         val partsMap = PartsMap(m.parts)
@@ -220,7 +220,6 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           }
         } yield resp
       }
-    }
 
     case req @ POST -> Root / `api` / "data" / "extract" => {
       println(s"POST /api/data/extract, Request: $req")

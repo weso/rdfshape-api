@@ -68,7 +68,7 @@ object SparqlQueryParam {
     queryStr <- partsMap.optPartValue("query")
     queryURL <- partsMap.optPartValue("queryURL")
     queryFile <- partsMap.optPartValue("queryFile")
-    activeQueryTab <- partsMap.optPartValue("activeTab")
+    activeQueryTab <- partsMap.optPartValue("activeQueryTab")
   } yield SparqlQueryParam(queryStr.map(Query), queryURL, queryFile, activeQueryTab)
 
 }
