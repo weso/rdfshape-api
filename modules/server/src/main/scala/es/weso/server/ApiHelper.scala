@@ -277,7 +277,7 @@ private[server] def validate(rdf: RDFReasoner,
 
     for {
       either <- result.attempt
-    } yield either.fold(err => SchemaConversionResult.fromMsg(s"convertSchema: error: $err"), identity)
+    } yield either.fold(err => SchemaConversionResult.fromMsg(s"error converting schema: $err"), identity)
   }
 
   private[server] def shapeInfer(rdf: RDFReasoner,
