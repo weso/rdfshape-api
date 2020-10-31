@@ -21,7 +21,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.multipart.Multipart
-import org.http4s.server.staticcontent.{ResourceService, resourceService}
+import org.http4s.server.staticcontent.{ResourceService, resourceServiceBuilder}
 import org.log4s.getLogger
 
 import scala.concurrent.duration._
@@ -44,7 +44,7 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
   private val logger = getLogger
 
   private val swagger =
-    resourceService[F](ResourceService.Config("/swagger", blocker))
+    resourceServiceBuilder[F]("/swagger", blocker) // ResourceService.Config())
 
   val routes = HttpRoutes.of[F] {
 
@@ -62,9 +62,8 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       resp <- eitherOutgoing.fold((s: String) => errJson(s"Error: $s"), (outgoing: Outgoing) => Ok(outgoing.toJson))
     } yield resp
 
-
     // Contents on /swagger are directly mapped to /swagger
-    case r @ GET -> _ if r.pathInfo.startsWith(UriPath.fromString("/swagger/")) => swagger(r).getOrElseF(NotFound())
+    // case r @ GET -> _ if r.pathInfo.startsWith(UriPath.fromString("/swagger/")) => swagger.toRoutes. // getOrElseF(NotFound())
 
   }
 
