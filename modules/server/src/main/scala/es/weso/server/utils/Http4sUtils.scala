@@ -15,9 +15,9 @@ object Http4sUtils {
   def mkClient[F[_]:Concurrent](c: Client[F]): Client[F] =
     withRedirect(withLogging(c))
 
-  def getBody[F[_]:Monad](uri: Uri, r: Response[F]): F[Either[String,Stream[F,String]]] =
-    Monad[F].pure(if (r.status.isSuccess) Right(r.bodyAsText)
-    else Left(s"Status error fetching $uri: ${r.status}"))
+  def getBody[F[_]:Monad: Concurrent](uri: Uri, r: Response[F]): F[Either[String,Stream[F,String]]] =
+    if (r.status.isSuccess) r.bodyText.asRight.pure[F]
+    else s"Status error fetching $uri: ${r.status}".asLeft.pure[F]
 
   def resolveStream[F[_]:Monad: Concurrent](uri: Uri,
                                             client: Client[F]): F[Either[String,Stream[F,String]]] = {

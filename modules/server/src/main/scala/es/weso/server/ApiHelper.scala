@@ -105,14 +105,20 @@ private[server] def validate(rdf: RDFReasoner,
          pm, schema.pm) match {
          case Left(msg) =>
             err(s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg")
-         case Right(trigger) => for {
+         case Right(trigger) => { 
+           val run = for {
              startTime <- IO { System.nanoTime() }
              result <- schema.validate(rdf, trigger,builder)
              endTime <- IO { System.nanoTime() }
              time: Long = endTime - startTime
-         } yield (result,Some(trigger),time)
+           } yield (result,Some(trigger),time)
+          run.handleErrorWith(e => {
+            pprint.log(e,"Error validating")
+            err(s"Error validating: ${e.getMessage}")
+          }) 
+         }
         }
-    } yield pair
+      } yield pair
   }
 
   private[server] def validateStr(data: String,
