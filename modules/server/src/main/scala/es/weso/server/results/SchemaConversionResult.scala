@@ -20,12 +20,12 @@ case class SchemaConversionResult(
     List(
      ("msg", Json.fromString(msg)),
     ) ++
-    maybeField(schema,"schema", Json.fromString(_)) ++
-    maybeField(schemaFormat,"schemaFormat", Json.fromString(_)) ++
-    maybeField(schemaEngine,"schemaEngine", Json.fromString(_)) ++
-    maybeField(targetSchemaFormat,"targetSchemaFormat", Json.fromString(_)) ++
-    maybeField(targetSchemaEngine,"targetSchemaEngine", Json.fromString(_)) ++
-    maybeField(result,"result", Json.fromString(_) ) ++
+    maybeField(schema,"schema", Json.fromString) ++
+    maybeField(schemaFormat,"schemaFormat", Json.fromString) ++
+    maybeField(schemaEngine,"schemaEngine", Json.fromString) ++
+    maybeField(targetSchemaFormat,"targetSchemaFormat", Json.fromString) ++
+    maybeField(targetSchemaEngine,"targetSchemaEngine", Json.fromString) ++
+    maybeField(result,"result", Json.fromString ) ++
     maybeField(resultShapeMap,"shapeMap", (sm: ShapeMap) => sm.toString.asJson)
   )
 }
