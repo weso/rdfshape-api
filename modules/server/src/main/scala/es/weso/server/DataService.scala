@@ -175,8 +175,12 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           (resourceRdf, dp) = dataParam
           targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name
           dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
-          result <- io2f(resourceRdf.use(rdf =>
-            DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat))
+          result <- io2f(
+            IO { pprint.log("Before using resourceRDF...")} *>
+            resourceRdf.use(rdf => {
+            pprint.log(dp)
+            DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat) 
+          })
           )
           ok <- Ok(result.toJson)
         } yield ok

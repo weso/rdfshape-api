@@ -81,22 +81,18 @@ case class DataParam(data: Option[String],
     logger.debug(s"############# Applying inference $optInference")
     optInference match {
       case None => resourceRdf
-      case Some(str) => Resource.liftF(resourceRdf.use(rdf => rdf.applyInference(str)))
+      case Some(str) => 
+         resourceRdf.evalMap(rdf => rdf.applyInference(str))
     } 
-    /*.fold(
-      msg => Left(s"Error applying inference to RDF: $msg"),
-      (newRdf: RDFReasoner) => Right(newRdf)
-    ) */
   }
 
   /**
     * get RDF data from data parameters
     * @return a pair where the first value can be Some(string)
     *         if it has string representation and the second parameter
-    *         is the RDF data
+    *         is the resource with the RDF data
     */
-  def getData(relativeBase: Option[IRI]
-  ): IO[(Option[String], Resource[IO,RDFReasoner])] = {
+  def getData(relativeBase: Option[IRI]): IO[(Option[String], Resource[IO,RDFReasoner])] = {
     val base = relativeBase.map(_.str)
     pprint.log(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
@@ -108,11 +104,10 @@ case class DataParam(data: Option[String],
       case None if maybeEndpoint.isDefined => Right(dataEndpointType)
       case None => Right(dataTextAreaType)
     }
-    println(s"Input type: $inputType")
+    pprint.log(inputType)
     val x: IO[(Option[String],Resource[IO,RDFReasoner])] = inputType match {
 
       case Right(`compoundDataType`) =>
-        println(s"###Compound data")
         for {
           cd <- IO.fromEither(CompoundData.fromString(compoundData.getOrElse("")).leftMap(s => new RuntimeException(s)))
           res <- cd.toRDF
@@ -125,21 +120,7 @@ case class DataParam(data: Option[String],
             val dataFormat = dataFormatUrl.getOrElse(DataFormat.default)
             for {
               rdf <- rdfFromUri(new URI(dataUrl), dataFormat,base)
-              // newRdf <- Resource.liftF(applyInference(rdf, inference, dataFormat))
-              // eitherStr <- Resource.liftF(newRdf.serialize(dataFormat.name,None).attempt)
-              // optStr = eitherStr.toOption
             } yield (None , rdf)
-
-            /*            rdfFromUri(new URI(dataUrl), dataFormat,base) match {
-                          case Left(str) => err(s"Error obtaining $dataUrl with $dataFormat: $str")
-                          case Right(rdf) => io2es(
-                            for {
-                              newRdf <- applyInference(rdf, inference, dataFormat)
-                              eitherStr <- newRdf.serialize(dataFormat.name,None).attempt
-                              optStr = eitherStr.toOption
-                            } yield (optStr, newRdf)
-                          )
-                        } */
         }
       case Right(`dataFileType`) =>
         dataFile match {
@@ -155,7 +136,8 @@ case class DataParam(data: Option[String],
            for {
               iriBase <- mkBase(base)
               res <- RDFAsJenaModel.fromString(dataStr, dataFormat.name, iriBase)
-            } yield (None,res)
+              res2 = extendWithInference(res,inference)  
+            } yield (None,res2)
         }
 
       case Right(`dataEndpointType`) =>
@@ -173,12 +155,12 @@ case class DataParam(data: Option[String],
           case None => RDFAsJenaModel.empty.flatMap(e => IO((None,e)))
           case d@Some(data) =>
             val dataFormat = dataFormatTextarea.getOrElse(dataFormatValue.getOrElse(DataFormat.default))
-            for {
+            val x: IO[(Option[String], Resource[IO,RDFReasoner])] = for {
+              _ <- IO { pprint.log("@@@ DataTextArea")}
               res <- rdfFromString(data, dataFormat, base)
-              // newRdf <- io2es(extendWithInference(rdf, inference))
-              // eitherStr <- io2es(newRdf.serialize(dataFormat.name,None).attempt)
-              // optStr = eitherStr.toOption
-            } yield (d,res)
+              res2 = extendWithInference(res.onFinalize(showFinalize),inference)
+              } yield (d,res2)
+            x
         }
 
 
@@ -188,6 +170,9 @@ case class DataParam(data: Option[String],
     }
     x 
   }
+
+
+  private def showFinalize: IO[Unit] = IO { println(s"Closing RDF data") }
 
 
   private def rdfFromString(str: String,
@@ -254,14 +239,6 @@ object DataParam {
     r
   }
 
-/*  private def io2esf[A, F[_]: Effect](e: ESIO[A]): ESF[A,F] = {
-      for {
-        either <- io2esf[Either[String,A],F](e.value)
-        r <- either2ef[A,F](either)  
-      } yield r
-  } */
-
-
   private def getDataFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[DataFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
   } yield maybeStr match {
@@ -300,6 +277,7 @@ object DataParam {
     pprint.log(endpoint)
     pprint.log(activeDataTab)
     pprint.log(targetDataFormat)
+    pprint.log(inference)
     val endpointRegex = "Endpoint: (.+)".r
     val finalEndpoint = endpoint.fold(data match {
       case None => None
