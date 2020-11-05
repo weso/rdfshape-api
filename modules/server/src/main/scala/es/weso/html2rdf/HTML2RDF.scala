@@ -82,14 +82,14 @@ object HTML2RDF {
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
       any23.setHTTPUserAgent("test-user-agent");
-      val httpClient = any23.getHTTPClient();
+      val httpClient = any23.getHTTPClient;
       val source     = new HTTPDocumentSource(httpClient, uri)
       // val out = new ByteArrayOutputStream()
       val handler = JenaTripleHandler(model)
       try {
         any23.extract(source, handler)
       } finally {
-        handler.close
+        handler.close()
       }
       // val n3: String = out.toString("UTF-8")
       model

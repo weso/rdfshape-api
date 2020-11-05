@@ -32,7 +32,8 @@ object Server {
       ShapeMapService[F](blocker,client).routes <+>
       WikidataService[F](blocker, client).routes <+>
       EndpointService[F](blocker,client).routes <+>
-      PermalinkService[F](blocker,client).routes
+      PermalinkService[F](blocker,client).routes <+>
+        FetchService[F](blocker,client).routes
     ) <+>
     WebService[F](blocker).routes <+>
     // DataWebService[F](blocker, client).routes <+>
