@@ -10,7 +10,7 @@ import play.api.libs.json.{Json => PJson}
 import scalaj.http.Http
 import java.net.URL
 
-class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
+class PermalinkService[F[_]]()(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
 
   val urlShortenerEndpoint = "https://cutt.ly/api/api.php"
@@ -31,7 +31,7 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
           .asString
 
         val responseJson = PJson.parse(res.body)
-        // Check for a valid response
+        // Check for a valid response from code
         if (res.code == 200 && (responseJson \ "url" \ "status").as[Int] == urlShortenerAcceptCode) {
           val url = new URL(s"${(responseJson \ "url" \ "shortLink").as[String]}").toURI
           Ok(url.toString)
@@ -48,7 +48,7 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
 
 object PermalinkService {
   def apply[F[_]: Effect: ContextShift](blocker: Blocker, client: Client[F]): PermalinkService[F] =
-    new PermalinkService[F](blocker, client)
+    new PermalinkService[F]()
 }
 
 
