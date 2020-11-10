@@ -2,6 +2,7 @@ package es.weso.server
 import cats.effect._
 import cats.implicits._
 import fs2.Stream
+import javax.net.ssl.SSLContext
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
@@ -13,8 +14,7 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 
 object Server {
-
-/*  def context[F[_]: Sync]: F[SSLContext] =
+  /*  def context[F[_]: Sync]: F[SSLContext] =
     SSLHelper.loadContextFromClasspath(SSLHelper.keystorePassword, SSLHelper.keyManagerPassword)
 
   def builder[F[_]: ConcurrentEffect: ContextShift: Timer](port: Int): F[BlazeServerBuilder[F]] =
@@ -23,24 +23,50 @@ object Server {
        .withSslContext(sslContext)
   } */
 
-  def routesService[F[_]: ConcurrentEffect](blocker: Blocker, client: Client[F])(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
-    CORS (
-      SchemaService[F](blocker,client).routes <+>
-      APIService[F](blocker, client).routes <+>
-      DataService[F](blocker, client).routes <+>
-      ShExService[F](blocker,client).routes <+>
-      ShapeMapService[F](blocker,client).routes <+>
-      WikidataService[F](blocker, client).routes <+>
-      EndpointService[F](blocker,client).routes <+>
-      PermalinkService[F](blocker,client).routes <+>
-        FetchService[F](blocker,client).routes
-    ) <+>
-    WebService[F](blocker).routes <+>
-    // DataWebService[F](blocker, client).routes <+>
-    StaticService[F](blocker).routes <+>
-    LinksService[F](blocker).routes
+  def stream[F[_]: ConcurrentEffect](blocker: Blocker, port: Int, ip: String)(
+      implicit T: Timer[F],
+      C: ContextShift[F]
+  ): Stream[F, Nothing] = {
 
-/*  def context[F[_]: Sync] =
+    for {
+      client <- BlazeClientBuilder[F](global)
+        .withRequestTimeout(5.minute)
+        //      .withSslContext(SSLContext.getDefault)
+        .stream
+      app = (
+        // HelloService[F](blocker).routes
+        // HSTS(
+        routesService[F](
+          blocker,
+          client
+        )
+        // )
+      ).orNotFound
+      sslContext   = SSLHelper.getContext
+      finalHttpApp = Logger.httpApp(logHeaders = true, logBody = false)(app)
+      /* b <- Stream.eval(builder(port))
+      exitCode <- b.withHttpApp(finalHttpApp).serve  */
+
+      baseServer = BlazeServerBuilder[F](global)
+        .bindHttp(port, ip)
+        .withIdleTimeout(10.minutes)
+        .withHttpApp(finalHttpApp)
+
+      // Use HTTPS only if an SSL context could be created.
+      server = if (sslContext == SSLContext.getDefault) {
+        println(s"Serving via HTTP")
+        baseServer
+      } else {
+        println(s"Serving via HTTPS")
+        baseServer
+          .withSslContext(sslContext)
+      }
+
+      exitCode <- server.serve
+    } yield exitCode
+  }.drain
+
+  /*  def context[F[_]: Sync] =
     ssl.loadContextFromClasspath(ssl.keystorePassword, ssl.keyManagerPassword)
 
   def builder[F[_]: ConcurrentEffect: ContextShift: Timer]: F[BlazeServerBuilder[F]] =
@@ -49,27 +75,25 @@ object Server {
         .bindHttp(8443)
         .withSslContext(sslContext)
     } */
-        
-  def stream[F[_]: ConcurrentEffect](blocker:Blocker, port: Int, ip: String)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
-    for {
-      client <- BlazeClientBuilder[F](global).withRequestTimeout(5.minute)
-        //      .withSslContext(SSLContext.getDefault)
-        .stream
-      app = (
-        // HelloService[F](blocker).routes
-	      // HSTS( 
-          routesService[F](blocker,client) 
-        // )
-      ).orNotFound
-      finalHttpApp = Logger.httpApp(true, false)(app)
-      /* b <- Stream.eval(builder(port))
-      exitCode <- b.withHttpApp(finalHttpApp).serve  */
-      exitCode <- BlazeServerBuilder[F](global)
-        .bindHttp(port,ip)
-        .withIdleTimeout(10.minutes)
-        .withHttpApp(finalHttpApp)
-        .serve
-    } yield exitCode
-    }.drain
+
+  def routesService[F[_]: ConcurrentEffect](
+      blocker: Blocker,
+      client: Client[F]
+  )(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
+    CORS(
+      SchemaService[F](blocker, client).routes <+>
+        APIService[F](blocker, client).routes <+>
+        DataService[F](blocker, client).routes <+>
+        ShExService[F](blocker, client).routes <+>
+        ShapeMapService[F](blocker, client).routes <+>
+        WikidataService[F](blocker, client).routes <+>
+        EndpointService[F](blocker, client).routes <+>
+        PermalinkService[F](blocker, client).routes <+>
+        FetchService[F](blocker, client).routes
+    ) <+>
+      WebService[F](blocker).routes <+>
+      // DataWebService[F](blocker, client).routes <+>
+      StaticService[F](blocker).routes <+>
+      LinksService[F](blocker).routes
 
 }
