@@ -57,5 +57,3 @@ Contributions are greatly appreciated. Please fork this repository and open a pu
 <a href="https://github.com/weso/rdfshape/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=weso/rdfshape" />
 </a>
-
-```Made with [contributors-img](https://contributors-img.web.app).
