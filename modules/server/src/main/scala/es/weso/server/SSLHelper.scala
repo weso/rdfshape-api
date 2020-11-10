@@ -19,8 +19,6 @@ object SSLHelper {
   val keyStorePath: String       = Paths.get(sys.env.getOrElse("KEYSTORE_PATH", "")).toAbsolutePath.toString
   val storeInfo: StoreInfo       = StoreInfo(keyStorePath, keyStorePassword)
 
-  @throws(classOf[IOException])
-  @throws(classOf[GeneralSecurityException])
   def getContext: SSLContext = {
     if (keyStorePassword == "" || keyManagerPassword == "" || keyStorePath == "") {
       SSLContext.getDefault
