@@ -46,6 +46,9 @@ RDFShape server has been implemented in Scala using the following libraries:
 * [http4s](https://http4s.org/) a purely functional library for http.
 * [cats](https://typelevel.org/cats/) a library for functional programming in Scala.
 * [UMLShaclex](https://github.com/labra/shaclex), contains the visualization code that converts schemas to UML diagrams
+* [SRDF](http://www.weso.es/srdf/) is the library used to handle RDF. It is a simple interface with 2 implementations, one in [Apache Jena](https://jena.apache.org/), and the other in [RDF4j](https://rdf4j.org/).
+* [Any23](https://any23.apache.org/) is used by RDFShape to convert HTML files in RDFa and Microdata to RDF.
+
 
 # Contribution and issues
 
