@@ -13,6 +13,7 @@ import es.weso.server.format._
 import es.weso.server.merged.CompoundData
 import es.weso.utils.IOUtils._
 import org.log4s.getLogger
+import es.weso.rdf.InferenceEngine
 
 
 case class DataParam(data: Option[String],
@@ -81,8 +82,13 @@ case class DataParam(data: Option[String],
     logger.debug(s"############# Applying inference $optInference")
     optInference match {
       case None => resourceRdf
-      case Some(str) => 
-         resourceRdf.evalMap(rdf => rdf.applyInference(str))
+      case Some(str) => InferenceEngine.fromString(str) match {
+        case Right(engine) => resourceRdf.evalMap(rdf => rdf.applyInference(engine))
+        case Left(err) => 
+          // TODO: Check how to invoke using Resource.raiseError...
+          throw new RuntimeException(s"Error parsing inference engine param ($str): $err")
+      }
+         
     } 
   }
 

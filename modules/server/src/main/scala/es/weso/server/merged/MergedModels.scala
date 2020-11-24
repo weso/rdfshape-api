@@ -117,14 +117,18 @@ case class MergedModels( members: NonEmptyList[RDFAsJenaModel],
     Stream.eval(getModel).flatMap(_.triplesWithPredicateObject(p,o))
 
   // TODO: Not optimized...it just appends the inferred model to the end...  
-  override def applyInference(inference: String): RDFRead[Rdf] = for {
+  override def applyInference(inference: InferenceEngine): RDFRead[Rdf] = for {
     mergedRdf <- getModel
+/*    engine <- InferenceEngine.fromString(inference) match {
+      case Left(err) => IO.raiseError(new RuntimeException(s"Error parsing ${inference} as inference engine: ${err}"))
+      case Right(engine) => IO.pure(engine)
+    } */
     inferred <- mergedRdf.applyInference(inference)
     ref <- Ref.of[IO,RDFAsJenaModel](inferred)
   } yield MergedModels(members ++ List(inferred),ref)
 
   // TODO: It only takes into account the inference engines available for the first model
-  override def availableInferenceEngines: List[String] = 
+  override def availableInferenceEngines: List[InferenceEngine] = 
     members.head.availableInferenceEngines
 
   override def querySelect(queryStr: String): RDFStream[Map[String,RDFNode]] = 
