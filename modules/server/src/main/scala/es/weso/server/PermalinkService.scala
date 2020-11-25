@@ -154,9 +154,8 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
   private val mongoDatabase = sys.env.getOrElse("MONGO_DATABASE", "")
   private val collectionName                = "permalinks"
   private val mongoConnectionString =
-    s"mongodb+srv://$mongoUser:$mongoPassword@cluster0.qrrwv.mongodb.net/$mongoDatabase" +
+    s"mongodb+srv://$mongoUser:$mongoPassword@cluster0.pnja6.mongodb.net/$mongoDatabase" +
       "?retryWrites=true&w=majority"
-
 }
 
 object PermalinkService {
