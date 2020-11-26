@@ -56,6 +56,7 @@ lazy val scallopVersion        = "3.3.1"
 lazy val seleniumVersion       = "2.45.0"
 lazy val silencerVersion       = "1.4.2"
 lazy val typesafeConfigVersion = "1.3.4"
+lazy val mongodbVersion        = "4.1.1"
 
 // WebJars
 lazy val jqueryVersion         = "3.4.1"
@@ -105,11 +106,12 @@ lazy val any23_scraper     = "org.apache.any23.plugins"   % "apache-any23-html-s
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 
 lazy val scalaj            ="org.scalaj"                  %% "scalaj-http"         % scalajVersion
-lazy val play             = "com.typesafe.play"           %% "play-json"           % playVersion
+lazy val play              = "com.typesafe.play"          %% "play-json"           % playVersion
 
 lazy val jquery            = "org.webjars"                % "jquery"               % jqueryVersion
 lazy val bootstrap         = "org.webjars"                % "bootstrap"            % bootstrapVersion
 
+lazy val mongodb           = "org.mongodb.scala"          %% "mongo-scala-driver"  % mongodbVersion
 
 // Compiler plugin modules
 lazy val scalaMacrosParadise = "org.scalamacros"      % "paradise"        % scalaMacrosVersion cross CrossVersion.full
@@ -120,8 +122,8 @@ lazy val rdfshape = project
   .in(file("."))
   .enablePlugins(
     ScalaUnidocPlugin,
-    SiteScaladocPlugin, 
-    AsciidoctorPlugin, 
+    SiteScaladocPlugin,
+    AsciidoctorPlugin,
     SbtNativePackager,
     WindowsPlugin,
     JavaAppPackaging,
@@ -143,7 +145,7 @@ lazy val rdfshape = project
       scalaLogging,
       scallop,
       compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
-      "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided      
+      "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided
     ),
     cancelable in Global      := true,
     fork                      := true,
@@ -158,7 +160,7 @@ lazy val server = project
   .settings(commonSettings, publishSettings)
   .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage := "es.weso.rdfshape.buildinfo" 
+    buildInfoPackage := "es.weso.rdfshape.buildinfo"
   )
   .settings(
     libraryDependencies ++= Seq(
@@ -178,9 +180,11 @@ lazy val server = project
       scalaj,
       play,
       utilsTest % Test,
+      mongodb,
+
       // webJars
       jquery,
-      bootstrap
+      bootstrap,
     ),
     crossScalaVersions := supportedScalaVersions,
   )
@@ -192,8 +196,8 @@ lazy val server = project
 lazy val noDocProjects = Seq[ProjectReference]()
 
 lazy val noPublishSettings = Seq(
-//  publish := (),
-//  publishLocal := (),
+  //  publish := (),
+  //  publishLocal := (),
   publishArtifact := false
 )
 
@@ -224,28 +228,28 @@ lazy val compilationSettings = Seq(
     "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.  "-encoding", "UTF-8",
     "-language:_",
     "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
-//    "-Xfuture",                          // Turn on future language features.
-//    "-Xlint",
+    //    "-Xfuture",                          // Turn on future language features.
+    //    "-Xlint",
     "-Yrangepos",
-//    "-Ylog-classpath",
-//    "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver
-//    "-Ywarn-dead-code",                  // Warn when dead code is identified.
-//    "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
-//    "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
-//    "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
-//    "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
-//    "-Ywarn-nullary-unit",               // Warn when nullary methods return Unit.
-//    "-Ywarn-numeric-widen",              // Warn when numerics are widened.
-//    "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
-//    "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
-//    "-Ywarn-unused:locals",              // Warn if a local definition is unused.
-//    "-Ywarn-unused:params",              // Warn if a value parameter is unused.
-//    "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
-//    "-Ywarn-unused:privates",            // Warn if a private member is unused.
-//    "-Ywarn-value-discard",              // Warn when non-Unit expression results are unused.
-//    "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
-//    "-Ypartial-unification",
-)
+    //    "-Ylog-classpath",
+    //    "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver
+    //    "-Ywarn-dead-code",                  // Warn when dead code is identified.
+    //    "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
+    //    "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
+    //    "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
+    //    "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
+    //    "-Ywarn-nullary-unit",               // Warn when nullary methods return Unit.
+    //    "-Ywarn-numeric-widen",              // Warn when numerics are widened.
+    //    "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
+    //    "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
+    //    "-Ywarn-unused:locals",              // Warn if a local definition is unused.
+    //    "-Ywarn-unused:params",              // Warn if a value parameter is unused.
+    //    "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
+    //    "-Ywarn-unused:privates",            // Warn if a private member is unused.
+    //    "-Ywarn-value-discard",              // Warn when non-Unit expression results are unused.
+    //    "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
+    //    "-Ypartial-unification",
+  )
 )
 
 
@@ -253,9 +257,9 @@ lazy val compilationSettings = Seq(
 lazy val wixSettings = Seq(
   wixProductId        := "39b564d5-d381-4282-ada9-87244c76e14b",
   wixProductUpgradeId := "6a710435-9af4-4adb-a597-98d3dd0bade1"
-// The same numbers as in the docs?
-// wixProductId := "ce07be71-510d-414a-92d4-dff47631848a",
-// wixProductUpgradeId := "4552fb0e-e257-4dbd-9ecb-dba9dbacf424"
+  // The same numbers as in the docs?
+  // wixProductId := "ce07be71-510d-414a-92d4-dff47631848a",
+  // wixProductUpgradeId := "4552fb0e-e257-4dbd-9ecb-dba9dbacf424"
 )
 
 lazy val ghPagesSettings = Seq(
@@ -279,12 +283,12 @@ lazy val publishSettings = Seq(
   autoAPIMappings := true,
   apiURL          := Some(url("http://labra.github.io/rdfshape/latest/api/")),
   pomExtra        := <developers>
-                       <developer>
-                         <id>labra</id>
-                         <name>Jose Emilio Labra Gayo</name>
-                         <url>https://github.com/labra/</url>
-                       </developer>
-                     </developers>,
+    <developer>
+      <id>labra</id>
+      <name>Jose Emilio Labra Gayo</name>
+      <url>https://github.com/labra/</url>
+    </developer>
+  </developers>,
   scalacOptions in doc ++= Seq(
     "-diagrams-debug",
     "-doc-source-url",
@@ -299,6 +303,6 @@ lazy val publishSettings = Seq(
 )
 
 // silence all warnings on autogenerated files
-scalacOptions += "-P:silencer:pathFilters=target/.*" 
+scalacOptions += "-P:silencer:pathFilters=target/.*"
 // Make sure you only exclude warnings for the project directories, i.e. make builds reproducible
 scalacOptions += s"-P:silencer:sourceRoots=${baseDirectory.value.getCanonicalPath}"
