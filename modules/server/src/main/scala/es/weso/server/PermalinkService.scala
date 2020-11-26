@@ -12,12 +12,14 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.mongodb.scala._
 import org.mongodb.scala.model.Filters.equal
-import org.mongodb.scala.result.InsertOneResult
+import org.mongodb.scala.result.{InsertOneResult, UpdateResult}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise}
 import scala.util.Random
 import java.net.{MalformedURLException, URL}
+
+import org.mongodb.scala.model.Updates.set
 
 class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
   extends Http4sDsl[F] {
@@ -88,9 +90,13 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
           override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
           override def onNext(result: Document): Unit = {
             val longUrl = result.getString("longUrl")
+            val urlCode = result.getLong("urlCode")
 
             println(s"Retrieved original url: $urlCode => $longUrl")
             promise.success(Ok(longUrl))
+
+            // Refresh use date of the link
+            updateUrl(urlCode)
           }
           override def onError(e: Throwable): Unit = {
             println(s"Original url recovery failed: ${e.getMessage}")
@@ -128,8 +134,13 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
       override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
       override def onNext(result: Document): Unit = {
         val shortUrl = result.getString("shortUrl")
+        val urlCode = result.getLong("urlCode")
+
         println(s"Retrieved permalink: $url => $shortUrl")
         promise.success(Option(shortUrl))
+
+        // Refresh use date of the link
+        updateUrl(urlCode)
       }
       override def onError(e: Throwable): Unit = {
         println(s"Permalink recovery failed: ${e.getMessage}")
@@ -146,6 +157,24 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
 
     val result = Await.result(promise.future, Duration(8, TimeUnit.SECONDS))
     result
+  }
+
+
+  private def updateUrl (code: Long): Unit =
+  {
+    println(s"URL code to update: $code")
+    // Update date of document in database
+    val observable: SingleObservable[UpdateResult] = collection.updateOne(equal("urlCode", code),
+      set("date", Calendar.getInstance().getTime))
+
+    observable.subscribe(new Observer[UpdateResult] {
+      override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
+      override def onNext(result: UpdateResult): Unit = {
+        println(s"Refreshed date of permalink: $code")
+      }
+      override def onError(e: Throwable): Unit = Unit
+      override def onComplete(): Unit = Unit
+    })
   }
 
   // DB credentials
