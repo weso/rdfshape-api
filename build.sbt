@@ -29,7 +29,7 @@ scalafmt: {
  */
 
 lazy val utilsVersion          = "0.1.73" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.73"
+lazy val umlShaclexVersion     = "0.0.74"
 lazy val shexsVersion          = "0.1.74"
 
 lazy val any23Version          = "2.2"
