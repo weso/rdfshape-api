@@ -1,18 +1,13 @@
-package es.weso.server
+package es.weso.server.compoundData
 
-import cats._
-import cats.effect._
 import cats.implicits._
+import es.weso.server.format._
+import es.weso.server.merged.CompoundData._
+import es.weso.server.merged.{CompoundData, DataElement, DataTextArea}
 import io.circe.parser._
+import io.circe.syntax._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
-import es.weso.server.merged.CompoundData._
-import io.circe._
-import io.circe.syntax._
-import es.weso.server.merged.CompoundData
-import es.weso.server.merged.DataElement
-import es.weso.server.merged.DataTextArea
-import es.weso.server.format._
 
 class CompoundDataTest extends AnyFunSpec with Matchers {
   describe(s"Compound data") {
@@ -39,7 +34,17 @@ class CompoundDataTest extends AnyFunSpec with Matchers {
          |]""".stripMargin,
       CompoundData(List(DataElement.empty.copy(data = Some("p"), dataFormat = JsonLd, activeDataTab = DataTextArea)))
     )
-    shouldNotParse("""|[{"data": "p", 
+
+    // Wrong value in "activeDataTab" should default to "#dataTextArea"
+    shouldParse("""|[{"data": "p",
+                      |  "dataFormat": "Json",
+                      |  "activeDataTab": "#asdf"
+                      | }
+                      |]""".stripMargin,
+      CompoundData(List(DataElement(Some("p"), None, None, None, dataFormat = JsonDataFormat, DataTextArea)))
+    )
+
+    shouldNotParse("""|[{"dataBadParam": "p",
                      |  "dataFormat": "Json",
                      |  "activeDataTab": "#asdf" 
                      | }

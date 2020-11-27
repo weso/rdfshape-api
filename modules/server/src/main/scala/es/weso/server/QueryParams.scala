@@ -21,6 +21,7 @@ object QueryParams {
   lazy val schemaFormat = "schemaFormat"
   lazy val shape = "shape"
   lazy val url = "url"
+  lazy val urlCode = "urlCode"
   object DataParameter extends OptionalQueryParamDecoderMatcher[String](data)
   object OptDataParam extends OptionalQueryParamDecoderMatcher[String](data)
   object OptEndpointParam extends OptionalQueryParamDecoderMatcher[String](endpoint)
@@ -63,6 +64,7 @@ object QueryParams {
   object LanguageParam extends QueryParamDecoderMatcher[String]("language")
   object LabelParam extends QueryParamDecoderMatcher[String]("label")
   object UrlParam extends QueryParamDecoderMatcher[String](url)
+  object UrlCodeParam extends QueryParamDecoderMatcher[String](urlCode)
   object LimitParam extends OptionalQueryParamDecoderMatcher[String]("limit")
   object ContinueParam extends OptionalQueryParamDecoderMatcher[String]("continue")
 
