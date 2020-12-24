@@ -163,7 +163,7 @@ object MergedModels {
     } yield MergedModels(nel,refRdfModel)
     case None => for { 
       ref <- Ref.of[IO,Model](ModelFactory.createDefaultModel())
-    } yield RDFAsJenaModel(ref,None,None)
+    } yield RDFAsJenaModel(ref,None,None,Map(),Map())
   }
 
  private def mergeModels(ls: List[RDFAsJenaModel]): IO[RDFAsJenaModel] = {
@@ -172,7 +172,7 @@ object MergedModels {
    for { 
      model <- ls.map(_.getModel).sequence.map(_.foldLeft(zero)(cmb))
      r <- Ref.of[IO,Model](model)
-   } yield RDFAsJenaModel(r,None,None)
+   } yield RDFAsJenaModel(r,None,None,Map(),Map())
  }
 
 }

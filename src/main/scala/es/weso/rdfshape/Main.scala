@@ -158,12 +158,12 @@ object Main extends App with LazyLogging {
     if (opts.data.isDefined) {
       val path = baseFolder.resolve(opts.data())
       for {
-        rdf <- IO(RDFAsJenaModel.fromFile(path.toFile(), opts.dataFormat(), base))
+        res <- RDFAsJenaModel.fromFile(path.toFile(), opts.dataFormat(), base)
 /*        newRdf <- if (opts.inference.isDefined) {
           io2es(rdf.applyInference(opts.inference()))
         } else
           ok_es(rdf) */
-      } yield rdf
+      } yield res
     } else {
       logger.info("RDF Data option not specified")
       RDFAsJenaModel.empty

@@ -71,7 +71,7 @@ object HTML2RDF {
 
   private def fromModel(model: Model, uri: Option[IRI]): CatsResource[IO, RDFAsJenaModel] = {
     CatsResource.make(
-      Ref.of[IO,Model](model).flatMap(ref => ok(RDFAsJenaModel(ref,None,None)))
+      Ref.of[IO,Model](model).flatMap(ref => ok(RDFAsJenaModel(ref,None,None,Map(),Map())))
     )(
       m => m.getModel.flatMap(m => IO(m.close()))
     )

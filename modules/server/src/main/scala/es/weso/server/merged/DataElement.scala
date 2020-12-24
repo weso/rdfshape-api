@@ -30,7 +30,7 @@ case class DataElement(
 
       case DataUrl =>
         for {
-          rdf <- IO(RDFAsJenaModel.fromURI(dataUrl.getOrElse(""), dataFormat.name, None))
+          rdf <- RDFAsJenaModel.fromURI(dataUrl.getOrElse(""), dataFormat.name, None)
         } yield rdf
 
       case _ =>

@@ -1,5 +1,5 @@
 lazy val scala212 = "2.12.12"
-lazy val scala213 = "2.13.3"
+lazy val scala213 = "2.13.4"
 lazy val supportedScalaVersions = List(scala213, scala212)
 
 /*
@@ -29,8 +29,8 @@ scalafmt: {
  */
 
 lazy val utilsVersion          = "0.1.73" // for utilsTest
-lazy val umlShaclexVersion     = "0.0.77"
-lazy val shexsVersion          = "0.1.78"
+lazy val umlShaclexVersion     = "0.0.78"
+lazy val shexsVersion          = "0.1.80"
 
 lazy val any23Version          = "2.2"
 lazy val rdf4jVersion          = "2.2.4"

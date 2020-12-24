@@ -206,7 +206,8 @@ case class DataParam(data: Option[String],
         IO(HTML2RDF.extractFromUrl(uri.toString, f))
       case _ => for {
        baseIri <- mkBase(base)
-      } yield RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri) 
+       res <- RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri) 
+      } yield res
     }
   }
 
