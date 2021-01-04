@@ -66,7 +66,7 @@ lazy val bootstrapVersion      = "4.3.1"
 lazy val scalajVersion         = "2.4.2"
 
 // Parsing utils
-lazy val  playVersion    = "2.9.0"
+lazy val  playVersion    = "2.9.2"
 
 // Compiler plugin dependency versions
 lazy val scalaMacrosVersion    = "2.1.1"
