@@ -108,19 +108,12 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           (resource,dp) = dataParam
           dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
           response <- dp.data match {
-              case Some(data) => {
-               val x:F[Response[F]] = for {
+            case Some(data) => for {
                   r <- io2f(dataInfoFromString(data, dataFormat))
                   ok <- Ok(r)
                 } yield ok 
-               x 
-              }
-           case None => {
-             def action(rdf: RDFReasoner): IO[Json] = for {
-               // str <- rdf.serialize(dataFormat)
-               r <- dataInfo(rdf,None,dp.dataFormat)
-             } yield r
-             val resp: IO[Json] = resource.use(rdf => action(rdf))
+            case None => {
+             val resp: IO[Json] = resource.use(rdf => dataInfo(rdf,None,dp.dataFormat))
              val x: F[Response[F]] = for {
                json <- io2f(resp)
                ok <- Ok(json)
@@ -176,7 +169,6 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
           targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name
           dataFormat = dp.dataFormat.getOrElse(defaultDataFormat)
           result <- io2f(
-            IO { pprint.log("Before using resourceRDF...")} *>
             resourceRdf.use(rdf => {
             pprint.log(dp)
             DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat) 

@@ -27,6 +27,8 @@ import es.weso.utils.IOUtils._
 import es.weso.utils.FUtils._
 import es.weso.server.utils.OptEitherF._
 import es.weso.rdf.jena.RDFAsJenaModel
+import es.weso.rdf.RDFReasoner
+import es.weso.rdf.InferenceEngine
 
 class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
     extends Http4sDsl[F] {
@@ -365,14 +367,14 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
           val r: F[Json] = for {
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
-            //_ <- pp(dp)
             res <- for {
-             e <- io2f(RDFAsJenaModel.empty)
-             vv <- (cnvResource(resourceRdf), cnvResource(e)).tupled.use { case (rdf,builder) => for {
+             emptyRes <- io2f(RDFAsJenaModel.empty)
+             vv <- (cnvResource(resourceRdf), cnvResource(emptyRes)).tupled.use { case (rdf,builder) => for {
               schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
               (schema, sp) = schemaPair
               tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
-              r <- io2f(validate(rdf, dp, schema, sp, tp, relativeBase,builder))
+              newRdf <- applyInference(rdf, dp.inference)
+              r <- io2f(validate(newRdf, dp, schema, sp, tp, relativeBase,builder))
               json <- io2f(result2json(r._1))
             } yield json }
             } yield vv 
@@ -398,6 +400,17 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
   private def pp[A](v:A): F[Unit] = {
     LiftIO[F].liftIO(IO{ pprint.log(v) })
   }
+
+  private def applyInference(
+    rdf: RDFReasoner, 
+    inferenceName: Option[String]
+    ): F[RDFReasoner] = inferenceName match {
+      case None => Monad[F].pure(rdf)
+      case Some(name) => InferenceEngine.fromString(name) match {
+        case Left(str) => MonadError[F, Throwable].raiseError(new RuntimeException(s"Error parsing inference engine: ${name}: $str"))
+        case Right(engine) => io2f(rdf.applyInference(engine))
+      }
+    }
 
 //  private def either2f[A](e: Either[String,A]): F[A] = ???
 
