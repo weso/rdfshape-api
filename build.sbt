@@ -56,7 +56,7 @@ lazy val scallopVersion        = "3.3.1"
 lazy val seleniumVersion       = "2.45.0"
 lazy val silencerVersion       = "1.4.2"
 lazy val typesafeConfigVersion = "1.3.4"
-lazy val mongodbVersion        = "4.1.1"
+lazy val mongodbVersion        = "4.1.2"
 
 // WebJars
 lazy val jqueryVersion         = "3.4.1"
