@@ -59,7 +59,7 @@ lazy val typesafeConfigVersion = "1.3.4"
 lazy val mongodbVersion        = "4.1.1"
 
 // WebJars
-lazy val jqueryVersion         = "3.4.1"
+lazy val jqueryVersion         = "3.6.0"
 lazy val bootstrapVersion      = "4.3.1"
 
 // Scalaj
