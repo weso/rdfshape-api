@@ -6,7 +6,6 @@ import io.circe.Json
 import cats._
 import cats.syntax.list._
 import cats.effect._
-import cats.effect.concurrent._
 import fs2._
 import org.slf4j._
 import cats.implicits._

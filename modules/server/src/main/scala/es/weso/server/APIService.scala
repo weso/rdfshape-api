@@ -36,20 +36,18 @@ import es.weso.utils.IOUtils._
 import scala.util.Try
 import org.http4s.Uri.{Path => UriPath}
 
-class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
-                                               client: Client[F])(implicit cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class APIService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
 
-  private val swagger =
-    resourceServiceBuilder[F]("/swagger", blocker) // ResourceService.Config())
+  private val swagger = 
+    resourceServiceBuilder[IO]("/swagger") // ResourceService.Config())
 
-  val routes = HttpRoutes.of[F] {
+  val routes = HttpRoutes.of[IO] {
 
     case req @ GET -> Root / `api` / "health" => for { 
-      _ <- LiftIO[F].liftIO (IO { pprint.log(req) })
+      _ <- IO { pprint.log(req) }
       resp <- Ok("OK")
     } yield resp
 
@@ -70,21 +68,21 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
   private def parseInt(s: String): Either[String, Int] =
     Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))
 
-  private def errJson(msg: String): F[Response[F]] =
+  private def errJson(msg: String): IO[Response[IO]] =
     Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
 
   private def getOutgoing(optEndpoint: Option[String], optNode: Option[String], optLimit: Option[String]
-                 ): EitherT[F,String,Outgoing] = {
+                 ): EitherT[IO,String,Outgoing] = {
     for {
-      endpointIRI <- EitherT.fromEither[F](Either.fromOption(optEndpoint,"No endpoint provided").flatMap(IRI.fromString(_)))
-      node <- EitherT.fromEither[F](Either.fromOption(optNode,"No node provided").flatMap(IRI.fromString(_)))
-      limit <- EitherT.fromEither[F](parseInt(optLimit.getOrElse("1")))
+      endpointIRI <- EitherT.fromEither[IO](Either.fromOption(optEndpoint,"No endpoint provided").flatMap(IRI.fromString(_)))
+      node <- EitherT.fromEither[IO](Either.fromOption(optNode,"No node provided").flatMap(IRI.fromString(_)))
+      limit <- EitherT.fromEither[IO](parseInt(optLimit.getOrElse("1")))
       o <- outgoing(endpointIRI,node,limit)
     } yield o
   }
 
-  private def outgoing(endpoint: IRI, node: IRI, limit: Int): ESF[Outgoing,F] = for {
-    triples <- esio2esf(stream2es(Endpoint(endpoint).triplesWithSubject(node)))
+  private def outgoing(endpoint: IRI, node: IRI, limit: Int): ESIO[Outgoing] = for {
+    triples <- stream2es(Endpoint(endpoint).triplesWithSubject(node))
   } yield Outgoing.fromTriples(node,endpoint,triples.toSet)
 
     //    Monad[F].pure(Left(s"Not implemented"))
@@ -92,6 +90,6 @@ class APIService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 }
 
 object APIService {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): APIService[F] =
-    new APIService[F](blocker, client)
+  def apply(client: Client[IO]): APIService =
+    new APIService(client)
 }

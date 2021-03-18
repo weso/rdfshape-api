@@ -3,7 +3,7 @@ package es.weso.server
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
 import es.weso.schema.Schemas
-import es.weso.shapeMaps.ShapeMap
+import es.weso.shapemaps.ShapeMap
 import es.weso.schema._
 import es.weso.server.format._
 import cats.effect.IO

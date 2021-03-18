@@ -1,7 +1,7 @@
 package es.weso.rdf.streams
 import java.io.{InputStream, OutputStream, StringWriter}
 
-import cats.effect.{ConcurrentEffect, IO, LiftIO}
+import cats.effect.IO
 import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
 import fs2._
 import fs2.io._
@@ -22,21 +22,21 @@ import org.opengis.metadata.identification.CharacterSet
 
 object Streams {
 
-  def getRaw[F[_]:ConcurrentEffect: LiftIO](uri: Uri):F[String] = {
+  def getRaw(uri: Uri):IO[String] = {
     val stringWriter = new StringWriter
     val os: OutputStream = new WriterOutputStream(stringWriter,UTF_8)
     val destination: StreamRDF = StreamRDFWriter.getWriterStream(os,Lang.TURTLE)
-    LiftIO[F].liftIO( IO {
+    IO {
       RDFDataMgr.parse(destination, uri.renderString)
       stringWriter.toString
-    })
+    }
   }
 
-  def getRawWithModel[F[_]:ConcurrentEffect: LiftIO](uri: Uri):F[String] = {
+  def getRawWithModel(uri: Uri):IO[String] = {
     val stringWriter = new StringWriter
     val os: OutputStream = new WriterOutputStream(stringWriter,UTF_8)
     val destination: StreamRDF = StreamRDFWriter.getWriterStream(os,Lang.NTRIPLES)
-    LiftIO[F].liftIO( IO {
+    IO {
       val model = ModelFactory.createDefaultModel
       val modelGraph = model.getGraph
       val streamGraph = StreamRDFLib.graph(modelGraph)
@@ -44,10 +44,10 @@ object Streams {
       println(s"Model graph: ${model}")
       StreamRDFOps.sendGraphToStream(modelGraph,destination)
       stringWriter.toString
-    })
+    }
   }
 
-  def getOutgoing[F[_]: LiftIO](endpoint: String, node: String): F[String] = LiftIO[F].liftIO( IO {
+  def getOutgoing(endpoint: String, node: String): IO[String] = IO {
     println(s"Outgoing: $node at $endpoint")
     val c = QueryExecutionFactory.sparqlService(endpoint, queryTriplesWithSubject(IRI(node))).execConstruct()
     val stringWriter = new StringWriter
@@ -55,7 +55,7 @@ object Streams {
     val destination: StreamRDF = StreamRDFWriter.getWriterStream(os,Lang.TURTLE)
     StreamRDFOps.sendGraphToStream(c.getGraph,destination)
     stringWriter.toString
-  })
+  }
 
 /* The following code doesn't work...it raises premature EOF
   def cnv[F[_]:ConcurrentEffect](stream: Stream[F,Byte]): Stream[F,String] = for {

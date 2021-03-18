@@ -1,6 +1,6 @@
 package es.weso.server.merged
 import es.weso.rdf.RDFReasoner
-import cats._
+// import cats._
 import cats.data._
 import cats.implicits._
 import io.circe._

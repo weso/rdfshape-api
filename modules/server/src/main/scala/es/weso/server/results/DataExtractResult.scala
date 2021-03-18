@@ -6,7 +6,7 @@ import es.weso.schema.Schema
 import es.weso.server.ApiHelper
 import es.weso.server.Defaults.{defaultSchemaEngine, defaultSchemaFormat}
 import es.weso.server.format._
-import es.weso.shapeMaps.ResultShapeMap
+import es.weso.shapemaps.ResultShapeMap
 import es.weso.uml.UML
 import es.weso.utils.json.JsonUtilsServer._
 import io.circe.Json

@@ -13,7 +13,7 @@ import org.apache.any23.source.{HTTPDocumentSource, StringDocumentSource}
 import org.apache.any23.writer._
 import es.weso.utils.IOUtils._
 import cats.effect.{Resource => CatsResource, _}
-import cats.effect.concurrent._
+// import cats.effect.concurrent._
 import scala.util.Try
 // import org.apache.jena.rdf.model._
 import org.apache.jena.rdf.model.{

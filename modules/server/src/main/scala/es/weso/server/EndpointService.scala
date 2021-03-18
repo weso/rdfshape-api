@@ -15,30 +15,29 @@ import org.http4s.dsl._
 import org.http4s.multipart._
 import org.log4s.getLogger
 
-class EndpointService[F[_]:Applicative](blocker: Blocker,
-                                        client: Client[F])(implicit F: Effect[F],
-                                                           cs: ContextShift[F]) extends Http4sDsl[F] {
+class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
 
   private val logger = getLogger
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
+  def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case req @ POST -> Root / `api` / "endpoint" / "query" => {
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
-        val r: EitherT[F, String, Json] = for {
+
+        val r: EitherT[IO, String, Json] = for {
           ep <- EndpointParam.mkEndpoint(partsMap)
 //          json = Json.Null
-          endpoint <- ep.getEndpointAsRDFReader[F]
-          either <- EitherT.liftF[F,String,Either[String,(ServerQuery,SparqlQueryParam)]](SparqlQueryParam.mkQuery(partsMap))
-          pair <- EitherT.fromEither[F](either)
+          endpoint <- ep.getEndpointAsRDFReader
+          either <- EitherT.liftF[IO,String,Either[String,(ServerQuery,SparqlQueryParam)]](SparqlQueryParam.mkQuery(partsMap))
+          pair <- EitherT.fromEither[IO](either)
           (_, qp) = pair
           optQueryStr = qp.query.map(_.str)
           json <- {
             println(s"Query to endpoint ${endpoint}: ${optQueryStr.getOrElse("")}")
-            io2esf(endpoint.queryAsJson(optQueryStr.getOrElse("")))
+            io2es(endpoint.queryAsJson(optQueryStr.getOrElse("")))
           }
         } yield json
 
@@ -52,11 +51,11 @@ class EndpointService[F[_]:Applicative](blocker: Blocker,
       }
 
     case req @ POST -> Root / `api` / "endpoint" / "info" => {
-    req.decode[Multipart[F]] { m => {
+    req.decode[Multipart[IO]] { m => {
       val partsMap = PartsMap(m.parts)
-      val r: EitherT[F, String, Json] = for {
+      val r: EitherT[IO, String, Json] = for {
         ep <- EndpointParam.mkEndpoint(partsMap)
-        ei <- EitherT.liftF[F, String, EndpointInfo](ep.getInfo)
+        ei <- EitherT.liftF[IO, String, EndpointInfo](ep.getInfo(client))
       } yield ei.asJson
       for {
         either <- r.value
@@ -73,7 +72,7 @@ class EndpointService[F[_]:Applicative](blocker: Blocker,
     }
 
     case req @ POST -> Root / "endpoint" / "outgoing" => {
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         {}
         Ok("Not implemented yet")
       }
@@ -86,7 +85,7 @@ class EndpointService[F[_]:Applicative](blocker: Blocker,
     }
 
     case req @ POST -> Root / "endpoint" / "validate" => {
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         {}
         Ok("Not implemented yet")
       }
@@ -94,12 +93,12 @@ class EndpointService[F[_]:Applicative](blocker: Blocker,
 
   }
 
-private def errJson(msg: String): F[Response[F]] =
+private def errJson(msg: String): IO[Response[IO]] =
 Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
 
 }
 
 object EndpointService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker, client: Client[F]): EndpointService[F] =
-    new EndpointService[F](blocker, client)
+  def apply(client: Client[IO]): EndpointService =
+    new EndpointService(client)
 }

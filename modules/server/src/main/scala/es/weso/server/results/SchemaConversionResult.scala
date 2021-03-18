@@ -1,6 +1,6 @@
 package es.weso.server.results
 
-import es.weso.shapeMaps.{ResultShapeMap, ShapeMap}
+import es.weso.shapemaps.{ResultShapeMap, ShapeMap}
 import es.weso.utils.json.JsonUtilsServer.{maybeField, _}
 import io.circe.Json
 import io.circe.syntax._

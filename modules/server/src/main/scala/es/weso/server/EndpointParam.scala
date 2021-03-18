@@ -8,7 +8,6 @@ import io.circe.Json
 // import scalaj.http._
 import java.util.concurrent.Executors
 
-import cats.effect.ContextShift
 import es.weso.utils.IOUtils._
 import org.http4s.client.{Client, JavaNetClientBuilder}
 
@@ -26,21 +25,22 @@ case class EndpointInfo(msg: String, status: Option[String] = None) {
 
 case class EndpointParam(url: String) {
 
-  def getEndpointAsRDFReader[F[_]:Effect]: EitherT[F, String, RDFReader] =
-    io2esf[RDFReader,F](Endpoint.fromString(url))
+  def getEndpointAsRDFReader: ESIO[RDFReader] =
+     io2es(Endpoint.fromString(url))
+//     io2es[RDFReader,F](Endpoint.fromString(url))
 
-  def getInfo[F[_]: Effect]: F[EndpointInfo] = {
-    println(s"Obtaining info of endpoint $url")
-    Effect[F].liftIO({
-        implicit val cs: ContextShift[IO] = IO.contextShift(global)
-        implicit val timer: Timer[IO] = IO.timer(global)
-        val blockingPool = Executors.newFixedThreadPool(5)
-        val blocker = Blocker.liftExecutorService(blockingPool)
-        val httpClient: Client[IO] = JavaNetClientBuilder[IO](blocker).create
+  def getInfo(client: Client[IO]): IO[EndpointInfo] = {
+    IO.println(s"Obtaining info of endpoint $url") *>
+    // Effect[F].liftIO({
+        // implicit val cs: ContextShift[IO] = IO.contextShift(global)
+        // implicit val timer: Timer[IO] = IO.timer(global)
+        // val blockingPool = Executors.newFixedThreadPool(5)
+        // val blocker = Blocker.liftExecutorService(blockingPool)
+        // val httpClient: Client[IO] = JavaNetClientBuilder[IO](blocker).create
         // val resolvedUri = baseUri.resolve(uri)
         //logger.info(s"Resolved: $resolvedUri")
-        httpClient.expect[String](url).map(EndpointInfo(_))
-    }
+    client.expect[String](url).map(EndpointInfo(_))
+   // }
 /*      try {
         val response: HttpResponse[String] = Http(url).asString
         val statusLine = response.statusLine
@@ -50,17 +50,18 @@ case class EndpointParam(url: String) {
         case e : Throwable =>
          EndpointInfo(msg =s"Excepton: ${e.getMessage}")
       } */
-    ) 
+   // ) 
   }
 }
 
 object EndpointParam {
-  private[server] def mkEndpoint[F[_]:Effect](partsMap: PartsMap[F]):
-    EitherT[F, String, EndpointParam] = for {
-    maybeStr <- EitherT.liftF[F, String, Option[String]] (partsMap.optPartValue("endpoint"))
+
+  private[server] def mkEndpoint(partsMap: PartsMap[IO]):
+    EitherT[IO, String, EndpointParam] = for {
+    maybeStr <- EitherT.liftF[IO, String, Option[String]] (partsMap.optPartValue("endpoint"))
     ep <- maybeStr match {
-      case None => EitherT.leftT[F,EndpointParam](s"No value for param endpoint")
-      case Some(str) => EitherT.rightT[F,String](EndpointParam(str))
+      case None => EitherT.leftT[IO,EndpointParam](s"No value for param endpoint")
+      case Some(str) => EitherT.rightT[IO,String](EndpointParam(str))
     }
   } yield ep
 }

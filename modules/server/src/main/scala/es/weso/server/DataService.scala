@@ -37,14 +37,12 @@ import es.weso.server.utils.OptEitherF._
 import scala.util.Try
 import es.weso.rdf.RDFReasoner
 
-class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
-                                               client: Client[F])(implicit cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class DataService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
 
-  val routes = HttpRoutes.of[F] {
+  val routes = HttpRoutes.of[IO] {
 
     // Input RDF data formats include html-microdata, turtle, json-ld...
     case GET -> Root / `api` / "data" / "formats" / "input" => {
@@ -101,7 +99,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
     }
 
     case req@POST -> Root / `api` / "data" / "info" => {
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
@@ -138,7 +136,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
         df <- maybeDataFormat.map(DataFormat.fromString).sequence
       } yield df
 
-      val r: F[Response[F]] = either.fold(
+      val r: IO[Response[IO]] = either.fold(
         str => errJson(str), 
         optDataFormat => {
           val dp =
@@ -161,7 +159,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     case req @ POST -> Root / `api` / "data" / "convert" =>
       println(s"POST /api/data/convert, Request: $req")
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
@@ -184,7 +182,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       CompoundDataParam(optCompoundData) +&
       TargetDataFormatParam(optResultDataFormat) => {
       for {
-        eitherDataFormat <- either2ef[DataFormat,F](DataFormat.fromString(optDataFormat.getOrElse(defaultDataFormat.name))).value
+        eitherDataFormat <- either2ef[DataFormat, IO](DataFormat.fromString(optDataFormat.getOrElse(defaultDataFormat.name))).value
         result <- eitherDataFormat.fold(
           e => BadRequest(e),
           dataFormat => for {
@@ -197,7 +195,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     case req @ POST -> Root / `api` / "data" / "query" =>
       println(s"POST /api/data/query, Request: $req")
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         pprint.log(partsMap)
         for {
@@ -219,7 +217,7 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
     case req @ POST -> Root / `api` / "data" / "extract" => {
       println(s"POST /api/data/extract, Request: $req")
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap, relativeBase).attempt
@@ -251,12 +249,13 @@ class DataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
   private def parseInt(s: String): Either[String, Int] =
     Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))
 
-  private def errJson(msg: String): F[Response[F]] =
+  private def errJson(msg: String): IO[Response[IO]] =
     Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
 
 }
 
 object DataService {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): DataService[F] =
-    new DataService[F](blocker, client)
+  def apply(client: Client[IO]): DataService =
+    new DataService(client)
 }
+

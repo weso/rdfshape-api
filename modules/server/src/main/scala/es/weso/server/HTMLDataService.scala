@@ -36,9 +36,7 @@ import es.weso.utils.IOUtils._
 
 import scala.util.Try
 
-class HTMLDataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
-                                               client: Client[F])(implicit cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class HTMLDataService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger = getLogger
@@ -47,6 +45,5 @@ class HTMLDataService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 }
 
 object HTMLDataService {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): HTMLDataService[F] =
-    new HTMLDataService[F](blocker, client)
+  def apply(client: Client[IO]): HTMLDataService = new HTMLDataService(client)
 }

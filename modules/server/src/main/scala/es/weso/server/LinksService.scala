@@ -6,12 +6,11 @@ import org.http4s._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.Location
 
-class LinksService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class LinksService() extends Http4sDsl[IO] {
 
   case class RequestData(domain: String, url: String)
 
-  val routes: HttpRoutes[F] = HttpRoutes.of[F] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // data Info
     case GET -> Root / "links" / "i1" =>
@@ -61,6 +60,5 @@ class LinksService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShi
 }
 
 object LinksService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker): LinksService[F] =
-    new LinksService[F](blocker)
+  def apply(): LinksService = new LinksService()
 }

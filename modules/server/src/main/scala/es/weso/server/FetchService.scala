@@ -8,11 +8,10 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import scalaj.http.Http
 
-class FetchService[F[_]]()(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class FetchService() extends Http4sDsl[IO] {
 
   case class RequestData(domain: String, url: String)
-  val routes: HttpRoutes[F] = HttpRoutes.of[F] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Query URL and return the response
     case GET -> Root / `api` / "fetch" :?
@@ -34,6 +33,6 @@ class FetchService[F[_]]()(implicit F: Effect[F], cs: ContextShift[F])
 }
 
 object FetchService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker, client: Client[F]): FetchService[F] =
-    new FetchService[F]()
+  def apply(client: Client[IO]): FetchService =
+    new FetchService()
 }

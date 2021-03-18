@@ -30,15 +30,14 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.InferenceEngine
 
-class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Client[F])(implicit cs: ContextShift[F])
-    extends Http4sDsl[F] {
+class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
   private val logger       = getLogger
   
-  val L = implicitly[LiftIO[F]]
+//   val L = implicitly[LiftIO[F]]
 
-  val routes = HttpRoutes.of[F] {
+  val routes = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "schema" / "engines" => {
       val engines = Schemas.availableSchemaNames
@@ -88,7 +87,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         case Some(schema) => schema
       }
       for {
-        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).attempt)
+        either <- Schemas.fromString(schemaStr, schemaFormat, schemaEngine, None).attempt
         r <- either.fold(
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"), 
           schema => {
@@ -103,11 +102,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     }
 
     case req @ POST -> Root / `api` / "schema" / "info" =>
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
-          val r: F[Json] = for {
+          val r: IO[Json] = for {
             schemaPair <- SchemaParam.mkSchema(partsMap,None)
             (schema, sp) = schemaPair
           } yield {
@@ -136,7 +135,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       for {
         maybeSchemaFormat <- optEither2f(optSchemaFormat,SchemaFormat.fromString)
         schemaFormat = maybeSchemaFormat.getOrElse(defaultSchemaFormat)
-        either <- L.liftIO(Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, None).attempt)
+        either <- Schemas.fromString(schemaStr, schemaFormat.name, schemaEngine, None).attempt
         r <- either.fold(
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
           schema => {
@@ -152,19 +151,19 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     }
 
     case req @ POST -> Root / `api` / "schema" / "convert" =>
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
       {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST info partsMap. $partsMap")
-        val r: F[Json] = for {
+        val r: IO[Json] = for {
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, sp) = schemaPair
           // targetSchemaFormat <- optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)
           targetSchemaFormat <- optEither2f(sp.targetSchemaFormat, SchemaFormat.fromString)
-          converted <- io2f(convertSchema(schema, sp.schema, 
+          converted <- convertSchema(schema, sp.schema, 
             sp.schemaFormat.getOrElse(SchemaFormat.default), sp.schemaEngine.getOrElse(defaultSchemaEngine), 
             targetSchemaFormat, sp.targetSchemaEngine
-            ))
+            )
         } yield {
           // println(s"schema / convert ---target: ${sp.targetSchemaFormat}, ${sp.targetSchemaEngine}")
           converted.toJson
@@ -178,14 +177,14 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
 
 
     case req @ POST -> Root / `api` / "schema" / "visualize" =>
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
-          val r: F[Json] = for {
+          val r: IO[Json] = for {
             schemaPair <- SchemaParam.mkSchema(partsMap, None)
             (schema, _) = schemaPair
-            v <- io2f(schemaVisualize(schema))
+            v <- schemaVisualize(schema)
           } yield {
             v
           }
@@ -197,11 +196,11 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
       }
 
     case req @ POST -> Root / `api` / "schema" / "cytoscape" =>
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
       {
         val partsMap = PartsMap(m.parts)
         logger.info(s"POST info partsMap. $partsMap")
-        val r: F[Json] = for {
+        val r: IO[Json] = for {
           schemaPair <- SchemaParam.mkSchema(partsMap, None)
           (schema, _) = schemaPair
         } yield {
@@ -245,7 +244,7 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
         })
       } yield svg
       for {
-        either <- L.liftIO(run_es(r))
+        either <- run_es(r)
         v <- either.fold(s => errJson(s"Error obtaining schema $s"), svg => {
           Ok(svg).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
         })
@@ -361,15 +360,15 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
     }
 
     case req @ POST -> Root / `api` / "schema" / "validate" =>
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
-          val r: F[Json] = for {
+          val r: IO[Json] = for {
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             res <- for {
-             emptyRes <- io2f(RDFAsJenaModel.empty)
-             vv <- (cnvResource(resourceRdf), cnvResource(emptyRes)).tupled.use { case (rdf,builder) => for {
+             emptyRes <- RDFAsJenaModel.empty
+             vv <- (resourceRdf, emptyRes).tupled.use { case (rdf,builder) => for {
               schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
               (schema, sp) = schemaPair
               tp <- TriggerModeParam.mkTriggerModeParam(partsMap)
@@ -394,21 +393,21 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
   private def errJson(msg: String): F[Response[F]] =
     Ok(mkJsonErr(msg)) // 
 
-  private def info(msg: String): EitherT[F,String,Unit] = 
-    EitherT.liftF[F,String,Unit](LiftIO[F].liftIO(IO(println(msg))))  
+  private def info(msg: String): EitherT[IO,String,Unit] = 
+    EitherT.liftF[IO,String,Unit](IO(println(msg)))
 
-  private def pp[A](v:A): F[Unit] = {
-    LiftIO[F].liftIO(IO{ pprint.log(v) })
+  private def pp[A](v:A): IO[Unit] = {
+    IO{ pprint.log(v) }
   }
 
   private def applyInference(
     rdf: RDFReasoner, 
     inferenceName: Option[String]
-    ): F[RDFReasoner] = inferenceName match {
-      case None => Monad[F].pure(rdf)
+    ): IO[RDFReasoner] = inferenceName match {
+      case None => IO.pure(rdf)
       case Some(name) => InferenceEngine.fromString(name) match {
-        case Left(str) => MonadError[F, Throwable].raiseError(new RuntimeException(s"Error parsing inference engine: ${name}: $str"))
-        case Right(engine) => io2f(rdf.applyInference(engine))
+        case Left(str) => IO.raiseError(new RuntimeException(s"Error parsing inference engine: ${name}: $str"))
+        case Right(engine) => rdf.applyInference(engine)
       }
     }
 
@@ -419,6 +418,6 @@ class SchemaService[F[_]: ConcurrentEffect: Timer](blocker: Blocker, client: Cli
 }
 
 object SchemaService {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): SchemaService[F] =
-    new SchemaService[F](blocker, client)
+  def apply(client: Client[IO]): SchemaService =
+    new SchemaService(client)
 }
