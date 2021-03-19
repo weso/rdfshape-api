@@ -13,7 +13,7 @@ import es.weso.schemaInfer._
 import es.weso.server.Defaults._
 import es.weso.server.format._
 import es.weso.server.results._
-import es.weso.shapeMaps.{NodeSelector, ResultShapeMap, ShapeMap}
+import es.weso.shapemaps.{NodeSelector, ResultShapeMap, ShapeMap}
 import es.weso.uml._
 import es.weso.utils.FileUtils
 import es.weso.utils.IOUtils._
@@ -55,11 +55,11 @@ object ApiHelper {
       },
       uri => {
         // TODO: The following code is unsafe...
-        implicit val cs: ContextShift[IO] = IO.contextShift(global)
-        implicit val timer: Timer[IO] = IO.timer(global)
-        val blockingPool = Executors.newFixedThreadPool(5)
-        val blocker = Blocker.liftExecutorService(blockingPool)
-        val httpClient: Client[IO] = JavaNetClientBuilder[IO](blocker).create
+        // implicit val cs: ContextShift[IO] = IO.contextShift(global)
+        // implicit val timer: Timer[IO] = IO.timer(global)
+        // val blockingPool = Executors.newFixedThreadPool(5)
+        // val blocker = Blocker.liftExecutorService(blockingPool)
+        val httpClient: Client[IO] = JavaNetClientBuilder[IO].create
         val resolvedUri = baseUri.resolve(uri)
         logger.info(s"Resolved: $resolvedUri")
         httpClient.expect[String](resolvedUri)
@@ -98,7 +98,8 @@ private[server] def validate(rdf: RDFReasoner,
     val triggerMode = tp.triggerMode
     for {
       pm <- rdf.getPrefixMap
-      (optShapeMapStr, eitherShapeMap) = tp.getShapeMap(pm,schema.pm)
+      p <- tp.getShapeMap(pm,schema.pm)
+      (optShapeMapStr, eitherShapeMap) = p
       pair <- 
         ValidationTrigger.findTrigger(triggerMode.getOrElse(Defaults.defaultTriggerMode),
          optShapeMapStr.getOrElse(""), base, None, None,

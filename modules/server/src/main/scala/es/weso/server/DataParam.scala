@@ -231,14 +231,14 @@ object DataParam {
 
   private[this] val logger = getLogger
 
-  private[server] def mkData[F[_]:Effect](
-     partsMap: PartsMap[F],
+  private[server] def mkData(
+     partsMap: PartsMap,
      relativeBase: Option[IRI]
-    ): F[(Resource[IO,RDFReasoner],DataParam)] = {
+    ): IO[(Resource[IO,RDFReasoner],DataParam)] = {
 
-    val r: F[(Resource[IO,RDFReasoner], DataParam)] = for {
+    val r: IO[(Resource[IO,RDFReasoner], DataParam)] = for {
       dp <- mkDataParam(partsMap)
-      pair <- io2f(dp.getData(relativeBase))
+      pair <- dp.getData(relativeBase)
     } yield {
       val (optStr, rdf) = pair
       (rdf, dp.copy(data = optStr))
@@ -246,7 +246,7 @@ object DataParam {
     r
   }
 
-  private def getDataFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[DataFormat]] = for {
+  private def getDataFormat(name: String, partsMap: PartsMap): IO[Option[DataFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
   } yield maybeStr match {
     case None => None
@@ -259,8 +259,7 @@ object DataParam {
     )
   }
 
-  private[server] def mkDataParam[F[_]:Effect](partsMap: PartsMap[F]
-  ): F[DataParam] = for {
+  private[server] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
     data <- partsMap.optPartValue("data")
     compoundData <- partsMap.optPartValue("compoundData")
     dataURL <- partsMap.optPartValue("dataURL")

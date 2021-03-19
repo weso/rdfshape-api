@@ -1,12 +1,12 @@
 package es.weso.server
 
-import cats.effect.{Effect, IO}
+import cats.effect.IO
 import Defaults._
 import cats._
 import cats.data._
 import cats.implicits._
 import es.weso.rdf.PrefixMap
-import es.weso.shapeMaps.ShapeMap
+import es.weso.shapemaps.ShapeMap
 
 case class TriggerModeParam(triggerMode: Option[String],
                             shapeMap: Option[String],
@@ -49,44 +49,44 @@ case class TriggerModeParam(triggerMode: Option[String],
     case _ => None
   }
 
-  def getShapeMap(nodesPrefixMap: PrefixMap, shapesPrefixMap: PrefixMap): (Option[String], Either[String,ShapeMap]) = {
+  def getShapeMap(nodesPrefixMap: PrefixMap, shapesPrefixMap: PrefixMap): IO[(Option[String], Either[String,ShapeMap])] = {
     val inputType = parseShapeMapTab(activeShapeMapTab.getOrElse(defaultActiveShapeMapTab))
     inputType match {
       case Right(`shapeMapUrlType`) => {
         shapeMapURL match {
-          case None => (None, Left(s"No value for shapeMapURL"))
+          case None => IO.pure((None, Left(s"No value for shapeMapURL")))
           case Some(shapeMapUrl) => {
             val shapeMapFormat = shapeMapFormatUrl.getOrElse(defaultShapeMapFormat)
-            ShapeMap.fromURI(shapeMapUrl, shapeMapFormat, None, nodesPrefixMap, shapesPrefixMap) match {
+            ShapeMap.fromURI(shapeMapUrl, shapeMapFormat, None, nodesPrefixMap, shapesPrefixMap).map(e => e match {
               case Left(str) => (None, Left(s"Error obtaining $shapeMapUrl with $shapeMapFormat: $str"))
               case Right(shapeMap) => (Some(shapeMap.toString), Right(shapeMap))
-            }
+            })
           }
         }
       }
       case Right(`shapeMapFileType`) => shapeMapFile match {
-          case None => (None, Left(s"No value for shapeMapFile"))
+          case None => IO.pure((None, Left(s"No value for shapeMapFile")))
           case Some(shapeMapStr) => {
             println(s"### ShapeMapFile: $shapeMapStr")
             val shapeMapFormat = shapeMapFormatFile.getOrElse(defaultShapeMapFormat)
             ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
-              case Left(msg) => (Some(shapeMapStr), Left(msg))
-              case Right(parsedShapeMap) => (Some(shapeMapStr), Right(parsedShapeMap))
+              case Left(ls) => IO.pure((Some(shapeMapStr), Left(ls.toList.mkString("\n"))))
+              case Right(parsedShapeMap) => IO.pure((Some(shapeMapStr), Right(parsedShapeMap)))
             }
           }
         }
       case Right(`shapeMapTextAreaType`) => shapeMap match {
-          case None => (None, Right(ShapeMap.empty))
+          case None => IO.pure((None, Right(ShapeMap.empty)))
           case Some(shapeMapStr) => {
             val shapeMapFormat = shapeMapFormatTextarea.getOrElse(defaultShapeMapFormat)
             ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
-              case Left(msg) => (Some(shapeMapStr), Left(msg))
-              case Right(parsedShapeMap) => (Some(shapeMapStr), Right(parsedShapeMap))
+              case Left(ls) => IO.pure((Some(shapeMapStr), Left(ls.toList.mkString("\n"))))
+              case Right(parsedShapeMap) => IO.pure((Some(shapeMapStr), Right(parsedShapeMap)))
             }
           }
         }
-      case Right(other) => (None, Left(s"Unknown value for activeShapeMapTab: $other"))
-      case Left(msg) => (None, Left(msg))
+      case Right(other) => IO.pure((None, Left(s"Unknown value for activeShapeMapTab: $other")))
+      case Left(msg) => IO.pure((None, Left(msg)))
     }
   }
 
@@ -95,8 +95,8 @@ case class TriggerModeParam(triggerMode: Option[String],
 
 object TriggerModeParam {
 
-  def mkTriggerModeParam[F[_]:Effect](partsMap: PartsMap[F]): F[TriggerModeParam] = {
-    val tp: F[TriggerModeParam] = for {
+  def mkTriggerModeParam(partsMap: PartsMap): IO[TriggerModeParam] = {
+    val tp: IO[TriggerModeParam] = for {
       optTriggerMode <- partsMap.optPartValue("triggerMode")
       optShapeMap <- partsMap.optPartValue("shapeMap")
       optShapeMapURL <- partsMap.optPartValue("shapeMapURL")
@@ -120,10 +120,10 @@ object TriggerModeParam {
         optShapeMapFormatFile,
         optActiveShapeMapTab)
     }
-    val r: F[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
+    val r: IO[Either[String,TriggerModeParam]] = tp.map(_.asRight[String])
     r.flatMap(_.fold(
-      str => MonadError[F,Throwable].raiseError(new RuntimeException(s"Error obtaining validation trigger: $str")), 
-      Monad[F].pure(_)
+      str => IO.raiseError(new RuntimeException(s"Error obtaining validation trigger: $str")), 
+      IO.pure(_)
     ))
   }
 }

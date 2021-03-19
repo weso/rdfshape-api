@@ -336,7 +336,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
 
           // val (dataStr, eitherRDF) = 
 
-          val eitherResult: F[Response[F]] = for {
+          val eitherResult: IO[Response[IO]] = for {
             pairData <- io2f(dp.getData(relativeBase))
             (dataStr, resourceRdf) = pairData
             response <- io2f(for {
@@ -390,7 +390,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
   } 
 
   // TODO: Move this method to a more generic place...
-  private def errJson(msg: String): F[Response[F]] =
+  private def errJson(msg: String): IO[Response[IO]] =
     Ok(mkJsonErr(msg)) // 
 
   private def info(msg: String): EitherT[IO,String,Unit] = 

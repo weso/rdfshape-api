@@ -43,16 +43,16 @@ case class ShapeMapParam(
     }
   }
 
-  def getShapeMap: EitherT[IO, String, ShapeMap] =
+  def getShapeMap: IO[ShapeMap] =
     for {
-      tab <- EitherT.fromEither[IO](parseShapeMapTab(shapeMapTab))
+      tab <- IO.fromEither(parseShapeMapTab(shapeMapTab).leftMap(e => new RuntimeException(e)))
       sm <- tab match {
-        case ShapeMapTextAreaType => EitherT.fromEither[IO](ShapeMap.fromString(shapeMap.getOrElse(""), shapeMapFormat))
-        case ShapeMapUrlType =>
-          EitherT.fromEither[IO](
-            ShapeMap.fromURI(shapeMapURL.getOrElse(""), shapeMapFormat, None, PrefixMap.empty, PrefixMap.empty)
-          )
-        case _ => EitherT.fromEither[IO](s"Not implemented yet ${tab.id}".asLeft[ShapeMap])
+        case ShapeMapTextAreaType => IO.fromEither(ShapeMap.fromString(shapeMap.getOrElse(""), shapeMapFormat).leftMap(es => new RuntimeException(es.toList.mkString("\n"))))
+        case ShapeMapUrlType => for { 
+          e <- ShapeMap.fromURI(shapeMapURL.getOrElse(""), shapeMapFormat, None, PrefixMap.empty, PrefixMap.empty)
+          r <- e.fold(ls => IO.raiseError(new RuntimeException(ls.toList.mkString("\n"))), IO.pure(_))
+        } yield r
+        case _ => IO.raiseError(new RuntimeException(s"Not implemented yet ${tab.id}"))
       }
     } yield sm
 
@@ -61,15 +61,13 @@ case class ShapeMapParam(
 object ShapeMapParam {
   private[this] val logger = getLogger
 
-  private[server] def mkShapeMap[F[_]: Effect](partsMap: PartsMap[F]): EitherT[F, String, (ShapeMap, ShapeMapParam)] =
+  private[server] def mkShapeMap(partsMap: PartsMap): IO[(ShapeMap, ShapeMapParam)] =
     for {
-      smp <- EitherT.liftF[F, String, ShapeMapParam](mkShapeMapParam(partsMap))
+      smp <- mkShapeMapParam(partsMap)
       sm  <- smp.getShapeMap
     } yield ((sm, smp))
 
-  private def getShapeMapFormat[F[_]](name: String, partsMap: PartsMap[F])(
-      implicit F: Effect[F]
-  ): F[Option[ShapeMapFormat]] =
+  private def getShapeMapFormat(name: String, partsMap: PartsMap): IO[Option[ShapeMapFormat]] =
     for {
       maybeStr <- partsMap.optPartValue(name)
     } yield maybeStr match {
@@ -86,7 +84,7 @@ object ShapeMapParam {
           )
     }
 
-  private[server] def mkShapeMapParam[F[_]: Effect](partsMap: PartsMap[F]): F[ShapeMapParam] =
+  private[server] def mkShapeMapParam(partsMap: PartsMap): IO[ShapeMapParam] =
     for {
       shapeMap             <- partsMap.optPartValue("shapeMap")
       shapeMapURL          <- partsMap.optPartValue("shapeMapURL")

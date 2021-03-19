@@ -163,29 +163,29 @@ case class SchemaParam(schema: Option[String],
 
 object SchemaParam {
 
-  private[server] def mkSchema[F[_]:Effect](partsMap: PartsMap[F],
+  private[server] def mkSchema(partsMap: PartsMap,
                                data: Option[RDFReasoner]
-                      ): F[(Schema, SchemaParam)] = {
-    val L = implicitly[LiftIO[F]]
-    val E = implicitly[MonadError[F,Throwable]]
-    val r: F[Either[String, (Schema,SchemaParam)]] = for {
+                      ): IO[(Schema, SchemaParam)] = {
+    // val L = implicitly[LiftIO[F]]
+    // val E = implicitly[MonadError[F,Throwable]]
+    val r: IO[Either[String, (Schema,SchemaParam)]] = for {
       sp <- {
         mkSchemaParam(partsMap)
       }
-      eitherPair <- L.liftIO(sp.getSchema(data).attempt)
+      eitherPair <- sp.getSchema(data).attempt
       resp <- eitherPair.fold(
-        s => Monad[F].pure(Left(s"Error: $s")), 
+        s => IO.pure(Left(s"Error: $s")), 
         pair => {
           val (maybeStr, maybeSchema) = pair
           maybeSchema match {
-            case Left(str) => Monad[F].pure(Left(str))
-            case Right(schema) => Monad[F].pure(Right((schema, sp.copy(schema = maybeStr)))) 
+            case Left(str) => IO.pure(Left(str))
+            case Right(schema) => IO.pure(Right((schema, sp.copy(schema = maybeStr)))) 
           }
         })
       } yield resp
     r.flatMap(_.fold(
-      str => E.raiseError(new RuntimeException(s"Error obtaining schema: $str")),
-      Monad[F].pure(_)
+      str => IO.raiseError(new RuntimeException(s"Error obtaining schema: $str")),
+      IO.pure(_)
       )
     )
   }
@@ -210,7 +210,7 @@ object SchemaParam {
     r
   } */
 
-  private def getSchemaFormat[F[_]](name: String, partsMap: PartsMap[F])(implicit F: Effect[F]): F[Option[SchemaFormat]] = for {
+  private def getSchemaFormat(name: String, partsMap: PartsMap): IO[Option[SchemaFormat]] = for {
     maybeStr <- partsMap.optPartValue(name)
   } yield maybeStr match {
     case None => None
@@ -223,7 +223,7 @@ object SchemaParam {
     )
   }
 
-  private[server] def mkSchemaParam[F[_]:Effect](partsMap: PartsMap[F]): F[SchemaParam] = for {
+  private[server] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {
     schema <- partsMap.optPartValue("schema")
     schemaURL <- partsMap.optPartValue("schemaURL")
     schemaFile <- partsMap.optPartValue("schemaFile")

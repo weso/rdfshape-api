@@ -107,13 +107,13 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
           dataFormat = dataFormatOrDefault(dp.dataFormat.map(_.name))
           response <- dp.data match {
             case Some(data) => for {
-                  r <- io2f(dataInfoFromString(data, dataFormat))
+                  r <- dataInfoFromString(data, dataFormat)
                   ok <- Ok(r)
                 } yield ok 
             case None => {
              val resp: IO[Json] = resource.use(rdf => dataInfo(rdf,None,dp.dataFormat))
-             val x: F[Response[F]] = for {
-               json <- io2f(resp)
+             val x: IO[Response[IO]] = for {
+               json <- resp
                ok <- Ok(json)
              } yield ok
              x

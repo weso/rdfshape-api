@@ -56,7 +56,7 @@ case class EndpointParam(url: String) {
 
 object EndpointParam {
 
-  private[server] def mkEndpoint(partsMap: PartsMap[IO]):
+  private[server] def mkEndpoint(partsMap: PartsMap):
     EitherT[IO, String, EndpointParam] = for {
     maybeStr <- EitherT.liftF[IO, String, Option[String]] (partsMap.optPartValue("endpoint"))
     ep <- maybeStr match {

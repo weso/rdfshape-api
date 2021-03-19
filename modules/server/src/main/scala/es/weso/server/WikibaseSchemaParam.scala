@@ -30,27 +30,27 @@ case class WikibaseSchemaParam(
     wikibase: Wikibase = Wikidata
 ) {
 
-  def getSchema[F[_]: Effect](
+  def getSchema(
       maybeData: Option[RDFReasoner],
-      client: Client[F]
-  ): F[(Option[String], Either[String, Schema])] = {
+      client: Client[IO]
+  ): IO[(Option[String], Either[String, Schema])] = {
     (maybeSchemaParam, maybeEntitySchema) match {
-      case (None, None)                            => Monad[F].pure((None, Left(s"No values for entity schema or schema")))
-      case (Some(schemaParam), None)               => io2f(schemaParam.getSchema(maybeData))
+      case (None, None)                            => IO.pure((None, Left(s"No values for entity schema or schema")))
+      case (Some(schemaParam), None)               => schemaParam.getSchema(maybeData)
       case (None, Some(entitySchema))              => schemaFromEntitySchema(entitySchema, client)
       case (Some(schemaParam), Some(entitySchema)) => schemaFromEntitySchema(entitySchema, client)
 
     }
   }
 
-  def schemaFromEntitySchema[F[_]: Effect](
+  def schemaFromEntitySchema(
       es: String,
-      client: Client[F]
-  ): F[(Option[String], Either[String, Schema])] = {
+      client: Client[IO]
+  ): IO[(Option[String], Either[String, Schema])] = {
     val uriSchema = wikibase.schemaEntityUri(es)
-    val r: F[(Schema, String)] = for {
+    val r: IO[(Schema, String)] = for {
       strSchema <- deref(uriSchema, client)
-      schema    <- io2f(Schemas.fromString(strSchema, "ShEXC", "ShEx"))
+      schema    <- Schemas.fromString(strSchema, "ShEXC", "ShEx")
     } yield (schema, strSchema)
     r.attempt.map(_ match {
       case Left(t) => (None, Left(t.getMessage))
@@ -62,32 +62,32 @@ case class WikibaseSchemaParam(
 
   }
 
-  private def deref[F[_]: Effect](uri: Uri, client: Client[F]): F[String] = {
-    val reqSchema: Request[F] = Request(method = GET, uri = uri)
+  private def deref(uri: Uri, client: Client[IO]): IO[String] = {
+    val reqSchema: Request[IO] = Request(method = GET, uri = uri)
     client.expect[String](reqSchema)
   }
 }
 
 object WikibaseSchemaParam {
 
-  private[server] def mkSchema[F[_]: Effect](
-      partsMap: PartsMap[F],
+  private[server] def mkSchema(
+      partsMap: PartsMap,
       data: Option[RDFReasoner],
-      client: Client[F]
-  ): F[(Schema, WikibaseSchemaParam)] = {
-    val r: F[(Schema, WikibaseSchemaParam)] = for {
+      client: Client[IO]
+  ): IO[(Schema, WikibaseSchemaParam)] = {
+    val r: IO[(Schema, WikibaseSchemaParam)] = for {
       sp <- mkWikibaseSchemaParam(partsMap)
       p  <- sp.getSchema(data, client)
       (maybeStr, maybeSchema) = p
       res <- maybeSchema match {
-        case Left(str)     => MonadError[F,Throwable].raiseError(new RuntimeException(s"Error obtaining wikibase parameters: $str"))
-        case Right(schema) => Monad[F].pure((schema, sp.copy(schemaStr = maybeStr)))
+        case Left(str)     => IO.raiseError(new RuntimeException(s"Error obtaining wikibase parameters: $str"))
+        case Right(schema) => IO.pure((schema, sp.copy(schemaStr = maybeStr)))
       }
     } yield res
     r
   }
 
-  private[server] def mkWikibaseSchemaParam[F[_]: Effect](partsMap: PartsMap[F]): F[WikibaseSchemaParam] =
+  private[server] def mkWikibaseSchemaParam(partsMap: PartsMap): IO[WikibaseSchemaParam] =
     for {
       maybeSchema      <- partsMap.eitherPartValue("entitySchema")
       // endpointStr      <- partsMap.partValue("endpoint")
@@ -106,10 +106,10 @@ object WikibaseSchemaParam {
     WikibaseSchemaParam(None, None, None)
 
   // TODO: Move this code to es.weso.utils.IOUtils
-  private def ok_f[F[_]: Effect, A](v: A): F[A] = Monad[F].pure(v)
-  private def err_f[F[_]: Effect, A](err: String): F[A] =
-    MonadError[F, Throwable].raiseError[A](new RuntimeException(err))
-  private def either2f[F[_]: Effect, A](e: Either[String, A]): F[A] =
-    e.fold(s => MonadError[F, Throwable].raiseError(new RuntimeException(s)), Monad[F].pure(_))
+  private def ok_f[A](v: A): IO[A] = IO.pure(v)
+  private def err_f[A](err: String): IO[A] =
+    IO.raiseError[A](new RuntimeException(err))
+  private def either2f[A](e: Either[String, A]): IO[A] =
+    e.fold(s => IO.raiseError(new RuntimeException(s)), IO.pure(_))
 
 }

@@ -29,12 +29,12 @@ class ShapeMapService(client: Client[IO]) extends Http4sDsl[IO] {
       req.decode[Multipart[IO]] { m =>
         println(s"ShapeMap/info")
         val partsMap = PartsMap(m.parts)
-        val t: EitherT[IO,String,(ShapeMap,ShapeMapParam)] = ShapeMapParam.mkShapeMap(partsMap)
-        t.foldF(e => Ok(mkJsonErr(e)), pair => {
+        val t: IO[(ShapeMap,ShapeMapParam)] = ShapeMapParam.mkShapeMap(partsMap)
+        t.attempt.flatMap(_.fold(e => Ok(mkJsonErr(e.getMessage())), pair => {
           val (sm,smp) = pair
           val smi: ShapeMapInfoResult = ShapeMapInfoResult.fromShapeMap(smp.shapeMap,smp.optShapeMapFormat, sm)
           Ok(smi.toJson)
-        })
+        }))
       }
 
     /*    case req@GET -> Root / `api` / "shapeMap" / "info" :?

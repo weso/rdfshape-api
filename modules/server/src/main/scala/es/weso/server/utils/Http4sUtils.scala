@@ -11,8 +11,8 @@ import org.http4s.client.middleware.{FollowRedirect, Logger}
 object Http4sUtils {
 
   def withRedirect[F[_]:Concurrent](c: Client[F]): Client[F] = FollowRedirect(10, _ => true)(c)
-  def withLogging[F[_]:Concurrent](client: Client[F]): Client[F] = Logger(true,true, _ => false)(client)
-  def mkClient[F[_]:Concurrent](c: Client[F]): Client[F] =
+  def withLogging[F[_]:Concurrent: Async](client: Client[F]): Client[F] = Logger(true,true, _ => false)(client)
+  def mkClient[F[_]:Concurrent: Async](c: Client[F]): Client[F] =
     withRedirect(withLogging(c))
 
   def getBody[F[_]:Monad: Concurrent](uri: Uri, r: Response[F]): F[Either[String,Stream[F,String]]] =

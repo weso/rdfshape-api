@@ -85,11 +85,11 @@ object SSLHelper {
       context
     }
 
-  def redirectApp[F[_]: Sync](securePort: Int): HttpApp[F] = {
-    val dsl = new Http4sDsl[F] {}
+  def redirectApp(securePort: Int): HttpApp[IO] = {
+    val dsl = new Http4sDsl[IO] {}
     import dsl._
 
-    HttpApp[F] { request =>
+    HttpApp[IO] { request =>
       request.headers.get(Host) match {
         case Some(Host(host @ _, _)) =>
           val baseUri = request.uri.copy(
