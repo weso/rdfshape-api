@@ -1,6 +1,6 @@
 package es.weso.server
 
-import cats._
+// import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
@@ -28,18 +28,13 @@ import es.weso.rdf.sgraph._
 import APIDefinitions._
 import es.weso.utils.IOUtils._
 import org.http4s.client.middleware.FollowRedirect
-import es.weso.shapeMaps.NodeSelector
-import es.weso.shapeMaps.RDFNodeSelector
+import es.weso.shapemaps.{Status => _, _}
 import es.weso.rdf.nodes.IRI
 import es.weso.schemaInfer.SchemaInfer
-import es.weso.shapeMaps.ResultShapeMap
 import es.weso.schema.Schema
 import es.weso.schemaInfer.InferOptions
 import es.weso.shex.ResolvedSchema
 import es.weso.shex.validator.Validator
-import es.weso.shapeMaps.ShapeMap
-import es.weso.shapeMaps.Start
-import es.weso.shapeMaps.FixedShapeMap
 import es.weso.schema.ShapeMapTrigger
 import es.weso.utils.internal.CollectionCompat._
 import scala.util.control.NoStackTrace
@@ -47,10 +42,7 @@ import scala.util.matching.Regex
 import es.weso.wikibaserdf._
 import ApiHelper._
 
-class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
-                                              client: Client[F]
-                                             )(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri = uri"/api/wikidata/entity"
@@ -60,7 +52,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
   val redirectClient = FollowRedirect(3)(client)
 
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
+  def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "wikidata" / "test"  => {
       Ok("Wikidata Test")
@@ -70,7 +62,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
        WdEntityParam(entity) +&
        LanguageParam(language) => {
         val uri = Uri.unsafeFromString(s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=${entity}&languages=${language}&format=json")
-        val req: Request[F] = Request(method = GET, uri = uri)
+        val req: Request[IO] = Request(method = GET, uri = uri)
          for {
           either <- client.fetch(req) {
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
@@ -86,7 +78,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         withPath(s"/wiki/Special:EntitySchemaText/${wdSchema}")
 
       println(s"wikidata/schemaContent: ${uri.toString}")
-      val req: Request[F] = Request(method = GET, uri = uri)
+      val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.fetch(req) {
           case Status.Successful(r) => r.attemptAs[String].leftMap(_.message).value
@@ -123,7 +115,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
       println(s"wikidata/searchEntity: ${uri.toString}")
 
-      val req: Request[F] = Request(method = GET, uri = uri)
+      val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.fetch(req) {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
@@ -157,7 +149,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         withQueryParam("type","property").
         withQueryParam("format","json")
 
-      val req: Request[F] = Request(method = GET, uri = uri)
+      val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.fetch(req) {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
@@ -191,9 +183,9 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
         withQueryParam("type","lexeme").
         withQueryParam("format","json")
 
-      println(s"wikidata/searchLexeme: ${uri.toString}")
+//      println(s"wikidata/searchLexeme: ${uri.toString}")
 
-      val req: Request[F] = Request(method = GET, uri = uri)
+      val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.fetch(req) {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
@@ -219,7 +211,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
       println(s"wikidata/languages: ${uri.toString}")
 
-      val req: Request[F] = Request(method = GET, uri = uri)
+      val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.fetch(req) {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
@@ -235,14 +227,14 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
       } yield resp
     }
 
-    case req@POST -> Root / `api` / "wikidata" / "query" => req.decode[Multipart[F]] { m => {
+    case req@POST -> Root / `api` / "wikidata" / "query" => req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         for {
           optQuery <- partsMap.optPartValue("query")
           optEndpoint <- partsMap.optPartValue("endpoint")
           endpoint = optEndpoint.getOrElse(wikidataUri.toString())
           query = optQuery.getOrElse("")
-          req: Request[F] =
+          req: Request[IO] =
              Request(method = GET, uri = Uri.fromString(endpoint).valueOr(throw _).withQueryParam("query", query))
                .withHeaders(
                  `Accept`(MediaType.application.`json`)
@@ -282,7 +274,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
       } yield response
     }
 
-    case req@POST -> Root / "wdEntity" => req.decode[Multipart[F]] { m => {
+    case req@POST -> Root / "wdEntity" => req.decode[Multipart[IO]] { m => {
       val partsMap = PartsMap(m.parts)
       for {
         optEntity <- partsMap.optPartValue("entity")
@@ -305,15 +297,14 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
     
     case req @ POST -> Root / `api` / "wikidata" / "extract" => {
       println(s"POST /api/wikidata/extract, Request: $req")
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
-        val r: EitherT[F,String,Response[F]] = for {
+        val r: EitherT[IO,String,Response[IO]] = for {
           label <- EitherT(partsMap.eitherPartValue("entity"))
-          info <- either2ef[InfoEntity,F](cnvEntity(label))
-          _ <- { println(s"URI: ${info.uri}"); ok_esf[Unit,F](())}
-          strRdf <- f2es(redirectClient.expect[String](info.uri))
-          eitherInferred <- io2esf(
-            RDFAsJenaModel.fromString(strRdf,"TURTLE").flatMap(_.use(rdf => for {
+          info <- either2es[InfoEntity](cnvEntity(label))
+          _ <- { println(s"URI: ${info.uri}"); ok_esf[Unit,IO](())}
+          strRdf <- io2es(redirectClient.expect[String](info.uri))
+          eitherInferred <- io2es(RDFAsJenaModel.fromString(strRdf,"TURTLE").flatMap(_.use(rdf => for {
              rdfSerialized <- rdf.serialize("TURTLE")
              nodeSelector = RDFNodeSelector(IRI(label))
              inferred <- SchemaInfer.runInferSchema(
@@ -322,19 +313,18 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                "ShEx",
                IRI(s"http://example.org/Shape_${info.localName}"),
                InferOptions.defaultOptions.copy(maxFollowOn=3))
-            } yield inferred))
-          )
-          pair <- either2ef[(Schema,ResultShapeMap),F](eitherInferred)
-          shExCStr <- io2esf({ 
+            } yield inferred)))
+          pair <- either2es[(Schema,ResultShapeMap)](eitherInferred)
+          shExCStr <- io2es ({ 
             val (schema,_) = pair
             schema.serialize("SHEXC")
           })
-          _ <- { println(s"ShExC str: ${shExCStr}"); ok_esf[Unit,F](())}
-          resp <- f2es(Ok(mkExtractAnswer(shExCStr, label)))
+          _ <- { println(s"ShExC str: ${shExCStr}"); ok_es[Unit](())}
+          resp <- io2es(Ok(mkExtractAnswer(shExCStr, label)))
         } yield resp
         for {
           either <- r.value
-          resp <- either.fold(s => Ok(errExtract(s)), r => F.pure(r))
+          resp <- either.fold(s => Ok(errExtract(s)), r => IO.pure(r))
         } yield resp
       }
     }
@@ -342,56 +332,56 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
     // This one doesn't work. It gives a timeout response
     case req @ POST -> Root / `api` / "wikidata" / "shexer" => {
       println(s"POST /api/wikidata/shexer, Request: $req")
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
-        val r: EitherT[F,String,Response[F]] = for {
+        val r: EitherT[IO,String,Response[IO]] = for {
           label <- EitherT(partsMap.eitherPartValue("entity"))
-          jsonParams <- either2ef[Json,F](mkShexerParams(label))
-          postRequest = Request[F](method = POST, 
+          jsonParams <- either2es[Json](mkShexerParams(label))
+          postRequest = Request[IO](method = POST, 
              uri = uri"http://156.35.86.6:8080/shexer").
              withHeaders(`Content-Type`(MediaType.application.`json`)).
              withEntity[Json](jsonParams
              )
-          _ <- { println(s"URI: ${jsonParams.spaces2}"); ok_esf[Unit,F](())}
+          _ <- { println(s"URI: ${jsonParams.spaces2}"); ok_es[Unit](())}
           result <- f2es(redirectClient.expect[Json](postRequest))
-          _ <- { println(s"Result\n${result.spaces2}"); ok_esf[Unit,F](())}
+          _ <- { println(s"Result\n${result.spaces2}"); ok_es[Unit](())}
           resp <- f2es(Ok(result))
         } yield resp
         for {
           either <- r.value
-          resp <- either.fold(s => Ok(errExtract(s)), r => F.pure(r))
+          resp <- either.fold(s => Ok(errExtract(s)), r => IO.pure(r))
         } yield resp
       }
     }
 
     case req @ POST -> Root / `api` / "wikidata" / "validate" => {
       println(s"POST /api/wikidata/validate, Request: $req")
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
-        val r: F[Response[F]] = for {
+        val r: IO[Response[IO]] = for {
           eitherItem <- partsMap.eitherPartValue("item")
-          _ <- { pprint.log(eitherItem); F.pure(()) }
+          _ <- { pprint.log(eitherItem); IO.pure(()) }
           item <- fromEither(eitherItem)
-          _ <- { pprint.log(item); F.pure(()) }
+          _ <- { pprint.log(item); IO.pure(()) }
           info <- fromEither(cnvEntity2(item))
-          _ <- { pprint.log(info); F.pure(()) }
+          _ <- { pprint.log(info); IO.pure(()) }
           pair <- WikibaseSchemaParam.mkSchema(partsMap,None, client)
-          _ <- { pprint.log(pair); F.pure(()) }
+          _ <- { pprint.log(pair); IO.pure(()) }
           (schema,wbp) = pair
           iriItem <- fromEither(IRI.fromString(info.sourceUri))
           shapeMap <- fromEither(ShapeMap.empty.add(iriItem,Start))
           triggerMode = ShapeMapTrigger(shapeMap)
-          result <- io2f(for {
+          result <- for {
             res1 <- WikibaseRDF.wikidata
             res2 <- RDFAsJenaModel.empty
             vv <- (res1, res2).tupled.use{ case (rdf,builder) => for {
             r <- schema.validate(rdf,triggerMode,builder)
             json <- result2json(r)
            } yield json}
-          } yield vv)
+          } yield vv
           resp <- Ok(result)
         } yield resp
-        r.attempt.flatMap(_.fold(s => Ok(errExtract(s.getMessage)), F.pure(_)))
+        r.attempt.flatMap(_.fold(s => Ok(errExtract(s.getMessage)), IO.pure(_)))
       }
     }
   }
@@ -400,11 +390,11 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
     extends RuntimeException(msg) 
     with NoStackTrace
 
-  private def fromEither[A](either: Either[String,A]): F[A] = {
-    either.fold(s => MonadError[F,Throwable].raiseError(WikibaseServiceError(s)), Monad[F].pure(_))
+  private def fromEither[A](either: Either[String,A]): IO[A] = {
+    either.fold(s => IO.raiseError(WikibaseServiceError(s)), IO.pure(_))
   }
 
-  private def errExtract[F[_]](msg: String): Json = {
+  private def errExtract(msg: String): Json = {
     Json.fromFields(List(
       ("error", Json.fromString(msg))
     ))
@@ -493,9 +483,9 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
   }
 
 
-  private def wdEntity(optEntity: Option[String], withDot: Boolean): F[Option[Json]] = {
+  private def wdEntity(optEntity: Option[String], withDot: Boolean): IO[Option[Json]] = {
     optEntity match {
-      case None => F.pure(None)
+      case None => IO.pure(None)
       case Some(entity) => {
         val process = for {
           uri <- getUri(entity)
@@ -506,7 +496,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 //                  else EitherT.pure(none) */
           json <- prepareJson(entity, proxyUri(uri))// prepareJsonOk(entity, uri, rdf, maybeDot)
         } yield Option(json)
-        process.value.flatMap(e => F.pure(mkJson(entity,e)))
+        process.value.flatMap(e => IO.pure(mkJson(entity,e)))
       }
     }
   }
@@ -518,29 +508,29 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
   private def mkJson(entity: String, e: Either[String, Option[Json]]): Option[Json] =
     e.fold(msg => Some(jsonErr(entity, msg)), identity)
 
-  private def getUri(entity: String): EitherT[F,String, Uri] = {
+  private def getUri(entity: String): EitherT[IO,String, Uri] = {
    println(s"getUri: $entity")
    val q = """Q(\d*)""".r
    entity match {
     case q(n) => EitherT.pure(wikidataEntityUrl / ("Q" + n))
-    case _ => EitherT.fromEither[F](Uri.fromString(entity).leftMap(f => s"Error creating URI from $entity: $f"))
+    case _ => EitherT.fromEither[IO](Uri.fromString(entity).leftMap(f => s"Error creating URI from $entity: $f"))
    }
   }
 
-  private def resolve(uri: Uri): EitherT[F, String, Stream[F,String]] = {
+  private def resolve(uri: Uri): EitherT[IO, String, Stream[IO,String]] = {
     println(s"Resolve: $uri")
     for {
-      eitherData <- EitherT.liftF(resolveStream[F](uri, client))
-      data <- EitherT.fromEither[F](eitherData.leftMap(e => s"Error retrieving $uri: $e"))
+      eitherData <- EitherT.liftF(resolveStream[IO](uri, client))
+      data <- EitherT.fromEither[IO](eitherData.leftMap(e => s"Error retrieving $uri: $e"))
     } yield data
   }
 
 /*  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
     EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty)) */
 
-  private def fromIO[A](io: IO[A]): EitherT[F, String, A] = EitherT.liftF(LiftIO[F].liftIO(io))
+  private def fromIO[A](io: IO[A]): EitherT[IO, String, A] = EitherT.liftF(io)
 
-  private def generateDot(rdf: RDFReader, maybeDot: Boolean): EitherT[F, String, Option[String]] =
+  private def generateDot(rdf: RDFReader, maybeDot: Boolean): EitherT[IO, String, Option[String]] =
     if (maybeDot) for {
       sgraph <- fromIO(RDF2SGraph.rdf2sgraph(rdf))  // .bimap(e => s"Error converting to Dot: $e", s => Some(s.toString)))
     } yield Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs))
@@ -555,7 +545,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 
   private def prepareJson(entity: String,
                             uri: Uri
-                           ): EitherT[F, String, Json] =
+                           ): EitherT[IO, String, Json] =
    EitherT.pure(Json.fromFields(List(
     ("entity", Json.fromString(entity)),
     ("uri", Json.fromString(uri.toString)),
@@ -565,7 +555,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
                           uri: Uri,
                           rdf: RDFReader,
                           maybeDot: Option[String]
-                         ): EitherT[F, String, Json] = for {
+                         ): EitherT[IO, String, Json] = for {
     serialized <- fromIO(rdf.serialize("TURTLE"))
   } yield Json.fromFields(List(
     ("entity", Json.fromString(entity)),
@@ -650,9 +640,7 @@ class WikidataService[F[_]: ConcurrentEffect: LiftIO](blocker: Blocker,
 }
 
 object WikidataService {
-  def apply[F[_]: Effect: ConcurrentEffect: ContextShift: LiftIO](blocker: Blocker,
-                                                          client: Client[F]
-                                                         ): WikidataService[F] =
-    new WikidataService[F](blocker, client)
+  def apply(client: Client[IO]): WikidataService =
+    new WikidataService(client)
 }
 

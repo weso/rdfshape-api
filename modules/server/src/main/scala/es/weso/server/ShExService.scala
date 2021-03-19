@@ -8,11 +8,9 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 
-class ShExService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
-                                               client: Client[F])(implicit cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class ShExService(client: Client[IO]) extends Http4sDsl[IO] {
 
-  val routes = HttpRoutes.of[F] {
+  val routes = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "shEx" / "formats" => {
       val formats = Schemas.availableFormats
@@ -25,6 +23,6 @@ class ShExService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 
 
 object ShExService {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): ShExService[F] =
-    new ShExService[F](blocker, client)
+  def apply(client: Client[IO]): ShExService =
+    new ShExService(client)
 }

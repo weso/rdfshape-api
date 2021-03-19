@@ -23,23 +23,17 @@ object Server {
        .withSslContext(sslContext)
   } */
 
-  def stream[F[_]: ConcurrentEffect](blocker: Blocker, port: Int, ip: String)(
-      implicit T: Timer[F],
-      C: ContextShift[F]
-  ): Stream[F, Nothing] = {
+  def stream(port: Int, ip: String): Stream[IO, Nothing] = {
 
     for {
-      client <- BlazeClientBuilder[F](global)
+      client <- BlazeClientBuilder[IO](global)
         .withRequestTimeout(5.minute)
         //      .withSslContext(SSLContext.getDefault)
         .stream
       app = (
         // HelloService[F](blocker).routes
         // HSTS(
-        routesService[F](
-          blocker,
-          client
-        )
+        routesService(client)
         // )
       ).orNotFound
       sslContext   = SSLHelper.getContext
@@ -47,7 +41,7 @@ object Server {
       /* b <- Stream.eval(builder(port))
       exitCode <- b.withHttpApp(finalHttpApp).serve  */
 
-      baseServer = BlazeServerBuilder[F](global)
+      baseServer = BlazeServerBuilder[IO](global)
         .bindHttp(port, ip)
         .withIdleTimeout(10.minutes)
         .withHttpApp(finalHttpApp)
@@ -76,24 +70,21 @@ object Server {
         .withSslContext(sslContext)
     } */
 
-  def routesService[F[_]: ConcurrentEffect](
-      blocker: Blocker,
-      client: Client[F]
-  )(implicit T: Timer[F], C: ContextShift[F]): HttpRoutes[F] =
+  def routesService(client: Client[IO]): HttpRoutes[IO] =
     CORS(
-      SchemaService[F](blocker, client).routes <+>
-        APIService[F](blocker, client).routes <+>
-        DataService[F](blocker, client).routes <+>
-        ShExService[F](blocker, client).routes <+>
-        ShapeMapService[F](blocker, client).routes <+>
-        WikidataService[F](blocker, client).routes <+>
-        EndpointService[F](blocker, client).routes <+>
-        PermalinkService[F](blocker, client).routes <+>
-        FetchService[F](blocker, client).routes
+      SchemaService(client).routes <+>
+        APIService(client).routes <+>
+        DataService(client).routes <+>
+        ShExService(client).routes <+>
+        ShapeMapService(client).routes <+>
+        WikidataService(client).routes <+>
+        EndpointService(client).routes <+>
+        PermalinkService(client).routes <+>
+        FetchService(client).routes
     ) <+>
-      WebService[F](blocker).routes <+>
+      WebService().routes <+>
       // DataWebService[F](blocker, client).routes <+>
-      StaticService[F](blocker).routes <+>
-      LinksService[F](blocker).routes
+      StaticService().routes <+>
+      LinksService().routes
 
 }

@@ -21,8 +21,7 @@ import java.net.{MalformedURLException, URL}
 
 import org.mongodb.scala.model.Updates.set
 
-class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
 
   lazy val mongoClient: MongoClient = MongoClient(mongoConnectionString)
   lazy val db: MongoDatabase                     = mongoClient.getDatabase(mongoDatabase)
@@ -31,7 +30,7 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
   // Utils for url generation
   val urlPrefix           = "http://rdfshape.weso.es/link/"
   val random: Random.type = Random
-  val routes: HttpRoutes[F] = HttpRoutes.of[F] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Insert a reference to the permalink in DB
     case GET -> Root / `api` / "permalink" / "generate" :?
@@ -81,7 +80,7 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
       UrlCodeParam(urlCode) =>
       try {
         val code    = urlCode.toLong
-        val promise = Promise[F[Response[F]]]
+        val promise = Promise[IO[Response[IO]]]
 
         // Fetch document in database
         val observable: SingleObservable[Document] = collection.find(equal("urlCode", code)).first()
@@ -188,6 +187,5 @@ class PermalinkService[F[_]](blocker: Blocker, client: Client[F])(implicit F: Ef
 }
 
 object PermalinkService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker, client: Client[F]): PermalinkService[F] =
-    new PermalinkService[F](blocker, client)
+  def apply(client: Client[IO]): PermalinkService = new PermalinkService(client)
 }

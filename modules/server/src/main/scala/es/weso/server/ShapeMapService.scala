@@ -5,7 +5,7 @@ import cats.effect._
 import cats.data.EitherT
 import es.weso.schema._
 import es.weso.server.APIDefinitions._
-import es.weso.shapeMaps.ShapeMap
+import es.weso.shapemaps.ShapeMap
 import io.circe._
 import org.http4s._
 import org.http4s.implicits._
@@ -16,11 +16,9 @@ import org.http4s.dsl.Http4sDsl
 import org.log4s.getLogger
 import es.weso.server.results.ShapeMapInfoResult
 
-class ShapeMapService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
-                                               client: Client[F])(implicit cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class ShapeMapService(client: Client[IO]) extends Http4sDsl[IO] {
 
-  val routes: HttpRoutes[F] = HttpRoutes.of[F] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "shapeMap" / "formats" =>
       val formats = ShapeMap.availableFormats
@@ -28,10 +26,10 @@ class ShapeMapService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
       Ok(json)
 
     case req@POST -> Root / `api` / "shapeMap" / "info" =>
-      req.decode[Multipart[F]] { m =>
+      req.decode[Multipart[IO]] { m =>
         println(s"ShapeMap/info")
         val partsMap = PartsMap(m.parts)
-        val t: EitherT[F,String,(ShapeMap,ShapeMapParam)] = ShapeMapParam.mkShapeMap(partsMap)
+        val t: EitherT[IO,String,(ShapeMap,ShapeMapParam)] = ShapeMapParam.mkShapeMap(partsMap)
         t.foldF(e => Ok(mkJsonErr(e)), pair => {
           val (sm,smp) = pair
           val smi: ShapeMapInfoResult = ShapeMapInfoResult.fromShapeMap(smp.shapeMap,smp.optShapeMapFormat, sm)
@@ -73,8 +71,7 @@ class ShapeMapService[F[_]:ConcurrentEffect: Timer](blocker: Blocker,
 }
 
 object ShapeMapService {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, client: Client[F]): ShapeMapService[F] =
-    new ShapeMapService[F](blocker, client)
+  def apply(client: Client[IO]): ShapeMapService = new ShapeMapService(client)
 }
 
 

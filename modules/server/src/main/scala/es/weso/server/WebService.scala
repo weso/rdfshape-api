@@ -30,22 +30,21 @@ import es.weso.utils.IOUtils._
 import es.weso.server.utils.OptEitherF._
 import es.weso.rdf.RDFReader
 
-class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class WebService extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
 
   private val logger = getLogger
-  val L = implicitly[LiftIO[F]]
+  // val L = implicitly[LiftIO[F]]
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
+  def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root => {
       Ok(html.index())
     }
 
     case req@POST -> Root / "schemaConversions" =>
-      req.decode[Multipart[F]] { m => {
+      req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
         /*for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
@@ -111,7 +110,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     }
 
     case req@POST -> Root / "schemaInfo" =>
-      req.decode[Multipart[F]] { m => {
+      req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
 /*        for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
@@ -163,7 +162,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
       )
 
       for {
-        pair <- L.liftIO(sp.getSchema(None))
+        pair <- sp.getSchema(None)
         (_,either: Either[String,Schema]) = pair
         v <- either.fold(
           s => BadRequest(s"Error obtaining schema: $s"), 
@@ -176,7 +175,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     }
 
     case req@POST -> Root / "schemaVisualize" =>
-      req.decode[Multipart[F]] { m => {
+      req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
 /*        for {
           maybePair <- SchemaParam.mkSchema(partsMap, None).value
@@ -227,7 +226,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
         optActiveSchemaTab.getOrElse(defaultActiveSchemaTab)
       )
       for {
-        pair <- L.liftIO(sp.getSchema(None))
+        pair <- sp.getSchema(None)
         (_,either: Either[String,Schema]) = pair
         v <- either.fold(e => 
           BadRequest(s"Error obtaining schema: $e"), 
@@ -268,7 +267,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     }
 
     case req@POST -> Root / "validate" =>
-      req.decode[Multipart[F]] { m => {
+      req.decode[Multipart[IO]] { m => {
         val partsMap = PartsMap(m.parts)
 /*        logger.info(s"POST validate partsMap. $partsMap")
         val r: ESF[Response[F],F] = for {
@@ -412,7 +411,7 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
     } */
 
     case req@POST -> Root / "query" => {
-      req.decode[Multipart[F]] { m => /* {
+      req.decode[Multipart[IO]] { m => /* {
         val partsMap = PartsMap(m.parts)
         for {
           maybeData <- DataParam.mkData(partsMap,relativeBase).value
@@ -585,6 +584,5 @@ class WebService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift
 }
 
 object WebService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker): WebService[F] =
-    new WebService[F](blocker)
+  def apply(): WebService = new WebService()
 }

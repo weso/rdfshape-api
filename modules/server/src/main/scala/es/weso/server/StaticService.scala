@@ -20,13 +20,12 @@ import org.http4s.server.staticcontent.WebjarService.{Config, WebjarAsset}
 import org.http4s.server.staticcontent.{ResourceService, resourceService, webjarService}
 import org.log4s.getLogger
 
-class StaticService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+class StaticService() extends Http4sDsl[IO] {
 
   private val logger = getLogger
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] =
-    resourceService[F](ResourceService.Config("/static", blocker)) // .combineK(webjars)
+  def routes: HttpRoutes[IO] =
+    resourceService[IO](ResourceService.Config("/static")) // .combineK(webjars)
 
 /*  private val webjars: HttpRoutes[F] = {
     def isJsAsset(asset: WebjarAsset): Boolean = asset.asset.endsWith(".js")
@@ -40,6 +39,5 @@ class StaticService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextSh
 }
 
 object StaticService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker): StaticService[F] =
-    new StaticService[F](blocker)
+  def apply(): StaticService = new StaticService()
 }

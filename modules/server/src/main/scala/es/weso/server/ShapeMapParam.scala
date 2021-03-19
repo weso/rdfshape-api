@@ -1,10 +1,10 @@
 package es.weso.server
 
 import cats.data.EitherT
-import cats.effect.Effect
 import cats.implicits._
+import cats.effect.IO
 import es.weso.rdf.PrefixMap
-import es.weso.shapeMaps._
+import es.weso.shapemaps._
 import org.log4s.getLogger
 
 case class ShapeMapParam(
@@ -43,16 +43,16 @@ case class ShapeMapParam(
     }
   }
 
-  def getShapeMap[F[_]: Effect]: EitherT[F, String, ShapeMap] =
+  def getShapeMap: EitherT[IO, String, ShapeMap] =
     for {
-      tab <- EitherT.fromEither[F](parseShapeMapTab(shapeMapTab))
+      tab <- EitherT.fromEither[IO](parseShapeMapTab(shapeMapTab))
       sm <- tab match {
-        case ShapeMapTextAreaType => EitherT.fromEither[F](ShapeMap.fromString(shapeMap.getOrElse(""), shapeMapFormat))
+        case ShapeMapTextAreaType => EitherT.fromEither[IO](ShapeMap.fromString(shapeMap.getOrElse(""), shapeMapFormat))
         case ShapeMapUrlType =>
-          EitherT.fromEither[F](
+          EitherT.fromEither[IO](
             ShapeMap.fromURI(shapeMapURL.getOrElse(""), shapeMapFormat, None, PrefixMap.empty, PrefixMap.empty)
           )
-        case _ => EitherT.fromEither[F](s"Not implemented yet ${tab.id}".asLeft[ShapeMap])
+        case _ => EitherT.fromEither[IO](s"Not implemented yet ${tab.id}".asLeft[ShapeMap])
       }
     } yield sm
 

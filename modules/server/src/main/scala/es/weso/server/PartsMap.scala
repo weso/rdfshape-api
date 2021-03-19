@@ -1,47 +1,47 @@
 package es.weso.server
 import cats._
-import cats.effect.{Effect, IO}
+import cats.effect.IO
 import data._
 import implicits._
 import org.http4s.multipart.Part
 import fs2.text.utf8Decode
 
-case class PartsMap[F[_]: Effect] private(map: Map[String,Part[F]]) {
+case class PartsMap private(map: Map[String,Part[IO]]) {
 
-  def eitherPartValue(key: String): F[Either[String,String]] = for {
+  def eitherPartValue(key: String): IO[Either[String,String]] = for {
     maybeValue <- optPartValue(key)
   } yield maybeValue match {
     case None => Left(s"Not found value for key $key\nKeys available: ${map.keySet.mkString(",")}")
     case Some(s) => Right(s)
   }
 
-  def optPartValue(key: String): F[Option[String]] =
+  def optPartValue(key: String): IO[Option[String]] =
     map.get(key) match {
       case Some(part) =>
         part.body.through(utf8Decode).compile.foldMonoid.map(Some.apply)
-      case None => Effect[F].point(None)
+      case None => IO.pure(None)
     }
 
-  def optPartValueBoolean(key: String): F[Option[Boolean]] = map.get(key) match {
+  def optPartValueBoolean(key: String): IO[Option[Boolean]] = map.get(key) match {
     case Some(part) => part.body.through(utf8Decode).compile.foldMonoid.map {
       case "true" => Some(true)
       case "false" => Some(false)
       case _ => None
     }
-    case None => Effect[F].point(None)
+    case None => IO.pure(None)
   }
 
-  def partValue(key:String): F[String] = for {
+  def partValue(key:String): IO[String] = for {
     eitherValue <- eitherPartValue(key)
     value <- eitherValue.fold(
-      s => MonadError[F,Throwable].raiseError(new RuntimeException(s)), 
-      Monad[F].pure(_))
+      s => IO.raiseError(new RuntimeException(s)), 
+      IO.pure(_))
   } yield value
 }
 
 object PartsMap {
 
-  def apply[F[_]:Effect](ps: Vector[Part[F]]): PartsMap[F] = {
+  def apply(ps: Vector[Part[IO]]): PartsMap = {
     PartsMap(ps.filter(_.name.isDefined).map(p => (p.name.get,p)).toMap)
   }
 
