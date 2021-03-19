@@ -7,11 +7,14 @@ import java.security.{GeneralSecurityException, KeyStore, SecureRandom, Security
 import cats.effect.{IO, Sync}
 import cats.implicits._
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
-import org.http4s.HttpApp
+import org.http4s._
 import org.http4s.Uri.{Authority, RegName, Scheme}
 import org.http4s.dsl.Http4sDsl
+
 import org.http4s.headers.{Host, Location}
+
 import org.http4s.server.SSLKeyStoreSupport.StoreInfo
+import cats.data.NonEmptyList
 
 object SSLHelper {
   val keyStorePassword: String   = sys.env.getOrElse("KEYSTORE_PASSWORD", "")
@@ -89,8 +92,9 @@ object SSLHelper {
     val dsl = new Http4sDsl[IO] {}
     import dsl._
 
-    HttpApp[IO] { request =>
-      request.headers.get(Host) match {
+    HttpApp[IO] { request => {
+      val rs : Option[NonEmptyList[Header.Raw]] = request.headers.get(Host.headerInstance.name)
+      rs match {
         case Some(Host(host @ _, _)) =>
           val baseUri = request.uri.copy(
             scheme = Scheme.https.some,
@@ -106,6 +110,7 @@ object SSLHelper {
         case _ =>
           BadRequest()
       }
+    }
     }
   }
 }
