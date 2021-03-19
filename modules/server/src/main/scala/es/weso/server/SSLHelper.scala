@@ -10,8 +10,8 @@ import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import org.http4s._
 import org.http4s.Uri.{Authority, RegName, Scheme}
 import org.http4s.dsl.Http4sDsl
-
 import org.http4s.headers.{Host, Location}
+import org.typelevel.ci._
 
 import org.http4s.server.SSLKeyStoreSupport.StoreInfo
 import cats.data.NonEmptyList
@@ -93,22 +93,26 @@ object SSLHelper {
     import dsl._
 
     HttpApp[IO] { request => {
-      val rs : Option[NonEmptyList[Header.Raw]] = request.headers.get(Host.headerInstance.name)
+      val hostCIString: CIString = Host.headerInstance.name
+      val rs : Option[NonEmptyList[Header.Raw]] = request.headers.get(hostCIString)
       rs match {
-        case Some(Host(host @ _, _)) =>
-          val baseUri = request.uri.copy(
-            scheme = Scheme.https.some,
-            authority = Some(
-              Authority(
-                userInfo = request.uri.authority.flatMap(_.userInfo),
-                host = RegName(host),
-                port = securePort.some
-              )
-            )
-          )
-          MovedPermanently(Location(baseUri.withPath(request.uri.path)))
-        case _ =>
-          BadRequest()
+        case Some(ls) => {
+          ls.filter(_.name == hostCIString).headOption match {
+            case Some(header) => {
+              val host = header.value
+              val baseUri = request.uri.copy(
+                scheme = Scheme.https.some,
+                authority = Some(Authority(
+                  userInfo = request.uri.authority.flatMap(_.userInfo),
+                  host = RegName(host),
+                  port = securePort.some
+                )))
+              MovedPermanently(Location(baseUri.withPath(request.uri.path)))
+            }
+            case None => BadRequest()
+          }
+        }
+        case _ => BadRequest()
       }
     }
     }
