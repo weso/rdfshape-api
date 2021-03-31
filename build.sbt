@@ -46,6 +46,8 @@ lazy val http4sVersion         = "1.0.0-M19"
 lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
+lazy val munitVersion          = "0.7.22"
+lazy val munitEffectVersion    = "0.13.1"
 lazy val plantumlVersion       = "1.2017.12"
 lazy val scalacheckVersion     = "1.13.5"
 lazy val scalaGraphVersion     = "1.11.5"
@@ -87,6 +89,8 @@ lazy val http4sBlazeClient = "org.http4s"                 %% "http4s-blaze-clien
 lazy val http4sCirce       = "org.http4s"                 %% "http4s-circe"        % http4sVersion
 lazy val http4sTwirl       = "org.http4s"                 %% "http4s-twirl"        % http4sVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
+lazy val munit             = "org.scalameta"              %% "munit"               % munitVersion
+lazy val munitEffect       = "org.typelevel"              %% "munit-cats-effect-3" % munitEffectVersion
 lazy val plantuml          = "net.sourceforge.plantuml"   % "plantuml"             % plantumlVersion
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
@@ -119,6 +123,9 @@ lazy val mongodb           = "org.mongodb.scala"          %% "mongo-scala-driver
 lazy val scalaMacrosParadise = "org.scalamacros"      % "paradise"        % scalaMacrosVersion cross CrossVersion.full
 //lazy val simulacrum          = "com.github.mpilquist" %% "simulacrum"     % simulacrumVersion
 //lazy val kindProjector       = "org.spire-math"       %% "kind-projector" % kindProjectorVersion
+
+lazy val MUnitFramework    = new TestFramework("munit.Framework")
+
 
 ThisBuild / githubWorkflowJavaVersions := Seq(Java11)
 ThisBuild / githubOwner := "weso"
@@ -190,12 +197,13 @@ lazy val server = project
       scalaj,
       play,
       utilsTest % Test,
+      munitEffect % Test,
       mongodb,
-
       // webJars
       jquery,
       bootstrap,
     ),
+    testFrameworks += MUnitFramework,
     crossScalaVersions := supportedScalaVersions,
   )
 
@@ -213,8 +221,8 @@ lazy val noPublishSettings = Seq(
 
 lazy val sharedDependencies = Seq(
   libraryDependencies ++= Seq(
-    scalactic,
-    scalaTest % Test
+//    scalactic,
+//    scalaTest % Test
   )
 )
 

@@ -1,16 +1,14 @@
 package es.weso.html2rdf
 
 import es.weso.rdf.jena.RDFAsJenaModel
-import org.scalatest.funspec._
-import org.scalatest.matchers.should._
 import es.weso.utils.IOUtils._
 import es.weso.rdf.RDFReader
 import cats.implicits._
 import cats.effect.IO
+import munit._
 
-class HTML2RDFTest extends AnyFunSpec with Matchers {
-  describe(s"Extract RDF data from HTML") {
-
+class HTML2RDFTest extends CatsEffectSuite {
+  
     shouldExtract(
       """|<body prefix = "xsd: http://www.w3.org/2001/XMLSchema#"
          |      vocab = "http://schema.org/" >
@@ -92,7 +90,7 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
     ) */
 
     def shouldExtract(html: String, expected: String, extractorName: String): Unit = {
-      it(s"Should extract from \n$html\n and obtain\n$expected\nExtractor $extractorName") {
+      test(s"Should extract from \n$html\n and obtain\n$expected\nExtractor $extractorName") {
         val r: IO[(Boolean,String,String)] = for {
           res1 <- IO(HTML2RDF.extractFromString(html,extractorName)) 
           res2 <- RDFAsJenaModel.fromChars(expected, "TURTLE") 
@@ -106,12 +104,10 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
           } yield (isIsomorphic, rdfObtained, expectedStr) }
         } yield vv 
 
-        r.attempt.unsafeRunSync.fold(
-          e => fail(s"Error extracting: ${e.getMessage}"),
-          t => {
+        r.map(t => {
             val (ok, rdf, expected) = t
             if (ok) {
-              info(s"Model extracted isomorphic with expected")
+              assertEquals(ok,true)
             } else {
               fail(
                 s"""Model extracted is not isomorphic with expected one:
@@ -125,6 +121,5 @@ class HTML2RDFTest extends AnyFunSpec with Matchers {
         )
       }
     }
-
-  }
 }
+ 

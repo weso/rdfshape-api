@@ -1,24 +1,22 @@
 package es.weso.server
 import cats.effect._
 import es.weso.rdf.nodes.{IRI, RDFNode}
-import es.weso.shapeMaps.{Status => ShapeMapStatus, _}
+import es.weso.shapemaps.{Status => ShapeMapStatus, _}
 import io.circe.Json
 import io.circe.parser._
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.dsl.io._
 import org.http4s.implicits._
 import org.http4s.{Request, Response, Uri, Query => HQuery}
-import org.scalatest.funspec._
-import org.scalatest.matchers.should._
 import es.weso.utils.test._
 import org.http4s.Uri.{Path => UriPath}
 import scala.concurrent.ExecutionContext.global
+import munit.CatsEffectSuite
 
-class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
+class DataServiceTest extends CatsEffectSuite with JsonMatchers {
 
-  describe(s"API Service") {
-
-    it(s"Should merge two RDF files") {
+  
+    test(s"Should merge two RDF files") {
       val dataStr1 = "<x> <p> 1 ."
       val dataStr2 = "<x> <p> 2 ."
       val compoundData =
@@ -65,7 +63,7 @@ class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
 
     }
 
-    it("Should obtain JSON data from RDF") {
+    test("Should obtain JSON data from RDF") {
       val dataStr =
         """|prefix : <http://example.org/>
            |:x :p 1 .
@@ -114,7 +112,6 @@ class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
             )
         )
     }
-  }
 
   val ip                            = "0.0.0.0"
   val port                          = 8080
@@ -131,5 +128,5 @@ class DataServiceTest extends AnyFunSpec with Matchers with JsonMatchers {
             DataService[IO](blocker, client).routes.orNotFound.run(req)
         }
     }
-  }
+ }
 }

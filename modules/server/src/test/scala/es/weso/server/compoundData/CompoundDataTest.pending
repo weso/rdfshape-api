@@ -6,12 +6,10 @@ import es.weso.server.merged.CompoundData._
 import es.weso.server.merged.{CompoundData, DataElement, DataTextArea}
 import io.circe.parser._
 import io.circe.syntax._
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should._
-
-class CompoundDataTest extends AnyFunSpec with Matchers {
-  describe(s"Compound data") {
-    shouldParse(
+import munit._
+class CompoundDataTest extends CatsEffectSuite {
+  
+  shouldParse(
       """|[{"data": "p", 
                      |  "dataFormat": "Turtle",
                      |  "activeDataTab": "#dataTextArea" 
@@ -19,7 +17,7 @@ class CompoundDataTest extends AnyFunSpec with Matchers {
                      |]""".stripMargin,
       CompoundData(List(DataElement.empty.copy(data = Some("p"), dataFormat = Turtle, activeDataTab = DataTextArea)))
     ) 
-    shouldParse(
+  shouldParse(
       """|[{"data": "p", 
          |  "dataFormat": "json-ld",
          |  "activeDataTab": "#dataTextArea" 
@@ -27,7 +25,7 @@ class CompoundDataTest extends AnyFunSpec with Matchers {
          |]""".stripMargin,
       CompoundData(List(DataElement.empty.copy(data = Some("p"), dataFormat = JsonLd, activeDataTab = DataTextArea)))
     )
-    shouldParse(
+  shouldParse(
       """|[{"data": "p", 
          |  "dataFormat": "json-ld"
          | }
@@ -36,7 +34,7 @@ class CompoundDataTest extends AnyFunSpec with Matchers {
     )
 
     // Wrong value in "activeDataTab" should default to "#dataTextArea"
-    shouldParse("""|[{"data": "p",
+  shouldParse("""|[{"data": "p",
                       |  "dataFormat": "Json",
                       |  "activeDataTab": "#asdf"
                       | }
@@ -44,15 +42,14 @@ class CompoundDataTest extends AnyFunSpec with Matchers {
       CompoundData(List(DataElement(Some("p"), None, None, None, dataFormat = JsonDataFormat, DataTextArea)))
     )
 
-    shouldNotParse("""|[{"dataBadParam": "p",
+  shouldNotParse("""|[{"dataBadParam": "p",
                      |  "dataFormat": "Json",
                      |  "activeDataTab": "#asdf" 
                      | }
                      |]""".stripMargin) 
-  }
 
   def shouldParse(str: String, expected: CompoundData): Unit = {
-    it(s"Should parse\n$str\n and obtain \n${expected.asJson.spaces2}") {
+    test(s"Should parse\n$str\n and obtain \n${expected.asJson.spaces2}") {
       val r: Either[String, CompoundData] = for {
         json <- parse(str).leftMap(pe => s"Parser error: ${pe.getMessage()}")
         cd   <- json.as[CompoundData].leftMap(e => s"Error: ${e.getMessage()}")
@@ -65,7 +62,7 @@ class CompoundDataTest extends AnyFunSpec with Matchers {
   }
 
   def shouldNotParse(str: String): Unit = {
-    it(s"Should not parse $str") {
+    test(s"Should not parse $str") {
       val r: Either[String, CompoundData] = for {
         json <- parse(str).leftMap(pe => s"Parser error: ${pe.getMessage()}")
         cd   <- json.as[CompoundData].leftMap(e => s"Error: ${e.getMessage()}")
