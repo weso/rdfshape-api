@@ -48,17 +48,14 @@ lazy val kindProjectorVersion  = "0.11.3"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
 lazy val munitVersion          = "0.7.22"
-lazy val munitEffectVersion    = "0.13.1"
+lazy val munitEffectVersion    = "1.0.1"
 lazy val plantumlVersion       = "1.2017.12"
-lazy val scalacheckVersion     = "1.13.5"
+// lazy val scalacheckVersion     = "1.13.5"
 lazy val scalaGraphVersion     = "1.11.5"
 // lazy val scalajVersion         = "2.4.2"
-lazy val scalacticVersion      = "3.2.0"
-lazy val scalaTestVersion      = "3.2.0"
-lazy val scalatestplusVersion  = "3.1.0.0"
 lazy val scalatagsVersion      = "0.7.0"
 lazy val scallopVersion        = "3.3.1"
-lazy val seleniumVersion       = "2.45.0"
+// lazy val seleniumVersion       = "2.45.0"
 // lazy val silencerVersion       = "1.7.3"
 lazy val typesafeConfigVersion = "1.3.4"
 lazy val mongodbVersion        = "4.1.1"
@@ -87,6 +84,7 @@ lazy val graphvizJava      = "guru.nidi"                  % "graphviz-java"     
 lazy val http4sDsl         = "org.http4s"                 %% "http4s-dsl"          % http4sVersion
 lazy val http4sBlazeServer = "org.http4s"                 %% "http4s-blaze-server" % http4sVersion
 lazy val http4sBlazeClient = "org.http4s"                 %% "http4s-blaze-client" % http4sVersion
+lazy val http4sEmberClient = "org.http4s"                 %% "http4s-ember-client" % http4sVersion
 lazy val http4sCirce       = "org.http4s"                 %% "http4s-circe"        % http4sVersion
 lazy val http4sTwirl       = "org.http4s"                 %% "http4s-twirl"        % http4sVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
@@ -95,13 +93,8 @@ lazy val munitEffect       = "org.typelevel"              %% "munit-cats-effect-
 lazy val plantuml          = "net.sourceforge.plantuml"   % "plantuml"             % plantumlVersion
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
-lazy val scalactic         = "org.scalactic"              %% "scalactic"           % scalacticVersion
-lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"          % scalacheckVersion
 // lazy val scalaj            = "org.scalaj"                 %% "scalaj-http"         % scalajVersion
-lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
 lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
-lazy val selenium          = "org.seleniumhq.selenium"    % "selenium-java"        % seleniumVersion
-lazy val scalatestPlusSelenium = "org.scalatestplus"      %% "selenium-2-45"       % scalatestplusVersion
 
 lazy val umlShaclex        = "es.weso"                    %% "umlshaclex"          % umlShaclexVersion
 lazy val utilsTest         = "es.weso"                    %% "utilstest"           % utilsVersion
@@ -185,10 +178,11 @@ lazy val server = project
       http4sDsl,
       http4sBlazeServer,
       http4sBlazeClient,
+      http4sEmberClient,
       http4sCirce,
       http4sTwirl,
       scalatags,
-      selenium,
+      // selenium,
       umlShaclex,
       wikibaserdf,
       any23_core, any23_api, any23_scraper,

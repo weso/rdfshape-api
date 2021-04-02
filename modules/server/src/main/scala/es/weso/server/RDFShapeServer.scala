@@ -90,10 +90,6 @@ object RDFShapeServer extends IOApp {
   private val port = envOrNone("PORT") map (_.toInt) getOrElse 8080
   println(s"PORT: $port")
 
-/*  def main(args: List[String]): Unit = {
-    run(args).unsafeRunSync()
-  } */
-
   override def run(args: List[String]): IO[ExitCode]  = {
     Server.stream(port,ip).compile.drain.as(ExitCode.Success)
   }
