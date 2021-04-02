@@ -3,7 +3,7 @@
 RDF playground. This repository contains the server part of the RDFShape web app.
 The server has been implemented in Scala using the [http4s](https://http4s.org/) library. 
 
-[![Build Status](https://travis-ci.org/weso/rdfshape.svg?branch=master)](https://travis-ci.org/weso/rdfshape)
+[![Continuous Integration](https://github.com/weso/rdfshape/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/rdfshape/actions/workflows/ci.yml)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2ad10ec42b6a4bb389aeb114fe192f21)](https://www.codacy.com/gh/weso/rdfshape?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/rdfshape&amp;utm_campaign=Badge_Grade)
 
 # More info
