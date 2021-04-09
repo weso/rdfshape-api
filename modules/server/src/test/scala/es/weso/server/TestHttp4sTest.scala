@@ -55,7 +55,11 @@ class TestHttp4sTest extends CatsEffectSuite {
    body.through(text.utf8Decode).compile.toList.map(_.mkString)
  }
 
- def checkRequest(request: Request[IO], expectedStatus: Status, expectedBody: Option[String]) = {
+ def checkRequest(
+   request: Request[IO], 
+   expectedStatus: Status, 
+   expectedBody: Option[String]
+   ) = {
   val r: IO[(Status, String)] = for {
     client <- IO(clientFixture)
     response <- runReq(request, TestService(client.apply()).routes)
