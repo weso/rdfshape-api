@@ -1,21 +1,7 @@
 package es.weso.server
-import org.http4s._
-import org.http4s.implicits._
-import org.http4s.server._
-import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.middleware.{CORS, Logger}
-import es.weso.server.utils.Http4sUtils._
-import org.log4s.getLogger
 import cats.effect._
-import cats.implicits._
-import es.weso.quickstart.{HelloWorld, TestRoutes}
-import fs2.Stream
-import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.dsl.Http4sDsl
-import scala.concurrent.ExecutionContext.global
+
 import scala.util.Properties.envOrNone
-import scala.concurrent.duration._
 
 /*
 class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
@@ -31,10 +17,10 @@ object HelloService {
   def apply[F[_]: Effect: ContextShift](blocker: Blocker): HelloService[F] =
     new HelloService[F](blocker)
 }
-*/
+ */
 
 /**
- * RDFShape server
+  * RDFShape server
  **/
 /* class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
   private val logger = getLogger
@@ -80,19 +66,18 @@ object HelloService {
         .withHttpApp(httpApp(blocker,mkClient(client)))
         .resource
     } yield server
-*/
+ */
 //  def stream[F[_]: ConcurrentEffect](blocker:Blocker)(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
 } */
 
 object RDFShapeServer extends IOApp {
 
-  private val ip = "0.0.0.0"
+  private val ip   = "0.0.0.0"
   private val port = envOrNone("PORT") map (_.toInt) getOrElse 8080
   println(s"PORT: $port")
 
-  override def run(args: List[String]): IO[ExitCode]  = {
-    Server.stream(port,ip).compile.drain.as(ExitCode.Success)
+  override def run(args: List[String]): IO[ExitCode] = {
+    Server.stream(port, ip).compile.drain.as(ExitCode.Success)
   }
-
 
 }
