@@ -45,7 +45,7 @@ lazy val scalajVersion = "2.4.2"
 lazy val playVersion = "2.9.0"
 
 // Compiler plugin dependency versions
-// lazy val scalaMacrosVersion    = "2.1.1"
+lazy val scalaMacrosVersion = "2.1.1"
 
 // Dependency modules
 lazy val catsCore   = "org.typelevel" %% "cats-core"   % catsVersion
@@ -188,8 +188,8 @@ lazy val noPublishSettings = Seq(
 
 lazy val sharedDependencies = Seq(
   libraryDependencies ++= Seq(
-    //    scalactic,
-    //    scalaTest % Test
+//    scalactic,
+//    scalaTest % Test
   )
 )
 

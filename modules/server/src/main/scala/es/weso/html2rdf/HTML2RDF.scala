@@ -34,8 +34,8 @@ object HTML2RDF {
     Try {
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
-      any23.setHTTPUserAgent("test-user-agent");
-      val httpClient = any23.getHTTPClient;
+      any23.setHTTPUserAgent("test-user-agent")
+      val httpClient = any23.getHTTPClient
       val source     = new StringDocumentSource(htmlStr, "http://example.org/")
       val handler    = JenaTripleHandler(model)
       println("Initialization ready for extractor...")
@@ -58,12 +58,18 @@ object HTML2RDF {
     )
   }
 
+  private def fromModel(model: Model, uri: Option[IRI]): CatsResource[IO, RDFAsJenaModel] = {
+    CatsResource.make(
+      Ref.of[IO, Model](model).flatMap(ref => ok(RDFAsJenaModel(ref, None, None, Map(), Map())))
+    )(m => m.getModel.flatMap(m => IO(m.close())))
+  }
+
   def extractFromUrl(uri: String, extractorName: String): CatsResource[IO, RDFReasoner] = {
     Try {
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
-      any23.setHTTPUserAgent("test-user-agent");
-      val httpClient = any23.getHTTPClient;
+      any23.setHTTPUserAgent("test-user-agent")
+      val httpClient = any23.getHTTPClient
       val source     = new HTTPDocumentSource(httpClient, uri)
       // val out = new ByteArrayOutputStream()
       val handler = JenaTripleHandler(model)
@@ -78,12 +84,6 @@ object HTML2RDF {
       e => CatsResource.eval(err(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri")),
       model => fromModel(model, Some(IRI(uri)))
     )
-  }
-
-  private def fromModel(model: Model, uri: Option[IRI]): CatsResource[IO, RDFAsJenaModel] = {
-    CatsResource.make(
-      Ref.of[IO, Model](model).flatMap(ref => ok(RDFAsJenaModel(ref, None, None, Map(), Map())))
-    )(m => m.getModel.flatMap(m => IO(m.close())))
   }
 
   sealed trait Extractor {
@@ -118,29 +118,29 @@ object HTML2RDF {
     def cnvBNode(b: BNode): JenaResource =
       m.createResource(AnonId.create(b.getID))
 
-    override def startDocument(documentIRI: RDF4jIRI): Unit = {} // println(s"Start")
+    override def startDocument(documentIRI: RDF4jIRI): Unit                                      = {} // println(s"Start")
 
-    override def openContext(context: ExtractionContext): Unit = {} // println(s"New context")
+    override def openContext(context: ExtractionContext): Unit                                   = {} // println(s"New context")
 
     override def receiveNamespace(prefix: String, uri: String, context: ExtractionContext): Unit = {}
 
-    override def closeContext(context: ExtractionContext): Unit = {}
+    override def closeContext(context: ExtractionContext): Unit                                  = {}
 
-    override def endDocument(documentIRI: RDF4jIRI): Unit = {}
+    override def endDocument(documentIRI: RDF4jIRI): Unit                                        = {}
 
-    override def setContentLength(contentLength: Long): Unit = {}
+    override def setContentLength(contentLength: Long): Unit                                     = {}
 
-    override def close(): Unit = {}
+    override def close(): Unit                                                                   = {}
 
   }
 
   case object RDFA11 extends Extractor {
-    val extractor    = new RDFa11Extractor()
+    val extractor = new RDFa11Extractor()
     val name: String = extractor.getDescription.getExtractorName
   }
 
   case object Microdata extends Extractor {
-    val extractor    = new MicrodataExtractor
+    val extractor = new MicrodataExtractor
     val name: String = extractor.getDescription.getExtractorName
   }
 }
