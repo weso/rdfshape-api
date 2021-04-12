@@ -60,27 +60,26 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
     case GET -> Root / `api` / "wikidata" / "entityLabel" :?
        WdEntityParam(entity) +&
-       LanguageParam(language) => {
-        val uri = Uri.unsafeFromString(s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=${entity}&languages=${language}&format=json")
-        val req: Request[IO] = Request(method = GET, uri = uri)
-         for {
-          either <- client.fetch(req) {
+       LanguageParam(language) =>
+      val uri = Uri.unsafeFromString(s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=${entity}&languages=${language}&format=json")
+      val req: Request[IO] = Request(method = GET, uri = uri)
+      for {
+          either <- client.run(req).use {
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
             case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
           }
-          resp <- Ok(either.fold(Json.fromString(_), identity))
+          resp <- Ok(either.fold(Json.fromString, identity))
          } yield resp
-    }
 
     case GET -> Root / `api` / "wikidata" / "schemaContent" :?
       WdSchemaParam(wdSchema) => {
       val uri = uri"https://www.wikidata.org".
-        withPath(s"/wiki/Special:EntitySchemaText/${wdSchema}")
+        withPath(Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/${wdSchema}"))
 
       println(s"wikidata/schemaContent: ${uri.toString}")
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[String].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[String])
         }
@@ -105,7 +104,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
       val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
       println(requestUrl)
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
-        withPath("/w/api.php").
+        withPath(Uri.Path.unsafeFromString("/w/api.php")).
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
         withQueryParam("language", language).
@@ -117,7 +116,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -125,7 +124,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
           json <- eitherValues
           converted <- cnvEntities(json)
         } yield converted
-        resp <- Ok(eitherResult.fold(Json.fromString(_), identity))
+        resp <- Ok(eitherResult.fold(Json.fromString, identity))
       } yield resp
     }
 
@@ -140,7 +139,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
       val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
       val uri = Uri.fromString(requestUrl).valueOr(throw _).
-        withPath("/w/api.php").
+        withPath(Uri.Path.unsafeFromString("/w/api.php")).
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
         withQueryParam("language", language).
@@ -151,7 +150,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -159,7 +158,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
           json <- eitherValues
           converted <- cnvEntities(json)
         } yield converted
-        resp <- Ok(eitherResult.fold(Json.fromString(_), identity))
+        resp <- Ok(eitherResult.fold(Json.fromString, identity))
       } yield resp
     }
 
@@ -174,7 +173,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
       println(s"SearchLexeme!!")
 
       val uri = uri"https://www.wikidata.org".
-        withPath("/w/api.php").
+        withPath(Uri.Path.unsafeFromString("/w/api.php")).
         withQueryParam("action", "wbsearchentities").
         withQueryParam("search", label).
         withQueryParam("language", language).
@@ -187,7 +186,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -195,14 +194,14 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
           json <- eitherValues
           converted <- cnvEntities(json)
         } yield converted
-        resp <- Ok(eitherResult.fold(Json.fromString(_), identity))
+        resp <- Ok(eitherResult.fold(Json.fromString, identity))
       } yield resp
     }
 
     case GET -> Root / `api` / "wikidata" / "languages" => {
 
       val uri = uri"https://www.wikidata.org".
-        withPath("/w/api.php").
+        withPath(Uri.Path.unsafeFromString("/w/api.php")).
         withQueryParam("action", "query").
         withQueryParam("meta", "wbcontentlanguages").
         withQueryParam("wbclcontext", "term").
@@ -213,7 +212,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
-        eitherValues <- client.fetch(req) {
+        eitherValues <- client.run(req).use {
           case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
           case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
         }
@@ -239,7 +238,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
                .withHeaders(
                  `Accept`(MediaType.application.`json`)
                )
-          eitherValue <- client.fetch(req) {
+          eitherValue <- client.run(req).use {
             case Status.Successful(r) => r.attemptAs[Json].leftMap(_.message).value
             case r => r.as[String].map(b => s"Request $req failed with status ${r.status.code} and body $b".asLeft[Json])
           }
@@ -294,7 +293,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
     case req@GET -> Root / "wdSchema" => Ok("Not implemented wikidata schema yet")
     case req@GET -> Root / "wdValidate" => Ok("Not implemented wikidata validate yet")
-    
+
     case req @ POST -> Root / `api` / "wikidata" / "extract" => {
       println(s"POST /api/wikidata/extract, Request: $req")
       req.decode[Multipart[IO]] { m =>
@@ -315,7 +314,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
                InferOptions.defaultOptions.copy(maxFollowOn=3))
             } yield inferred)))
           pair <- either2es[(Schema,ResultShapeMap)](eitherInferred)
-          shExCStr <- io2es ({ 
+          shExCStr <- io2es ({
             val (schema,_) = pair
             schema.serialize("SHEXC")
           })
@@ -337,7 +336,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         val r: EitherT[IO,String,Response[IO]] = for {
           label <- EitherT(partsMap.eitherPartValue("entity"))
           jsonParams <- either2es[Json](mkShexerParams(label))
-          postRequest = Request[IO](method = POST, 
+          postRequest = Request[IO](method = POST,
              uri = uri"http://156.35.86.6:8080/shexer").
              withHeaders(`Content-Type`(MediaType.application.`json`)).
              withEntity[Json](jsonParams
@@ -386,8 +385,8 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     }
   }
 
-  case class WikibaseServiceError(msg: String) 
-    extends RuntimeException(msg) 
+  case class WikibaseServiceError(msg: String)
+    extends RuntimeException(msg)
     with NoStackTrace
 
   private def fromEither[A](either: Either[String,A]): IO[A] = {
@@ -444,18 +443,18 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
    ( "instantiation_prop", Json.fromString("http://www.wikidata.org/prop/direct/P31")),
    ( "disable_comments", Json.True),
    ( "shape_qualifiers_mode", Json.True),
-   ( "namespaces_for_qualifiers", 
+   ( "namespaces_for_qualifiers",
       Json.arr(Json.fromString("http://www.wikidata.org/prop/")
       ))
   ))
-  
+
 
   private case class InfoEntity(localName: String, uri: Uri, sourceUri: String)
 
   private def cnvEntity(entity: String): Either[String, InfoEntity] = {
     val wdRegex = "http://www.wikidata.org/entity/(.*)".r
     entity match {
-      case wdRegex(localName) => { 
+      case wdRegex(localName) => {
         val uri = uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName  + ".ttl")
         InfoEntity(localName,uri,entity).asRight[String]
       }
@@ -525,7 +524,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     } yield data
   }
 
-/*  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] = 
+/*  private def getRDF(str: Stream[F,String]): EitherT[F, String, RDFReader] =
     EitherT.liftF(LiftIO[F].liftIO(RDFAsJenaModel.empty)) */
 
   private def fromIO[A](io: IO[A]): EitherT[IO, String, A] = EitherT.liftF(io)
@@ -631,10 +630,10 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     converted
   }
 
- private def cnvEntitySchema(wdSchema: String): Uri = { 
+ private def cnvEntitySchema(wdSchema: String): Uri = {
    val uri = uri"https://www.wikidata.org".
-         withPath(s"/wiki/Special:EntitySchemaText/${wdSchema}")
-   uri      
+         withPath(Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/${wdSchema}"))
+   uri
  }
 
 }

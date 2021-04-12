@@ -1,3 +1,4 @@
+/*
 package es.weso.server
 
 import es.weso.rdf._
@@ -23,11 +24,11 @@ import java.io.ByteArrayOutputStream
 import io.circe.Json
 import io.circe.parser.parse
 
-/*
-case class CachedState(iris: Set[IRI], rdf: RDFAsJenaModel) 
+
+case class CachedState(iris: Set[IRI], rdf: RDFAsJenaModel)
 
 object CachedState {
-  def initial: Resource[IO,CachedState] = 
+  def initial: Resource[IO,CachedState] =
     (RDFAsJenaModel.empty.evalMap(rdf => for {
       modelRef <- rdf.getModel
       _ <- IO { pprint.pprintln(s"/// CachedState.initial")}
@@ -49,8 +50,8 @@ object CachedState {
 
 case class WikibaseRDF(
     endpoint: IRI,
-    prefixMap: PrefixMap, 
-    refCached: Ref[IO,CachedState] 
+    prefixMap: PrefixMap,
+    refCached: Ref[IO,CachedState]
 ) extends RDFReader {
 
  // val reader: RDFAsJenaModel = RDFAsJenaModel(cachedModel,None,None)
@@ -65,11 +66,11 @@ case class WikibaseRDF(
 
  override def serialize(format: String,
                          base: Option[IRI]): RDFRead[String] = for {
-    cached <- getCachedState                             
+    cached <- getCachedState
  } yield {
    s"Wikidata endpoint\nCached nodes:\n${cached.iris.mkString("\n")}"
  }
- 
+
  override def rdfTriples(): RDFStream[RDFTriple] = {
     errStream("Cannot obtain triples from WikibaseRDF ")
  }
@@ -79,12 +80,12 @@ case class WikibaseRDF(
    _ <- showCachedState("Befora adding newRDF")
    merged  <- cachedState.rdf.merge(newRdf)
    _ <- showCachedState("After adding newRDF")
-   _ <- refCached.modify(cachedState => { 
+   _ <- refCached.modify(cachedState => {
       val newIris = cachedState.iris + iri
       (CachedState(newIris,merged),())
     })
  } yield (())
-    
+
 
  override def triplesWithSubject(node: RDFNode): RDFStream[RDFTriple] = for {
    cachedState <- Stream.eval(refCached.get)
@@ -93,9 +94,9 @@ case class WikibaseRDF(
          cachedState <- Stream.eval(refCached.get)
          r <- if (cachedState.iris contains subj) {
            pprint.pprintln(s"Node ${node} already in cache!!!")
-           cachedState.rdf.triplesWithSubject(node) 
+           cachedState.rdf.triplesWithSubject(node)
          } else {
-          pprint.pprintln(s"Dereferentiating ${node}") 
+          pprint.pprintln(s"Dereferentiating ${node}")
           for {
            _ <- Stream.eval { IO { pprint.pprintln(s"Before Stream.resource ${node}") ; IO.pure(())} }
            _ <- Stream.eval(showCachedState("Before...Stream.resource"))
@@ -106,7 +107,7 @@ case class WikibaseRDF(
            _ <- Stream.eval { IO { pprint.pprintln(s"Before obtaining triples") ; IO.pure(())} }
            rs <- rdfNode.triplesWithSubject(subj)
            } yield rs}
-          } yield r   
+          } yield r
      case other => cachedState.rdf.triplesWithSubject(other)
    }
  } yield ts
@@ -117,7 +118,7 @@ case class WikibaseRDF(
    model <- cachedState.rdf.getModel
    _ <- IO(pprint.pprintln(s"$msg: CachedState: ${cachedState} Closed RDF: ${model.isClosed}"))
  } yield ()
- 
+
 
  override def asRDFBuilder: IO[RDFBuilder] = err(s"No RDFBuilder for WikibaseRDF")
  override def availableParseFormats: List[String] = List()
@@ -135,7 +136,7 @@ case class WikibaseRDF(
     }
     case _ => errStream("triplesWithObject: node " + node + " must be a IRI")
   }
-  
+
  override def triplesWithPredicate(p: IRI): Stream[IO,RDFTriple] = {
     val model = QueryExecutionFactory.sparqlService(endpoint.str, queryTriplesWithPredicate(p)).execConstruct()
     streamFromIOs(model2triples(model))
@@ -152,7 +153,7 @@ case class WikibaseRDF(
  override def hasPredicateWithSubject(n: RDFNode,p: IRI): IO[Boolean] = err(s"Endpoint: Not implemented hasPredicateWithSubject")
 
  override def getNumberOfStatements(): IO[Int] = err(s"Not implemented getNumberOfStatements for WikibaseRDF")
- 
+
  override def getSHACLInstances(cls: RDFNode): Stream[IO,RDFNode] = {
     cls match {
       case iri: IRI => try {
@@ -182,7 +183,7 @@ case class WikibaseRDF(
   }
 
  override val id: String = s"WikibaseRDF(${endpoint.str})"
- 
+
  override def isIsomorphicWith(other: RDFReader): cats.effect.IO[Boolean] = IO.pure(false)
 
  override def nodesWithPath(p: SHACLPath): Stream[IO,(RDFNode, RDFNode)] = errStream(s"Not implemented nodesWithPath for wikibaseRDF")
@@ -209,8 +210,8 @@ case class WikibaseRDF(
         val json = Json.fromFields(
           List(
             ("base", prologue.getBaseURI),
-            ("prefixes", jsonPrefixes), 
-            ("result", result) 
+            ("prefixes", jsonPrefixes),
+            ("result", result)
         ))
         json */
         parse(jsonStr).leftMap(f => f.getMessage)
@@ -240,17 +241,17 @@ case class WikibaseRDF(
       qExec.getQuery.getQueryType match {
         case JenaQuery.QueryTypeSelect => {
           val result = qExec.execSelect()
-          val ls: List[IO[Map[String, RDFNode]]] = 
+          val ls: List[IO[Map[String, RDFNode]]] =
            result.asScala.toList.map(qs => {
             val qsm = new QuerySolutionMap()
             qsm.addAll(qs)
             val pairs: List[(String, JenaRDFNode)] =
              qsm.asMap.asScala.view.toMap.toList
-            val iom: IO[Map[String, RDFNode]] = 
-             pairs.map { 
-               case (v, jenaNode) => jenaNode2RDFNode(jenaNode).flatMap(node => ok((v, node))) 
+            val iom: IO[Map[String, RDFNode]] =
+             pairs.map {
+               case (v, jenaNode) => jenaNode2RDFNode(jenaNode).flatMap(node => ok((v, node)))
               }.sequence.map(_.toMap)
-            iom 
+            iom
           })
           ls.sequence
         }
@@ -259,24 +260,24 @@ case class WikibaseRDF(
     }.fold(Stream.raiseError[IO], fromIOLs)
   }
 
- 
+
  override def rdfReaderName: String = s"WikibaseRDF"
 
  override def sourceIRI: Option[IRI] = None
 
- override def subjectsWithPath(p: SHACLPath,o: RDFNode): Stream[IO,RDFNode] = 
+ override def subjectsWithPath(p: SHACLPath,o: RDFNode): Stream[IO,RDFNode] =
   errStream(s"Not implemented subjectsWithPath for WikibaseRDF")
 
 
 }
 
 object WikibaseRDF {
-  
+
   val wd = IRI("http://www.wikidata.org/entity/")
   val wdt = IRI("http://www.wikidata.org/prop/direct/")
   val wikidataEndpoint = IRI("https://query.wikidata.org/sparql")
 
-  val wikidata : Resource[IO,WikibaseRDF] = 
+  val wikidata : Resource[IO,WikibaseRDF] =
     CachedState.initial.evalMap(initial => for {
       ref <- Ref[IO].of(initial)
       _ <- IO(pprint.log(ref, "WikibaseRDF.wikidata"))
@@ -284,7 +285,7 @@ object WikibaseRDF {
     Prefix("wd") -> wd,
     Prefix("wdt") -> wdt
    )), ref))
-  
+
 /*  for {
     initial <- CachedState.initial
     ref <- Resource.liftF(Ref[IO].of(initial))

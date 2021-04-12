@@ -16,7 +16,7 @@ case object Wikidata extends Wikibase {
   def endpointUrl = IRI("https://query.wikidata.org/sparql")
 
   def schemaEntityUri(wdSchema: String): Uri = {
-    val uri = uri"https://www.wikidata.org".withPath(s"/wiki/Special:EntitySchemaText/${wdSchema}")
+    val uri = uri"https://www.wikidata.org".withPath(Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/${wdSchema}"))
     uri
   }
 
