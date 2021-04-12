@@ -62,7 +62,7 @@ object HTML2RDF {
       }
       model
      }.fold(e => 
-       CatsResource.liftF(err(s"Error obtaining RDF from HTML string: ${e.getMessage()}\nHTML String: ${htmlStr}\nExtractor name: ${extractorName}")), 
+       CatsResource.eval(err(s"Error obtaining RDF from HTML string: ${e.getMessage()}\nHTML String: ${htmlStr}\nExtractor name: ${extractorName}")), 
        model => {
          fromModel(model,None)
        } // Ref.of[IO,Model](model).flatMap(ref => )
@@ -94,7 +94,7 @@ object HTML2RDF {
       // val n3: String = out.toString("UTF-8")
       model
     }.fold(e =>
-      CatsResource.liftF(err(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri")),
+      CatsResource.eval(err(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri")),
       model => fromModel(model, Some(IRI(uri))) 
     ) 
   }
