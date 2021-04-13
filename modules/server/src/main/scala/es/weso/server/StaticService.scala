@@ -15,15 +15,9 @@ class StaticService() extends Http4sDsl[IO] {
     resourceServiceBuilder("/static").toRoutes
   } // .combineK(webjars)
 
-  /*  private val webjars: HttpRoutes[F] = {
-    def isJsAsset(asset: WebjarAsset): Boolean = asset.asset.endsWith(".js")
-    webjarService(
-      Config(
-        filter = isJsAsset,
-        blocker = blocker
-      )
-    )
-  } */
+  /* private val webjars: HttpRoutes[F] = { def isJsAsset(asset: WebjarAsset):
+   * Boolean = asset.asset.endsWith(".js") webjarService( Config( filter =
+   * isJsAsset, blocker = blocker ) ) } */
 }
 
 object StaticService {

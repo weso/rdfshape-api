@@ -31,43 +31,53 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
           ep <- EndpointParam.mkEndpoint(partsMap)
 //          json = Json.Null
           endpoint <- ep.getEndpointAsRDFReader
-          either <- EitherT.liftF[IO,String,Either[String,(ServerQuery,SparqlQueryParam)]](SparqlQueryParam.mkQuery(partsMap))
+          either <- EitherT
+            .liftF[IO, String, Either[String, (ServerQuery, SparqlQueryParam)]](
+              SparqlQueryParam.mkQuery(partsMap)
+            )
           pair <- EitherT.fromEither[IO](either)
-          (_, qp) = pair
+          (_, qp)     = pair
           optQueryStr = qp.query.map(_.str)
           json <- {
-            println(s"Query to endpoint ${endpoint}: ${optQueryStr.getOrElse("")}")
+            println(
+              s"Query to endpoint ${endpoint}: ${optQueryStr.getOrElse("")}"
+            )
             io2es(endpoint.queryAsJson(optQueryStr.getOrElse("")))
           }
         } yield json
 
         for {
           either <- r.value
-          resp <- either.fold(e =>
-            errJson(s"Error querying endpoint: ${e}"),
-            json => Ok(json))
+          resp <- either.fold(
+            e => errJson(s"Error querying endpoint: ${e}"),
+            json => Ok(json)
+          )
         } yield resp
       }
-      }
+    }
 
     case req @ POST -> Root / `api` / "endpoint" / "info" => {
-    req.decode[Multipart[IO]] { m => {
-      val partsMap = PartsMap(m.parts)
-      val r: EitherT[IO, String, Json] = for {
-        ep <- EndpointParam.mkEndpoint(partsMap)
-        ei <- EitherT.liftF[IO, String, EndpointInfo](ep.getInfo(client))
-      } yield ei.asJson
-      for {
-        either <- r.value
-        resp <- either.fold(e => errJson(s"Error obtaining info on Endpoint ${e}"), json => Ok(json))
-      } yield resp
+      req.decode[Multipart[IO]] { m =>
+        {
+          val partsMap = PartsMap(m.parts)
+          val r: EitherT[IO, String, Json] = for {
+            ep <- EndpointParam.mkEndpoint(partsMap)
+            ei <- EitherT.liftF[IO, String, EndpointInfo](ep.getInfo(client))
+          } yield ei.asJson
+          for {
+            either <- r.value
+            resp <- either.fold(
+              e => errJson(s"Error obtaining info on Endpoint ${e}"),
+              json => Ok(json)
+            )
+          } yield resp
+        }
+      }
     }
-    }
-  }
 
     case req @ GET -> Root / "endpoint" / "outgoing" :?
-          OptQueryParam(optQuery) +&
-            OptEndpointParam(optEndpoint) => {
+        OptQueryParam(optQuery) +&
+        OptEndpointParam(optEndpoint) => {
       Ok("Not implemented yet get neighbours of a node")
     }
 
@@ -79,8 +89,8 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
     }
 
     case req @ GET -> Root / "endpoint" / "validate" :?
-          OptQueryParam(optQuery) +&
-            OptEndpointParam(optEndpoint) => {
+        OptQueryParam(optQuery) +&
+        OptEndpointParam(optEndpoint) => {
       Ok("Not implemented yet - validate node")
     }
 
@@ -93,8 +103,8 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
 
   }
 
-private def errJson(msg: String): IO[Response[IO]] =
-Ok(Json.fromFields(List(("error",Json.fromString(msg)))))
+  private def errJson(msg: String): IO[Response[IO]] =
+    Ok(Json.fromFields(List(("error", Json.fromString(msg)))))
 
 }
 

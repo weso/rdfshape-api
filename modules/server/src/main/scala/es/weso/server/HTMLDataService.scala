@@ -7,7 +7,13 @@ import es.weso.rdf.streams.Streams
 import es.weso.schema._
 import es.weso.server.ApiHelper._
 import results._
-import es.weso.server.Defaults.{availableDataFormats, availableInferenceEngines, defaultActiveDataTab, defaultDataFormat, defaultInference}
+import es.weso.server.Defaults.{
+  availableDataFormats,
+  availableInferenceEngines,
+  defaultActiveDataTab,
+  defaultDataFormat,
+  defaultInference
+}
 import es.weso.server.QueryParams._
 import es.weso.server.helper.DataFormat
 import es.weso.server.utils.Http4sUtils._
@@ -39,8 +45,7 @@ import scala.util.Try
 class HTMLDataService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private val relativeBase = Defaults.relativeBase
-  private val logger = getLogger
-
+  private val logger       = getLogger
 
 }
 

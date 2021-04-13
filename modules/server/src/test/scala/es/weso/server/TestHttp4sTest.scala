@@ -12,10 +12,9 @@ import org.http4s.{HttpRoutes, Request, Response, _}
 
 class TestService(client: Client[IO]) extends Http4sDsl[IO] {
 
-  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case GET -> Root / "hi" =>
-      val json = Json.fromString("hello")
-      Ok(json)
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] { case GET -> Root / "hi" =>
+    val json = Json.fromString("hello")
+    Ok(json)
   }
 }
 object TestService {

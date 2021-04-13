@@ -13,4 +13,3 @@ trait Format {
   override def toString: String = s"Format $name"
 
 }
-

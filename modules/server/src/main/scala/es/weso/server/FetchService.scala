@@ -15,17 +15,16 @@ class FetchService() extends Http4sDsl[IO] {
 
     // Query URL and return the response
     case GET -> Root / `api` / "fetch" :?
-      UrlParam(url) =>
+        UrlParam(url) =>
       pprint.log(s"Fetching url: $url")
       try {
         val res = Http(url).asString
-        if (res.isSuccess) {
+        if(res.isSuccess) {
           Ok(res.body)
         } else {
           InternalServerError("Could not fetch URL")
         }
-      }
-      catch {
+      } catch {
         case _: Exception =>
           InternalServerError("Could not fetch URL")
       }
