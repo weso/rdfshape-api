@@ -24,8 +24,9 @@ import org.mongodb.scala.model.Updates.set
 class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
 
   lazy val mongoClient: MongoClient = MongoClient(mongoConnectionString)
-  lazy val db: MongoDatabase                     = mongoClient.getDatabase(mongoDatabase)
-  lazy val collection: MongoCollection[Document] = db.getCollection(collectionName)
+  lazy val db: MongoDatabase        = mongoClient.getDatabase(mongoDatabase)
+  lazy val collection: MongoCollection[Document] =
+    db.getCollection(collectionName)
 
   // Utils for url generation
   val urlPrefix           = "http://rdfshape.weso.es/link/"
@@ -34,15 +35,13 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
 
     // Insert a reference to the permalink in DB
     case GET -> Root / `api` / "permalink" / "generate" :?
-      UrlParam(url) =>
-
+        UrlParam(url) =>
       val existingUrl = retrieveUrl(url)
-      if (existingUrl.isDefined){
+      if(existingUrl.isDefined) {
         Ok(existingUrl.get)
-      }
-      else {
+      } else {
         try {
-          val longUrl = new URL(url)
+          val longUrl          = new URL(url)
           val urlCode          = Instant.now.getEpochSecond.toString + random.nextInt(10)
           val shortUrl: String = urlPrefix + urlCode
 
@@ -56,12 +55,17 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
           )
 
           // Insert doc
-          val observable: Observable[InsertOneResult] = collection.insertOne(doc)
+          val observable: Observable[InsertOneResult] =
+            collection.insertOne(doc)
           observable.subscribe(new Observer[InsertOneResult] {
-            override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
-            override def onNext(result: InsertOneResult): Unit         = println(s"Created permalink: $url => $shortUrl")
-            override def onError(e: Throwable): Unit                   = println(s"Permalink creation failed: ${e.getMessage}")
-            override def onComplete(): Unit                            = println("Permalink processing completed.")
+            override def onSubscribe(subscription: Subscription): Unit =
+              subscription.request(1)
+            override def onNext(result: InsertOneResult): Unit =
+              println(s"Created permalink: $url => $shortUrl")
+            override def onError(e: Throwable): Unit =
+              println(s"Permalink creation failed: ${e.getMessage}")
+            override def onComplete(): Unit =
+              println("Permalink processing completed.")
           })
 
           Created(shortUrl)
@@ -70,23 +74,27 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
           case _: MalformedURLException =>
             BadRequest(s"Invalid URL provided for shortening: $url")
           case _: Exception =>
-            InternalServerError(s"Could not execute generate the permalink for url: $url")
+            InternalServerError(
+              s"Could not execute generate the permalink for url: $url"
+            )
         }
 
       }
 
     // Retrieve a URL given the link
     case GET -> Root / `api` / "permalink" / "get" :?
-      UrlCodeParam(urlCode) =>
+        UrlCodeParam(urlCode) =>
       try {
         val code    = urlCode.toLong
         val promise = Promise[IO[Response[IO]]]
 
         // Fetch document in database
-        val observable: SingleObservable[Document] = collection.find(equal("urlCode", code)).first()
+        val observable: SingleObservable[Document] =
+          collection.find(equal("urlCode", code)).first()
         observable.subscribe(new Observer[Document] {
 
-          override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
+          override def onSubscribe(subscription: Subscription): Unit =
+            subscription.request(1)
           override def onNext(result: Document): Unit = {
             val longUrl = result.getString("longUrl")
             val urlCode = result.getLong("urlCode")
@@ -99,12 +107,16 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
           }
           override def onError(e: Throwable): Unit = {
             println(s"Original url recovery failed: ${e.getMessage}")
-            promise.success(BadGateway(s"Original url recovery failed for code: $urlCode"))
+            promise.success(
+              BadGateway(s"Original url recovery failed for code: $urlCode")
+            )
           }
           override def onComplete(): Unit = {
-            if (!promise.isCompleted) {
+            if(!promise.isCompleted) {
               println(s"Could not find the original url for code: $urlCode")
-              promise.success(NotFound(s"Could not find the original url for code: $urlCode"))
+              promise.success(
+                NotFound(s"Could not find the original url for code: $urlCode")
+              )
             }
             println("Permalink processing completed.")
           }
@@ -113,27 +125,29 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
         val result = Await.result(promise.future, Duration(8, TimeUnit.SECONDS))
         result
 
-
       } catch {
         case _: NumberFormatException =>
           BadRequest(s"Invalid permalink code: $urlCode")
         case _: Exception =>
-          InternalServerError(s"Could not execute the request for the permalink with code: $urlCode")
+          InternalServerError(
+            s"Could not execute the request for the permalink with code: $urlCode"
+          )
       }
   }
 
-  private def retrieveUrl (url: String): Option[String] =
-  {
+  private def retrieveUrl(url: String): Option[String] = {
 
     val promise = Promise[Option[String]]
 
     // Fetch document in database
-    val observable: SingleObservable[Document] = collection.find(equal("longUrl", url)).first()
+    val observable: SingleObservable[Document] =
+      collection.find(equal("longUrl", url)).first()
     observable.subscribe(new Observer[Document] {
-      override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
+      override def onSubscribe(subscription: Subscription): Unit =
+        subscription.request(1)
       override def onNext(result: Document): Unit = {
         val shortUrl = result.getString("shortUrl")
-        val urlCode = result.getLong("urlCode")
+        val urlCode  = result.getLong("urlCode")
 
         println(s"Retrieved permalink: $url => $shortUrl")
         promise.success(Option(shortUrl))
@@ -146,7 +160,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
         promise.success(None)
       }
       override def onComplete(): Unit = {
-        if (!promise.isCompleted) {
+        if(!promise.isCompleted) {
           println(s"Could not find the permalink for url: $url")
           promise.success(None)
         }
@@ -158,29 +172,30 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
     result
   }
 
-
-  private def updateUrl (code: Long): Unit =
-  {
+  private def updateUrl(code: Long): Unit = {
     println(s"URL code to update: $code")
     // Update date of document in database
-    val observable: SingleObservable[UpdateResult] = collection.updateOne(equal("urlCode", code),
-      set("date", Calendar.getInstance().getTime))
+    val observable: SingleObservable[UpdateResult] = collection.updateOne(
+      equal("urlCode", code),
+      set("date", Calendar.getInstance().getTime)
+    )
 
     observable.subscribe(new Observer[UpdateResult] {
-      override def onSubscribe(subscription: Subscription): Unit = subscription.request(1)
+      override def onSubscribe(subscription: Subscription): Unit =
+        subscription.request(1)
       override def onNext(result: UpdateResult): Unit = {
         println(s"Refreshed date of permalink: $code")
       }
       override def onError(e: Throwable): Unit = Unit
-      override def onComplete(): Unit = Unit
+      override def onComplete(): Unit          = Unit
     })
   }
 
   // DB credentials
-  private val mongoUser     = sys.env.getOrElse("MONGO_USER", "")
-  private val mongoPassword = sys.env.getOrElse("MONGO_PASSWORD", "")
-  private val mongoDatabase = sys.env.getOrElse("MONGO_DATABASE", "")
-  private val collectionName                = "permalinks"
+  private val mongoUser      = sys.env.getOrElse("MONGO_USER", "")
+  private val mongoPassword  = sys.env.getOrElse("MONGO_PASSWORD", "")
+  private val mongoDatabase  = sys.env.getOrElse("MONGO_DATABASE", "")
+  private val collectionName = "permalinks"
   private val mongoConnectionString =
     s"mongodb+srv://$mongoUser:$mongoPassword@cluster0.pnja6.mongodb.net/$mongoDatabase" +
       "?retryWrites=true&w=majority"

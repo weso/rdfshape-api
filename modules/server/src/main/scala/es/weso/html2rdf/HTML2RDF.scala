@@ -20,7 +20,13 @@ import org.apache.jena.rdf.model.{
   RDFReader => _,
   _
 }
-import org.eclipse.rdf4j.model.{BNode, Literal, Resource, Value, IRI => RDF4jIRI}
+import org.eclipse.rdf4j.model.{
+  BNode,
+  Literal,
+  Resource,
+  Value,
+  IRI => RDF4jIRI
+}
 
 object HTML2RDF {
 
@@ -30,7 +36,10 @@ object HTML2RDF {
   val availableExtractorNames: List[String] =
     availableExtractors.map(_.name)
 
-  def extractFromString(htmlStr: String, extractorName: String): CatsResource[IO, RDFReasoner] = {
+  def extractFromString(
+      htmlStr: String,
+      extractorName: String
+  ): CatsResource[IO, RDFReasoner] = {
     Try {
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
@@ -58,13 +67,21 @@ object HTML2RDF {
     )
   }
 
-  private def fromModel(model: Model, uri: Option[IRI]): CatsResource[IO, RDFAsJenaModel] = {
+  private def fromModel(
+      model: Model,
+      uri: Option[IRI]
+  ): CatsResource[IO, RDFAsJenaModel] = {
     CatsResource.make(
-      Ref.of[IO, Model](model).flatMap(ref => ok(RDFAsJenaModel(ref, None, None, Map(), Map())))
+      Ref
+        .of[IO, Model](model)
+        .flatMap(ref => ok(RDFAsJenaModel(ref, None, None, Map(), Map())))
     )(m => m.getModel.flatMap(m => IO(m.close())))
   }
 
-  def extractFromUrl(uri: String, extractorName: String): CatsResource[IO, RDFReasoner] = {
+  def extractFromUrl(
+      uri: String,
+      extractorName: String
+  ): CatsResource[IO, RDFReasoner] = {
     Try {
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
@@ -81,7 +98,10 @@ object HTML2RDF {
       // val n3: String = out.toString("UTF-8")
       model
     }.fold(
-      e => CatsResource.eval(err(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri")),
+      e =>
+        CatsResource.eval(
+          err(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri")
+        ),
       model => fromModel(model, Some(IRI(uri)))
     )
   }
@@ -92,7 +112,13 @@ object HTML2RDF {
 
   case class JenaTripleHandler(m: Model) extends TripleHandler {
 
-    override def receiveTriple(s: Resource, p: RDF4jIRI, o: Value, g: RDF4jIRI, context: ExtractionContext): Unit = {
+    override def receiveTriple(
+        s: Resource,
+        p: RDF4jIRI,
+        o: Value,
+        g: RDF4jIRI,
+        context: ExtractionContext
+    ): Unit = {
       m.add(cnvSubj(s), cnvIRI(p), cnvObj(o))
       println(s"Triple: <$s,$p,$o>")
     }
@@ -106,7 +132,7 @@ object HTML2RDF {
       case i: RDF4jIRI => cnvIRI(i)
       case b: BNode    => cnvBNode(b)
       case l: Literal =>
-        if (l.getLanguage.isPresent) {
+        if(l.getLanguage.isPresent) {
           m.createLiteral(l.getLabel, l.getLanguage.get)
         } else
           m.createTypedLiteral(l.getLabel, l.getDatatype.toString)
@@ -118,29 +144,37 @@ object HTML2RDF {
     def cnvBNode(b: BNode): JenaResource =
       m.createResource(AnonId.create(b.getID))
 
-    override def startDocument(documentIRI: RDF4jIRI): Unit                                      = {} // println(s"Start")
+    override def startDocument(
+        documentIRI: RDF4jIRI
+    ): Unit = {} // println(s"Start")
 
-    override def openContext(context: ExtractionContext): Unit                                   = {} // println(s"New context")
+    override def openContext(
+        context: ExtractionContext
+    ): Unit = {} // println(s"New context")
 
-    override def receiveNamespace(prefix: String, uri: String, context: ExtractionContext): Unit = {}
+    override def receiveNamespace(
+        prefix: String,
+        uri: String,
+        context: ExtractionContext
+    ): Unit = {}
 
-    override def closeContext(context: ExtractionContext): Unit                                  = {}
+    override def closeContext(context: ExtractionContext): Unit = {}
 
-    override def endDocument(documentIRI: RDF4jIRI): Unit                                        = {}
+    override def endDocument(documentIRI: RDF4jIRI): Unit = {}
 
-    override def setContentLength(contentLength: Long): Unit                                     = {}
+    override def setContentLength(contentLength: Long): Unit = {}
 
-    override def close(): Unit                                                                   = {}
+    override def close(): Unit = {}
 
   }
 
   case object RDFA11 extends Extractor {
-    val extractor = new RDFa11Extractor()
+    val extractor    = new RDFa11Extractor()
     val name: String = extractor.getDescription.getExtractorName
   }
 
   case object Microdata extends Extractor {
-    val extractor = new MicrodataExtractor
+    val extractor    = new MicrodataExtractor
     val name: String = extractor.getDescription.getExtractorName
   }
 }

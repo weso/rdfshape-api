@@ -14,14 +14,14 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 
 object Server {
-  /*  def context[F[_]: Sync]: F[SSLContext] =
-    SSLHelper.loadContextFromClasspath(SSLHelper.keystorePassword, SSLHelper.keyManagerPassword)
-
-  def builder[F[_]: ConcurrentEffect: ContextShift: Timer](port: Int): F[BlazeServerBuilder[F]] =
-   context.map { sslContext =>
-     BlazeServerBuilder[F](global).bindHttp(port)
-       .withSslContext(sslContext)
-  } */
+  /* def context[F[_]: Sync]: F[SSLContext] =
+   * SSLHelper.loadContextFromClasspath(SSLHelper.keystorePassword,
+   * SSLHelper.keyManagerPassword)
+   *
+   * def builder[F[_]: ConcurrentEffect: ContextShift: Timer](port: Int):
+   * F[BlazeServerBuilder[F]] =
+   * context.map { sslContext => BlazeServerBuilder[F](global).bindHttp(port)
+   * .withSslContext(sslContext) } */
 
   def stream(port: Int, ip: String): Stream[IO, Nothing] = {
 
@@ -38,8 +38,8 @@ object Server {
       ).orNotFound
       sslContext   = SSLHelper.getContext
       finalHttpApp = Logger.httpApp(logHeaders = true, logBody = false)(app)
-      /* b <- Stream.eval(builder(port))
-      exitCode <- b.withHttpApp(finalHttpApp).serve  */
+      /* b <- Stream.eval(builder(port)) exitCode <-
+       * b.withHttpApp(finalHttpApp).serve */
 
       baseServer = BlazeServerBuilder[IO](global)
         .bindHttp(port, ip)
@@ -47,28 +47,27 @@ object Server {
         .withHttpApp(finalHttpApp)
 
       // Use HTTPS only if an SSL context could be created.
-      server = if (sslContext == SSLContext.getDefault) {
-        println(s"Serving via HTTP")
-        baseServer
-      } else {
-        println(s"Serving via HTTPS")
-        baseServer
-          .withSslContext(sslContext)
-      }
+      server =
+        if(sslContext == SSLContext.getDefault) {
+          println(s"Serving via HTTP")
+          baseServer
+        } else {
+          println(s"Serving via HTTPS")
+          baseServer
+            .withSslContext(sslContext)
+        }
 
       exitCode <- server.serve
     } yield exitCode
   }.drain
 
-  /*  def context[F[_]: Sync] =
-    ssl.loadContextFromClasspath(ssl.keystorePassword, ssl.keyManagerPassword)
-
-  def builder[F[_]: ConcurrentEffect: ContextShift: Timer]: F[BlazeServerBuilder[F]] =
-    context.map { sslContext =>
-      BlazeServerBuilder[F](global)
-        .bindHttp(8443)
-        .withSslContext(sslContext)
-    } */
+  /* def context[F[_]: Sync] =
+   * ssl.loadContextFromClasspath(ssl.keystorePassword, ssl.keyManagerPassword)
+   *
+   * def builder[F[_]: ConcurrentEffect: ContextShift: Timer]:
+   * F[BlazeServerBuilder[F]] =
+   * context.map { sslContext => BlazeServerBuilder[F](global) .bindHttp(8443)
+   * .withSslContext(sslContext) } */
 
   def routesService(client: Client[IO]): HttpRoutes[IO] =
     CORS(

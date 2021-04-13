@@ -3,25 +3,18 @@ import cats.effect._
 
 import scala.util.Properties.envOrNone
 
-/*
-class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs: ContextShift[F])
-  extends Http4sDsl[F] {
+/* class HelloService[F[_]](blocker: Blocker)(implicit F: Effect[F], cs:
+ * ContextShift[F]) extends Http4sDsl[F] {
+ *
+ * def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] { case
+ * GET -> Root => Ok("Hi!") } }
+ *
+ * object HelloService { def apply[F[_]: Effect: ContextShift](blocker:
+ * Blocker): HelloService[F] =
+ * new HelloService[F](blocker) } */
 
-  def routes(implicit timer: Timer[F]): HttpRoutes[F] = HttpRoutes.of[F] {
-    case GET -> Root =>
-      Ok("Hi!")
-  }
-}
-
-object HelloService {
-  def apply[F[_]: Effect: ContextShift](blocker: Blocker): HelloService[F] =
-    new HelloService[F](blocker)
-}
- */
-
-/**
-  * RDFShape server
- **/
+/** RDFShape server
+  */
 /* class RDFShapeServer[F[_]:ConcurrentEffect: Timer](host: String, port: Int)(implicit F: Effect[F], cs: ContextShift[F]) {
   private val logger = getLogger
 

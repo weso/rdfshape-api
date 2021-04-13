@@ -22,57 +22,50 @@ class ShapeMapService(client: Client[IO]) extends Http4sDsl[IO] {
 
     case GET -> Root / `api` / "shapeMap" / "formats" =>
       val formats = ShapeMap.availableFormats
-      val json = Json.fromValues(formats.map(str => Json.fromString(str)))
+      val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
       Ok(json)
 
-    case req@POST -> Root / `api` / "shapeMap" / "info" =>
+    case req @ POST -> Root / `api` / "shapeMap" / "info" =>
       req.decode[Multipart[IO]] { m =>
         println(s"ShapeMap/info")
         val partsMap = PartsMap(m.parts)
-        val t: IO[(ShapeMap,ShapeMapParam)] = ShapeMapParam.mkShapeMap(partsMap)
-        t.attempt.flatMap(_.fold(e => Ok(mkJsonErr(e.getMessage())), pair => {
-          val (sm,smp) = pair
-          val smi: ShapeMapInfoResult = ShapeMapInfoResult.fromShapeMap(smp.shapeMap,smp.optShapeMapFormat, sm)
-          Ok(smi.toJson)
-        }))
+        val t: IO[(ShapeMap, ShapeMapParam)] =
+          ShapeMapParam.mkShapeMap(partsMap)
+        t.attempt.flatMap(
+          _.fold(
+            e => Ok(mkJsonErr(e.getMessage())),
+            pair => {
+              val (sm, smp) = pair
+              val smi: ShapeMapInfoResult = ShapeMapInfoResult.fromShapeMap(
+                smp.shapeMap,
+                smp.optShapeMapFormat,
+                sm
+              )
+              Ok(smi.toJson)
+            }
+          )
+        )
       }
 
-    /*    case req@GET -> Root / `api` / "shapeMap" / "info" :?
-          OptShapeMapParam(optShapeMap) +&
-          OptShapeMapURLParam(optShapeMapURL) +&
-          ShapeMapFormatParam(maybeShapeMapFormat)  => Ok()
+    /* case req@GET -> Root / `api` / "shapeMap" / "info" :?
+     * OptShapeMapParam(optShapeMap) +& OptShapeMapURLParam(optShapeMapURL) +&
+     * ShapeMapFormatParam(maybeShapeMapFormat) => Ok()
+     *
+     * val either: Either[String, Option[DataFormat]] = for { df <-
+     * maybeDataFormat.map(DataFormat.fromString(_)).sequence } yield df
+     *
+     * either match { case Left(str) => errJson(str) case Right(optDataFormat)
+     * => { val dp =
+     * DataParam(optData, optDataURL, None, optEndpoint, optDataFormat,
+     * optDataFormat, optDataFormat, None, //no dataFormatFile optInference,
+     * None, optActiveDataTab) val (maybeStr, eitherRDF) =
+     * dp.getData(relativeBase) eitherRDF.fold( str => errJson(str), rdf => {
+     * Ok(dataInfo(rdf, maybeStr, optDataFormat)) }) } } } */
 
-          val either: Either[String, Option[DataFormat]] = for {
-            df <- maybeDataFormat.map(DataFormat.fromString(_)).sequence
-          } yield df
-
-          either match {
-            case Left(str) => errJson(str)
-            case Right(optDataFormat) => {
-              val dp =
-                DataParam(optData, optDataURL, None, optEndpoint,
-                  optDataFormat, optDataFormat, optDataFormat,
-                  None, //no dataFormatFile
-                  optInference,
-                  None, optActiveDataTab)
-              val (maybeStr, eitherRDF) = dp.getData(relativeBase)
-              eitherRDF.fold(
-                str => errJson(str),
-                rdf => {
-                  Ok(dataInfo(rdf, maybeStr, optDataFormat))
-                })
-            }
-          }
-        } */
-
- }
-
+  }
 
 }
 
 object ShapeMapService {
   def apply(client: Client[IO]): ShapeMapService = new ShapeMapService(client)
 }
-
-
-

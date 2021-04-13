@@ -7,11 +7,11 @@ import es.weso.utils.json.JsonUtilsServer._
 import scala.xml.Utility.escape
 
 case class DataConversionResult(
-  msg: String,
-  data: Option[String],
-  dataFormat: DataFormat,
-  targetFormat: String,
-  result: String
+    msg: String,
+    data: Option[String],
+    dataFormat: DataFormat,
+    targetFormat: String,
+    result: String
 ) {
 
   def toHTML: String = {
@@ -27,11 +27,11 @@ case class DataConversionResult(
 
   def toJson: Json = Json.fromFields(
     List(
-     ("msg", Json.fromString(msg)),
-     ("result", Json.fromString(result)),
-     ("dataFormat", Json.fromString(dataFormat.name)),
-     ("targetDataFormat", Json.fromString(targetFormat))
+      ("msg", Json.fromString(msg)),
+      ("result", Json.fromString(result)),
+      ("dataFormat", Json.fromString(dataFormat.name)),
+      ("targetDataFormat", Json.fromString(targetFormat))
     ) ++
-    maybeField(data,"data", Json.fromString(_) )
+      maybeField(data, "data", Json.fromString)
   )
 }

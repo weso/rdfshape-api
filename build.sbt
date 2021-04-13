@@ -50,34 +50,40 @@ lazy val scalaMacrosVersion = "2.1.1"
 // Dependency modules
 lazy val catsCore   = "org.typelevel" %% "cats-core"   % catsVersion
 lazy val catsKernel = "org.typelevel" %% "cats-kernel" % catsVersion
-// lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
-lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
-lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
-lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
-lazy val graphvizJava      = "guru.nidi"                  % "graphviz-java"        % graphvizJavaVersion
-lazy val http4sDsl         = "org.http4s"                 %% "http4s-dsl"          % http4sVersion
-lazy val http4sBlazeServer = "org.http4s"                 %% "http4s-blaze-server" % http4sVersion
-lazy val http4sBlazeClient = "org.http4s"                 %% "http4s-blaze-client" % http4sVersion
-lazy val http4sEmberClient = "org.http4s"                 %% "http4s-ember-client" % http4sVersion
-lazy val http4sCirce       = "org.http4s"                 %% "http4s-circe"        % http4sVersion
-lazy val http4sTwirl       = "org.http4s"                 %% "http4s-twirl"        % http4sVersion
-lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
-lazy val munit             = "org.scalameta"              %% "munit"               % munitVersion
-lazy val munitEffect       = "org.typelevel"              %% "munit-cats-effect-3" % munitEffectVersion
-lazy val plantuml          = "net.sourceforge.plantuml"   % "plantuml"             % plantumlVersion
-lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
-// lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
-// lazy val scalaj            = "org.scalaj"                 %% "scalaj-http"         % scalajVersion
+/* lazy val catsMacros = "org.typelevel" %% "cats-macros" % catsVersion */
+lazy val circeCore    = "io.circe"   %% "circe-core"    % circeVersion
+lazy val circeGeneric = "io.circe"   %% "circe-generic" % circeVersion
+lazy val circeParser  = "io.circe"   %% "circe-parser"  % circeVersion
+lazy val graphvizJava = "guru.nidi"   % "graphviz-java" % graphvizJavaVersion
+lazy val http4sDsl    = "org.http4s" %% "http4s-dsl"    % http4sVersion
+lazy val http4sBlazeServer =
+  "org.http4s" %% "http4s-blaze-server" % http4sVersion
+lazy val http4sBlazeClient =
+  "org.http4s" %% "http4s-blaze-client" % http4sVersion
+lazy val http4sEmberClient =
+  "org.http4s" %% "http4s-ember-client" % http4sVersion
+lazy val http4sCirce    = "org.http4s"    %% "http4s-circe"    % http4sVersion
+lazy val http4sTwirl    = "org.http4s"    %% "http4s-twirl"    % http4sVersion
+lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % logbackVersion
+lazy val munit          = "org.scalameta" %% "munit"           % munitVersion
+lazy val munitEffect =
+  "org.typelevel" %% "munit-cats-effect-3" % munitEffectVersion
+lazy val plantuml = "net.sourceforge.plantuml" % "plantuml" % plantumlVersion
+lazy val scalaLogging =
+  "com.typesafe.scala-logging" %% "scala-logging" % loggingVersion
+/* lazy val scallop = "org.rogach" %% "scallop" % scallopVersion */
+/* lazy val scalaj = "org.scalaj" %% "scalaj-http" % scalajVersion */
 lazy val scalatags = "com.lihaoyi" %% "scalatags" % scalatagsVersion
 
 lazy val umlShaclex  = "es.weso" %% "umlshaclex"  % umlShaclexVersion
 lazy val utilsTest   = "es.weso" %% "utilstest"   % utilsVersion
 lazy val wikibaserdf = "es.weso" %% "wikibaserdf" % shexsVersion
 
-lazy val any23_core    = "org.apache.any23"         % "apache-any23-core"         % any23Version
-lazy val any23_api     = "org.apache.any23"         % "apache-any23-api"          % any23Version
-lazy val any23_scraper = "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.2"
-lazy val rdf4j_runtime = "org.eclipse.rdf4j"        % "rdf4j-runtime"             % rdf4jVersion
+lazy val any23_core = "org.apache.any23" % "apache-any23-core" % any23Version
+lazy val any23_api  = "org.apache.any23" % "apache-any23-api"  % any23Version
+lazy val any23_scraper =
+  "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.2"
+lazy val rdf4j_runtime = "org.eclipse.rdf4j" % "rdf4j-runtime" % rdf4jVersion
 
 lazy val scalaj = "org.scalaj"        %% "scalaj-http" % scalajVersion
 lazy val play   = "com.typesafe.play" %% "play-json"   % playVersion
@@ -88,9 +94,12 @@ lazy val bootstrap = "org.webjars" % "bootstrap" % bootstrapVersion
 lazy val mongodb = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVersion
 
 // Compiler plugin modules
-// lazy val scalaMacrosParadise = "org.scalamacros"      % "paradise"        % scalaMacrosVersion cross CrossVersion.full
-// lazy val simulacrum          = "com.github.mpilquist" %% "simulacrum"     % simulacrumVersion
-// lazy val kindProjector       = "org.spire-math"       %% "kind-projector" % kindProjectorVersion
+/* lazy val scalaMacrosParadise = "org.scalamacros" % "paradise" %
+ * scalaMacrosVersion cross CrossVersion.full */
+/* lazy val simulacrum = "com.github.mpilquist" %% "simulacrum" %
+ * simulacrumVersion */
+/* lazy val kindProjector = "org.spire-math" %% "kind-projector" %
+ * kindProjectorVersion */
 
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 
@@ -115,8 +124,13 @@ lazy val rdfshape = project
   .settings(
     dockerExposedPorts ++= Seq(80),
     ScalaUnidoc / siteSubdirName := "scaladoc/latest",
-    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(noDocProjects: _*),
+    addMappingsToSiteDir(
+      ScalaUnidoc / packageDoc / mappings,
+      ScalaUnidoc / siteSubdirName
+    ),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(
+      noDocProjects: _*
+    ),
     makeSite / mappings ++= Seq(
       file("src/assets/favicon.ico") -> "favicon.ico"
     ),
@@ -124,7 +138,8 @@ lazy val rdfshape = project
       logbackClassic,
       scalaLogging
       // scallop,
-      // compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+      /* compilerPlugin("com.github.ghik" %% "silencer-plugin" %
+       * silencerVersion), */
       // "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided
     ),
     cancelable in Global := true,
@@ -174,9 +189,8 @@ lazy val server = project
     crossScalaVersions := supportedScalaVersions
   )
 
-/* ********************************************************
- ******************** Grouped Settings ********************
- **********************************************************/
+/* ******************************************************** Grouped Settings
+ * ******************** */
 
 lazy val noDocProjects = Seq[ProjectReference]()
 

@@ -14,13 +14,12 @@ class ShExService(client: Client[IO]) extends Http4sDsl[IO] {
 
     case GET -> Root / `api` / "shEx" / "formats" => {
       val formats = Schemas.availableFormats
-      val json = Json.fromValues(formats.map(str => Json.fromString(str)))
+      val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
       Ok(json)
     }
 
- }
+  }
 }
-
 
 object ShExService {
   def apply(client: Client[IO]): ShExService =
