@@ -57,3 +57,6 @@ pids
 .npm
 *.tgz
 
+# Other
+.directory
+
