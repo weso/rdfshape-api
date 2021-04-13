@@ -337,7 +337,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
           label <- EitherT(partsMap.eitherPartValue("entity"))
           jsonParams <- either2es[Json](mkShexerParams(label))
           postRequest = Request[IO](method = POST,
-             uri = uri"http://156.35.86.6:8080/shexer").
+             uri = uri"http://156.35.94.158:8081/shexer").
              withHeaders(`Content-Type`(MediaType.application.`json`)).
              withEntity[Json](jsonParams
              )
