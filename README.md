@@ -48,8 +48,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
     * [MONGO_DATABASE, MONGO_USER, MONGO_PASSWORD]: The credentials to a MongoDB
       Atlas instance in order to use the permalink service. These are optional,
       but permalinks won't work. WESO members may
-      use [this credentials](https://github.com/weso/wesolocal/wiki/Servicios-de-Terceros#mongo-db-atlas)
-      .
+      use [this credentials](https://github.com/weso/wesolocal/wiki/Servicios-de-Terceros#mongo-db-atlas).
 
 > Deprecated:
 > * Install [SBT](https://www.scala-sbt.org/)
