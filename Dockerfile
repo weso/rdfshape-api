@@ -15,6 +15,7 @@ RUN curl -s https://bintray.com/sbt/rpm/rpm | \
     yum install sbt -y -q
 
 # ARGs - Override with: --build-arg [ARGUMENT]=[VALUE]
+# Values in .env will not be taken into account!
 # Permalink service creds.
 ARG MONGO_DATABASE=""
 ARG MONGO_USER=""
@@ -23,7 +24,7 @@ ARG MONGO_PASSWORD=""
 ARG GITHUB_TOKEN=""
 # Port for the app to run
 ENV PORT=80
-# Add rdfshape output dir to path
+# Add rdfshape output-directory to path
 ENV PATH /app/target/universal/stage/bin:$PATH
 
 # Copy all application files and trigger build
