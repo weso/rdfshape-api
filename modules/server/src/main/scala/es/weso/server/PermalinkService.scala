@@ -32,8 +32,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
 
     // Insert a reference to the permalink in DB
     case GET -> Root / `api` / "permalink" / "generate" :?
-        UrlParam(url) +&
-        HostNameParam(host) =>
+        UrlParam(url) =>
       // Store only query path and query params
       val urlObj  = new URL(url)
       val urlPath = s"${urlObj.getPath}?${urlObj.getQuery}"
