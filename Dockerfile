@@ -39,5 +39,5 @@ RUN sbt stage
 # Run
 RUN echo "Launching rdfshape..."
 EXPOSE $PORT
-CMD ["rdfshape", "--server", "-Dhttp.port=$PORT"]
+CMD ["rdfshape", "--server", "-Dhttp.port=$PORT", "-Djdk.tls.client.protocols=TLSv1.2"]
 RUN echo "Done"
