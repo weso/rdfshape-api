@@ -1,8 +1,5 @@
 package es.weso.server
 
-import java.net.URL
-
-import org.http4s.QueryParamDecoder
 import org.http4s.dsl.io.{
   OptionalQueryParamDecoderMatcher,
   QueryParamDecoderMatcher
@@ -25,6 +22,7 @@ object QueryParams {
   lazy val shape            = "shape"
   lazy val url              = "url"
   lazy val urlCode          = "urlCode"
+  lazy val hostname         = "hostname"
   object DataParameter extends OptionalQueryParamDecoderMatcher[String](data)
   object OptDataParam  extends OptionalQueryParamDecoderMatcher[String](data)
   object OptEndpointParam
@@ -95,6 +93,7 @@ object QueryParams {
   object LabelParam    extends QueryParamDecoderMatcher[String]("label")
   object UrlParam      extends QueryParamDecoderMatcher[String](url)
   object UrlCodeParam  extends QueryParamDecoderMatcher[String](urlCode)
+  object HostNameParam extends QueryParamDecoderMatcher[String](hostname)
   object LimitParam    extends OptionalQueryParamDecoderMatcher[String]("limit")
   object ContinueParam
       extends OptionalQueryParamDecoderMatcher[String]("continue")
