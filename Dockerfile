@@ -16,16 +16,9 @@ RUN curl -s https://bintray.com/sbt/rpm/rpm | \
 
 # ARGs - Override with: --build-arg [ARGUMENT]=[VALUE]
 # Values in .env will not be taken into account!
-# Permalink service creds.
-ARG MONGO_DATABASE=""
-ARG MONGO_USER=""
-ARG MONGO_PASSWORD=""
-# Needed at container runtime.
-ENV MONGO_DATABASE=$MONGO_DATABASE
-ENV MONGO_USER=$MONGO_USER
-ENV MONGO_PASSWORD=$MONGO_PASSWORD
-# Github token needed to download weso packages
+# Github token needed to download weso packages at build time.
 ARG GITHUB_TOKEN=""
+
 # Port for the app to run
 ENV PORT=80
 # Add rdfshape output-directory to path
