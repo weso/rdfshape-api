@@ -2,7 +2,7 @@ package es.weso.server
 
 import cats.effect._
 import es.weso.server.APIDefinitions._
-import es.weso.server.QueryParams.{HostNameParam, UrlCodeParam, UrlParam}
+import es.weso.server.QueryParams.{UrlCodeParam, UrlParam}
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
@@ -60,8 +60,13 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
               subscription.request(1)
             override def onNext(result: InsertOneResult): Unit =
               println(s"Created permalink: $url => $urlCode")
-            override def onError(e: Throwable): Unit =
+            override def onError(e: Throwable): Unit = {
               println(s"Permalink creation failed: ${e.getMessage}")
+              InternalServerError(
+                s"Could not generate the permalink for url: $url"
+              )
+            }
+
             override def onComplete(): Unit =
               println("Permalink processing completed.")
           })
@@ -73,7 +78,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
             BadRequest(s"Invalid URL provided for shortening: $url")
           case _: Exception =>
             InternalServerError(
-              s"Could not execute generate the permalink for url: $url"
+              s"Could not generate the permalink for url: $url"
             )
         }
 
@@ -132,11 +137,13 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
           )
       }
   }
-  // DB credentials
-  private val mongoUser      = sys.env.getOrElse("MONGO_USER", "")
-  private val mongoPassword  = sys.env.getOrElse("MONGO_PASSWORD", "")
-  private val mongoDatabase  = sys.env.getOrElse("MONGO_DATABASE", "")
-  private val collectionName = "permalinks"
+  // DB credentials. Access is limited to application needs.
+  private val mongoUser = sys.env.getOrElse("MONGO_USER", "rdfshape-user")
+  private val mongoPassword =
+    sys.env.getOrElse("MONGO_PASSWORD", "rdfshape-user")
+  private val mongoDatabase = sys.env.getOrElse("MONGO_DATABASE", "rdfshape")
+  private val collectionName =
+    sys.env.getOrElse("MONGO_COLLECTION", "permalinks")
   private val mongoConnectionString =
     s"mongodb+srv://$mongoUser:$mongoPassword@cluster0.pnja6.mongodb.net/$mongoDatabase" +
       "?retryWrites=true&w=majority"

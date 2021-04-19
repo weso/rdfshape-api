@@ -40,19 +40,20 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 ## Build a docker image
 
-* Use the provided Dockerfile to build rdfshape image.
+* Use the provided Dockerfile to build RdfShape image.
 * When building the Docker image, you may provide the following arguments
   via `--build-arg`:
-    * [GITHUB_TOKEN]: A valid GitHub token to download WESO project dependencies
-      from Github packages. This is required to build the image.
-    * [MONGO_DATABASE, MONGO_USER, MONGO_PASSWORD]: The credentials to a MongoDB
-      Atlas instance in order to use the permalink service. These are optional,
-      but permalinks won't work if left undefined. WESO members may
-      use [these credentials](https://github.com/weso/wesolocal/wiki/Servicios-de-Terceros#mongo-db-atlas).
+    * **GITHUB_TOKEN**:
+        - A valid GitHub token to download WESO project dependencies from Github
+          packages. This is required when manually building the image.
+        - Images available
+          in [Docker Hub](https://hub.docker.com/r/wesogroup/rdfshape-api) have
+          already been built using a read-only token for downloading the
+          dependencies.
 
-> Deprecated:
-> * Install [SBT](https://www.scala-sbt.org/)
-> * Run `sbt docker:publishLocal` which will create a docker file at `target/docker`
+* When running a container, you may provide the following environment variables
+  via `--env`:
+    - **PORT** (optional): Port where the API is exposed inside the container. Default is 80.
 
 # Dependencies
 
@@ -83,5 +84,5 @@ pull request to add more features or submit issues:
 * [Issues about SHACLex validation library](https://github.com/labra/shaclex/issues)
 
 <a href="https://github.com/weso/rdfshape/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=weso/rdfshape" />
+  <img src="https://contributors-img.web.app/image?repo=weso/rdfshape"  alt="RdfShape contributors"/>
 </a>
