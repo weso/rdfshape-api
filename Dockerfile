@@ -1,12 +1,9 @@
 ## Build environment.
-
 # Build application inside /app
-# Resulting build in /app/target/universal/stage/bin/rdfshape
 FROM openjdk:12 as build
 WORKDIR /app
 
 # Install git, sbt, required
-RUN echo "Installing required programs..."
 RUN yum update -y -q && \
     yum install git -y -q
 
@@ -15,22 +12,37 @@ RUN curl -s https://bintray.com/sbt/rpm/rpm | \
     yum install sbt -y -q
 
 # ARGs - Override with: --build-arg [ARGUMENT]=[VALUE]
-# Values in .env will not be taken into account!
 # Github token needed to download weso packages at build time.
 ARG GITHUB_TOKEN=""
 
-# Port for the app to run
-ENV PORT=80
-# Add rdfshape output-directory to path
-ENV PATH /app/target/universal/stage/bin:$PATH
-
-# Copy all application files and trigger build
-RUN echo "Building rdfshape..."
+# Copy all application files
 COPY . ./
-RUN sbt stage
+# Build to /app/target/universal/rdfshape.zip
+RUN ["sbt", "Universal / packageBin"]
+
+## Prod environment.
+FROM openjdk:12 as prod
+WORKDIR /app
+
+# Copy zip with universal executable
+COPY --from=build /app/target/universal/rdfshape.zip .
+
+# Download required programs dependencies. Unzip binaries.
+RUN yum update -y -q && \
+    yum install graphviz -y -q && \
+    yum install unzip -y -q && \
+    unzip -q rdfshape.zip
+
+# Add rdfshape to path
+ENV PATH /app/rdfshape/bin:$PATH
 
 # Run
-RUN echo "Launching rdfshape..."
+# Port for the app to run
+ENV PORT=80
 EXPOSE $PORT
+# Non-priviledged user to run the app
+RUN groupadd -r rdfshape && useradd -r -s /bin/false -g rdfshape rdfshape
+RUN chown -R rdfshape:rdfshape /app
+USER rdfshape
+
 CMD ["rdfshape", "--server", "-Dhttp.port=$PORT", "-Djdk.tls.client.protocols=TLSv1.2"]
-RUN echo "Done"
