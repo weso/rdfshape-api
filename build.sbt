@@ -285,6 +285,10 @@ lazy val publishSettings = Seq(
     "-diagrams",
   ),
   publishMavenStyle              := true,
+  maintainer:= "labra@uniovi.es, uo251436@uniovi.es",
+  
+  // publish as zip
+  Universal / packageName := "rdfshape"
 )
 
 // Github token to be used by sbt-github-actions
