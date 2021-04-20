@@ -40,4 +40,9 @@ ENV PATH /app/rdfshape/bin:$PATH
 # Port for the app to run
 ENV PORT=80
 EXPOSE $PORT
+# Non-priviledged user to run the app
+RUN groupadd -r rdfshape && useradd -r -s /bin/false -g rdfshape rdfshape
+RUN chown -R rdfshape:rdfshape /app
+USER rdfshape
+
 CMD ["rdfshape", "--server", "-Dhttp.port=$PORT", "-Djdk.tls.client.protocols=TLSv1.2"]
