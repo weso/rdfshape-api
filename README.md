@@ -41,7 +41,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 ## Build a docker image
 
 * Use the provided Dockerfile to build rdfshape or pull from [Docker Hub](https://hub.docker.com/r/wesogroup/rdfshape-api).
-* When building the Docker image, you may provide the following arguments
+* When building the Docker image, you must provide the following arguments
   via `--build-arg`:
     * **GITHUB_TOKEN**:
         - A valid GitHub token to download WESO project dependencies from Github
@@ -53,7 +53,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 * When running a container, you may provide the following environment variables
   via `--env`:
-    - **PORT** (optional): Port where the API is exposed inside the container. Default is 80.
+    - **PORT**: Port where the API is exposed inside the container. Default is 80.
 
 # Dependencies
 
