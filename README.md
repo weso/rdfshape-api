@@ -38,7 +38,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 * To use a different port run `sbt "run --server --port <PortNumber>"`
 
-## Build a docker image
+## Deploy with Docker
 
 * Use the provided Dockerfile to build rdfshape or pull from [Docker Hub](https://hub.docker.com/r/wesogroup/rdfshape-api).
 * When building the Docker image, you must provide the following arguments
