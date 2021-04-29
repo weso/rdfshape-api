@@ -5,8 +5,8 @@ RDFShape is web API for semantic data analysis and validation implemented in Sca
 This repository contains the backend part of RDFShape and acts as a queryable API to be consumed by clients. To learn more about our public client, see its [GitHub repository](https://github.com/weso/rdfshape-client) or [try it](https://rdfshape.weso.es). 
 
 
-[![Continuous Integration](https://github.com/weso/rdfshape/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/rdfshape/actions/workflows/ci.yml)
-[![Docker build](https://github.com/weso/rdfshape/actions/workflows/publish_docker.yml/badge.svg)](https://github.com/weso/rdfshape/actions/workflows/publish_docker.yml)
+[![Continuous Integration](https://github.com/weso/rdfshape-api/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/rdfshape-api/actions/workflows/ci.yml)
+[![Docker build](https://github.com/weso/rdfshape-api/actions/workflows/publish_docker.yml/badge.svg)](https://github.com/weso/rdfshape-api/actions/workflows/publish_docker.yml)
 
 [![Codacy](https://api.codacy.com/project/badge/Grade/2ad10ec42b6a4bb389aeb114fe192f21)](https://www.codacy.com/gh/weso/rdfshape?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/rdfshape&amp;utm_campaign=Badge_Grade)
 
