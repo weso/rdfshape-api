@@ -2,7 +2,7 @@
 
 RDFShape is web API for semantic data analysis and validation implemented in Scala using the [http4s](https://http4s.org/) library.
 
-This repository contains the backend part of RDFShape and acts as a queryable API to be consumed by clients. To learn more about our public client, see its [GitHub repository](https://github.com/weso/rdfshape-client). 
+This repository contains the backend part of RDFShape and acts as a queryable API to be consumed by clients. To learn more about our public client, see its [GitHub repository](https://github.com/weso/rdfshape-client) or [try it](https://rdfshape.weso.es). 
 
 
 [![Continuous Integration](https://github.com/weso/rdfshape/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/rdfshape/actions/workflows/ci.yml)
@@ -10,17 +10,17 @@ This repository contains the backend part of RDFShape and acts as a queryable AP
 
 [![Codacy](https://api.codacy.com/project/badge/Grade/2ad10ec42b6a4bb389aeb114fe192f21)](https://www.codacy.com/gh/weso/rdfshape?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/rdfshape&amp;utm_campaign=Badge_Grade)
 
+# Deployed versions of RDFShape API
+
+RDFShape is already deployed [here](http://rdfshape.weso.es:8080).
+
 # Quick reference
 
 - Maintained by: [WESO Research Group](https://weso.es)
 - Where to help/learn more: [base repository](https://github.com/weso/rdfshape)
-- Deployed version of [RDFShape API](https://rdfshape.weso.es:8080)
 - Background information about validating RDF: [Validating RDF data book](http://book.validatingrdf.com)
 - Project [wiki](https://github.com/weso/rdfshape/wiki)
 
-# Deployed versions of RDFShape
-
-RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 # Installation
 
