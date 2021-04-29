@@ -1,26 +1,28 @@
 # RDFShape
 
-RDF playground. This repository contains the server part of the RDFShape web
-app. The server has been implemented in Scala using
-the [http4s](https://http4s.org/) library.
+RDFShape is web API for semantic data analysis and validation implemented in Scala using the [http4s](https://http4s.org/) library.
+
+This repository contains the backend part of RDFShape and acts as a queryable API to be consumed by clients. To learn more about our public client, see its [GitHub repository](https://github.com/weso/rdfshape-client). 
+
 
 [![Continuous Integration](https://github.com/weso/rdfshape/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/rdfshape/actions/workflows/ci.yml)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/2ad10ec42b6a4bb389aeb114fe192f21)](https://www.codacy.com/gh/weso/rdfshape?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/rdfshape&amp;utm_campaign=Badge_Grade)
+[![Docker build](https://github.com/weso/rdfshape/actions/workflows/publish_docker.yml/badge.svg)](https://github.com/weso/rdfshape/actions/workflows/publish_docker.yml)
 
-# More info
+[![Codacy](https://api.codacy.com/project/badge/Grade/2ad10ec42b6a4bb389aeb114fe192f21)](https://www.codacy.com/gh/weso/rdfshape?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/rdfshape&amp;utm_campaign=Badge_Grade)
 
-* The client part of RDFShape has been separated to
-  a [React app](https://github.com/weso/rdfshape-client).
-* Background info about validating
-  RDF: [Validating RDF data book](http://book.validatingrdf.com)
-* [How-to](https://github.com/labra/rdfshape/wiki/Tutorial) explains how to use
-  RDFShape to validate RDF
+# Quick reference
+
+- Maintained by: [WESO Research Group](https://weso.es)
+- Where to help/learn more: [base repository](https://github.com/weso/rdfshape)
+- Deployed version of [RDFShape API](https://rdfshape.weso.es:8080)
+- Background information about validating RDF: [Validating RDF data book](http://book.validatingrdf.com)
+- Project [wiki](https://github.com/weso/rdfshape/wiki)
 
 # Deployed versions of RDFShape
 
 RDFShape is already deployed [here](http://rdfshape.weso.es).
 
-# Installation and Local Deployment
+# Installation
 
 ## Requirements
 
@@ -40,10 +42,13 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 ## Deploy with Docker
 
-* Use the provided Dockerfile to build rdfshape or pull from [Docker Hub](https://hub.docker.com/r/wesogroup/rdfshape-api).
-* When building the Docker image, you must provide the following arguments
+* Use the provided Dockerfile to build rdfshape or pull from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-api).
+
+### Building the image
+
+* When building the Docker image, you may provide the following arguments
   via `--build-arg`:
-    * **GITHUB_TOKEN**:
+    * **GITHUB_TOKEN** [required]:
         - A valid GitHub token to download WESO project dependencies from Github
           packages. This is required when manually building the image.
         - Images available
@@ -51,9 +56,16 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
           already been built using a read-only token for downloading the
           dependencies.
 
+### Running containers
+          
 * When running a container, you may provide the following environment variables
   via `--env`:
-    - **PORT**: Port where the API is exposed inside the container. Default is 80.
+    - **PORT** [optional]:
+       - Port where the API is exposed inside the container. Default is 80.
+
+### Supported tags
+- _:stable_: Stable build updated manually.
+- <_:hashed_tags_>: Automated builds by our CI pipeline. With the latest features uploaded to our repository but lacking internal testing.
 
 # Dependencies
 
