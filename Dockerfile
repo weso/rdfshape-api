@@ -22,6 +22,7 @@ RUN ["sbt", "Universal / packageBin"]
 
 ## Prod environment.
 FROM openjdk:12 as prod
+LABEL org.opencontainers.image.source="https://github.com/weso/rdfshape"
 WORKDIR /app
 
 # Copy zip with universal executable
