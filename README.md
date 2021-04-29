@@ -73,7 +73,7 @@ RDFShape server has been implemented in Scala using the following libraries:
 * [cats](https://typelevel.org/cats/): a library for functional programming in
   Scala.
 * [UMLShaclex](https://github.com/labra/shaclex): contains the visualization
-  code that converts schemas to UML diagrams
+  code that converts schemas to UML diagrams.
 * [SRDF](http://www.weso.es/srdf/): is the library used to handle RDF. It is a
   simple interface with 2 implementations, one
   in [Apache Jena](https://jena.apache.org/), and the other
