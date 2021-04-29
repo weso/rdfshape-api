@@ -24,21 +24,23 @@ RDFShape is already deployed [here](http://rdfshape.weso.es).
 
 # Installation
 
-## Requirements
-
-* RDFShape server requires [SBT](https://www.scala-sbt.org/) to be built
-
 ## Deploy at local machine
 
-* Clone the [github repository](https://github.com/labra/rdfshape)
+### Requirements
 
-* Go to directory where RDFShape source code is located and execute `sbt run`
+* RDFShape API requires [SBT](https://www.scala-sbt.org/) to be built
 
-* After some time downloading and compiling uri(
+### Steps
+
+1. Clone the [github repository](https://github.com/labra/rdfshape)
+
+2. Go to directory where RDFShape source code is located and execute `sbt run`
+
+3. After some time downloading and compiling uri(
   the source code it will start the application, which can be accessed
   at: [localhost:8080](http://localhost:8080)
 
-* To use a different port run `sbt "run --server --port <PortNumber>"`
+4. To use a different port run `sbt "run --server --port <PortNumber>"`
 
 ## Deploy with Docker
 
