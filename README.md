@@ -19,7 +19,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es:8080).
 - Maintained by: [WESO Research Group](https://weso.es)
 - Where to help/learn more: [base repository](https://github.com/weso/rdfshape)
 - Background information about validating RDF: [Validating RDF data book](http://book.validatingrdf.com)
-- Project [wiki](https://github.com/weso/rdfshape/wiki)
+- Wiki: https://github.com/weso/rdfshape/wiki
 
 
 # Installation
