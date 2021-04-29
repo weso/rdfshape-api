@@ -24,27 +24,21 @@ RDFShape is already deployed [here](http://rdfshape.weso.es:8080).
 
 # Installation
 
-## Deploy at local machine
+## Deploy locally
 
 ### Requirements
 
 * RDFShape API requires [SBT](https://www.scala-sbt.org/) to be built
 
 ### Steps
-
-1. Clone the [github repository](https://github.com/labra/rdfshape)
-
+1. Clone this repository
 2. Go to directory where RDFShape source code is located and execute `sbt run`
-
-3. After some time downloading and compiling uri(
-  the source code it will start the application, which can be accessed
-  at: [localhost:8080](http://localhost:8080)
-
+3. After some time downloading and compiling uri (the source code it will start the application, which can be accessed at [localhost:8080](http://localhost:8080)
 4. To use a different port run `sbt "run --server --port <PortNumber>"`
 
 ## Deploy with Docker
 
-* Use the provided Dockerfile to build rdfshape or pull from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-api).
+* Use the provided Dockerfile to build rdfshape-client or pull from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client).
 
 ### Building the image
 
