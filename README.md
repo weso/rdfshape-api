@@ -12,7 +12,7 @@ This repository contains the backend part of RDFShape and acts as a queryable AP
 
 # Deployed versions of RDFShape API
 
-RDFShape is already deployed [here](http://rdfshape.weso.es:8080).
+RDFShape is already deployed [here](https://api.rdfshape.weso.es).
 
 # Quick reference
 
