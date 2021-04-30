@@ -39,7 +39,7 @@ ENV PATH /app/rdfshape/bin:$PATH
 
 # Run
 # Port for the app to run
-ENV PORT=80
+ENV PORT=8080
 EXPOSE $PORT
 # Non-priviledged user to run the app
 RUN groupadd -r rdfshape && useradd -r -s /bin/false -g rdfshape rdfshape

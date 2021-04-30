@@ -57,7 +57,7 @@ RDFShape is already deployed [here](http://rdfshape.weso.es:8080).
 * When running a container, you may provide the following environment variables
   via `--env`:
     - **PORT** [optional]:
-       - Port where the API is exposed inside the container. Default is 80.
+       - Port where the API is exposed inside the container. Default is 8080.
 
 ### Supported tags
 - _:stable_: Stable build updated manually.
