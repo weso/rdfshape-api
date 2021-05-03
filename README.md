@@ -33,12 +33,12 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es).
 ### Steps
 1. Clone this repository
 2. Go to directory where RDFShape source code is located and execute `sbt run`
-3. After some time downloading and compiling uri (the source code it will start the application, which can be accessed at [localhost:8080](http://localhost:8080)
+3. After some time downloading dependencies and compiling the source code, the application will start and be accessible at [localhost:8080](http://localhost:8080)
 4. To use a different port run `sbt "run --server --port <PortNumber>"`
 
 ## Deploy with Docker
 
-* Use the provided Dockerfile to build rdfshape-client or pull from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client).
+* Use the provided Dockerfile to build rdfshape-client or pull from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client) (GCR).
 
 ### Building the image
 
@@ -48,7 +48,7 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es).
         - A valid GitHub token to download WESO project dependencies from Github
           packages. This is required when manually building the image.
         - Images available
-          in [Docker Hub](https://hub.docker.com/r/wesogroup/rdfshape-api) have
+          in [GCR](https://github.com/orgs/weso/packages/container/package/rdfshape-client) have
           already been built using a read-only token for downloading the
           dependencies.
 
