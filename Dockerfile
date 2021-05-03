@@ -1,15 +1,11 @@
 ## Build environment.
+# Java 11, Scala 2.12.13, SBT 1.5.0 included.
+FROM hseeberger/scala-sbt:11.0.10-oraclelinux8_1.5.1_2.12.13 as build
 # Build application inside /app
-FROM openjdk:12 as build
 WORKDIR /app
 
-# Install git, sbt, required
-RUN yum update -y -q && \
-    yum install git -y -q
-
-RUN curl -s https://bintray.com/sbt/rpm/rpm | \
-    tee /etc/yum.repos.d/bintray-sbt-rpm.repo && \
-    yum install sbt -y -q
+# Install git
+RUN microdnf update -y && microdnf install git -y --nodocs --refresh
 
 # ARGs - Override with: --build-arg [ARGUMENT]=[VALUE]
 # Github token needed to download weso packages at build time.
@@ -20,18 +16,17 @@ COPY . ./
 # Build to /app/target/universal/rdfshape.zip
 RUN ["sbt", "Universal / packageBin"]
 
-## Prod environment.
-FROM openjdk:12 as prod
-LABEL org.opencontainers.image.source="https://github.com/weso/rdfshape"
+# ## Prod environment.
+FROM adoptopenjdk/openjdk12:jre-12.0.2_10-alpine as prod
+LABEL org.opencontainers.image.source="https://github.com/weso/rdfshape-api"
 WORKDIR /app
 
 # Copy zip with universal executable
 COPY --from=build /app/target/universal/rdfshape.zip .
 
 # Download required programs dependencies. Unzip binaries.
-RUN yum update -y -q && \
-    yum install graphviz -y -q && \
-    yum install unzip -y -q && \
+RUN apk update -q && apk upgrade -q && \
+    apk add bash curl unzip graphviz -q && \
     unzip -q rdfshape.zip
 
 # Add rdfshape to path
@@ -42,7 +37,7 @@ ENV PATH /app/rdfshape/bin:$PATH
 ENV PORT=8080
 EXPOSE $PORT
 # Non-priviledged user to run the app
-RUN groupadd -r rdfshape && useradd -r -s /bin/false -g rdfshape rdfshape
+RUN addgroup -S rdfshape && adduser -S -s /bin/false -G rdfshape rdfshape
 RUN chown -R rdfshape:rdfshape /app
 USER rdfshape
 
