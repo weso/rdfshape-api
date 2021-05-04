@@ -19,7 +19,8 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es).
 - Maintained by: [WESO Research Group](https://weso.es)
 - Where to help/learn more: [base repository](https://github.com/weso/rdfshape)
 - Background information about validating RDF: [Validating RDF data book](http://book.validatingrdf.com)
-- Wiki: https://github.com/weso/rdfshape/wiki
+- [API Docs](https://app.swaggerhub.com/apis/weso/RDFShape/) (WIP)
+- [Wiki](https://github.com/weso/rdfshape/wiki)
 
 
 # Installation
