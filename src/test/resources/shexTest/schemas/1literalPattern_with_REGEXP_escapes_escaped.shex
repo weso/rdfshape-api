@@ -1,3 +1,0 @@
-<http://a.example/S1> {
-   <http://a.example/p1> LITERAL /^\\\/\\t\\n\\r\\-\\\\\\u0061\\U0001D4B8$/
-}

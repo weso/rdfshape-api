@@ -10,14 +10,12 @@ import org.http4s.dsl.Http4sDsl
 
 class ShExService(client: Client[IO]) extends Http4sDsl[IO] {
 
-  val routes = HttpRoutes.of[IO] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case GET -> Root / `api` / "shEx" / "formats" => {
+    case GET -> Root / `api` / "shEx" / "formats" =>
       val formats = Schemas.availableFormats
       val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
       Ok(json)
-    }
-
   }
 }
 

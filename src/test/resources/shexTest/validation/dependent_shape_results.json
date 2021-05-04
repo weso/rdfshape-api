@@ -1,4 +1,0 @@
-{
-  "http://inst.example/Issue1":  [{"shape": "http://schema.example/IssueShape", "result": true}],
-  "http://inst.example/Tester2": [{"shape": "http://schema.example/TesterShape", "result": true}]
-}

@@ -15,10 +15,10 @@
         </encoder>
     </appender>
 
-<!--    <root level="debug">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE"/>
-    </root> -->
+    <!--    <root level="debug">
+            <appender-ref ref="STDOUT" />
+            <appender-ref ref="FILE"/>
+        </root> -->
 
     <!-- for production -->
     <root level="info">

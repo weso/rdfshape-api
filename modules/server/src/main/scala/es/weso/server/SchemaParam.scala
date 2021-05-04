@@ -1,16 +1,14 @@
 package es.weso.server
 
-import Defaults._
-import cats._
-import cats.data._
 import cats.effect._
 import cats.implicits._
 import es.weso.rdf.RDFReasoner
 import es.weso.schema.{Schema, Schemas}
+import es.weso.server.Defaults._
+import es.weso.server.format._
+
 import scala.io.Source
 import scala.util.Try
-import org.log4s._
-import es.weso.server.format._
 
 case class SchemaParam(
     schema: Option[String],
@@ -27,30 +25,6 @@ case class SchemaParam(
     activeSchemaTab: Option[String]
 ) {
 
-  sealed abstract class SchemaInputType {
-    val id: String
-  }
-  case object SchemaUrlType extends SchemaInputType {
-    override val id = "#schemaUrl"
-  }
-  case object SchemaFileType extends SchemaInputType {
-    override val id = "#schemaFile"
-  }
-  case object SchemaTextAreaType extends SchemaInputType {
-    override val id = "#schemaTextArea"
-  }
-
-  def parseSchemaTab(tab: String): Either[String, SchemaInputType] = {
-    val inputTypes = List(SchemaUrlType, SchemaFileType, SchemaTextAreaType)
-    inputTypes.find(_.id == tab) match {
-      case Some(x) => Right(x)
-      case None =>
-        Left(
-          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
-        )
-    }
-  }
-
   val schemaFormat: Option[SchemaFormat] = {
     val schemaTab = parseSchemaTab(
       activeSchemaTab.getOrElse(defaultActiveSchemaTab)
@@ -62,15 +36,6 @@ case class SchemaParam(
       case Right(`SchemaTextAreaType`) =>
         schemaFormatTextArea orElse schemaFormatValue
       case _ => schemaFormatValue
-    }
-  }
-
-  private def chooseSchemaTab: String = {
-    (schema, schemaURL) match {
-      case (Some(_), None)    => SchemaTextAreaType.id
-      case (None, Some(_))    => SchemaUrlType.id
-      case (None, None)       => defaultActiveSchemaTab
-      case (Some(_), Some(_)) => defaultActiveSchemaTab
     }
   }
 
@@ -101,7 +66,7 @@ case class SchemaParam(
               }
             } yield resp
         }
-      case _ => {
+      case _ =>
         pprint.log(activeSchemaTab)
         pprint.log(schemaEngine, "@@@@ Schema Engine")
         val inputType = activeSchemaTab match {
@@ -113,10 +78,10 @@ case class SchemaParam(
         }
         pprint.log(inputType)
         inputType match {
-          case Right(`SchemaUrlType`) => {
+          case Right(`SchemaUrlType`) =>
             schemaURL match {
               case None => IO((None, Left(s"Non value for schemaURL")))
-              case Some(schemaUrl) => {
+              case Some(schemaUrl) =>
                 val e: IO[(String, Schema)] = for {
                   str <- IO.fromEither(
                     Try(Source.fromURL(schemaUrl).mkString).toEither
@@ -138,10 +103,8 @@ case class SchemaParam(
                     }
                   )
                 )
-              }
             }
-          }
-          case Right(`SchemaFileType`) => {
+          case Right(`SchemaFileType`) =>
             schemaFile match {
               case None => IO((None, Left(s"No value for schemaFile")))
               case Some(schemaStr) =>
@@ -164,8 +127,7 @@ case class SchemaParam(
                     )
                   )
             }
-          }
-          case Right(`SchemaTextAreaType`) => {
+          case Right(`SchemaTextAreaType`) =>
             pprint.log(schemaFormat)
             val schemaStr = schema.getOrElse("")
             for {
@@ -191,14 +153,48 @@ case class SchemaParam(
               )
               _ <- IO { pprint.log(foundSchema.name, s"Found schema") }
             } yield pair
-          }
           case Right(other) =>
             IO((None, Left(s"Unknown value for activeSchemaTab: $other")))
           case Left(msg) => IO((None, Left(msg)))
         }
-      }
     }
     v
+  }
+
+  def parseSchemaTab(tab: String): Either[String, SchemaInputType] = {
+    val inputTypes = List(SchemaUrlType, SchemaFileType, SchemaTextAreaType)
+    inputTypes.find(_.id == tab) match {
+      case Some(x) => Right(x)
+      case None =>
+        Left(
+          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
+        )
+    }
+  }
+
+  private def chooseSchemaTab: String = {
+    (schema, schemaURL) match {
+      case (Some(_), None)    => SchemaTextAreaType.id
+      case (None, Some(_))    => SchemaUrlType.id
+      case (None, None)       => defaultActiveSchemaTab
+      case (Some(_), Some(_)) => defaultActiveSchemaTab
+    }
+  }
+
+  sealed abstract class SchemaInputType {
+    val id: String
+  }
+
+  case object SchemaUrlType extends SchemaInputType {
+    override val id = "#schemaUrl"
+  }
+
+  case object SchemaFileType extends SchemaInputType {
+    override val id = "#schemaFile"
+  }
+
+  case object SchemaTextAreaType extends SchemaInputType {
+    override val id = "#schemaTextArea"
   }
 
 }
@@ -246,25 +242,6 @@ object SchemaParam {
    * IO.pure(Left(str)) case Right(schema) => IO.pure(Right((schema,
    * sp.copy(schema = maybeStr)))) } }) } yield resp r } */
 
-  private def getSchemaFormat(
-      name: String,
-      partsMap: PartsMap
-  ): IO[Option[SchemaFormat]] = for {
-    maybeStr <- partsMap.optPartValue(name)
-  } yield maybeStr match {
-    case None => None
-    case Some(str) =>
-      SchemaFormat
-        .fromString(str)
-        .fold(
-          err => {
-            pprint.log(s"Unsupported schemaFormat for ${name}: $str")
-            None
-          },
-          df => Some(df)
-        )
-  }
-
   private[server] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {
     schema               <- partsMap.optPartValue("schema")
     schemaURL            <- partsMap.optPartValue("schemaURL")
@@ -293,6 +270,25 @@ object SchemaParam {
       targetSchemaFormat,
       activeSchemaTab
     )
+  }
+
+  private def getSchemaFormat(
+      name: String,
+      partsMap: PartsMap
+  ): IO[Option[SchemaFormat]] = for {
+    maybeStr <- partsMap.optPartValue(name)
+  } yield maybeStr match {
+    case None => None
+    case Some(str) =>
+      SchemaFormat
+        .fromString(str)
+        .fold(
+          err => {
+            pprint.log(s"Unsupported schemaFormat for ${name}: $str")
+            None
+          },
+          df => Some(df)
+        )
   }
 
   private[server] def empty: SchemaParam =

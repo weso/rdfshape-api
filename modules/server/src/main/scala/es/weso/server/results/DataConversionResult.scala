@@ -1,10 +1,8 @@
 package es.weso.server.results
 
 import es.weso.server.format.DataFormat
-import io.circe.Json
 import es.weso.utils.json.JsonUtilsServer._
-
-import scala.xml.Utility.escape
+import io.circe.Json
 
 case class DataConversionResult(
     msg: String,
@@ -13,17 +11,6 @@ case class DataConversionResult(
     targetFormat: String,
     result: String
 ) {
-
-  def toHTML: String = {
-    val sb = new StringBuilder
-    sb ++= "<h1>Data conversion</h1>"
-    sb ++= s"<pre>${escape(result)}</pre>"
-    sb ++= s"<p>Data details: <details>"
-    sb ++= s"<p>Source format: ${dataFormat}. Target format: ${targetFormat}"
-    sb ++= s"<pre>${escape(data.getOrElse(""))}</pre>"
-    sb ++= s"</details>"
-    sb.toString
-  }
 
   def toJson: Json = Json.fromFields(
     List(

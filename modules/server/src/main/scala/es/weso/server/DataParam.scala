@@ -1,19 +1,18 @@
 package es.weso.server
 
-import java.net.URI
-
 import cats.effect._
 import cats.implicits._
 import es.weso.html2rdf.HTML2RDF
-import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
+import es.weso.rdf.{InferenceEngine, RDFReasoner}
 import es.weso.server.Defaults._
 import es.weso.server.format._
 import es.weso.server.merged.CompoundData
 import es.weso.utils.IOUtils._
 import org.log4s.getLogger
-import es.weso.rdf.InferenceEngine
+
+import java.net.URI
 
 case class DataParam(
     data: Option[String],
@@ -289,7 +288,7 @@ object DataParam {
         .fromString(str)
         .fold(
           err => {
-            pprint.log(s"Unsupported dataFormat for ${name}: $str")
+            pprint.log(s"Unsupported dataFormat for $name: $str")
             None
           },
           df => Some(df)
@@ -330,12 +329,7 @@ object DataParam {
           case _                 => None
         }
     })(Some(_))
-    val finalActiveDataTab = activeDataTab /* finalEndpoint match {
-      case Some(endpoint) =>
-        if (endpoint.length > 0) Some("#dataEndpoint")
-        else activeDataTab
-      case None => activeDataTab
-    } */
+    val finalActiveDataTab = activeDataTab
     pprint.log(finalEndpoint)
 
     val dp = DataParam(
@@ -370,5 +364,4 @@ object DataParam {
       None,
       None
     )
-
 }

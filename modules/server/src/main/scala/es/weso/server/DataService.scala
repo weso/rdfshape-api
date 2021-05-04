@@ -9,6 +9,8 @@ import es.weso.server.Defaults.defaultDataFormat
 import es.weso.server.QueryParams._
 import es.weso.server.format._
 import es.weso.server.results._
+import es.weso.server.utils.OptEitherF._
+import es.weso.utils.IOUtils._
 import io.circe._
 import org.http4s._
 import org.http4s.circe._
@@ -17,9 +19,6 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.multipart.Multipart
 import org.log4s.getLogger
-// import es.weso.html
-import es.weso.server.utils.OptEitherF._
-import es.weso.utils.IOUtils._
 
 import scala.util.Try
 

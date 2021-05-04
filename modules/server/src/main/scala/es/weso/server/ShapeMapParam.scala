@@ -1,8 +1,7 @@
 package es.weso.server
 
-import cats.data.EitherT
-import cats.implicits._
 import cats.effect.IO
+import cats.implicits._
 import es.weso.rdf.PrefixMap
 import es.weso.shapemaps._
 import org.log4s.getLogger
@@ -16,36 +15,9 @@ case class ShapeMapParam(
     activeShapeMapTab: Option[String]
 ) {
 
-  private[this] val logger = getLogger
-
-  sealed abstract class ShapeMapInputType {
-    val id: String
-  }
-  case object ShapeMapUrlType extends ShapeMapInputType {
-    override val id = "#shapeMapUrl"
-  }
-  case object ShapeMapFileType extends ShapeMapInputType {
-    override val id = "#shapeMapFile"
-  }
-  case object ShapeMapTextAreaType extends ShapeMapInputType {
-    override val id = "#shapeMapTextArea"
-  }
-
   val shapeMapFormat: String = optShapeMapFormat.getOrElse(Compact).name
   val shapeMapTab: String    = activeShapeMapTab.getOrElse(ShapeMapTextAreaType.id)
-
-  def parseShapeMapTab(tab: String): Either[String, ShapeMapInputType] = {
-    logger.debug(s"parseShapeMapTab: tab = $tab")
-    val inputTypes =
-      List(ShapeMapUrlType, ShapeMapFileType, ShapeMapTextAreaType)
-    inputTypes.find(_.id == tab) match {
-      case Some(x) => Right(x)
-      case None =>
-        Left(
-          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
-        )
-    }
-  }
+  private[this] val logger = getLogger
 
   def getShapeMap: IO[ShapeMap] =
     for {
@@ -79,6 +51,35 @@ case class ShapeMapParam(
       }
     } yield sm
 
+  def parseShapeMapTab(tab: String): Either[String, ShapeMapInputType] = {
+    logger.debug(s"parseShapeMapTab: tab = $tab")
+    val inputTypes =
+      List(ShapeMapUrlType, ShapeMapFileType, ShapeMapTextAreaType)
+    inputTypes.find(_.id == tab) match {
+      case Some(x) => Right(x)
+      case None =>
+        Left(
+          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
+        )
+    }
+  }
+
+  sealed abstract class ShapeMapInputType {
+    val id: String
+  }
+
+  case object ShapeMapUrlType extends ShapeMapInputType {
+    override val id = "#shapeMapUrl"
+  }
+
+  case object ShapeMapFileType extends ShapeMapInputType {
+    override val id = "#shapeMapFile"
+  }
+
+  case object ShapeMapTextAreaType extends ShapeMapInputType {
+    override val id = "#shapeMapTextArea"
+  }
+
 }
 
 object ShapeMapParam {
@@ -90,27 +91,7 @@ object ShapeMapParam {
     for {
       smp <- mkShapeMapParam(partsMap)
       sm  <- smp.getShapeMap
-    } yield ((sm, smp))
-
-  private def getShapeMapFormat(
-      name: String,
-      partsMap: PartsMap
-  ): IO[Option[ShapeMapFormat]] =
-    for {
-      maybeStr <- partsMap.optPartValue(name)
-    } yield maybeStr match {
-      case None => None
-      case Some(str) =>
-        ShapeMapFormat
-          .fromString(str)
-          .fold(
-            err => {
-              logger.error(s"Unsupported shapeMapFormat: $str")
-              None
-            },
-            smf => Some(smf)
-          )
-    }
+    } yield (sm, smp)
 
   private[server] def mkShapeMapParam(partsMap: PartsMap): IO[ShapeMapParam] =
     for {
@@ -132,6 +113,26 @@ object ShapeMapParam {
         targetShapeMapFormat,
         activeShapeMapTab
       )
+    }
+
+  private def getShapeMapFormat(
+      name: String,
+      partsMap: PartsMap
+  ): IO[Option[ShapeMapFormat]] =
+    for {
+      maybeStr <- partsMap.optPartValue(name)
+    } yield maybeStr match {
+      case None => None
+      case Some(str) =>
+        ShapeMapFormat
+          .fromString(str)
+          .fold(
+            err => {
+              logger.error(s"Unsupported shapeMapFormat: $str")
+              None
+            },
+            smf => Some(smf)
+          )
     }
 
   private[server] def empty: ShapeMapParam =

@@ -1,6 +1,6 @@
 package es.weso.server
 
-import es.weso.rdf.nodes.{IRI, IntegerLiteral, RDFNode}
+import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.rdf.triples.RDFTriple
 import io.circe.Json
 
@@ -41,7 +41,7 @@ object Outgoing {
 
   /** Creates an outgoing value from a set of triples.
     * It assumes all those triples have the same subject which is ignored
-    * @param ts
+    * @param ts Triple set
     * @return
     */
   def fromTriples(node: IRI, endpoint: IRI, ts: Set[RDFTriple]): Outgoing = {

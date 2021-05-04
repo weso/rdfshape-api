@@ -1,17 +1,19 @@
 package es.weso.server
 
-import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import es.weso.rdf.streams.Streams
+import es.weso.rdf.jena.RDFAsJenaModel
+import es.weso.rdf.{InferenceEngine, RDFReasoner}
 import es.weso.schema._
 import es.weso.server.APIDefinitions._
-import es.weso.server.ApiHelper._
+import es.weso.server.ApiHelper.{SchemaInfoReply, _}
 import es.weso.server.Defaults._
 import es.weso.server.QueryParams._
 import es.weso.server.format._
 import es.weso.server.results._
+import es.weso.server.utils.OptEitherF._
+import es.weso.utils.IOUtils._
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -21,47 +23,32 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.multipart.Multipart
-import es.weso.server.ApiHelper.SchemaInfoReply
 import org.log4s.getLogger
-import es.weso.utils.IOUtils._
-import es.weso.utils.FUtils._
-import es.weso.server.utils.OptEitherF._
-import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.rdf.RDFReasoner
-import es.weso.rdf.InferenceEngine
 
 class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
 
-  private val relativeBase = Defaults.relativeBase
-  private val logger       = getLogger
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-//   val L = implicitly[LiftIO[F]]
-
-  val routes = HttpRoutes.of[IO] {
-
-    case GET -> Root / `api` / "schema" / "engines" => {
+    case GET -> Root / `api` / "schema" / "engines" =>
       val engines = Schemas.availableSchemaNames
       val json    = Json.fromValues(engines.map(str => Json.fromString(str)))
       Ok(json)
-    }
 
-    case GET -> Root / `api` / "schema" / "engines" / "shacl" => {
+    case GET -> Root / `api` / "schema" / "engines" / "shacl" =>
       val shaclSchemas =
         List(Schemas.shaclex, Schemas.jenaShacl, Schemas.shaclTQ)
       val json = Json.fromValues(
         shaclSchemas.map(_.name).map(str => Json.fromString(str))
       )
       Ok(json)
-    }
 
-    case GET -> Root / `api` / "schema" / "engines" / "default" => {
+    case GET -> Root / `api` / "schema" / "engines" / "default" =>
       val schemaEngine = Schemas.defaultSchemaName
       val json         = Json.fromString(schemaEngine)
       Ok(json)
-    }
 
     case GET -> Root / `api` / "schema" / "formats" :?
-        SchemaEngineParam(optSchemaEngine) => {
+        SchemaEngineParam(optSchemaEngine) =>
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       val r: IO[Json] = Schemas
         .lookupSchema(schemaEngine)
@@ -74,29 +61,27 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
                   (
                     "error",
                     Json.fromString(
-                      s"Schema engine: ${schemaEngine} not found. Available engines = ${Schemas.availableSchemaNames
+                      s"Schema engine: $schemaEngine not found. Available engines = ${Schemas.availableSchemaNames
                         .mkString(",")}"
                     )
                   )
                 )
               ),
             schema =>
-              Json.fromValues(schema.formats.toList.map(Json.fromString(_)))
+              Json.fromValues(schema.formats.toList.map(Json.fromString))
           )
         )
       io2f(r).flatMap(json => Ok(json))
-    }
 
-    case GET -> Root / `api` / "schema" / "triggerModes" => {
+    case GET -> Root / `api` / "schema" / "triggerModes" =>
       val triggerModes = ValidationTrigger.triggerValues.map(_._1)
-      val json         = Json.fromValues(triggerModes.map(Json.fromString(_)))
+      val json         = Json.fromValues(triggerModes.map(Json.fromString))
       Ok(json)
-    }
 
     case GET -> Root / `api` / "schema" / "info" :?
         OptSchemaParam(optSchema) +&
         SchemaFormatParam(optSchemaFormat) +&
-        SchemaEngineParam(optSchemaEngine) => {
+        SchemaEngineParam(optSchemaEngine) =>
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       val schemaFormat = optSchemaFormat.getOrElse(Schemas.defaultSchemaFormat)
       val schemaStr = optSchema match {
@@ -111,7 +96,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
           e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
           schema => {
             val shapes: List[String] = schema.shapes
-            val jsonShapes           = Json.fromValues(shapes.map(Json.fromString(_)))
+            val jsonShapes           = Json.fromValues(shapes.map(Json.fromString))
             val pm: Json             = prefixMap2Json(schema.pm)
             val result = SchemaInfoResult(
               schemaStr,
@@ -124,7 +109,6 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
           }
         )
       } yield r
-    }
 
     case req @ POST -> Root / `api` / "schema" / "info" =>
       req.decode[Multipart[IO]] { m =>
@@ -154,7 +138,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
         SchemaFormatParam(optSchemaFormat) +&
         SchemaEngineParam(optSchemaEngine) +&
         TargetSchemaFormatParam(optResultSchemaFormat) +&
-        TargetSchemaEngineParam(optResultSchemaEngine) => {
+        TargetSchemaEngineParam(optResultSchemaEngine) =>
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       val schemaStr = optSchema match {
         case None         => ""
@@ -194,7 +178,6 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
            * optResultSchemaFormat, optResultSchemaEngine).toJson) */
         )
       } yield r
-    }
 
     case req @ POST -> Root / `api` / "schema" / "convert" =>
       req.decode[Multipart[IO]] { m =>
@@ -275,7 +258,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
         OptSchemaParam(optSchema) +&
         SchemaFormatParam(optSchemaFormatStr) +&
         SchemaEngineParam(optSchemaEngine) +&
-        OptActiveSchemaTabParam(optActiveSchemaTab) => {
+        OptActiveSchemaTabParam(optActiveSchemaTab) =>
       val r: EitherT[IO, String, String] = for {
         optSchemaFormat <- optEither2es(
           optSchemaFormatStr,
@@ -321,7 +304,6 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
           }
         )
       } yield v
-    }
 
     case req @ GET -> Root / `api` / "schema" / "validate" :?
         OptDataParam(optData) +&
@@ -346,16 +328,16 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
 //            OptEndpointsParam(optEndpoints) +&
         OptActiveDataTabParam(optActiveDataTab) +&
         OptActiveSchemaTabParam(optActiveSchemaTab) +&
-        OptActiveShapeMapTabParam(optActiveShapeMapTab) => {
+        OptActiveShapeMapTabParam(optActiveShapeMapTab) =>
       val either: Either[String, (Option[DataFormat], Option[SchemaFormat])] =
         for {
-          df <- maybeDataFormatStr.map(DataFormat.fromString(_)).sequence
-          sf <- maybeSchemaFormatStr.map(SchemaFormat.fromString(_)).sequence
+          df <- maybeDataFormatStr.map(DataFormat.fromString).sequence
+          sf <- maybeSchemaFormatStr.map(SchemaFormat.fromString).sequence
         } yield (df, sf)
 
       either match {
         case Left(str) => errJson(str)
-        case Right(pair) => {
+        case Right(pair) =>
           val (optDataFormat, optSchemaFormat) = pair
           val baseUri                          = req.uri
           logger.info(s"BaseURI: $baseUri")
@@ -396,13 +378,13 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
               if(sm1 == sm2) Some(sm1)
               else {
                 val msg =
-                  (s"2 shape-map parameters with different values: $sm1 and $sm2. We use: $sm1")
+                  s"2 shape-map parameters with different values: $sm1 and $sm2. We use: $sm1"
                 logger.error(msg)
                 println(msg)
                 Some(sm1)
               }
           }
-          println(s"#### optShapeMap: ${collectShapeMap}")
+          println(s"#### optShapeMap: $collectShapeMap")
           val tp = TriggerModeParam(
             optTriggerMode,
             collectShapeMap,
@@ -450,9 +432,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
             v
           }
           eitherResult
-        }
       }
-    }
 
     case req @ POST -> Root / `api` / "schema" / "validate" =>
       req.decode[Multipart[IO]] { m =>
@@ -485,6 +465,10 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
         }
       }
   }
+  private val relativeBase = Defaults.relativeBase
+
+//   val L = implicitly[LiftIO[F]]
+  private val logger = getLogger
 
   // TODO: Move this method to a more generic place...
   private def errJson(msg: String): IO[Response[IO]] =
@@ -507,7 +491,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
         case Left(str) =>
           IO.raiseError(
             new RuntimeException(
-              s"Error parsing inference engine: ${name}: $str"
+              s"Error parsing inference engine: $name: $str"
             )
           )
         case Right(engine) => rdf.applyInference(engine)

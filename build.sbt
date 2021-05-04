@@ -1,8 +1,7 @@
 lazy val scala212               = "2.12.13"
 lazy val scala213               = "2.13.5"
 lazy val supportedScalaVersions = List(scala213, scala212)
-val JavaCIVersion = "adopt@1.11"
-
+val JavaCIVersion               = "adopt@1.11"
 
 lazy val utilsVersion      = "0.1.82" // for utilsTest
 lazy val umlShaclexVersion = "0.0.81"
@@ -61,7 +60,6 @@ lazy val http4sBlazeClient =
 lazy val http4sEmberClient =
   "org.http4s" %% "http4s-ember-client" % http4sVersion
 lazy val http4sCirce    = "org.http4s"    %% "http4s-circe"    % http4sVersion
-lazy val http4sTwirl    = "org.http4s"    %% "http4s-twirl"    % http4sVersion
 lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % logbackVersion
 lazy val munit          = "org.scalameta" %% "munit"           % munitVersion
 lazy val munitEffect =
@@ -149,7 +147,7 @@ lazy val rdfshape = project
 
 lazy val server = project
   .in(file("modules/server"))
-  .enablePlugins(SbtTwirl, BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings, publishSettings)
   .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
@@ -162,9 +160,7 @@ lazy val server = project
       http4sBlazeClient,
       http4sEmberClient,
       http4sCirce,
-      http4sTwirl,
       scalatags,
-      // selenium,
       umlShaclex,
       wikibaserdf,
       any23_core,
@@ -263,9 +259,9 @@ lazy val publishSettings = Seq(
   apiURL          := Some(url("http://labra.github.io/rdfshape/latest/api/")),
   pomExtra        := <developers>
     <developer>
-      <id>labra</id>
-      <name>Jose Emilio Labra Gayo</name>
-      <url>https://github.com/labra/</url>
+      <id>WESO</id>
+      <name>WESO Research Group</name>
+      <url>https://github.com/weso</url>
     </developer>
   </developers>,
   doc / scalacOptions  ++= Seq(
@@ -277,7 +273,7 @@ lazy val publishSettings = Seq(
     "-diagrams",
   ),
   publishMavenStyle              := true,
-  maintainer:= "labra@uniovi.es, uo251436@uniovi.es",
+  maintainer:= "info@weso.es",
 
   // publish as zip
   Universal / packageName := "rdfshape"
@@ -288,3 +284,13 @@ githubTokenSource := TokenSource.Or(
   TokenSource.Environment("GITHUB_TOKEN"), // Injected during a github workflow for publishing
   TokenSource.Environment("SHELL")  // safe to assume this will be set in dev environments
 )
+
+// Lint-excluded setting/task keys
+lazy val excludedLintKeys = Set(
+  maintainer,
+  rdfshape / reStartArgs,
+  Universal / packageName,
+  doc / scalacOptions,
+
+)
+Global / excludeLintKeys ++= excludedLintKeys

@@ -12,6 +12,7 @@ import org.http4s.server.middleware.{CORS, Logger}
 import javax.net.ssl.SSLContext
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object Server {
 
@@ -56,8 +57,5 @@ object Server {
         EndpointService(client).routes <+>
         PermalinkService(client).routes <+>
         FetchService(client).routes
-    ) <+>
-      WebService().routes <+>
-      StaticService().routes <+>
-      LinksService().routes
+    )
 }
