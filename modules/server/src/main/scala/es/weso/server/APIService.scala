@@ -1,56 +1,26 @@
 package es.weso.server
 
+import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
-import es.weso.rdf.jena.{Endpoint, RDFAsJenaModel}
-import es.weso.rdf.streams.Streams
-import es.weso.schema._
-import es.weso.server.ApiHelper._
-import results._
-import es.weso.server.Defaults.{
-  availableDataFormats,
-  availableInferenceEngines,
-  defaultActiveDataTab,
-  defaultDataFormat,
-  defaultInference
-}
+import es.weso.rdf.jena.Endpoint
+import es.weso.rdf.nodes.IRI
+import es.weso.server.APIDefinitions._
 import es.weso.server.QueryParams._
-import es.weso.server.helper.DataFormat
-import es.weso.server.utils.Http4sUtils._
+import es.weso.utils.IOUtils._
 import io.circe._
-import io.circe.generic.auto._
-import io.circe.syntax._
-import fs2._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
-import org.http4s.headers._
-import org.http4s.multipart.Multipart
-import org.http4s.server.staticcontent.{ResourceService, resourceServiceBuilder}
+import org.http4s.server.staticcontent.resourceServiceBuilder
 import org.log4s.getLogger
 
-import scala.concurrent.duration._
-import APIDefinitions._
-import cats.Monad
-import cats.data.EitherT
-import es.weso.html
-import es.weso.rdf.RDFReader
-import es.weso.rdf.nodes.IRI
-import org.http4s.dsl.io.Ok
-import es.weso.utils.IOUtils._
 import scala.util.Try
-import org.http4s.Uri.{Path => UriPath}
 
 class APIService(client: Client[IO]) extends Http4sDsl[IO] {
 
-  private val relativeBase = Defaults.relativeBase
-  private val logger       = getLogger
-
-  private val swagger =
-    resourceServiceBuilder[IO]("/swagger") // ResourceService.Config())
-
-  val routes = HttpRoutes.of[IO] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case req @ GET -> Root / `api` / "health" =>
       for {
@@ -76,9 +46,10 @@ class APIService(client: Client[IO]) extends Http4sDsl[IO] {
      * swagger.toRoutes. // getOrElseF(NotFound()) */
 
   }
-
-  private def parseInt(s: String): Either[String, Int] =
-    Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))
+  private val relativeBase = Defaults.relativeBase
+  private val logger       = getLogger
+  private val swagger =
+    resourceServiceBuilder[IO]("/swagger") // ResourceService.Config())
 
   private def errJson(msg: String): IO[Response[IO]] =
     Ok(Json.fromFields(List(("error", Json.fromString(msg)))))
@@ -103,6 +74,9 @@ class APIService(client: Client[IO]) extends Http4sDsl[IO] {
       o     <- outgoing(endpointIRI, node, limit)
     } yield o
   }
+
+  private def parseInt(s: String): Either[String, Int] =
+    Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))
 
   private def outgoing(endpoint: IRI, node: IRI, limit: Int): ESIO[Outgoing] =
     for {

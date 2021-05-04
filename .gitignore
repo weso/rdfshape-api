@@ -1,5 +1,4 @@
 # Emacs
-
 *~
 \#*\#
 /.emacs.desktop
@@ -11,13 +10,12 @@ tramp
 
 .bloop
 .metals
+metals.sbt
 .bsp
-
 
 # Java
 *.class
 *.log
-
 
 # sbt specific
 dist/*
@@ -44,11 +42,13 @@ settings.json
 
 node_modules/
 .grunt
+
 # Logs
 logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
 # Runtime data
 pids
 *.pid

@@ -1,8 +1,8 @@
 lazy val scala212               = "2.12.13"
 lazy val scala213               = "2.13.5"
 lazy val supportedScalaVersions = List(scala213, scala212)
+val JavaCIVersion = "adopt@1.11"
 
-val Java11 = "adopt@1.11"
 
 lazy val utilsVersion      = "0.1.82" // for utilsTest
 lazy val umlShaclexVersion = "0.0.81"
@@ -14,7 +14,7 @@ lazy val rdf4jVersion = "2.2.4"
 // Dependency versions
 lazy val catsVersion         = "2.5.0"
 lazy val commonsTextVersion  = "1.7"
-lazy val circeVersion        = "0.14.0-M5"
+lazy val circeVersion        = "0.14.0-M6"
 lazy val graphvizJavaVersion = "0.5.2"
 lazy val http4sVersion       = "1.0.0-M21"
 // lazy val jgraphtVersion        = "1.3.1"
@@ -41,9 +41,6 @@ lazy val bootstrapVersion = "4.3.1"
 // Scalaj
 lazy val scalajVersion = "2.4.2"
 
-// Parsing utils
-lazy val playVersion = "2.9.0"
-
 // Compiler plugin dependency versions
 lazy val scalaMacrosVersion = "2.1.1"
 
@@ -54,6 +51,7 @@ lazy val catsKernel = "org.typelevel" %% "cats-kernel" % catsVersion
 lazy val circeCore    = "io.circe"   %% "circe-core"    % circeVersion
 lazy val circeGeneric = "io.circe"   %% "circe-generic" % circeVersion
 lazy val circeParser  = "io.circe"   %% "circe-parser"  % circeVersion
+lazy val circeLiteral = "io.circe"   %% "circe-literal" % circeVersion
 lazy val graphvizJava = "guru.nidi"   % "graphviz-java" % graphvizJavaVersion
 lazy val http4sDsl    = "org.http4s" %% "http4s-dsl"    % http4sVersion
 lazy val http4sBlazeServer =
@@ -85,8 +83,7 @@ lazy val any23_scraper =
   "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.2"
 lazy val rdf4j_runtime = "org.eclipse.rdf4j" % "rdf4j-runtime" % rdf4jVersion
 
-lazy val scalaj = "org.scalaj"        %% "scalaj-http" % scalajVersion
-lazy val play   = "com.typesafe.play" %% "play-json"   % playVersion
+lazy val scalaj = "org.scalaj" %% "scalaj-http" % scalajVersion
 
 lazy val jquery    = "org.webjars" % "jquery"    % jqueryVersion
 lazy val bootstrap = "org.webjars" % "bootstrap" % bootstrapVersion
@@ -103,7 +100,7 @@ lazy val mongodb = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVersion
 
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 
-ThisBuild / githubWorkflowJavaVersions := Seq(Java11)
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
 ThisBuild / githubOwner := "weso"
 ThisBuild / githubRepository := "shaclex"
 
@@ -148,7 +145,7 @@ lazy val rdfshape = project
     crossScalaVersions := supportedScalaVersions
     // parallelExecution in Test := false
   )
-  .settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings)
+  .settings(commonSettings, packagingSettings, publishSettings)
 
 lazy val server = project
   .in(file("modules/server"))
@@ -177,7 +174,6 @@ lazy val server = project
       plantuml,
       graphvizJava,
       scalaj,
-      play,
       utilsTest   % Test,
       munitEffect % Test,
       mongodb,
@@ -251,10 +247,6 @@ lazy val compilationSettings = Seq(
   )
 )
 
-lazy val ghPagesSettings = Seq(
-  git.remoteRepo := "git@github.com:labra/rdfshape.git"
-)
-
 lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
   organization := "es.weso",
   resolvers ++= Seq(
@@ -286,7 +278,7 @@ lazy val publishSettings = Seq(
   ),
   publishMavenStyle              := true,
   maintainer:= "labra@uniovi.es, uo251436@uniovi.es",
-  
+
   // publish as zip
   Universal / packageName := "rdfshape"
 )
