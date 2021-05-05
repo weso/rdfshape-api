@@ -57,6 +57,9 @@ pids
 .npm
 *.tgz
 
+# Generated documentation
+scaladoc
+
 # Other
 .directory
 

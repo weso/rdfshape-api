@@ -17,13 +17,14 @@ class MainOpts(
   lazy val defaultDataFormat = "TURTLE"
   lazy val dataFormats: List[String] =
     RDFAsJenaModel.availableFormats.map(_.toUpperCase).distinct
-  lazy val schemaFormats: List[String] = Schemas.availableFormats.map(_.toUpperCase).distinct
-  lazy val defaultSchemaFormat = "TURTLE"
+  lazy val schemaFormats: List[String] =
+    Schemas.availableFormats.map(_.toUpperCase).distinct
+  lazy val defaultSchemaFormat    = "TURTLE"
   lazy val defaultTrigger: String = ValidationTrigger.default.name
   lazy val triggerModes: List[String] =
     ValidationTrigger.triggerValues.map(_._1.toUpperCase).distinct
-  lazy val resultFormats: List[String] = Result.availableResultFormats
-  lazy val defaultResultFormat: String = Result.defaultResultFormat
+  lazy val resultFormats: List[String]   = Result.availableResultFormats
+  lazy val defaultResultFormat: String   = Result.defaultResultFormat
   lazy val defaultShapeMapFormat: String = ShapeMap.defaultFormat
   lazy val shapeMapFormats: List[String] = ShapeMap.formats
   lazy val defaultValidationReportFormat = "TURTLE"
@@ -247,7 +248,7 @@ class MainOpts(
     default = Some(false),
     descrYes = "server mode",
     descrNo = "command line mode",
-    noshort = true
+    short = 's'
   )
 
   val time: ScallopOption[Boolean] = toggle(

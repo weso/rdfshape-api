@@ -31,12 +31,6 @@ object Main extends App with LazyLogging {
     if(opts.server()) {
       RDFShapeServer.main(args)
     }
-
-    val baseFolder: Path = if(opts.baseFolder.isDefined) {
-      Paths.get(opts.baseFolder())
-    } else {
-      Paths.get(".")
-    }
   }
 
   private def errorDriver(e: Throwable, scallop: Scallop) = e match {
@@ -48,58 +42,5 @@ object Main extends App with LazyLogging {
       println("Error: %s".format(e.getMessage))
       scallop.printHelp
       sys.exit(1)
-  }
-
-  def printTime(msg: String, opts: MainOpts, nanos: Long): Unit = {
-    if(opts.time()) {
-      val time = Duration(nanos, NANOSECONDS).toMillis
-      println(f"$msg%s, $time%10d")
-    }
-  }
-
-  /* def getShapeMapStr(opts: MainOpts): IO[String] = { if
-   * (opts.shapeMap.isDefined) { // val shapeMapFormat =
-   * opts.shapeMapFormat.toOption.getOrElse("COMPACT") for { // TODO: Allow
-   * different shapeMap formats content <-
-   * FileUtils.getContents(opts.shapeMap()) } yield content.toString } else
-   * EitherT.pure[IO,String]("") } */
-
-  def getRDFReader(
-      opts: MainOpts,
-      baseFolder: Path
-  ): IO[Resource[IO, RDFReader]] = {
-    val base = Some(IRI(FileUtils.currentFolderURL))
-    if(opts.data.isDefined) {
-      val path = baseFolder.resolve(opts.data())
-      for {
-        res <- RDFAsJenaModel.fromFile(path.toFile, opts.dataFormat(), base)
-        /* newRdf <- if (opts.inference.isDefined) {
-         * io2es(rdf.applyInference(opts.inference())) } else ok_es(rdf) */
-      } yield res
-    } else {
-      logger.info("RDF Data option not specified")
-      RDFAsJenaModel.empty
-    }
-  }
-
-  def getSchema(
-      opts: MainOpts,
-      baseFolder: Path,
-      rdf: RDFReader
-  ): IO[Schema] = {
-    val base = Some(FileUtils.currentFolderURL)
-    if(opts.schema.isDefined) {
-      val path = baseFolder.resolve(opts.schema())
-      val schema = Schemas.fromFile(
-        path.toFile,
-        opts.schemaFormat(),
-        opts.engine(),
-        base
-      )
-      schema
-    } else {
-      logger.info("Schema not specified. Extracting schema from data")
-      Schemas.fromRDF(rdf, opts.engine())
-    }
   }
 }

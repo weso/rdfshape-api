@@ -1,18 +1,10 @@
 package es.weso.server
 
-import cats.data.NonEmptyList
-import cats.effect.{IO, Sync}
-import cats.implicits._
-import org.http4s.Uri.{Authority, RegName, Scheme}
-import org.http4s._
-import org.http4s.dsl.Http4sDsl
-import org.http4s.headers.{Host, Location}
 import org.http4s.server.SSLKeyStoreSupport.StoreInfo
-import org.typelevel.ci._
 
 import java.io.{FileInputStream, IOException}
 import java.nio.file.Paths
-import java.security.{KeyStore, SecureRandom, Security}
+import java.security.{KeyStore, SecureRandom}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import scala.language.higherKinds
 

@@ -10,9 +10,7 @@ import org.apache.any23.extractor.microdata.MicrodataExtractor
 import org.apache.any23.extractor.rdfa.RDFa11Extractor
 import org.apache.any23.source.{HTTPDocumentSource, StringDocumentSource}
 import org.apache.any23.writer._
-// import cats.effect.concurrent._
 import scala.util.Try
-// import org.apache.jena.rdf.model._
 import org.apache.jena.rdf.model.{
   Property => JenaProperty,
   RDFNode => JenaRDFNode,
@@ -128,6 +126,12 @@ object HTML2RDF {
       case b: BNode    => cnvBNode(b)
     }
 
+    def cnvIRI(p: RDF4jIRI): JenaProperty =
+      m.createProperty(p.toString)
+
+    def cnvBNode(b: BNode): JenaResource =
+      m.createResource(AnonId.create(b.getID))
+
     def cnvObj(o: Value): JenaRDFNode = o match {
       case i: RDF4jIRI => cnvIRI(i)
       case b: BNode    => cnvBNode(b)
@@ -137,12 +141,6 @@ object HTML2RDF {
         } else
           m.createTypedLiteral(l.getLabel, l.getDatatype.toString)
     }
-
-    def cnvIRI(p: RDF4jIRI): JenaProperty =
-      m.createProperty(p.toString)
-
-    def cnvBNode(b: BNode): JenaResource =
-      m.createResource(AnonId.create(b.getID))
 
     override def startDocument(
         documentIRI: RDF4jIRI
