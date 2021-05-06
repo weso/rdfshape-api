@@ -17,12 +17,7 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.nodes.IRI
 
 object Main extends App with LazyLogging {
-  try {
-    run(args)
-  } catch {
-    case e: Exception =>
-      println(s"Error: ${e.getMessage}")
-  }
+  run(args)
 
   def run(args: Array[String]): Unit = {
     val opts = new MainOpts(args, errorDriver)

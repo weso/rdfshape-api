@@ -49,5 +49,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./modules/server/scaladoc
+          publish_dir: ./modules/server/target/scaladoc
           commit_message: ${{ github.event.head_commit.message }}
