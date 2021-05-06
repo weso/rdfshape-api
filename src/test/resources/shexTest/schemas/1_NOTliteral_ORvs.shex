@@ -1,3 +1,0 @@
-<http://a.example/S1> {
-  <http://a.example/p1> (NOT LITERAL) OR [<http://a.example/v1> <http://a.example/v2>]
-}

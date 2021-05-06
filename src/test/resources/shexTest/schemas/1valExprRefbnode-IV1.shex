@@ -1,5 +1,0 @@
-IMPORT <1valExprRefbnode-vc1>
-
-<http://a.example/S1> {
-   <http://a.example/p1> @_:vc1
-}

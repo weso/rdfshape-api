@@ -1,11 +1,9 @@
 package es.weso.server
 
 import cats.effect.IO
-import Defaults._
-import cats._
-import cats.data._
 import cats.implicits._
 import es.weso.rdf.PrefixMap
+import es.weso.server.Defaults._
 import es.weso.shapemaps.ShapeMap
 
 case class TriggerModeParam(
@@ -18,34 +16,6 @@ case class TriggerModeParam(
     shapeMapFormatFile: Option[String],
     activeShapeMapTab: Option[String]
 ) {
-
-  sealed abstract class ShapeMapInputType {
-    val id: String
-  }
-
-  case object shapeMapUrlType extends ShapeMapInputType {
-    override val id = "#shapeMapUrl"
-  }
-
-  case object shapeMapFileType extends ShapeMapInputType {
-    override val id = "#shapeMapFile"
-  }
-
-  case object shapeMapTextAreaType extends ShapeMapInputType {
-    override val id = "#shapeMapTextArea"
-  }
-
-  def parseShapeMapTab(tab: String): Either[String, ShapeMapInputType] = {
-    val inputTypes =
-      List(shapeMapUrlType, shapeMapFileType, shapeMapTextAreaType)
-    inputTypes.find(_.id == tab) match {
-      case Some(x) => Right(x)
-      case None =>
-        Left(
-          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
-        )
-    }
-  }
 
   val shapeMapFormat: Option[String] = parseShapeMapTab(
     activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
@@ -64,10 +34,10 @@ case class TriggerModeParam(
       activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
     )
     inputType match {
-      case Right(`shapeMapUrlType`) => {
+      case Right(`shapeMapUrlType`) =>
         shapeMapURL match {
           case None => IO.pure((None, Left(s"No value for shapeMapURL")))
-          case Some(shapeMapUrl) => {
+          case Some(shapeMapUrl) =>
             val shapeMapFormat =
               shapeMapFormatUrl.getOrElse(defaultShapeMapFormat)
             ShapeMap
@@ -78,26 +48,22 @@ case class TriggerModeParam(
                 nodesPrefixMap,
                 shapesPrefixMap
               )
-              .map(e =>
-                e match {
-                  case Left(str) =>
-                    (
-                      None,
-                      Left(
-                        s"Error obtaining $shapeMapUrl with $shapeMapFormat: $str"
-                      )
+              .map {
+                case Left(str) =>
+                  (
+                    None,
+                    Left(
+                      s"Error obtaining $shapeMapUrl with $shapeMapFormat: $str"
                     )
-                  case Right(shapeMap) =>
-                    (Some(shapeMap.toString), Right(shapeMap))
-                }
-              )
-          }
+                  )
+                case Right(shapeMap) =>
+                  (Some(shapeMap.toString), Right(shapeMap))
+              }
         }
-      }
       case Right(`shapeMapFileType`) =>
         shapeMapFile match {
           case None => IO.pure((None, Left(s"No value for shapeMapFile")))
-          case Some(shapeMapStr) => {
+          case Some(shapeMapStr) =>
             println(s"### ShapeMapFile: $shapeMapStr")
             val shapeMapFormat =
               shapeMapFormatFile.getOrElse(defaultShapeMapFormat)
@@ -107,12 +73,11 @@ case class TriggerModeParam(
               case Right(parsedShapeMap) =>
                 IO.pure((Some(shapeMapStr), Right(parsedShapeMap)))
             }
-          }
         }
       case Right(`shapeMapTextAreaType`) =>
         shapeMap match {
           case None => IO.pure((None, Right(ShapeMap.empty)))
-          case Some(shapeMapStr) => {
+          case Some(shapeMapStr) =>
             val shapeMapFormat =
               shapeMapFormatTextarea.getOrElse(defaultShapeMapFormat)
             ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
@@ -121,12 +86,39 @@ case class TriggerModeParam(
               case Right(parsedShapeMap) =>
                 IO.pure((Some(shapeMapStr), Right(parsedShapeMap)))
             }
-          }
         }
       case Right(other) =>
         IO.pure((None, Left(s"Unknown value for activeShapeMapTab: $other")))
       case Left(msg) => IO.pure((None, Left(msg)))
     }
+  }
+
+  def parseShapeMapTab(tab: String): Either[String, ShapeMapInputType] = {
+    val inputTypes =
+      List(shapeMapUrlType, shapeMapFileType, shapeMapTextAreaType)
+    inputTypes.find(_.id == tab) match {
+      case Some(x) => Right(x)
+      case None =>
+        Left(
+          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
+        )
+    }
+  }
+
+  sealed abstract class ShapeMapInputType {
+    val id: String
+  }
+
+  case object shapeMapUrlType extends ShapeMapInputType {
+    override val id = "#shapeMapUrl"
+  }
+
+  case object shapeMapFileType extends ShapeMapInputType {
+    override val id = "#shapeMapFile"
+  }
+
+  case object shapeMapTextAreaType extends ShapeMapInputType {
+    override val id = "#shapeMapTextArea"
   }
 
 }

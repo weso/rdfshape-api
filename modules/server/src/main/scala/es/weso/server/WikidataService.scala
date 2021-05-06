@@ -22,7 +22,6 @@ import org.http4s.client._
 import org.http4s.dsl._
 import org.http4s.headers._
 import org.http4s.multipart._
-import org.http4s.twirl._
 import org.http4s.implicits._
 import es.weso.rdf.sgraph._
 import APIDefinitions._
@@ -61,7 +60,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         WdEntityParam(entity) +&
         LanguageParam(language) =>
       val uri = Uri.unsafeFromString(
-        s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=${entity}&languages=${language}&format=json"
+        s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=$entity&languages=$language&format=json"
       )
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
@@ -81,7 +80,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     case GET -> Root / `api` / "wikidata" / "schemaContent" :?
         WdSchemaParam(wdSchema) => {
       val uri = uri"https://www.wikidata.org".withPath(
-        Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/${wdSchema}")
+        Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/$wdSchema")
       )
 
       println(s"wikidata/schemaContent: ${uri.toString}")
@@ -115,7 +114,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      val requestUrl = s"${endpoint.getOrElse("https://www.wikidata.org")}"
+      val requestUrl = s"""${endpoint.getOrElse("https://www.wikidata.org")}"""
       println(requestUrl)
       val uri = Uri
         .fromString(requestUrl)
@@ -303,59 +302,6 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         }
       }
 
-    /* case GET -> Root / "testQ" => { val req: Request[F] = Request(uri =
-     * wikidataEntityUrl / "Q33").withHeaders(Accept(MediaType.text.turtle))
-     * client.toHttpApp(req).flatMap(resp => Ok(Streams.cnv(resp.body))) } */
-
-    case GET -> Root / "testR" => {
-      /* val req: Request[F] = Request(uri = wikidataEntityUrl /
-       * "Q33").withHeaders(Accept(MediaType.text.turtle)) */
-      Ok(Streams.getRaw(wikidataEntityUrl / "Q33"))
-    }
-
-    case GET -> Root / "testRM" => {
-      /* val req: Request[F] = Request(uri = wikidataEntityUrl /
-       * "Q33").withHeaders(Accept(MediaType.text.turtle)) */
-      Ok(Streams.getRawWithModel(wikidataEntityUrl / "Q33"))
-    }
-
-    case GET -> Root / "wdEntity" :?
-        OptEntityParam(optEntity) +&
-        OptWithDotParam(optWithDot) => {
-      val maybeDot = optWithDot.fold(false)(identity)
-      for {
-        result   <- wdEntity(optEntity, maybeDot)
-        response <- Ok(html.wdEntity(result, WikidataEntityValue(optEntity)))
-      } yield response
-    }
-
-    case req @ POST -> Root / "wdEntity" =>
-      req.decode[Multipart[IO]] { m =>
-        {
-          val partsMap = PartsMap(m.parts)
-          for {
-            optEntity  <- partsMap.optPartValue("entity")
-            optWithDot <- partsMap.optPartValue("withDot")
-            result <- {
-              val withDot = optWithDot.fold(false)(_.toLowerCase match {
-                case "false" => false
-                case "true"  => true
-                case _       => false
-              })
-              wdEntity(optEntity, withDot)
-            }
-            response <- Ok(
-              html.wdEntity(result, WikidataEntityValue(optEntity))
-            )
-          } yield response
-        }
-      }
-
-    case req @ GET -> Root / "wdSchema" =>
-      Ok("Not implemented wikidata schema yet")
-    case req @ GET -> Root / "wdValidate" =>
-      Ok("Not implemented wikidata validate yet")
-
     case req @ POST -> Root / `api` / "wikidata" / "extract" => {
       println(s"POST /api/wikidata/extract, Request: $req")
       req.decode[Multipart[IO]] { m =>
@@ -389,7 +335,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
             val (schema, _) = pair
             schema.serialize("SHEXC")
           })
-          _    <- { println(s"ShExC str: ${shExCStr}"); ok_es[Unit](()) }
+          _    <- { println(s"ShExC str: $shExCStr"); ok_es[Unit](()) }
           resp <- io2es(Ok(mkExtractAnswer(shExCStr, label)))
         } yield resp
         for {
@@ -547,7 +493,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         InfoEntity(localName, uri, entity).asRight[String]
       }
       case _ =>
-        s"Entity: $entity doesn't match regular expression: ${wdRegex}"
+        s"Entity: $entity doesn't match regular expression: $wdRegex"
           .asLeft[InfoEntity]
     }
   }
@@ -566,11 +512,11 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
           pprint.log(uri)
           InfoEntity(localName, uri, sourceUri).asRight[String]
         } else
-          s"Entity: $entity doesn't match regular expression: ${wdRegex}"
+          s"Entity: $entity doesn't match regular expression: $wdRegex"
             .asLeft[InfoEntity]
       }
       case _ =>
-        s"Entity: $entity doesn't match regular expression: ${wdRegex}"
+        s"Entity: $entity doesn't match regular expression: $wdRegex"
           .asLeft[InfoEntity]
     }
   }
@@ -774,7 +720,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private def cnvEntitySchema(wdSchema: String): Uri = {
     val uri = uri"https://www.wikidata.org".withPath(
-      Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/${wdSchema}")
+      Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/$wdSchema")
     )
     uri
   }

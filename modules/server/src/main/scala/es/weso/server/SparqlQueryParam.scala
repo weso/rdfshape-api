@@ -1,8 +1,7 @@
 package es.weso.server
 
 import cats.effect.IO
-import Defaults._
-import cats.implicits._
+import es.weso.server.Defaults._
 
 import scala.io.Source
 import scala.util.Try
@@ -16,7 +15,7 @@ case class SparqlQueryParam(
 
   def getQuery: (Option[String], Either[String, Query]) = {
     activeQueryTab.getOrElse(defaultActiveQueryTab) match {
-      case "#queryUrl" => {
+      case "#queryUrl" =>
         queryURL match {
           case None => (None, Left(s"No value for queryURL"))
           case Some(queryUrl) =>
@@ -37,22 +36,18 @@ case class SparqlQueryParam(
               case Right(str) => (Some(str), Right(Query(str)))
             }
         }
-      }
-      case "#queryFile" => {
+      case "#queryFile" =>
         queryFile match {
           case None => (None, Left(s"No value for queryFile"))
           case Some(queryStr) =>
             (Some(queryStr), Right(Query(queryStr)))
         }
-      }
-      case "#queryTextArea" => {
+      case "#queryTextArea" =>
         query match {
           case None => (None, Right(Query("")))
-          case Some(query) => {
+          case Some(query) =>
             (Some(query.str), Right(query))
-          }
         }
-      }
       case other => (None, Left(s"Unknown value for activeQueryTab: $other"))
     }
   }

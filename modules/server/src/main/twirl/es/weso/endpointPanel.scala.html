@@ -1,9 +1,0 @@
-@import es.weso.server.values._
-
-@(formName: String, ev: EndpointValue)
-<fieldset>
-    <legend>Endpoint</legend>
-    <label for="@{formName}">Endpoint</label>
-    <input id="node" type="text" class="form-control" placeHolder="Endpoint URL" aria-describedby="endpoint"
-    name="endpoint">@{ev.endpoint}</input>
-</fieldset>

@@ -1,27 +1,11 @@
 package es.weso.server
-import Defaults._
-import cats.data.EitherT
-import cats._
-import cats.data._
 import cats.effect._
-import cats.implicits._
 import es.weso.rdf.RDFReasoner
 import es.weso.schema.{Schema, Schemas}
-import scala.io.Source
-import scala.util.Try
-import es.weso.rdf.nodes._
-import es.weso.utils.IOUtils._
 import es.weso.wikibase._
-import org.http4s._
-import org.http4s.Uri
-import org.http4s.Charset._
-import org.http4s.circe._
 import org.http4s.client._
-import org.http4s.dsl._
-import org.http4s.headers._
-import org.http4s.multipart._
 import org.http4s.dsl.io._
-import org.http4s.implicits._
+import org.http4s.{Uri, _}
 
 case class WikibaseSchemaParam(
     maybeSchemaParam: Option[SchemaParam],
@@ -55,13 +39,12 @@ case class WikibaseSchemaParam(
       strSchema <- deref(uriSchema, client)
       schema    <- Schemas.fromString(strSchema, "ShEXC", "ShEx")
     } yield (schema, strSchema)
-    r.attempt.map(_ match {
+    r.attempt.map {
       case Left(t) => (None, Left(t.getMessage))
-      case Right(pair) => {
+      case Right(pair) =>
         val (schema, str) = pair
         (Some(str), Right(schema))
-      }
-    })
+    }
 
   }
 

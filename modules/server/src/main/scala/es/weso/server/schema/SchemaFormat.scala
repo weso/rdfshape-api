@@ -1,6 +1,6 @@
-package es.weso.server.helper
+package es.weso.server.schema
+
 import org.http4s.MediaType
-import org.http4s.MediaType._
 
 sealed trait DataFormat {
   val name: String
@@ -10,18 +10,6 @@ sealed trait DataFormat {
 }
 
 object DataFormat {
-  def fromString(name: String): Either[String, DataFormat] =
-    if(name == "") Right(default)
-    else {
-      dataFormatsMap.get(name.toLowerCase) match {
-        case None =>
-          Left(
-            s"Not found data format: $name. Available formats: ${availableDataFormats.mkString(",")}"
-          )
-        case Some(df) => Right(df)
-      }
-    }
-
   lazy val availableDataFormats: List[DataFormat] =
     List(
       Turtle,
@@ -37,11 +25,21 @@ object DataFormat {
       Png,
       JsonDataFormat
     )
-
   lazy val dataFormatsMap: Map[String, DataFormat] =
     availableDataFormats.map(df => (df.name.toLowerCase, df)).toMap
-
   lazy val default: DataFormat = Turtle
+
+  def fromString(name: String): Either[String, DataFormat] =
+    if(name == "") Right(default)
+    else {
+      dataFormatsMap.get(name.toLowerCase) match {
+        case None =>
+          Left(
+            s"Not found data format: $name. Available formats: ${availableDataFormats.mkString(",")}"
+          )
+        case Some(df) => Right(df)
+      }
+    }
 
 }
 
@@ -56,13 +54,13 @@ case object Dot extends DataFormat {
 }
 
 case object Svg extends DataFormat {
-  override val name     = "svg"
-  override val mimeType = MediaType.image.`svg+xml`
+  override val name                = "svg"
+  override val mimeType: MediaType = MediaType.image.`svg+xml`
 }
 
 case object Png extends DataFormat {
-  override val name     = "png"
-  override val mimeType = MediaType.image.png
+  override val name                = "png"
+  override val mimeType: MediaType = MediaType.image.png
 }
 
 sealed trait RDFFormat extends DataFormat
@@ -93,18 +91,18 @@ case object RdfXml extends RDFFormat {
 }
 
 case object RdfJson extends RDFFormat {
-  override val name     = "rdf/json"
-  override val mimeType = MediaType.application.json
+  override val name                = "rdf/json"
+  override val mimeType: MediaType = MediaType.application.json
 }
 
 sealed trait HtmlFormat extends DataFormat
 
 case object HtmlRdfa11 extends HtmlFormat {
-  override val name     = "html-rdfa11"
-  override val mimeType = MediaType.text.html
+  override val name                = "html-rdfa11"
+  override val mimeType: MediaType = MediaType.text.html
 }
 
 case object HtmlMicrodata extends HtmlFormat {
-  override val name     = "html-microdata"
-  override val mimeType = MediaType.text.html
+  override val name                = "html-microdata"
+  override val mimeType: MediaType = MediaType.text.html
 }

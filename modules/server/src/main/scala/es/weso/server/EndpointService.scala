@@ -1,10 +1,7 @@
 package es.weso.server
-import cats.Applicative
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits._
 import es.weso.server.APIDefinitions._
-import es.weso.server.QueryParams._
 import es.weso.server.{Query => ServerQuery}
 import es.weso.utils.IOUtils._
 import io.circe.Json
@@ -23,7 +20,7 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
 
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case req @ POST -> Root / `api` / "endpoint" / "query" => {
+    case req @ POST -> Root / `api` / "endpoint" / "query" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
 
@@ -54,9 +51,8 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
           )
         } yield resp
       }
-    }
 
-    case req @ POST -> Root / `api` / "endpoint" / "info" => {
+    case req @ POST -> Root / `api` / "endpoint" / "info" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -73,33 +69,6 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
           } yield resp
         }
       }
-    }
-
-    case req @ GET -> Root / "endpoint" / "outgoing" :?
-        OptQueryParam(optQuery) +&
-        OptEndpointParam(optEndpoint) => {
-      Ok("Not implemented yet get neighbours of a node")
-    }
-
-    case req @ POST -> Root / "endpoint" / "outgoing" => {
-      req.decode[Multipart[IO]] { m =>
-        {}
-        Ok("Not implemented yet")
-      }
-    }
-
-    case req @ GET -> Root / "endpoint" / "validate" :?
-        OptQueryParam(optQuery) +&
-        OptEndpointParam(optEndpoint) => {
-      Ok("Not implemented yet - validate node")
-    }
-
-    case req @ POST -> Root / "endpoint" / "validate" => {
-      req.decode[Multipart[IO]] { m =>
-        {}
-        Ok("Not implemented yet")
-      }
-    }
 
   }
 

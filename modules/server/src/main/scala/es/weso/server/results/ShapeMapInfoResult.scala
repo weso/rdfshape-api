@@ -1,12 +1,8 @@
 package es.weso.server.results
 
-import es.weso.rdf.PrefixMap
-import es.weso.rdf.nodes.IRI
-import es.weso.server.ApiHelper
-import es.weso.server.helper._
+import es.weso.shapemaps._
 import es.weso.utils.json.JsonUtilsServer._
 import io.circe.Json
-import es.weso.shapemaps._
 
 case class ShapeMapInfoResult private (
     msg: String,

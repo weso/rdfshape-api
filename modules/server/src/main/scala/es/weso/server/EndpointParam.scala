@@ -6,12 +6,8 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.Endpoint
 import io.circe.Json
 // import scalaj.http._
-import java.util.concurrent.Executors
-
 import es.weso.utils.IOUtils._
-import org.http4s.client.{Client, JavaNetClientBuilder}
-
-import scala.concurrent.ExecutionContext.global
+import org.http4s.client.Client
 
 case class EndpointInfo(msg: String, status: Option[String] = None) {
   def asJson: Json = Json.fromFields(
