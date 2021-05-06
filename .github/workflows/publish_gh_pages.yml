@@ -11,6 +11,7 @@ env:
 jobs:
   push_to_pages:
     name: Generate scaladoc and publish it to GH Pages
+    if: ${{ github.repository_owner == 'weso' }} # Do not run in forks
     strategy:
       matrix:
         os: [ ubuntu-latest ]
