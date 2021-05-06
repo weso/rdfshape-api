@@ -143,7 +143,7 @@ lazy val rdfshape = project
     sharedDependencies
   )
   .settings(
-    name := "rdfshape-root",
+    name := "rdfshape",
     cancelable in Global := true,
     fork := true,
     reStartArgs := Seq("--server"),
