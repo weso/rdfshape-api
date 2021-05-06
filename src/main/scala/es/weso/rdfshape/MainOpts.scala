@@ -248,7 +248,7 @@ class MainOpts(
     default = Some(false),
     descrYes = "server mode",
     descrNo = "command line mode",
-    short = 's'
+    noshort = true
   )
 
   val time: ScallopOption[Boolean] = toggle(

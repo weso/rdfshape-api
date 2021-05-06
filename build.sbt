@@ -32,7 +32,9 @@ lazy val packagingSettings = Seq(
   Compile / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / test := {},
-  assembly / assemblyJarName := "rdfshape.jar"
+  assembly / assemblyJarName := "rdfshape.jar",
+  // Output filename on "sbt-native-packager" tasks
+  Universal / packageName := "rdfshape"
 )
 
 // Shared compilation settings for all modules.
@@ -53,7 +55,7 @@ lazy val compilationSettings = Seq(
 /* https://github.com/scala/scala/blob/2.11.x/src/scaladoc/scala/tools/nsc/doc/Settings.scala */
 lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
   // Generate documentation on a separated "docs" folder
-  Compile / doc / target := baseDirectory.value / "scaladoc",
+  Compile / doc / target := baseDirectory.value / "target" / "scaladoc",
   Compile / doc / scalacOptions ++= Seq(
     // Base source path
     "-sourcepath",
@@ -70,7 +72,9 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     // Other settings
     "-diagrams",
     "-implicits"
-  )
+  ),
+  // Do not generate docs when publishing binaries
+  Compile / packageDoc / publishArtifact := false
 )
 
 // Shared publish settings for all modules.
@@ -105,8 +109,7 @@ lazy val publishSettings = Seq(
       <organizationUrl>https://github.com/weso</organizationUrl>
     </developer>
   </developers>,
-  publishMavenStyle := true,            // generate POM, not ivy
-  Universal / packageName := "rdfshape" // publish output filename
+  publishMavenStyle := true // generate POM, not ivy
 )
 
 // Aggregate resolver settings passed down to modules to resolve dependencies
@@ -117,10 +120,6 @@ lazy val resolverSettings = Seq(
     Resolver.sonatypeRepo("snapshots")
   )
 )
-
-// Other
-lazy val noDocProjects     = Seq[ProjectReference]()
-lazy val noPublishSettings = Seq(publishArtifact := false)
 
 /* ------------------------------------------------------------------------- */
 
@@ -144,7 +143,7 @@ lazy val rdfshape = project
     sharedDependencies
   )
   .settings(
-    name := "rdfshape-root",
+    name := "rdfshape",
     cancelable in Global := true,
     fork := true,
     reStartArgs := Seq("--server"),
