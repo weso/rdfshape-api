@@ -21,6 +21,9 @@ jobs:
       - name: Checkout current branch
         uses: actions/checkout@v2
 
+      - name: Setup graphviz/dot for diagrams
+        uses: ts-graphviz/setup-graphviz@v1
+
       - name: Setup Java and Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -44,5 +47,6 @@ jobs:
       - name: Publish docs to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          deploy_key: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
           publish_dir: ./modules/server/scaladoc
+          commit_message: ${{ github.event.head_commit.message }}
