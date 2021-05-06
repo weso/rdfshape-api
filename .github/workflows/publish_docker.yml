@@ -1,7 +1,5 @@
 name: Publish Docker image
 on:
-  # Manual trigger
-  workflow_dispatch:
   push:
     branches:
       - main
