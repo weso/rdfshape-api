@@ -131,7 +131,8 @@ lazy val rdfshape = project
   .aggregate(server)
   .dependsOn(server)
   .enablePlugins(
-    SbtNativePackager
+    SbtNativePackager,
+    JavaAppPackaging
   )
   .disablePlugins(RevolverPlugin)
   .settings(
