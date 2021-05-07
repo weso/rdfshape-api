@@ -17,7 +17,7 @@ COPY . ./
 RUN ["sbt", "Universal / packageBin"]
 
 # ## Prod environment.
-FROM adoptopenjdk/openjdk12:jre-12.0.2_10-alpine as prod
+FROM adoptopenjdk/openjdk12:jre-12.0.2_10-ubuntu as prod
 LABEL org.opencontainers.image.source="https://github.com/weso/rdfshape-api"
 WORKDIR /app
 
@@ -25,8 +25,8 @@ WORKDIR /app
 COPY --from=build /app/target/universal/rdfshape.zip .
 
 # Download required programs dependencies. Unzip binaries.
-RUN apk update -q && apk upgrade -q && \
-    apk add bash curl unzip graphviz -q && \
+RUN apt -qq -y update && apt -qq -y upgrade && \
+    apt -qq -y install unzip graphviz && \
     unzip -q rdfshape.zip
 
 # Add rdfshape to path
@@ -37,7 +37,7 @@ ENV PATH /app/rdfshape/bin:$PATH
 ENV PORT=8080
 EXPOSE $PORT
 # Non-priviledged user to run the app
-RUN addgroup -S rdfshape && adduser -S -s /bin/false -G rdfshape rdfshape
+RUN addgroup --system rdfshape && adduser --system --shell /bin/false --ingroup rdfshape rdfshape
 RUN chown -R rdfshape:rdfshape /app
 USER rdfshape
 
