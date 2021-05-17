@@ -1,7 +1,8 @@
 package es.weso.rdfshape
 
 import com.typesafe.scalalogging._
-import es.weso.launcher.Server
+import es.weso.rdfshape.cli.CliManager
+import es.weso.rdfshape.server.launcher.Server
 
 import scala.util.control.NonFatal
 
@@ -16,16 +17,16 @@ object Main extends App with LazyLogging {
 
   def run(args: Array[String]): Unit = {
     // Parse and verify arguments
-    val opts = new CLIOptions(args)
+    val opts = new CliManager(args)
 
     val server  = opts.server.apply()
     val port    = opts.port.apply()
     val verbose = opts.verbose.apply()
 
-    // Start the server submodule
+    // Start the server module
     if(server) {
-      CLIOptions.printBanner()
-      Server.main(args)
+      CliManager.printBanner()
+      Server(port, verbose)
     }
   }
 }

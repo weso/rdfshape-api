@@ -11,7 +11,7 @@ import fs2.Stream
 import es.weso.rdf.triples.RDFTriple
 import org.apache.jena.rdf.model.{RDFNode => JenaRDFNode,Resource => JenaResource,_}
 
-// import es.weso.server.WikibaseRDF
+// import es.weso.rdfshape.server.server.WikibaseRDF
 // import es.weso.rdf.jena.RDFAsJenaModel
 
 class WikibaseRDFTest extends AnyFunSpec with Matchers {

@@ -41,4 +41,4 @@ RUN addgroup --system rdfshape && adduser --system --shell /bin/false --ingroup 
 RUN chown -R rdfshape:rdfshape /app
 USER rdfshape
 
-CMD ["rdfshape", "--server", "-Dhttp.port=$PORT", "-Djdk.tls.client.protocols=TLSv1.2"]
+CMD ["rdfshape", "--server", "--port $PORT"]
