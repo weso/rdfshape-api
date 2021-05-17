@@ -1,8 +1,11 @@
-package es.weso.server
-import cats.effect._
+package es.weso.launcher
+
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
+import es.weso.server._
+import es.weso.utils.secure.SSLHelper
 import fs2.Stream
-import org.http4s._
+import org.http4s.HttpRoutes
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.implicits._
@@ -13,10 +16,20 @@ import javax.net.ssl.SSLContext
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Properties.envOrNone
 
-object Server {
+object Server extends IOApp {
 
-  def stream(port: Int, ip: String): Stream[IO, Nothing] = {
+  private val ip   = "0.0.0.0"
+  private val port = envOrNone("PORT") map (_.toInt) getOrElse 8080
+  println(s"PORT: $port")
+
+  override def run(args: List[String]): IO[ExitCode] = {
+    println(args)
+    stream(port, ip).compile.drain.as(ExitCode.Success)
+  }
+
+  private def stream(port: Int, ip: String): Stream[IO, Nothing] = {
 
     for {
       client <- BlazeClientBuilder[IO](global)
@@ -46,7 +59,7 @@ object Server {
     } yield exitCode
   }.drain
 
-  def routesService(client: Client[IO]): HttpRoutes[IO] =
+  private def routesService(client: Client[IO]): HttpRoutes[IO] =
     CORS(
       SchemaService(client).routes <+>
         APIService(client).routes <+>

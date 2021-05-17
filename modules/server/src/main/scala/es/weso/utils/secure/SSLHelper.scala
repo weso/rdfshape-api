@@ -1,4 +1,4 @@
-package es.weso.server
+package es.weso.utils.secure
 
 import org.http4s.server.SSLKeyStoreSupport.StoreInfo
 
@@ -6,7 +6,6 @@ import java.io.{FileInputStream, IOException}
 import java.nio.file.Paths
 import java.security.{KeyStore, SecureRandom}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
-import scala.language.higherKinds
 
 object SSLHelper {
   val keyStorePassword: String   = sys.env.getOrElse("KEYSTORE_PASSWORD", "")
