@@ -23,6 +23,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     name = "server",
     short = 's',
     default = Some(true),
+    required = true,
     descr =
       s"""Launch an HTTP server that will listen for request on the specified port (this option can be omitted)."""
   )
@@ -79,14 +80,13 @@ object CliManager {
   private val asciiText: String =
     """
       |
-      | __________________  _____ _
-      || ___ \  _  \  ___| /  ___| |
-      || |_/ / | | | |_    \ `--.| |__   __ _ _ __   ___
-      ||    /| | | |  _|    `--. \ '_ \ / _` | '_ \ / _ \
-      || |\ \| |/ /| |     /\__/ / | | | (_| | |_) |  __/
-      |\_| \_|___/ \_|     \____/|_| |_|\__,_| .__/ \___|
-      |                                      | |
-      |                                      |_|
+      |    ____  ____  ______   _____ __
+      |   / __ \/ __ \/ ____/  / ___// /_  ____ _____  ___
+      |  / /_/ / / / / /_      \__ \/ __ \/ __ `/ __ \/ _ \
+      | / _, _/ /_/ / __/     ___/ / / / / /_/ / /_/ /  __/
+      |/_/ |_/_____/_/       /____/_/ /_/\__,_/ .___/\___/
+      |                                      /_/
+      |
       |""".stripMargin
 
   def printBanner(): Unit = {

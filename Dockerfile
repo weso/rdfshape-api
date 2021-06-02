@@ -41,4 +41,4 @@ RUN addgroup --system rdfshape && adduser --system --shell /bin/false --ingroup 
 RUN chown -R rdfshape:rdfshape /app
 USER rdfshape
 
-CMD ["rdfshape", "--server", "--port $PORT"]
+CMD ["bash", "-c", "rdfshape --server --port $PORT"]

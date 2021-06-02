@@ -12,7 +12,7 @@ object Main extends App with LazyLogging {
     run(args)
   } catch {
     case NonFatal(e) =>
-      println(s"Error while running the application: ${e.getMessage}")
+      println(s"Error while running the application: $e")
   }
 
   def run(args: Array[String]): Unit = {

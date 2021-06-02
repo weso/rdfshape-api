@@ -1,50 +1,57 @@
 package es.weso.rdfshape.server.utils.secure
 
-import org.http4s.server.SSLKeyStoreSupport.StoreInfo
-
-import java.io.{FileInputStream, IOException}
+import java.io.FileInputStream
 import java.nio.file.Paths
 import java.security.{KeyStore, SecureRandom}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 
 object SSLHelper {
-  val keyStorePassword: String   = sys.env.getOrElse("KEYSTORE_PASSWORD", "")
-  val keyManagerPassword: String = sys.env.getOrElse("KEYMANAGER_PASSWORD", "")
-  val keyStorePath: String =
-    Paths.get(sys.env.getOrElse("KEYSTORE_PATH", "")).toAbsolutePath.toString
-  val storeInfo: StoreInfo = StoreInfo(keyStorePath, keyStorePassword)
+  lazy val keyStorePassword: Option[String] = sys.env.get("KEYSTORE_PASSWORD")
+  lazy val keyManagerPassword: Option[String] =
+    sys.env.get("KEYMANAGER_PASSWORD")
+  lazy val keyStorePath: Option[String] = sys.env.get("KEYSTORE_PATH")
 
-  def getContext: SSLContext = {
+  def getContext: Option[SSLContext] = {
     if(
-      keyStorePassword == "" || keyManagerPassword == "" || keyStorePath == ""
+      keyStorePassword.isDefined &&
+      keyManagerPassword.isDefined &&
+      keyStorePath.isDefined
     ) {
-      SSLContext.getDefault
-    } else {
-      try {
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+      val keyStore            = loadKeystore(keyStorePassword.get)
+      val keyManagerFactory   = getKeyManager(keyStore, keyStorePassword.get)
+      val trustManagerFactory = getTrustManager(keyStore)
 
-        val in = new FileInputStream(keyStorePath)
-        keyStore.load(in, keyStorePassword.toCharArray)
+      val sslContext = SSLContext.getInstance("TLS")
+      sslContext.init(
+        keyManagerFactory.getKeyManagers,
+        trustManagerFactory.getTrustManagers,
+        new SecureRandom()
+      )
+      Some(sslContext)
+    } else None
+  }
 
-        val keyManagerFactory =
-          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-        keyManagerFactory.init(keyStore, keyStorePassword.toCharArray)
+  private def loadKeystore(keyStorePassword: String): KeyStore = {
+    val in = new FileInputStream(
+      Paths.get(keyStorePath.get).toAbsolutePath.toString
+    )
+    val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+    keyStore.load(in, keyStorePassword.toCharArray)
+    keyStore
+  }
 
-        val trustManagerFactory = TrustManagerFactory.getInstance(
-          TrustManagerFactory.getDefaultAlgorithm
-        )
-        trustManagerFactory.init(keyStore)
+  private def getKeyManager(keyStore: KeyStore, keyStorePassword: String) = {
+    val keyManagerFactory =
+      KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+    keyManagerFactory.init(keyStore, keyStorePassword.toCharArray)
+    keyManagerFactory
+  }
 
-        val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(
-          keyManagerFactory.getKeyManagers,
-          trustManagerFactory.getTrustManagers,
-          new SecureRandom()
-        )
-        sslContext
-      } catch {
-        case _: IOException => SSLContext.getDefault
-      }
-    }
+  private def getTrustManager(keyStore: KeyStore) = {
+    val trustManagerFactory = TrustManagerFactory.getInstance(
+      TrustManagerFactory.getDefaultAlgorithm
+    )
+    trustManagerFactory.init(keyStore)
+    trustManagerFactory
   }
 }

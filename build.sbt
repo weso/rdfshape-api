@@ -172,7 +172,8 @@ lazy val rdfshape = project
   )
   .settings(
     name := (Global / name).value,
-    fork := true,
+    run / fork := true,
+    trapExit := false,
     reStartArgs := Seq("--server"),
     crossScalaVersions := Nil,
     libraryDependencies ++= Seq(
@@ -193,6 +194,7 @@ lazy val server = project
   )
   .settings(
     name := s"${(Global / name).value}-server",
+    run / fork := false,
     testFrameworks += MUnitFramework,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
