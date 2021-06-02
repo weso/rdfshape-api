@@ -1,9 +1,12 @@
 # RDFShape
 
-RDFShape is web API for semantic data analysis and validation implemented in Scala using the [http4s](https://http4s.org/) library.
+RDFShape is web API for semantic data analysis and validation implemented in
+Scala using the [http4s](https://http4s.org/) library.
 
-This repository contains the backend part of RDFShape and acts as a queryable API to be consumed by clients. To learn more about our public client, see its [GitHub repository](https://github.com/weso/rdfshape-client) or [try it](https://rdfshape.weso.es). 
-
+This repository contains the backend part of RDFShape and acts as a queryable
+API to be consumed by clients. To learn more about our public client, see
+its [GitHub repository](https://github.com/weso/rdfshape-client)
+or [try it](https://rdfshape.weso.es).
 
 [![Continuous Integration](https://github.com/weso/rdfshape-api/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/rdfshape-api/actions/workflows/ci.yml)
 [![Docker build](https://github.com/weso/rdfshape-api/actions/workflows/publish_docker.yml/badge.svg)](https://github.com/weso/rdfshape-api/actions/workflows/publish_docker.yml)
@@ -23,7 +26,6 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 - [API Docs](https://app.swaggerhub.com/apis/weso/RDFShape/) (WIP)
 - [Scaladoc](https://www.weso.es/rdfshape-api/)
 
-
 # Installation
 
 ## Deploy locally
@@ -33,14 +35,38 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 * RDFShape API requires [SBT](https://www.scala-sbt.org/) to be built
 
 ### Steps
+
 1. Clone this repository
-2. Go to directory where RDFShape source code is located and execute `sbt run`
-3. After some time downloading dependencies and compiling the source code, the application will start and be accessible at [localhost:8080](http://localhost:8080)
-4. To use a different port run `sbt "run --server --port <PortNumber>"`
+2. Go to directory where RDFShape source code is located and
+   execute `sbt "run --help"` After some time downloading dependencies and
+   compiling the source code, the application will show the help menu if
+   everything went right.
+3. From this point, execute `sbt "run --server"` for the API to launch and be
+   accessible at [localhost:8080](http://localhost:8080)
+4. To use a different port run `sbt "run --server --port <port-number>"`. For
+   further information, refer to the help menu.
+
+#### Help menu
+
+```
+rdfshape 0.1 - WESO Research Group (https://www.weso.es/)
+
+USAGE: rdfshape --port [port number]
+rdfshape is an mechanism for processing, validating and visualizing semantic data (RDF, SHEX, SHACL and more) through a REST API.
+
+Options:
+-p, --port  <arg>   Port in which the API will listen for requests (defaults
+                    to 8080)
+-s, --server        Launch an HTTP server that will listen for request on the
+                    specified port (this option can be omitted)
+    --help          Show help message
+    --version       Show version of this program
+```
 
 ## Deploy with Docker
 
-* Use the provided Dockerfile to build rdfshape-client or pull from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client) (GCR).
+* Use the provided Dockerfile to build rdfshape-client or pull
+  from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client).
 
 ### Building the image
 
@@ -50,20 +76,22 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
         - A valid GitHub token to download WESO project dependencies from Github
           packages. This is required when manually building the image.
         - Images available
-          in [GCR](https://github.com/orgs/weso/packages/container/package/rdfshape-client) have
-          already been built using a read-only token for downloading the
+          in [GCR](https://github.com/orgs/weso/packages/container/package/rdfshape-client)
+          have already been built using a read-only token for downloading the
           dependencies.
 
 ### Running containers
-          
+
 * When running a container, you may provide the following environment variables
   via `--env`:
     - **PORT** [optional]:
-       - Port where the API is exposed inside the container. Default is 8080.
+        - Port where the API is exposed inside the container. Default is 8080.
 
 ### Supported tags
+
 - _:stable_: Stable build updated manually.
-- <_:hashed_tags_>: Automated builds by our CI pipeline. With the latest features uploaded to our repository but lacking internal testing.
+- <_:hashed_tags_>: Automated builds by our CI pipeline. With the latest
+  features uploaded to our repository but lacking internal testing.
 
 # Dependencies
 
@@ -74,6 +102,7 @@ RDFShape server has been implemented in Scala using the following libraries:
 * [http4s](https://http4s.org/): a purely functional library for http.
 * [cats](https://typelevel.org/cats/): a library for functional programming in
   Scala.
+* [scallop](https://github.com/scallop/scallop): a simple command-line arguments parsing library for Scala.
 * [UMLShaclex](https://github.com/labra/shaclex): contains the visualization
   code that converts schemas to UML diagrams.
 * [SRDF](http://www.weso.es/srdf/): is the library used to handle RDF. It is a

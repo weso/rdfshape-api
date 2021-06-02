@@ -1,4 +1,9 @@
-Global / version := "0.1"
+import scala.language.postfixOps
+// Centralized control of the application name/version
+Global / version := "0.11"
+Global / name := "rdfshape"
+Global / cancelable := true
+Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
 
 lazy val scala212               = "2.12.13"
 lazy val scala213               = "2.13.5"
@@ -34,9 +39,9 @@ lazy val packagingSettings = Seq(
   Compile / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / test := {},
-  assembly / assemblyJarName := "rdfshape.jar",
+  assembly / assemblyJarName := s"${(Global / name).value}.jar",
   // Output filename on "sbt-native-packager" tasks
-  Universal / packageName := "rdfshape"
+  Universal / packageName := (Global / name).value
 )
 
 // Shared compilation settings for all modules.
@@ -129,6 +134,19 @@ lazy val resolverSettings = Seq(
   )
 )
 
+// Shared settings for the BuildInfo Plugin
+// See https://github.com/sbt/sbt-buildinfo
+lazy val buildInfoSettings = Seq(
+  buildInfoKeys := Seq[BuildInfoKey](
+    name,
+    version,
+    scalaVersion,
+    sbtVersion,
+    apiURL
+  ),
+  buildInfoPackage := "buildinfo"
+)
+
 /* ------------------------------------------------------------------------- */
 
 /* PROJECT and MODULE settings */
@@ -138,6 +156,7 @@ lazy val rdfshape = project
   .aggregate(server)
   .dependsOn(server)
   .enablePlugins(
+    BuildInfoPlugin,
     SbtNativePackager,
     JavaAppPackaging
   )
@@ -148,12 +167,13 @@ lazy val rdfshape = project
     publishSettings,
     resolverSettings,
     scaladocSettings,
-    sharedDependencies
+    sharedDependencies,
+    buildInfoSettings
   )
   .settings(
-    name := "rdfshape",
-    cancelable in Global := true,
-    fork := true,
+    name := (Global / name).value,
+    run / fork := true,
+    trapExit := false,
     reStartArgs := Seq("--server"),
     crossScalaVersions := Nil,
     libraryDependencies ++= Seq(
@@ -173,7 +193,8 @@ lazy val server = project
     sharedDependencies
   )
   .settings(
-    name := "rdfshape-server",
+    name := s"${(Global / name).value}-server",
+    run / fork := false,
     testFrameworks += MUnitFramework,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
