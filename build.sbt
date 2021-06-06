@@ -20,9 +20,9 @@ Global / excludeLintKeys ++= Set(
 
 /* GITHUB INTEGRATION settings */
 // "sbt-github-packages" plugin settings
-ThisBuild / githubOwner := "weso"
-ThisBuild / githubRepository := "shaclex"
-githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
+// ThisBuild / githubOwner := "weso"
+// ThisBuild / githubRepository := "shaclex"
+// githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 
 // "sbt-github-actions" plugin settings
 val JavaCIVersion = "adopt@1.11"
@@ -129,7 +129,7 @@ lazy val publishSettings = Seq(
 // Helper to resolve dependencies from GitHub packages
 lazy val resolverSettings = Seq(
   resolvers ++= Seq(
-    Resolver.githubPackages("weso"),
+    //Resolver.githubPackages("weso"),
     Resolver.sonatypeRepo("snapshots")
   )
 )
@@ -226,10 +226,10 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* DEPENDENCY versions */
 lazy val http4sVersion       = "1.0.0-M21"
 lazy val catsVersion         = "2.5.0"
-lazy val shexsVersion        = "0.1.86"
+lazy val shexsVersion        = "0.1.91"
 lazy val mongodbVersion      = "4.1.1"
-lazy val utilsVersion        = "0.1.82"
-lazy val umlShaclexVersion   = "0.0.81"
+lazy val utilsVersion        = "0.1.94"
+lazy val umlShaclexVersion   = "0.0.82"
 lazy val any23Version        = "2.2"
 lazy val rdf4jVersion        = "2.2.4"
 lazy val graphvizJavaVersion = "0.5.2"
