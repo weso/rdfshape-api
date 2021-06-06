@@ -87,7 +87,7 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     "-implicits"
   ),
   // Do not generate docs when publishing binaries
-  Compile / packageDoc / publishArtifact := false
+  // Compile / packageDoc / publishArtifact := false
 )
 
 // Shared publish settings for all modules.
