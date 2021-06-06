@@ -92,6 +92,8 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
 
 // Shared publish settings for all modules.
 lazy val publishSettings = Seq(
+  organization := "es.weso",
+  sonatypeProfileName := ("es.weso"),
   maintainer := "info@weso.es",
   homepage := Some(url("https://github.com/weso/rdfshape-api")),
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
