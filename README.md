@@ -68,19 +68,17 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 ## Serving through HTTPS
 
 * You may want to serve RDFShape using HTTPS:
-    1. Launch the application with the `--https` argument (in containers, set the )
-    2. Set up your certificates. There are **two ways** to do so:
-        1. **[Recommended]** Web server setup:
-            - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse
-              proxy that forwards incoming requests to RDFShape.
-            - Launch the application **normally** (no `--https` is required).
-        2. Manual setup:
-            - Set the following environment variables in your server/container, so it can search and use your
+   1. **[Recommended]** Web server setup:
+      - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse
+              proxy that forwards incoming requests to RDFShape. Configure your web server to use HTTPS to communicate with clients.
+      - Launch the application **normally** (no `--https` is required, the web server will handle it).
+   2. Manual setup:
+      - Set the following environment variables in your machine/container, so it can search and use your
               certificates in a [Java keystore](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.html):
-                - `KEYSTORE_PATH`: location of the keystore storing the certificate.
-                - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
-                - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
-            - Launch the application with the `--https` argument (in containers, set `USE_HTTPS`).
+         - `KEYSTORE_PATH`: location of the keystore storing the certificate.
+         - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
+         - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
+      - Launch the application with the `--https` argument (in containers, set the environment variable `USE_HTTPS` to any value).
 
 ### Supported tags
 
