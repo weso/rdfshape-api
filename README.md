@@ -101,7 +101,6 @@ Options:
     --https         Attempt to serve the API via HTTPS (defaults to false)
 -p, --port  <arg>   Port in which the API will listen for requests. Values must be in range 1-65535 (defaults to 8080)
     --verbose       Print some debugging data as it is processed by the server (defaults to false)
-                    to 8080)
     --help          Show help message
     --version       Show version of this program
 ```
