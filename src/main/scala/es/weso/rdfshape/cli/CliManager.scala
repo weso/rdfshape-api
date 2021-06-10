@@ -42,7 +42,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     noshort = true,
     default = Some(Server.defaultVerbose),
     descr =
-      s"""Print some debugging as it is processed by the server (defaults to ${Server.defaultVerbose})"""
+      s"""Print some debugging data as it is processed by the server (defaults to ${Server.defaultVerbose})"""
   )
 
   // Override the short forms of help and version arguments.
