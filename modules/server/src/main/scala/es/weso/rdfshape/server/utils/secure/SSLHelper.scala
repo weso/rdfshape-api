@@ -1,5 +1,7 @@
 package es.weso.rdfshape.server.utils.secure
 
+import es.weso.rdfshape.server.utils.error.exceptions.SSLContextCreationException
+
 import java.io.FileInputStream
 import java.nio.file.Paths
 import java.security.{KeyStore, SecureRandom}
@@ -11,24 +13,27 @@ object SSLHelper {
     sys.env.get("KEYMANAGER_PASSWORD")
   lazy val keyStorePath: Option[String] = sys.env.get("KEYSTORE_PATH")
 
-  def getContext: Option[SSLContext] = {
-    if(
-      keyStorePassword.isDefined &&
-      keyManagerPassword.isDefined &&
-      keyStorePath.isDefined
-    ) {
-      val keyStore            = loadKeystore(keyStorePassword.get)
-      val keyManagerFactory   = getKeyManager(keyStore, keyStorePassword.get)
-      val trustManagerFactory = getTrustManager(keyStore)
+  def getContext: SSLContext = {
 
-      val sslContext = SSLContext.getInstance("TLS")
-      sslContext.init(
-        keyManagerFactory.getKeyManagers,
-        trustManagerFactory.getTrustManagers,
-        new SecureRandom()
-      )
-      Some(sslContext)
-    } else None
+    if(
+      keyStorePassword.isEmpty ||
+      keyManagerPassword.isEmpty ||
+      keyStorePath.isEmpty
+    ) {
+      throw SSLContextCreationException("Some environment variables are missing.")
+    }
+
+    val keyStore            = loadKeystore(keyStorePassword.get)
+    val keyManagerFactory   = getKeyManager(keyStore, keyStorePassword.get)
+    val trustManagerFactory = getTrustManager(keyStore)
+
+    val sslContext = SSLContext.getInstance("TLS")
+    sslContext.init(
+      keyManagerFactory.getKeyManagers,
+      trustManagerFactory.getTrustManagers,
+      new SecureRandom()
+    )
+    sslContext
   }
 
   private def loadKeystore(keyStorePassword: String): KeyStore = {
