@@ -65,26 +65,27 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
     - `USE_HTTPS` [optional]:
         - Any value to try to serve via HTTPS, undefined for HTTP.
 
-## Serving through HTTPS
-
-* You may want to serve RDFShape using HTTPS:
-   1. **[Recommended]** Web server setup:
-      - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse
-              proxy that forwards incoming requests to RDFShape. Configure your web server to use HTTPS to communicate with clients.
-      - Launch the application **normally** (no `--https` is required, the web server will handle it).
-   2. Manual setup:
-      - Set the following environment variables in your machine/container, so it can search and use your
-              certificates in a [Java keystore](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.html):
-         - `KEYSTORE_PATH`: location of the keystore storing the certificate.
-         - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
-         - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
-      - Launch the application with the `--https` argument (in containers, set the environment variable `USE_HTTPS` to any value).
-
 ### Supported tags
 
 - _:stable_: Stable build updated manually.
 - <_:hashed_tags_>: Automated builds by our CI pipeline. With the latest features uploaded to our repository but lacking
   internal testing.
+
+## Serving with HTTPS
+
+You can serve RDFShape with HTTPS in 2 ways:
+1. **[Recommended]** Web server setup:
+   - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse
+           proxy that forwards incoming requests to RDFShape. Configure your web server to use HTTPS to communicate with clients.
+   - Launch the application **normally** (no `--https` is required, the web server will handle it).
+2. Manual setup:
+   - Set the following environment variables in your machine/container, so it can search and use your
+           certificates in a [Java keystore](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.html):
+      - `KEYSTORE_PATH`: location of the keystore storing the certificate.
+      - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
+      - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
+   - Launch the application with the `--https` argument (in containers, set the environment variable `USE_HTTPS` to any value).
+
 
 # Help menu
 
@@ -98,10 +99,9 @@ rdfshape is an mechanism for processing, validating and visualizing semantic dat
 
 Options:
     --https         Attempt to serve the API via HTTPS (defaults to false)
--p, --port  <arg>   Port in which the API will listen for requests (defaults
+-p, --port  <arg>   Port in which the API will listen for requests. Values must be in range 1-65535 (defaults to 8080)
+    --verbose       Print some debugging data as it is processed by the server (defaults to false)
                     to 8080)
--s, --server        Launch an HTTP server that will listen for request on the
-                    specified port (this option can be omitted)
     --help          Show help message
     --version       Show version of this program
 ```
