@@ -50,7 +50,6 @@ private class Server(
           SysUtils.sslContextCreationError,
           e.getMessage
         )
-        sys.exit(55)
         None
     }
   }

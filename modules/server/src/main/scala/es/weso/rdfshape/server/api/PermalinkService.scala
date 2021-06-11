@@ -198,8 +198,8 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
       override def onNext(result: UpdateResult): Unit = {
         println(s"Refreshed date of permalink: $code")
       }
-      override def onError(e: Throwable): Unit = Unit
-      override def onComplete(): Unit          = Unit
+      override def onError(e: Throwable): Unit = ()
+      override def onComplete(): Unit          = ()
     })
   }
 }

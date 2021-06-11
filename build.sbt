@@ -11,6 +11,7 @@ lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Lint-excluded keys
 Global / excludeLintKeys ++= Set(
+  Global / version,
   ThisBuild / maintainer,
   rdfshape / reStartArgs,
   packageName
@@ -82,12 +83,14 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     "-diagrams",
     "-implicits"
   ),
-  // Do not generate docs when publishing binaries
-  Compile / packageDoc / publishArtifact := false
+  // Need to generate docs to publish to oss 
+  Compile / packageDoc / publishArtifact := true
 )
 
 // Shared publish settings for all modules.
 lazy val publishSettings = Seq(
+  organization := "es.weso",
+  sonatypeProfileName := "es.weso",
   maintainer := "info@weso.es",
   homepage := Some(url("https://github.com/weso/rdfshape-api")),
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
