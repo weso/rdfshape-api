@@ -27,35 +27,43 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 
 # Installation and Usage
 
-## Deploying locally
+## Running locally
 
 ### Requirements
 
 * RDFShape API requires [SBT](https://www.scala-sbt.org/) to be built
 
-### Steps
+### Interactive mode with SBT
+
+The easiest way to familiarize yourself with the software is to run the `sbt` command, which will open the _sbt shell_,
+and execute commands from there.
 
 1. Clone this repository
-2. Go to directory where RDFShape source code is located and execute `sbt "run --help"` After some time downloading
-   dependencies and compiling the source code, the application will show the help menu if everything went right.
-3. From this point, execute `sbt "run --server"` for the API to launch and be accessible
-   at [localhost:8080](http://localhost:8080)
-4. To use a different port run `sbt "run --server --port <port-number>"`. For further information, refer to the help
-   menu.
+2. Go to directory where RDFShape source code is located and execute `sbt`. After some time downloading dependencies and
+   compiling the source code, the _sbt shell_ will launch if everything went right.
+3. From this point, you may execute several commands from the sbt shell:
+    - `run` for the API to launch and be accessible at [localhost:8080](http://localhost:8080).
+    - `run --help` to see the [help menu](https://github.com/ulitol97/rdfshape-api#help-menu) with further usage
+      information.
 
-## Deploying with Docker
+### Binary mode
+
+The fastest way to run RDFShape is to compile the code and generate an executable file:
+
+1. Clone this repo and run `sbt`, as seen above.
+2. From the sbt shell, run `Universal/packageBin`.
+3. A zip file named `rdfshape.zip` with an executable and all the program dependencies will be created
+   inside `(ProjectFolder)/target/universal`.
+
+## Running with Docker
 
 * Use the provided Dockerfile to build rdfshape-client or pull
   from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client).
 
 ### Building the image
 
-* When building the Docker image, you may provide the following arguments via `--build-arg`:
-    * **GITHUB_TOKEN** [required]:
-        - A valid GitHub token to download WESO project dependencies from Github packages. This is required when
-          manually building the image.
-        - Images available in [GCR](https://github.com/orgs/weso/packages/container/package/rdfshape-client)
-          have already been built using a read-only token for downloading the dependencies.
+* Simply run `docker build -t {YOUR_IMAGE_NAME} .` from the project folder.
+* No build arguments are required.
 
 ### Running containers
 
@@ -63,7 +71,7 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
     - `PORT` [optional]:
         - Port where the API is exposed inside the container. Default is 8080.
     - `USE_HTTPS` [optional]:
-        - Any value to try to serve via HTTPS, undefined for HTTP.
+        - Any non-empty value to try to serve via HTTPS, leave undefined for HTTP.
 
 ### Supported tags
 
@@ -74,18 +82,19 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 ## Serving with HTTPS
 
 You can serve RDFShape with HTTPS in 2 ways:
-1. **[Recommended]** Web server setup:
-   - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse
-           proxy that forwards incoming requests to RDFShape. Configure your web server to use HTTPS to communicate with clients.
-   - Launch the application **normally** (no `--https` is required, the web server will handle it).
-2. Manual setup:
-   - Set the following environment variables in your machine/container, so it can search and use your
-           certificates in a [Java keystore](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.html):
-      - `KEYSTORE_PATH`: location of the keystore storing the certificate.
-      - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
-      - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
-   - Launch the application with the `--https` argument (in containers, set the environment variable `USE_HTTPS` to any value).
 
+1. **[Recommended]** Web server setup:
+    - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse proxy that
+      forwards incoming requests to RDFShape. Configure your web server to use HTTPS to communicate with clients.
+    - Launch the application **normally** (no `--https` is required, the web server will handle it).
+2. Manual setup:
+    - Set the following environment variables in your machine/container, so it can search and use your certificates in
+      a [Java keystore](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.html):
+        - `KEYSTORE_PATH`: location of the keystore storing the certificate.
+        - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
+        - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
+    - Launch the application with the `--https` argument (in containers, set the environment variable `USE_HTTPS` to any
+      value).
 
 # Help menu
 

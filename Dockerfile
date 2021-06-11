@@ -7,10 +7,6 @@ WORKDIR /app
 # Install git
 RUN microdnf update -y && microdnf install git -y --nodocs --refresh
 
-# ARGs - Override with: --build-arg [ARGUMENT]=[VALUE]
-# Github token needed to download weso packages at build time.
-ARG GITHUB_TOKEN=""
-
 # Copy all application files
 COPY . ./
 # Build to /app/target/universal/rdfshape.zip
@@ -47,4 +43,3 @@ ENV RDFSHAPE_CMD_HTTP="rdfshape --port $PORT"
 ENV RDFSHAPE_CMD_HTTPS="$RDFSHAPE_CMD_HTTP $HTTPS_CLI_ARG"
 
 CMD bash -c "if [[ ! -z '$USE_HTTPS' ]]; then $RDFSHAPE_CMD_HTTPS; else $RDFSHAPE_CMD_HTTP; fi"
-#CMD ["bash", "-c", "rdfshape --server --port $PORT"]

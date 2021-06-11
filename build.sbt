@@ -19,10 +19,6 @@ Global / excludeLintKeys ++= Set(
 /* ------------------------------------------------------------------------- */
 
 /* GITHUB INTEGRATION settings */
-// "sbt-github-packages" plugin settings
-ThisBuild / githubOwner := "weso"
-ThisBuild / githubRepository := "shaclex"
-githubTokenSource := TokenSource.Environment("GITHUB_TOKEN")
 
 // "sbt-github-actions" plugin settings
 val JavaCIVersion = "adopt@1.11"
@@ -129,7 +125,7 @@ lazy val publishSettings = Seq(
 // Helper to resolve dependencies from GitHub packages
 lazy val resolverSettings = Seq(
   resolvers ++= Seq(
-    Resolver.githubPackages("weso"),
+    Resolver.DefaultMavenRepository,
     Resolver.sonatypeRepo("snapshots")
   )
 )
@@ -205,7 +201,7 @@ lazy val server = project
       http4sCirce,
       scalatags,
       umlShaclex,
-      wikibaserdf,
+      shaclex,
       any23_core,
       any23_api,
       any23_scraper,
@@ -213,7 +209,7 @@ lazy val server = project
       plantuml,
       graphvizJava,
       scalaj,
-      utilsTest   % Test,
+      wesoUtils   % Test,
       munitEffect % Test,
       mongodb
     )
@@ -226,10 +222,7 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* DEPENDENCY versions */
 lazy val http4sVersion       = "1.0.0-M21"
 lazy val catsVersion         = "2.5.0"
-lazy val shexsVersion        = "0.1.86"
 lazy val mongodbVersion      = "4.1.1"
-lazy val utilsVersion        = "0.1.82"
-lazy val umlShaclexVersion   = "0.0.81"
 lazy val any23Version        = "2.2"
 lazy val rdf4jVersion        = "2.2.4"
 lazy val graphvizJavaVersion = "0.5.2"
@@ -240,6 +233,10 @@ lazy val munitEffectVersion  = "1.0.2"
 lazy val plantumlVersion     = "1.2021.5"
 lazy val scalajVersion       = "2.4.2"
 lazy val scalatagsVersion    = "0.7.0"
+// WESO dependencies
+lazy val shaclexVersion    = "0.1.91"
+lazy val umlShaclexVersion = "0.0.82"
+lazy val wesoUtilsVersion  = "0.1.98"
 
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
@@ -254,12 +251,7 @@ lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
 lazy val catsCore   = "org.typelevel" %% "cats-core"   % catsVersion
 lazy val catsKernel = "org.typelevel" %% "cats-kernel" % catsVersion
 
-lazy val wikibaserdf = "es.weso" %% "wikibaserdf" % shexsVersion
-
 lazy val mongodb = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVersion
-
-lazy val utilsTest  = "es.weso" %% "utilstest"  % utilsVersion
-lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
 
 lazy val any23_core = "org.apache.any23" % "apache-any23-core" % any23Version
 lazy val any23_api  = "org.apache.any23" % "apache-any23-api"  % any23Version
@@ -280,3 +272,7 @@ lazy val munitEffect =
 
 lazy val scalaj    = "org.scalaj"  %% "scalaj-http" % scalajVersion
 lazy val scalatags = "com.lihaoyi" %% "scalatags"   % scalatagsVersion
+// WESO dependencies
+lazy val shaclex    = "es.weso" %% "shexs"      % shaclexVersion
+lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
+lazy val wesoUtils  = "es.weso" %% "utilstest"     % wesoUtilsVersion
