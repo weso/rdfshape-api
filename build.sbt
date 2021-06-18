@@ -94,8 +94,8 @@ lazy val mdocSettings = Seq(
     "INNERNAME" -> name.value,
     "VERSION"   -> (ThisBuild / version).value
   ),
-  /* When creating/publishing the docusaurus site, update the static scaladoc
-   * first */
+  /* When creating/publishing the docusaurus site, update the dynamic mdoc and
+   * the static scaladoc first */
   docusaurusCreateSite := docusaurusCreateSite
     .dependsOn(Compile / unidoc)
     .value,
@@ -208,7 +208,7 @@ lazy val noPublishSettings = publish / skip := true
 // Root project: rdfshape
 lazy val rdfshape = project
   .in(file("."))
-  .aggregate(server)
+  .aggregate(server, docs)
   .dependsOn(server)
   .enablePlugins(
     BuildInfoPlugin,
@@ -279,7 +279,7 @@ lazy val server = project
 // Documentation project, for MDoc + Docusaurus documentation
 lazy val docs = project
   .in(file("rdfshape-docs"))
-  .dependsOn(rdfshape, server)
+  .dependsOn()
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
   .settings(
     // Pre-existing settings
@@ -288,7 +288,7 @@ lazy val docs = project
     noPublishSettings,
     // Custom settings
     name := s"${(Global / packageName).value}-api-docs",
-    moduleName := s"${(Global / packageName).value}-api-docs"
+    moduleName := s"${(Global / packageName).value}-api-docs",
   )
 
 lazy val MUnitFramework = new TestFramework("munit.Framework")

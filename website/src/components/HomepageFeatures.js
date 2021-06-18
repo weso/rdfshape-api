@@ -3,6 +3,8 @@ import clsx from 'clsx';
 import styles from './HomepageFeatures.module.css';
 import Link from "@docusaurus/core/lib/client/exports/Link";
 
+const docsUrl = "https://weso.github.io/rdfshape-api/api/es/weso/rdfshape/"
+
 const FeatureList = [
     {
         title: 'Scaladoc',
@@ -13,7 +15,7 @@ const FeatureList = [
                 build
             </>
         ),
-        link: 'https://www.scala-lang.org/'
+        link: docsUrl
     },
     {
         title: 'Web documentation',

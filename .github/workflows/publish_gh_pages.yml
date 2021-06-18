@@ -6,7 +6,7 @@ on:
 jobs:
   publish:
     name: Build a docusaurus website with guides and scaladoc
-    # if: ${{ github.repository_owner == 'weso' }} # Do not run in forks
+    if: ${{ github.repository_owner == 'weso' }} # Do not run in forks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -18,9 +18,11 @@ jobs:
         
       - name: Set up GPG
         uses: olafurpg/setup-gpg@v3
+
+      - name: Setup graphviz/dot for scaladoc diagrams
+        uses: ts-graphviz/setup-graphviz@v1
         
       - name: Build and publish docusaurus site, generating the scaladoc
         run: sbt '++2.12.13 docs/docusaurusPublishGhpages'
         env:
-          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_DEPLOY_KEY: ${{ secrets.RDFSHAPE_API_DEPLOY_KEY }}

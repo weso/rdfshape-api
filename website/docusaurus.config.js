@@ -1,14 +1,18 @@
+const deployUrl = "https://weso.github.io"
+const baseUrl = "/rdfshape-api/"
+const docsUrl = `${deployUrl}${baseUrl}api/es/weso/rdfshape/`
+
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: "RDFShape API",
   tagline: "Processing and validation of RDF with ShEx, SHACL and more",
-  url: "https://weso.github.io/rdfshape-api/",
-  baseUrl: "/",
+  organizationName: "weso", // GitHub org/user name.
+  projectName: "rdfshape-api", // Repo name.
+  url: deployUrl,
+  baseUrl: baseUrl,
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "favicon.ico",
-  organizationName: "weso", // Usually your GitHub org/user name.
-  projectName: "rdfshape-api", // Usually your repo name.
   themeConfig: {
     hideableSidebar: false,
     colorMode: {
@@ -31,7 +35,7 @@ module.exports = {
       items: [
         // Scaladoc
         {
-          to: "/api/es/weso/rdfshape/",
+          href: docsUrl,
           position: "left",
           label: "Scaladoc",
         },
@@ -120,7 +124,7 @@ module.exports = {
           customCss: require.resolve("./src/css/custom.css"),
         },
         sitemap: {
-          // trailingSlash: true,
+          trailingSlash: true,
         },
       },
     ],
