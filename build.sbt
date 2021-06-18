@@ -1,7 +1,8 @@
 import scala.language.postfixOps
-// Centralized control of the application name/version
-Global / version := "0.11"
-Global / name := "rdfshape"
+// Centralized control of the application name
+// See version in version.sbt
+Global / name := "RDFShape API"    // Friendly app name
+Global / packageName := "rdfshape" // Output filename of "sbt-native-packager" tasks
 Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
 
@@ -11,10 +12,9 @@ lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Lint-excluded keys
 Global / excludeLintKeys ++= Set(
-  Global / version,
+  name,
   ThisBuild / maintainer,
-  rdfshape / reStartArgs,
-  packageName
+  rdfshape / reStartArgs
 )
 
 /* ------------------------------------------------------------------------- */
@@ -36,9 +36,9 @@ lazy val packagingSettings = Seq(
   Compile / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / test := {},
-  assembly / assemblyJarName := s"${(Global / name).value}.jar",
+  assembly / assemblyJarName := s"${(Global / packageName).value}.jar",
   // Output filename on "sbt-native-packager" tasks
-  Universal / packageName := (Global / name).value
+  Universal / packageName := (Global / packageName).value
 )
 
 // Shared compilation settings for all modules.
@@ -78,13 +78,65 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     "WESO Research Group - University of Oviedo",
     // Skip unnecessary source
     "-skip-packages",
-    "org",
+    "org:buildinfo",
     // Other settings
     "-diagrams",
     "-implicits"
   ),
-  // Need to generate docs to publish to oss 
+  // Need to generate docs to publish to oss
   Compile / packageDoc / publishArtifact := true
+)
+
+// Setup Mdoc + Docusaurus settings
+lazy val mdocSettings = Seq(
+  mdocVariables := Map(
+    "APPNAME"   -> (Global / name).value,
+    "INNERNAME" -> name.value,
+    "VERSION"   -> (ThisBuild / version).value
+  ),
+  /* When creating/publishing the docusaurus site, update the dynamic mdoc and
+   * the static scaladoc first */
+  docusaurusCreateSite := docusaurusCreateSite
+    .dependsOn(Compile / unidoc)
+    .value,
+  docusaurusPublishGhpages :=
+    docusaurusPublishGhpages
+      .dependsOn(Compile / unidoc)
+      .value
+)
+
+// Unidoc settings, mirroring scaladoc settings
+lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
+  // Generate docs for the root project and the server module
+  ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(rdfshape, server),
+  // Dump docs into the website static part, to link them with docusaurus
+  ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+  // When cleaning, remove unidoc generated docs as well
+  cleanFiles += (ScalaUnidoc / unidoc / target).value,
+  // Scalac options
+  ScalaUnidoc / unidoc / scalacOptions ++= Seq(
+    // Base source path
+    "-sourcepath",
+    (LocalRootProject / baseDirectory).value.getAbsolutePath,
+    // Link to GitHub source
+    "-doc-source-url",
+    scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
+    // Page title
+    "-doc-title",
+    "RDFShape API - Docs",
+    // Docs version
+    "-doc-version",
+    version.value,
+    // Docs footer
+    "-doc-footer",
+    "WESO Research Group - University of Oviedo",
+    // Skip unnecessary source
+    "-skip-packages",
+    "org:buildinfo",
+    // Other settings
+    "-diagrams",
+    "-implicits"
+  )
 )
 
 // Shared publish settings for all modules.
@@ -138,13 +190,17 @@ lazy val resolverSettings = Seq(
 lazy val buildInfoSettings = Seq(
   buildInfoKeys := Seq[BuildInfoKey](
     name,
+    packageName,
     version,
     scalaVersion,
     sbtVersion,
     apiURL
   ),
-  buildInfoPackage := "buildinfo"
+  buildInfoPackage := "buildinfo",
+  buildInfoObject := "BuildInfo"
 )
+
+lazy val noPublishSettings = publish / skip := true
 
 /* ------------------------------------------------------------------------- */
 
@@ -152,7 +208,7 @@ lazy val buildInfoSettings = Seq(
 // Root project: rdfshape
 lazy val rdfshape = project
   .in(file("."))
-  .aggregate(server)
+  .aggregate(server, docs)
   .dependsOn(server)
   .enablePlugins(
     BuildInfoPlugin,
@@ -161,16 +217,17 @@ lazy val rdfshape = project
   )
   .disablePlugins(RevolverPlugin)
   .settings(
+    // Pre-existing settings
     compilationSettings,
     packagingSettings,
     publishSettings,
     resolverSettings,
     scaladocSettings,
     sharedDependencies,
-    buildInfoSettings
-  )
-  .settings(
-    name := (Global / name).value,
+    buildInfoSettings,
+    // Custom settings
+    name := (Global / packageName).value,
+    moduleName := (Global / packageName).value,
     run / fork := true,
     trapExit := false,
     reStartArgs := Seq("--server"),
@@ -185,14 +242,15 @@ lazy val rdfshape = project
 lazy val server = project
   .in(file("modules/server"))
   .settings(
+    // Pre-existing settings
     compilationSettings,
     publishSettings,
     resolverSettings,
     scaladocSettings,
-    sharedDependencies
-  )
-  .settings(
-    name := s"${(Global / name).value}-server",
+    sharedDependencies,
+    // Custom settings
+    name := s"${(Global / packageName).value}-server",
+    moduleName := s"${(Global / packageName).value}-server",
     run / fork := false,
     testFrameworks += MUnitFramework,
     crossScalaVersions := supportedScalaVersions,
@@ -216,6 +274,21 @@ lazy val server = project
       munitEffect % Test,
       mongodb
     )
+  )
+
+// Documentation project, for MDoc + Docusaurus documentation
+lazy val docs = project
+  .in(file("rdfshape-docs"))
+  .dependsOn()
+  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
+  .settings(
+    // Pre-existing settings
+    unidocSettings,
+    mdocSettings,
+    noPublishSettings,
+    // Custom settings
+    name := s"${(Global / packageName).value}-api-docs",
+    moduleName := s"${(Global / packageName).value}-api-docs",
   )
 
 lazy val MUnitFramework = new TestFramework("munit.Framework")
@@ -278,4 +351,4 @@ lazy val scalatags = "com.lihaoyi" %% "scalatags"   % scalatagsVersion
 // WESO dependencies
 lazy val shaclex    = "es.weso" %% "shexs"      % shaclexVersion
 lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
-lazy val wesoUtils  = "es.weso" %% "utilstest"     % wesoUtilsVersion
+lazy val wesoUtils  = "es.weso" %% "utilstest"  % wesoUtilsVersion

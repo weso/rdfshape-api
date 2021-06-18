@@ -1,53 +1,28 @@
-name: Publish to GH Pages
+name: Publish website (Mdoc + Docusaurus)
 on:
   push:
-    branches:
-      - main
-      - master
-
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+    branches: [main, master]
+    tags: ["*"]
 jobs:
-  push_to_pages:
-    name: Generate scaladoc and publish it to GH Pages
+  publish:
+    name: Build a docusaurus website with guides and scaladoc
     if: ${{ github.repository_owner == 'weso' }} # Do not run in forks
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        scala: [ 2.12.13 ]
-        java: [ openjdk@1.11 ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout current branch
+      - name: Checkout repo
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Scala
+        uses: olafurpg/setup-scala@v11
+        
+      - name: Set up GPG
+        uses: olafurpg/setup-gpg@v3
 
-      - name: Setup graphviz/dot for diagrams
+      - name: Setup graphviz/dot for scaladoc diagrams
         uses: ts-graphviz/setup-graphviz@v1
-
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: ${{ matrix.java }}
-
-      - name: Cache sbt
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.coursier/cache/v1
-            ~/.cache/coursier/v1
-            ~/AppData/Local/Coursier/Cache/v1
-            ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Compile and generate API docs
-        run: sbt ++${{ matrix.scala }} "server / doc"
-
-      - name: Publish docs to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./modules/server/target/scaladoc
-          commit_message: ${{ github.event.head_commit.message }}
+        
+      - name: Build and publish docusaurus site, generating the scaladoc
+        run: sbt '++2.12.13 docs/docusaurusPublishGhpages'
+        env:
+          GIT_DEPLOY_KEY: ${{ secrets.RDFSHAPE_API_DEPLOY_KEY }}
