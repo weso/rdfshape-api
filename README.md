@@ -19,7 +19,7 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 # Quick reference
 
 - [Base repository](https://github.com/weso/rdfshape)
-- [Wiki](https://github.com/weso/rdfshape/wiki)
+- [Wiki](https://github.com/weso/rdfshape-api/wiki)
 - [Webpage](https://www.weso.es/rdfshape-api/)
 
 ---
