@@ -25,103 +25,24 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 - [API Docs](https://app.swaggerhub.com/apis/weso/RDFShape/) (WIP)
 - [Scaladoc](https://www.weso.es/rdfshape-api/)
 
-# Installation and Usage
+---
 
-## Running locally
+# Deployment and Usage
 
-### Requirements
+Please, refer to this project's [wiki](https://github.com/weso/rdfshape-api/wiki) or [webpage](https://www.weso.es/rdfshape-api/) for detailed information related to:
+- Quickstarting the API (via SBT / Docker)
+- Using the API with simple examples
+- Further documentation and resources
 
-* RDFShape API requires [SBT](https://www.scala-sbt.org/) to be built
-
-### Interactive mode with SBT
-
-The easiest way to familiarize yourself with the software is to run the `sbt` command, which will open the _sbt shell_,
-and execute commands from there.
-
-1. Clone this repository
-2. Go to directory where RDFShape source code is located and execute `sbt`. After some time downloading dependencies and
-   compiling the source code, the _sbt shell_ will launch if everything went right.
-3. From this point, you may execute several commands from the sbt shell:
-    - `run` for the API to launch and be accessible at [localhost:8080](http://localhost:8080).
-    - `run --help` to see the [help menu](https://github.com/ulitol97/rdfshape-api#help-menu) with further usage
-      information.
-
-### Binary mode
-
-The fastest way to run RDFShape is to compile the code and generate an executable file:
-
-1. Clone this repo and run `sbt`, as seen above.
-2. From the sbt shell, run `Universal/packageBin`.
-3. A zip file named `rdfshape.zip` with an executable and all the program dependencies will be created
-   inside `(ProjectFolder)/target/universal`.
-
-## Running with Docker
-
-* Use the provided Dockerfile to build rdfshape-client or pull
-  from [Github Container Registry](https://github.com/orgs/weso/packages/container/package/rdfshape-client).
-
-### Building the image
-
-* Simply run `docker build -t {YOUR_IMAGE_NAME} .` from the project folder.
-* No build arguments are required.
-
-### Running containers
-
-* When running a container, you may provide the following environment variables via `--env`:
-    - `PORT` [optional]:
-        - Port where the API is exposed inside the container. Default is 8080.
-    - `USE_HTTPS` [optional]:
-        - Any non-empty value to try to serve via HTTPS, leave undefined for HTTP.
-
-### Supported tags
-
-- _:stable_: Stable build updated manually.
-- <_:hashed_tags_>: Automated builds by our CI pipeline. With the latest features uploaded to our repository but lacking
-  internal testing.
-
-## Serving with HTTPS
-
-You can serve RDFShape with HTTPS in 2 ways:
-
-1. **[Recommended]** Web server setup:
-    - Run a web server (i.e., Nginx) in your machine or in a separate container and configure it as a reverse proxy that
-      forwards incoming requests to RDFShape. Configure your web server to use HTTPS to communicate with clients.
-    - Launch the application **normally** (no `--https` is required, the web server will handle it).
-2. Manual setup:
-    - Set the following environment variables in your machine/container, so it can search and use your certificates in
-      a [Java keystore](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.html):
-        - `KEYSTORE_PATH`: location of the keystore storing the certificate.
-        - `KEYSTORE_PASSWORD`: password protecting the keystore (leave empty if there is none).
-        - `KEYMANAGER_PASSWORD`: password protecting the certificate (leave empty is there is none).
-    - Launch the application with the `--https` argument (in containers, set the environment variable `USE_HTTPS` to any
-      value).
-
-# Help menu
-
-The program supports the following CLI arguments:
-
-```
-rdfshape 0.1 - WESO Research Group (https://www.weso.es/)
-
-USAGE: rdfshape --port [port number]
-rdfshape is an mechanism for processing, validating and visualizing semantic data (RDF, SHEX, SHACL and more) through a REST API.
-
-Options:
-    --https         Attempt to serve the API via HTTPS (defaults to false)
--p, --port  <arg>   Port in which the API will listen for requests. Values must be in range 1-65535 (defaults to 8080)
-    --verbose       Print some debugging data as it is processed by the server (defaults to false)
-    --help          Show help message
-    --version       Show version of this program
-```
 
 # Publishing to OSS-Sonatype
 
-This project uses [the sbt ci release](https://github.com/olafurpg/sbt-ci-release) plugin for publishing to [OSS Sonatype](https://oss.sonatype.org/).
+This project uses the [sbt-ci-release](https://github.com/olafurpg/sbt-ci-release) plugin for publishing to [OSS Sonatype](https://oss.sonatype.org/).
 
-##### SNAPSHOT Releases
-Open a PR and merge it to watch the CI release a -SNAPSHOT version
+### SNAPSHOT Releases
+Open a PR and merge it to watch the CI release a `-SNAPSHOT` version
 
-##### Full Library Releases
+### Full Library Releases
 1. Push a tag and watch the CI do a regular release
 2. `git tag -a v0.1.0 -m "v0.1.0"`
 3. `git push origin v0.1.0`
