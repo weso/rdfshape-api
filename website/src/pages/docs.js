@@ -4,7 +4,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl'
 
 // Redirect to docs intro
 const RdfShapeApi = () => {
-    const redirectDocsIntro = useBaseUrl("/docs/welcome")
+    const redirectDocsIntro = useBaseUrl("/docs/home")
     return <Redirect to={redirectDocsIntro}/>
 }
 

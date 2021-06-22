@@ -33,23 +33,11 @@ module.exports = {
         src: "img/logo-weso.png",
       },
       items: [
-        // Scaladoc
-        {
-          href: docsUrl,
-          position: "left",
-          label: "Scaladoc",
-        },
-        // Web pages
+        // Web docs
         {
           to: "/docs",
           position: "left",
           label: "Web docs",
-        },
-        // API docs
-        {
-          href: "https://app.swaggerhub.com/apis/weso/RDFShape",
-          position: "left",
-          label: "API docs",
         },
         // Link to repo
         {
@@ -117,7 +105,6 @@ module.exports = {
         docs: {
           path: "../rdfshape-docs/target/mdoc",
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl: "https://github.com/weso/rdfshape-api/edit/master/website/",
         },
         blog: false,
         theme: {

@@ -4,6 +4,7 @@ import styles from './HomepageFeatures.module.css';
 import Link from "@docusaurus/core/lib/client/exports/Link";
 
 const docsUrl = "https://weso.github.io/rdfshape-api/api/es/weso/rdfshape/"
+const apiDocsUrl = "https://app.swaggerhub.com/apis/weso/RDFShape"
 
 const FeatureList = [
     {
@@ -36,7 +37,7 @@ const FeatureList = [
                 underlying infrastructure
             </>
         ),
-        link: 'https://app.swaggerhub.com/apis/weso/RDFShape'
+        link: apiDocsUrl
     },
 ];
 
