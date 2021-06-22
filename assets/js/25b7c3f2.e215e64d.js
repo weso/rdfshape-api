@@ -1,1 +1,0 @@
-(self.webpackChunkrdfshape_api_webdocs=self.webpackChunkrdfshape_api_webdocs||[]).push([[357],{8232:function(e,a,c){"use strict";c.r(a);var s=c(7294),r=c(5977),t=c(4996);a.default=function(){var e=(0,t.Z)("/docs/welcome");return s.createElement(r.l_,{to:e})}}}]);
