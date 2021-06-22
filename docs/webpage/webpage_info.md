@@ -16,11 +16,11 @@ following [GitHub action](https://github.com/weso/rdfshape-api/blob/master/.gith
 
 The website contents are located:
 
-1. <ins>Inside the [_website_](https://github.com/weso/rdfshape-api/tree/master/website) folder</ins>: Docusaurus
+1. <ins>Inside the _[website](https://github.com/weso/rdfshape-api/tree/master/website)_ folder</ins>: Docusaurus
    configuration files, React pages, header/footer/sidebar contents, etc.
-2. <ins>Inside the [_docs_](https://github.com/weso/rdfshape-api/tree/master/docs) folder</ins>: Markdown files, first
-   processed by [mdoc](https://scalameta.org/mdoc/) and eventually by Docusaurus to create
-   the [Web Docs](https://www.weso.es/rdfshape-api/docs/).
+2. <ins>Inside the _[docs](https://github.com/weso/rdfshape-api/tree/master/docs)_ folder</ins>: Markdown files, first
+   processed by _[mdoc](https://scalameta.org/mdoc/)_ and eventually by Docusaurus to create
+   the _[Web Docs](https://www.weso.es/rdfshape-api/docs/)_.
 
 ## Website creation guidelines
 
