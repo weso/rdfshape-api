@@ -14,6 +14,10 @@ title: Command Line Interface
 - _--version_ Print the version of the program
 - _--help_ Print the help menu
 
+## JVM Custom Arguments
+In case @APP_NAME@ is having trouble to generate permalinks due to an SSL issue, try adding the following argument:
+- `-Djdk.tls.client.protocols=TLSv1.2`
+
 ## Examples
 1. Launching @APP_NAME@ in port 8081:
 - `rdfshape -p 8081`
