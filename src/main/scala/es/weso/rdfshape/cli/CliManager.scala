@@ -11,7 +11,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
   // Configure the help menu
   version(formattedVersion)
   banner(
-    s"""|USAGE: ${buildinfo.BuildInfo.name} --port <port-number>
+    s"""|USAGE: ${buildinfo.BuildInfo.name} [--port <port-number>] [--https] [--verbose]
         |${buildinfo.BuildInfo.name} is an mechanism for processing, validating and visualizing semantic data (RDF, SHEX, SHACL and more) through a REST API.
         |Options:
         |""".stripMargin
@@ -70,7 +70,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
         SysUtils.invalidArgumentsError,
         s"""
            |Invalid argument provided: ${e.getMessage}
-           |${useHelpText}
+           |$useHelpText
            |""".stripMargin
       )
     case _ =>
@@ -78,7 +78,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
         SysUtils.parseArgumentsError,
         s"""
           |Could not parse arguments: ${e.getMessage}
-          |${useHelpText}
+          |$useHelpText
           |""".stripMargin
       )
   }
