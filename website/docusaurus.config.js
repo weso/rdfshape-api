@@ -14,6 +14,7 @@ module.exports = {
   onBrokenMarkdownLinks: "warn",
   favicon: "favicon.ico",
   themeConfig: {
+    image: "img/preview.png",
     hideableSidebar: false,
     colorMode: {
       defaultMode: "light",
