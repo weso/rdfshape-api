@@ -89,7 +89,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
         UrlCodeParam(urlCode) =>
       try {
         val code    = urlCode.toLong
-        val promise = Promise[IO[Response[IO]]]
+        val promise = Promise[IO[Response[IO]]]()
 
         // Fetch document in database
         val observable: SingleObservable[Document] =
@@ -150,7 +150,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
 
   private def retrieveUrlCode(urlPath: String): Option[Long] = {
 
-    val promise = Promise[Option[Long]]
+    val promise = Promise[Option[Long]]()
 
     // Fetch document in database
     val observable: SingleObservable[Document] =

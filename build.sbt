@@ -1,13 +1,14 @@
 import scala.language.postfixOps
-// Centralized control of the application name
+// Centralized control of the application's core settings
 // See version in version.sbt
 Global / name := "RDFShape API"    // Friendly app name
 Global / packageName := "rdfshape" // Output filename of "sbt-native-packager" tasks
 Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
+Global / scalaVersion := scala213
 
 lazy val scala212               = "2.12.13"
-lazy val scala213               = "2.13.5"
+lazy val scala213               = "2.13.6"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Lint-excluded keys
@@ -22,8 +23,10 @@ Global / excludeLintKeys ++= Set(
 /* GITHUB INTEGRATION settings */
 
 // "sbt-github-actions" plugin settings
-val JavaCIVersion = "adopt@1.11"
+val JavaCIVersion  = "adopt@1.11"
+val ScalaCIVersion = "2.13.6"
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
+ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 
 /* ------------------------------------------------------------------------- */
 
@@ -56,7 +59,7 @@ lazy val compilationSettings = Seq(
 
 // Scaladoc settings for docs generation. Run task "doc" or "server / doc".
 // https://www.scala-sbt.org/1.x/docs/Howto-Scaladoc.html
-/* https://github.com/scala/scala/blob/2.11.x/src/scaladoc/scala/tools/nsc/doc/Settings.scala */
+/* https://github.com/scala/scala/blob/2.13.x/src/scaladoc/scala/tools/nsc/doc/Settings.scala */
 lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
   // Generate documentation on a separated "docs" folder
   Compile / doc / target := baseDirectory.value / "target" / "scaladoc",
@@ -81,7 +84,8 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     "org:buildinfo",
     // Other settings
     "-diagrams",
-    "-implicits"
+    "-implicits",
+    "-private"
   ),
   // Need to generate docs to publish to oss
   Compile / packageDoc / publishArtifact := true
@@ -142,7 +146,8 @@ lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
     "org:buildinfo",
     // Other settings
     "-diagrams",
-    "-implicits"
+    "-implicits",
+    "-private"
   )
 )
 

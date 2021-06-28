@@ -10,6 +10,12 @@ import es.weso.rdfshape.server.utils.error.SysUtils
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.{Help, ValidationFailure, Version}
 
+/**
+ * Class in charge of parsing the arguments provided via command-line when executing RDFShape.
+ * Parsed data is later used to instantiate the API server according to the user's needs.
+ * @param arguments Array of arguments passed to the executable
+ * @see es.weso.rdfshape.Main 
+ */
 class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
 
   // Configure the help menu
@@ -41,28 +47,28 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
       s"""Attempt to serve the API via HTTPS (defaults to ${Server.defaultHttps})"""
   )
 
-  val verbose: ScallopOption[Boolean] = opt[Boolean](
+  val verbose: ScallopOption[Int] = tally(
     name = "verbose",
-    noshort = true,
-    default = Some(Server.defaultVerbose),
+    noshort = false,
+    short = 'v',
     descr =
-      s"""Print some debugging data as it is processed by the server (defaults to ${Server.defaultVerbose})"""
+      s"""Show additional logging information (use cumulative times for additional info, like: "-vvv")"""
   )
 
   // Override the short forms of help and version arguments.
   val help: ScallopOption[Boolean] = opt[Boolean](
     noshort = true,
-    descr = s"""Print help menu and exit."""
+    descr = s"""Print help menu and exit"""
   )
   val version: ScallopOption[Boolean] = opt[Boolean](
     noshort = true,
     descr =
-      s"""Print the program version along with other related information and exit."""
+      s"""Print the program version along with other related information and exit"""
   )
 
   override protected def onError(e: Throwable): Unit = e match {
     case Help("") =>
-      printHelp
+      printHelp()
       sys.exit(SysUtils.successCode)
 
     case Version =>
