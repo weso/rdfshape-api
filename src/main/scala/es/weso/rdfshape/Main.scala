@@ -1,5 +1,6 @@
 package es.weso.rdfshape
 
+import ch.qos.logback.classic.util.ContextInitializer
 import com.typesafe.scalalogging._
 import es.weso.rdfshape.cli.CliManager
 import es.weso.rdfshape.server.Server
@@ -8,7 +9,12 @@ object Main extends App with LazyLogging {
 
   run(args)
 
-  def run(args: Array[String]): Unit = {
+  private def run(args: Array[String]): Unit = {
+    System.setProperty(
+      ContextInitializer.CONFIG_FILE_PROPERTY,
+      "logback-configurations/logback.groovy"
+    )
+
     // Parse and verify arguments
     val opts = new CliManager(args)
 

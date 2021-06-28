@@ -1,6 +1,10 @@
 package es.weso.rdfshape.cli
 
-import es.weso.rdfshape.cli.CliManager.{formattedVersion, useHelpText, versionText}
+import es.weso.rdfshape.cli.CliManager.{
+  formattedVersion,
+  useHelpText,
+  versionText
+}
 import es.weso.rdfshape.server.Server
 import es.weso.rdfshape.server.utils.error.SysUtils
 import org.rogach.scallop._
@@ -106,6 +110,8 @@ object CliManager {
       |
       |""".stripMargin
 
+  /** Print a text-based banner with the program's name in a brand-like format
+    */
   def printBanner(): Unit = {
     println(bannerText)
   }

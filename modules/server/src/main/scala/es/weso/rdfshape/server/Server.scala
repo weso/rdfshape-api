@@ -2,6 +2,7 @@ package es.weso.rdfshape.server
 
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
 import es.weso.rdfshape.server.api._
 import es.weso.rdfshape.server.utils.error.SysUtils
@@ -27,8 +28,8 @@ private class Server(
     val verbose: Boolean = defaultVerbose,
     val requestTimeout: Int = defaultRequestTimeout,
     val idleTimeout: Int = defaultIdleTimeout
-) extends IOApp {
-  
+) extends IOApp with LazyLogging {
+
   override def run(args: List[String]): IO[ExitCode] = {
     println(s"""
         |Verbose mode ${if(verbose) "ON" else "OFF"}
@@ -68,7 +69,7 @@ private class Server(
 
   private def createApp(client: Client[IO]): HttpApp[IO] = {
     val app = routesService(client).orNotFound
-    Logger.httpApp(logHeaders = true, logBody = false)(app)
+    Logger.httpApp(logHeaders = true, logBody = true)(app)
   }
 
   private def http4sServer(
@@ -110,7 +111,7 @@ object Server {
 
   // Act as a server factory
   def apply(port: Int): Unit = {
-    apply(port, https = defaultHttps, verbose = defaultVerbose)
+    apply(port, https = defaultHttps)
   }
 
   def apply(port: Int, https: Boolean): Unit = {
