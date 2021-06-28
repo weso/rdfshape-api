@@ -446,8 +446,8 @@ object ApiHelper {
       dataFormat: Option[DataFormat]
   ): IO[Json] = {
     val either: IO[Either[Throwable, DataInfoResult]] = (for {
-      numberStatements <- rdf.getNumberOfStatements
-      predicates       <- rdf.predicates.compile.toList
+      numberStatements <- rdf.getNumberOfStatements()
+      predicates       <- rdf.predicates().compile.toList
       pm               <- rdf.getPrefixMap
     } yield DataInfoResult.fromData(
       data,

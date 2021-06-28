@@ -26,24 +26,28 @@ RDFShape is already deployed [here](https://api.rdfshape.weso.es/api).
 
 # Deployment and Usage
 
-Please, refer to this project's [wiki](https://github.com/weso/rdfshape-api/wiki) or [webpage](https://www.weso.es/rdfshape-api/) for detailed information related to:
+Please, refer to this project's [wiki](https://github.com/weso/rdfshape-api/wiki)
+or [webpage](https://www.weso.es/rdfshape-api/) for detailed information related to:
+
 - Quickstarting the API (via SBT / Docker)
 - Using the API with simple examples
 - Further documentation and resources
 
-
 # Publishing to OSS-Sonatype
 
-This project uses the [sbt-ci-release](https://github.com/olafurpg/sbt-ci-release) plugin for publishing to [OSS Sonatype](https://oss.sonatype.org/).
+This project uses the [sbt-ci-release](https://github.com/olafurpg/sbt-ci-release) plugin for publishing
+to [OSS Sonatype](https://oss.sonatype.org/).
 
 ### SNAPSHOT Releases
+
 Open a PR and merge it to watch the CI release a `-SNAPSHOT` version
 
 ### Full Library Releases
+
 1. Push a tag and watch the CI do a regular release
 2. `git tag -a v0.1.0 -m "v0.1.0"`
 3. `git push origin v0.1.0`
-_Note that the tag version MUST start with v._
+   _Note that the tag version MUST start with v._
 
 # Dependencies
 
@@ -52,6 +56,7 @@ RDFShape server has been implemented in Scala using the following libraries:
 * [SHaclEX](https://github.com/labra/shaclex): a Scala implementation of ShEx and SHACL.
 * [http4s](https://http4s.org/): a purely functional library for http.
 * [cats](https://typelevel.org/cats/): a library for functional programming in Scala.
+* [Logback](http://logback.qos.ch/) with [Scala Logging](https://github.com/lightbend/scala-logging): logging framework.
 * [scallop](https://github.com/scallop/scallop): a simple command-line arguments parsing library for Scala.
 * [UMLShaclex](https://github.com/labra/shaclex): contains the visualization code that converts schemas to UML diagrams.
 * [SRDF](http://www.weso.es/srdf/): is the library used to handle RDF. It is a simple interface with 2 implementations,

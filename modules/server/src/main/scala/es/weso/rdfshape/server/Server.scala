@@ -23,16 +23,17 @@ import scala.language.{higherKinds, postfixOps}
 import scala.util.{Failure, Success, Try}
 
 private class Server(
-    val port: Int,
-    val https: Boolean,
-    val verbose: Boolean = defaultVerbose,
-    val requestTimeout: Int = defaultRequestTimeout,
-    val idleTimeout: Int = defaultIdleTimeout
-) extends IOApp with LazyLogging {
+                      val port: Int,
+                      val https: Boolean,
+                      val verbosity: Int = defaultVerbosity,
+                      val requestTimeout: Int = defaultRequestTimeout,
+                      val idleTimeout: Int = defaultIdleTimeout
+) extends IOApp
+    with LazyLogging {
 
   override def run(args: List[String]): IO[ExitCode] = {
     println(s"""
-        |Verbose mode ${if(verbose) "ON" else "OFF"}
+        |Verbosity level: ${if(verbosity == defaultVerbosity) "Default" else verbosity}
         |Starting server on port $port...
         |Serving via ${if(https) "HTTPS" else "HTTP"}...
         |""".stripMargin)
@@ -97,7 +98,7 @@ object Server {
   val defaultHttps          = false
   val defaultRequestTimeout = 5
   val defaultIdleTimeout    = 10
-  val defaultVerbose        = false
+  val defaultVerbosity      = 1
 
   // Always serve on localhost
   private val ip = "0.0.0.0"
@@ -115,11 +116,11 @@ object Server {
   }
 
   def apply(port: Int, https: Boolean): Unit = {
-    apply(port, https, verbose = defaultVerbose)
+    apply(port, https, verbosity = defaultVerbosity)
   }
 
-  def apply(port: Int, https: Boolean, verbose: Boolean): Unit = {
-    val s = new Server(port, https, verbose = verbose)
+  def apply(port: Int, https: Boolean, verbosity: Int): Unit = {
+    val s = new Server(port, https, verbosity = verbosity)
     s.main(Array.empty[String])
   }
 

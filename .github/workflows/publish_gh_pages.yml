@@ -23,6 +23,6 @@ jobs:
         uses: ts-graphviz/setup-graphviz@v1
         
       - name: Build and publish docusaurus site, generating the scaladoc
-        run: sbt '++2.12.13 docs/docusaurusPublishGhpages'
+        run: sbt '++2.13.6 docs/docusaurusPublishGhpages'
         env:
           GIT_DEPLOY_KEY: ${{ secrets.RDFSHAPE_API_DEPLOY_KEY }}
