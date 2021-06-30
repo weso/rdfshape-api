@@ -19,7 +19,11 @@ module.exports = {
         {
             type: "category",
             label: "API Deployment",
-            items: ["api-deployment/deployment_overview", "api-deployment/deployment_manual", "api-deployment/deployment_docker"],
+            items: [
+                "api-deployment/deployment_overview",
+                "api-deployment/deployment_manual",
+                "api-deployment/deployment_docker"
+            ],
             collapsed: false
         },
 
@@ -27,15 +31,23 @@ module.exports = {
         {
             type: "category",
             label: "API Usage",
-            items: ["api-usage/usage_cli", "api-usage/usage_tutorial", "api-usage/usage_examples"],
+            items: [
+                "api-usage/usage_cli",
+                "api-usage/usage_tutorial",
+                "api-usage/usage_examples"
+            ],
             collapsed: false
         },
 
         /* Category: testing */
         {
             type: "category",
-            label: "API Testing",
-            items: ["api-testing/testing_munit", "api-testing/testing_integration"],
+            label: "API Testing and Auditing",
+            items: [
+                "api-testing-auditing/testing-auditing_munit",
+                "api-testing-auditing/testing-auditing_integration",
+                "api-testing-auditing/testing-auditing_logs"
+            ],
             collapsed: true
         },
 
