@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api.merged
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdfshape.server.api.Defaults
 import es.weso.rdfshape.server.api.format.DataFormat
@@ -13,7 +14,7 @@ case class DataElement(
     dataFile: Option[String],
     dataFormat: DataFormat,
     activeDataTab: ActiveDataTab
-) {
+) extends LazyLogging {
   def toRDF: IO[Resource[IO, RDFAsJenaModel]] = activeDataTab match {
 
     case DataTextArea =>
@@ -36,7 +37,7 @@ case class DataElement(
       } yield rdf
 
     case _ =>
-      pprint.log("ERROR DATA ELEMENT")
+      logger.error(s"Data element error")
       IO.raiseError(
         new RuntimeException(
           s"Not implemented yet compound with activeTab: ${activeDataTab}"
@@ -45,7 +46,7 @@ case class DataElement(
   }
 }
 
-object DataElement {
+object DataElement extends LazyLogging {
 
   val empty: DataElement = DataElement(
     None,
@@ -98,21 +99,25 @@ object DataElement {
           )
           rest <- dataActiveTab match {
             case DataTextArea =>
+              logger.debug("Data element decoder - DataTextArea")
               for {
                 data <- c.downField("data").as[String]
               } yield base.copy(data = Some(data))
             case DataFile =>
+              logger.debug("Data element decoder - DataFile")
               /* TODO: either send the file text through the request (bad idea)
                * or decode the file appropriately */
-              pprint.log(c.downField("dataFile"))
+              logger.debug(c.downField("dataFile").toString)
               for {
                 dataFile <- c.downField("dataFile").as[String]
               } yield base.copy(dataFile = Some(dataFile))
             case DataUrl =>
+              logger.debug("Data element decoder - DaraUrl")
               for {
                 dataUrl <- c.downField("dataURL").as[String]
               } yield base.copy(dataUrl = Some(dataUrl))
             case DataEndpoint =>
+              logger.debug("Data element decoder - DataEndpoint")
               for {
                 endpoint <- c.downField("endpoint").as[String]
               } yield base.copy(endpoint = Some(endpoint))

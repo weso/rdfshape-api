@@ -1,9 +1,11 @@
 package es.weso.rdfshape.server.utils.error
 
+import com.typesafe.scalalogging.LazyLogging
+
 /** Static utility methods user for system-wide error operations, i.e., forcibly exiting the system and keeping track of
   * all custom error codes
   */
-object SysUtils {
+object SysUtils extends LazyLogging {
 
   /** Exit code on successful program execution
     */
@@ -29,7 +31,7 @@ object SysUtils {
     * @param message Message to be printed before exiting
     */
   def fatalError(code: Int, message: String): Unit = {
-    System.err.println(message)
+    logger.error(message)
     sys.exit(code)
   }
 }

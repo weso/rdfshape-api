@@ -1,5 +1,6 @@
 package es.weso.rdfshape.server.streams
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.SPARQLQueries.queryTriplesWithSubject
 import es.weso.rdf.nodes.IRI
 import org.apache.commons.io.output.WriterOutputStream
@@ -14,7 +15,7 @@ import java.nio.charset.StandardCharsets.UTF_8
  * StreamRDFWriter, StreamRDFWriterFactory} */
 import org.http4s.Uri
 
-object Streams {
+object Streams extends LazyLogging {
 
   def getRaw(uri: Uri): IO[String] = {
     val stringWriter     = new StringWriter
@@ -37,14 +38,17 @@ object Streams {
       val modelGraph  = model.getGraph
       val streamGraph = StreamRDFLib.graph(modelGraph)
       RDFDataMgr.parse(streamGraph, uri.renderString)
-      println(s"Model graph: ${model}")
+
+      logger.debug(s"Model graph: $model")
+
       StreamRDFOps.sendGraphToStream(modelGraph, destination)
       stringWriter.toString
     }
   }
 
   def getOutgoing(endpoint: String, node: String): IO[String] = IO {
-    println(s"Outgoing: $node at $endpoint")
+    logger.debug(s"Outgoing: $node at $endpoint")
+
     val c = QueryExecutionFactory
       .sparqlService(endpoint, queryTriplesWithSubject(IRI(node)))
       .execConstruct()
@@ -55,17 +59,4 @@ object Streams {
     StreamRDFOps.sendGraphToStream(c.getGraph, destination)
     stringWriter.toString
   }
-
-  /* The following code doesn't work...it raises premature EOF def
-   * cnv[F[_]:ConcurrentEffect](stream: Stream[F,Byte]): Stream[F,String] = for
-   * { is <- stream.through(toInputStream) str <- getRDF(is) } yield str
-   *
-   * def getRDF[F[_]:ConcurrentEffect](is: InputStream): Stream[F, String] = {
-   * val stringWriter = new StringWriter val os: OutputStream = new
-   * WriterOutputStream(stringWriter,UTF_8) val destination: StreamRDF =
-   * StreamRDFWriter.getWriterStream(os,Lang.TURTLE) // val destination:
-   * StreamRDF = StreamRDFLib.writer(writer) println(s"Before
-   * RDFDataMgr.parse....") RDFDataMgr.parse(destination, is, Lang.TURTLE)
-   * println(s"After parsing....") Stream.emit(stringWriter.toString) } */
-
 }

@@ -98,11 +98,8 @@ class HTML2RDFTest extends CatsEffectSuite {
         res2 <- RDFAsJenaModel.fromChars(expected, "TURTLE")
         vv <- (res1, res2).tupled.use { case (rdf, expected) =>
           for {
-            //_ <- { pprint.log(rdf); IO(())}
             expectedStr <- expected.serialize("TURTLE")
-            //_ <- { pprint.log(expectedStr); IO(())}
             rdfObtained <- rdf.serialize("TURTLE")
-            //_ <- { pprint.log(rdfObtained); IO(())}
             isIsomorphic <- rdf.isIsomorphicWith(expected)
           } yield (isIsomorphic, rdfObtained, expectedStr)
         }

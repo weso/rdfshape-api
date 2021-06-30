@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api
 
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes._
 import es.weso.rdf.{PrefixMap, RDFBuilder, RDFReasoner}
@@ -18,11 +19,9 @@ import es.weso.utils.IOUtils._
 import io.circe._
 import org.http4s._
 import org.http4s.client.{Client, JavaNetClientBuilder}
-import org.log4s.getLogger
 
-object ApiHelper {
+object ApiHelper extends LazyLogging {
 
-  private val logger = getLogger
   private val NoTime = 0L
 
   // TODO: Get options from user as parameters
@@ -47,7 +46,7 @@ object ApiHelper {
   }
 
   private[api] def resolveUri(baseUri: Uri, urlStr: String): IO[String] = {
-    println(s"Handling Uri: $urlStr")
+    logger.info(s"Handling Uri: $urlStr")
     // TODO: handle timeouts
     Uri
       .fromString(urlStr)
@@ -156,7 +155,8 @@ object ApiHelper {
       relativeBase: Option[IRI],
       builder: RDFBuilder
   ): IO[(Result, Option[ValidationTrigger], Long)] = {
-    println(s"APIHelper: validate")
+    logger.debug(s"APIHelper: validate")
+
     val base        = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
     val triggerMode = tp.triggerMode
     for {
@@ -185,7 +185,8 @@ object ApiHelper {
               time: Long = endTime - startTime
             } yield (result, Some(trigger), time)
             run.handleErrorWith(e => {
-              pprint.log(e, "Error validating")
+              val msg = s"Error validating: ${e.getMessage}"
+              logger.error(msg)
               err(s"Error validating: ${e.getMessage}")
             })
         }
@@ -227,7 +228,8 @@ object ApiHelper {
           pm       <- io2es(rdf.getPrefixMap)
           selector <- either2es(NodeSelector.fromString(nodeSelector, base, pm))
           eitherResult <- {
-            println(s"Node selector: $selector")
+            logger.debug(s"Node selector: $selector")
+
             val inferOptions: InferOptions = InferOptions(
               inferTypePlainNode = true,
               addLabelLang = Some(Lang("en")),
@@ -249,7 +251,7 @@ object ApiHelper {
           }
           pair <- either2es(eitherResult)
           str  <- io2es(pair._1.serialize("ShExC"))
-          _    <- io2es(IO(println(s"Extracted; $str")))
+          _    <- io2es(IO(logger.debug(s"Extracted; $str")))
         } yield {
           pair
         }
@@ -314,7 +316,9 @@ object ApiHelper {
       targetSchemaFormat: Option[String],
       optTargetSchemaEngine: Option[String]
   ): IO[(String, ShapeMap)] = {
-    pprint.log(schema.name)
+    logger.debug(
+      s"Schema conversion, name: ${schema.name}, targetSchema: $targetSchemaFormat"
+    )
     val default = for {
       str <- schema.convert(targetSchemaFormat, optTargetSchemaEngine, None)
     } yield (str, ShapeMap.empty)
@@ -322,7 +326,7 @@ object ApiHelper {
       case shacl: ShaclexSchema =>
         optTargetSchemaEngine.map(_.toUpperCase()) match {
           case Some("SHEX") =>
-            pprint.log(s"SHACLEX -> SHEX")
+            logger.debug("Schema conversion: SHACLEX -> SHEX")
             Shacl2ShEx
               .shacl2ShEx(shacl.schema)
               .fold(
@@ -334,7 +338,7 @@ object ApiHelper {
                   ),
                 pair => {
                   val (schema, shapeMap) = pair
-                  pprint.log(shapeMap)
+                  logger.debug(s"shapeMap: $shapeMap")
                   for {
                     emptyBuilder <- RDFAsJenaModel.empty
                     str <- emptyBuilder.use(builder =>
@@ -374,7 +378,8 @@ object ApiHelper {
           pm       <- io2es(rdf.getPrefixMap)
           selector <- either2es(NodeSelector.fromString(nodeSelector, base, pm))
           eitherResult <- io2es {
-            println(s"Selector: $selector")
+            logger.debug(s"Selector: $selector")
+
             SchemaInfer.runInferSchema(
               rdf,
               selector,
@@ -515,7 +520,7 @@ object ApiHelper {
       e => IO.pure((s"SVG conversion: $e", s"Error converting UML: $e")),
       pair => {
         val (uml, warnings) = pair
-        // println(s"UML converted: $uml")
+        logger.debug(s"UML converted: $uml")
         (for {
           str <- uml.toSVG(options)
         } yield {
@@ -573,7 +578,7 @@ object ApiHelper {
 
   object SchemaInfoReply {
     def fromError(msg: String): SchemaInfoReply = {
-      println(s"SchemaInfoReply from $msg")
+      logger.debug(s"SchemaInfoReply from $msg")
       SchemaInfoReply(None, None, wellFormed = false, List(), List(), List(msg))
     }
   }

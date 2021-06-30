@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api
 
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdfshape.server.api.Defaults._
 import es.weso.rdfshape.server.api.format._
@@ -23,13 +24,13 @@ case class SchemaParam(
     targetSchemaEngine: Option[String],
     targetSchemaFormat: Option[String],
     activeSchemaTab: Option[String]
-) {
+) extends LazyLogging {
 
   val schemaFormat: Option[SchemaFormat] = {
     val schemaTab = parseSchemaTab(
       activeSchemaTab.getOrElse(defaultActiveSchemaTab)
     )
-    pprint.log(schemaTab)
+    logger.debug(s"schemaTab: $schemaTab")
     schemaTab match {
       case Right(`SchemaUrlType`)  => schemaFormatUrl orElse schemaFormatValue
       case Right(`SchemaFileType`) => schemaFormatFile orElse schemaFormatValue
@@ -42,7 +43,7 @@ case class SchemaParam(
   def getSchema(
       data: Option[RDFReasoner]
   ): IO[(Option[String], Either[String, Schema])] = {
-    pprint.log(schemaEmbedded)
+    logger.debug(s"schemaEmbedded: $schemaEmbedded")
     val v: IO[(Option[String], Either[String, Schema])] = schemaEmbedded match {
       case Some(true) =>
         data match {
@@ -67,8 +68,8 @@ case class SchemaParam(
             } yield resp
         }
       case _ =>
-        pprint.log(activeSchemaTab)
-        pprint.log(schemaEngine, "@@@@ Schema Engine")
+        logger.debug(s"activeSchemaTab: $activeSchemaTab")
+        logger.debug(s"schemaEngine: $schemaEngine")
         val inputType = activeSchemaTab match {
           case Some(a)                      => parseSchemaTab(a)
           case None if schema.isDefined     => Right(SchemaTextAreaType)
@@ -76,9 +77,10 @@ case class SchemaParam(
           case None if schemaFile.isDefined => Right(SchemaFileType)
           case None                         => Right(SchemaTextAreaType)
         }
-        pprint.log(inputType)
+        logger.debug(s"inputType: $inputType")
         inputType match {
           case Right(`SchemaUrlType`) =>
+            logger.debug("Schema input type - SchemaUrlType")
             schemaURL match {
               case None => IO((None, Left(s"Non value for schemaURL")))
               case Some(schemaUrl) =>
@@ -92,7 +94,7 @@ case class SchemaParam(
                     schemaEngine.getOrElse(defaultSchemaEngine),
                     ApiHelper.getBase
                   ) // .leftMap(s => s"Error parsing contents of $schemaUrl: $s\nContents:\n$str")
-                  _ <- IO { pprint.log(schema, s"Schema parsed") }
+                  _ <- IO { logger.debug("Schema parsed") }
                 } yield (str, schema)
                 e.attempt.map(
                   _.fold(
@@ -105,6 +107,7 @@ case class SchemaParam(
                 )
             }
           case Right(`SchemaFileType`) =>
+            logger.debug("Schema input type - SchemaFileType")
             schemaFile match {
               case None => IO((None, Left(s"No value for schemaFile")))
               case Some(schemaStr) =>
@@ -128,7 +131,7 @@ case class SchemaParam(
                   )
             }
           case Right(`SchemaTextAreaType`) =>
-            pprint.log(schemaFormat)
+            logger.debug("Schema input type - SchemaTextAreaType")
             val schemaStr = schema.getOrElse("")
             for {
               pair <- Schemas
@@ -147,15 +150,18 @@ case class SchemaParam(
                 )
               (str, eitherSchema) = pair
               nameSchema          = eitherSchema.map(_.name).getOrElse(s"No schema")
-              _ <- IO { pprint.log(nameSchema, s"@@@ Schema ") }
+              _ <- IO { logger.debug(s"nameSchema: $nameSchema") }
               foundSchema <- Schemas.lookupSchema(
                 schemaEngine.getOrElse(defaultSchemaEngine)
               )
-              _ <- IO { pprint.log(foundSchema.name, s"Found schema") }
+              _ <- IO { logger.debug(s"foundSchema: ${foundSchema.name}") }
             } yield pair
           case Right(other) =>
+            logger.warn(s"Unknown value for activeSchemaTab: $other")
             IO((None, Left(s"Unknown value for activeSchemaTab: $other")))
-          case Left(msg) => IO((None, Left(msg)))
+          case Left(msg) =>
+            logger.warn(msg)
+            IO((None, Left(msg)))
         }
     }
     v
@@ -199,7 +205,7 @@ case class SchemaParam(
 
 }
 
-object SchemaParam {
+object SchemaParam extends LazyLogging {
 
   private[api] def mkSchema(
       partsMap: PartsMap,
@@ -284,7 +290,7 @@ object SchemaParam {
         .fromString(str)
         .fold(
           err => {
-            pprint.log(s"Unsupported schemaFormat for ${name}: $str")
+            logger.error(s"Unsupported schemaFormat for $name: $str")
             None
           },
           df => Some(df)

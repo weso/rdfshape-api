@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api
 
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.APIDefinitions._
 import es.weso.rdfshape.server.api.ApiHelper._
 import es.weso.rdfshape.server.api.Defaults.defaultDataFormat
@@ -18,11 +19,10 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.multipart.Multipart
-import org.log4s.getLogger
 
 import scala.util.Try
 
-class DataService(client: Client[IO]) extends Http4sDsl[IO] {
+class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
@@ -142,7 +142,6 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
       r
 
     case req @ POST -> Root / `api` / "data" / "convert" =>
-      println(s"POST /api/data/convert, Request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
@@ -152,7 +151,7 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
           dataFormat        = dp.dataFormat.getOrElse(defaultDataFormat)
           result <- io2f(
             resourceRdf.use(rdf => {
-              pprint.log(dp)
+              logger.debug(s"Data convert dataParam: $dp")
               DataConverter.rdfConvert(rdf, dp.data, dataFormat, targetFormat)
             })
           )
@@ -187,10 +186,9 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
       } yield result
 
     case req @ POST -> Root / `api` / "data" / "query" =>
-      println(s"POST /api/data/query, Request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
-        pprint.log(partsMap)
+        logger.debug(s"Data query params map: $partsMap")
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
           (resourceRdf, dp) = dataParam
@@ -199,7 +197,7 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
             case Left(err) => errJson(s"Error obtaining Query data $err")
             case Right((queryStr, qp)) =>
               val optQueryStr = qp.query.map(_.str)
-              pprint.log(optQueryStr)
+              logger.debug(s"Data query optQueryStr: $optQueryStr")
               for {
                 json <- io2f(
                   resourceRdf.use(rdf =>
@@ -213,7 +211,6 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
       }
 
     case req @ POST -> Root / `api` / "data" / "extract" =>
-      println(s"POST /api/data/extract, Request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
@@ -266,7 +263,6 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] {
 
   }
   private val relativeBase = Defaults.relativeBase
-  private val logger       = getLogger
 
   private def parseInt(s: String): Either[String, Int] =
     Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))

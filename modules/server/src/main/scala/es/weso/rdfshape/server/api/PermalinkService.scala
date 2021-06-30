@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api
 
 import cats.effect._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.APIDefinitions._
 import es.weso.rdfshape.server.api.QueryParams.{UrlCodeParam, UrlParam}
 import org.http4s._
@@ -19,7 +20,9 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise}
 import scala.util.Random
 
-class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
+class PermalinkService(client: Client[IO])
+    extends Http4sDsl[IO]
+    with LazyLogging {
 
   lazy val mongoClient: MongoClient = MongoClient(mongoConnectionString)
   lazy val db: MongoDatabase        = mongoClient.getDatabase(mongoDatabase)
@@ -59,16 +62,16 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
             override def onSubscribe(subscription: Subscription): Unit =
               subscription.request(1)
             override def onNext(result: InsertOneResult): Unit =
-              println(s"Created permalink: $url => $urlCode")
+              logger.info(s"Created permalink: $url => $urlCode")
             override def onError(e: Throwable): Unit = {
-              println(s"Permalink creation failed: ${e.getMessage}")
+              logger.error(s"Permalink creation failed: ${e.getMessage}")
               InternalServerError(
                 s"Could not generate the permalink for url: $url"
               )
             }
 
             override def onComplete(): Unit =
-              println("Permalink processing completed.")
+              logger.info("Permalink processing completed.")
           })
 
           Created(urlCode)
@@ -102,26 +105,26 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
             val longUrl = result.getString("longUrl")
             val urlCode = result.getLong("urlCode")
 
-            println(s"Retrieved original url: $urlCode => $longUrl")
+            logger.info(s"Retrieved original url: $urlCode => $longUrl")
             promise.success(Ok(longUrl))
 
             // Refresh use date of the link
             updateUrl(urlCode)
           }
           override def onError(e: Throwable): Unit = {
-            println(s"Original url recovery failed: ${e.getMessage}")
+            logger.error(s"Original url recovery failed: ${e.getMessage}")
             promise.success(
               BadGateway(s"Original url recovery failed for code: $urlCode")
             )
           }
           override def onComplete(): Unit = {
             if(!promise.isCompleted) {
-              println(s"Could not find the original url for code: $urlCode")
+              logger.warn(s"Could not find the original url for code: $urlCode")
               promise.success(
                 NotFound(s"Could not find the original url for code: $urlCode")
               )
             }
-            println("Permalink processing completed.")
+            logger.info("Permalink processing completed.")
           }
         })
 
@@ -161,22 +164,22 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
       override def onNext(result: Document): Unit = {
         val urlCode = result.getLong("urlCode")
 
-        println(s"Retrieved permalink: $urlPath => $urlCode")
+        logger.info(s"Retrieved permalink: $urlPath => $urlCode")
         promise.success(Option(urlCode))
 
         // Refresh use date of the link
         updateUrl(urlCode)
       }
       override def onError(e: Throwable): Unit = {
-        println(s"Permalink recovery failed: ${e.getMessage}")
+        logger.error(s"Permalink recovery failed: ${e.getMessage}")
         promise.success(None)
       }
       override def onComplete(): Unit = {
         if(!promise.isCompleted) {
-          println(s"Could not find the permalink for url: $urlPath")
+          logger.error(s"Could not find the permalink for url: $urlPath")
           promise.success(None)
         }
-        println("Permalink processing completed.")
+        logger.info("Permalink processing completed.")
       }
     })
 
@@ -185,7 +188,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
   }
 
   private def updateUrl(code: Long): Unit = {
-    println(s"URL code to update: $code")
+    logger.debug(s"URL code to update: $code")
     // Update date of document in database
     val observable: SingleObservable[UpdateResult] = collection.updateOne(
       equal("urlCode", code),
@@ -196,7 +199,7 @@ class PermalinkService(client: Client[IO]) extends Http4sDsl[IO] {
       override def onSubscribe(subscription: Subscription): Unit =
         subscription.request(1)
       override def onNext(result: UpdateResult): Unit = {
-        println(s"Refreshed date of permalink: $code")
+        logger.debug(s"Refreshed date of permalink: $code")
       }
       override def onError(e: Throwable): Unit = ()
       override def onComplete(): Unit          = ()

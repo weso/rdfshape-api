@@ -23,11 +23,8 @@ class APIService(client: Client[IO]) extends Http4sDsl[IO] {
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case req @ GET -> Root / `api` / "health" =>
-      for {
-        _    <- IO { pprint.log(req) }
-        resp <- Ok("OK")
-      } yield resp
-
+      Ok("OK")
+      
     case req @ GET -> Root / `api` / "endpoint" / "outgoing" :?
         OptEndpointParam(optEndpoint) +&
         OptNodeParam(optNode) +&

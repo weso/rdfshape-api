@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api
 import cats.data.EitherT
 import cats.effect._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.APIDefinitions._
 import es.weso.rdfshape.server.api.{Query => ServerQuery}
 import es.weso.utils.IOUtils._
@@ -10,13 +11,12 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl._
 import org.http4s.multipart._
-import org.log4s.getLogger
 
-class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
+class EndpointService(client: Client[IO])
+    extends Http4sDsl[IO]
+    with LazyLogging {
 
   private val relativeBase = Defaults.relativeBase
-
-  private val logger = getLogger
 
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
@@ -36,8 +36,8 @@ class EndpointService(client: Client[IO]) extends Http4sDsl[IO] {
           (_, qp)     = pair
           optQueryStr = qp.query.map(_.str)
           json <- {
-            println(
-              s"Query to endpoint ${endpoint}: ${optQueryStr.getOrElse("")}"
+            logger.debug(
+              s"Query to endpoint $endpoint: ${optQueryStr.getOrElse("")}"
             )
             io2es(endpoint.queryAsJson(optQueryStr.getOrElse("")))
           }
