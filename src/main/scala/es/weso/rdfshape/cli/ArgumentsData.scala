@@ -5,7 +5,7 @@ package es.weso.rdfshape.cli
   * @param https HTTPS value read from CLI (true or false)
   * @param verbosity Verbosity level read from CLI
   */
-case class ArgumentsData(port: Int, https: Boolean, verbosity: Int) {}
+sealed case class ArgumentsData(port: Int, https: Boolean, verbosity: Int)
 
 object ArgumentsData {
   def unapply(argumentsData: ArgumentsData): (Int, Boolean, Int) = {

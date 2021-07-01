@@ -5,7 +5,7 @@ import ch.qos.logback.classic.util.ContextInitializer
 /** Utilities related to the logging system used by the application to log information on the console and the logs folder
   * @see {@link es.weso.rdfshape.logging.LoggingManager}
   */
-final class LoggingManager {}
+final class LoggingManager
 
 object LoggingManager {
 

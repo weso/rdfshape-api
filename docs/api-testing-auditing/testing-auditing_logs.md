@@ -11,6 +11,7 @@ This project uses a logging framework provided by two mature libraries:
 
 1. [Logback](http://logback.qos.ch/): Framework's back-end, provides customizable logging levels and log appenders for
    console, files, etc.
+
 2. [scala-logging](https://github.com/lightbend/scala-logging): Framework's front-end, reduces the verbosity of logging
    messages from the code thanks to several macros and utilities.
 
@@ -32,6 +33,7 @@ The logs written to the files:
 
 - Are located inside a `logs` folder, in the application's execution path. Therefore, make sure you run the app with a
   user with write access and from a location that is writable.
+
 - Follow a [time-based rolling policy](http://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy), which
   implies that logs are rotated and compressed in a periodic basis defined in logback's configuration file.
 
