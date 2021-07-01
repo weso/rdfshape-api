@@ -37,9 +37,10 @@ object DataConverter extends LazyLogging {
       maybeCompoundData: Option[String],
       targetFormat: String
   ): IO[DataConversionResult] = {
-    println(
+    logger.debug(
       s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat"
     )
+
     maybeData match {
       case None =>
         maybeCompoundData match {
@@ -73,7 +74,7 @@ object DataConverter extends LazyLogging {
       targetFormat: String
   ): IO[DataConversionResult] = {
     val doConversion: IO[String] = {
-      pprint.log(targetFormat)
+      logger.info(s"Conversion target format: $targetFormat")
       targetFormat.toUpperCase match {
         case "JSON" =>
           for {
@@ -119,8 +120,7 @@ object DataConverter extends LazyLogging {
       dot: String,
       targetFormat: Format
   ): Either[String, String] = {
-    logger.info(s"dotConverter to $targetFormat. dot\n$dot")
-    println(s"targetFormat: $targetFormat")
+    logger.debug(s"dotConverter to $targetFormat. dot\n$dot")
     Try {
       val g: MutableGraph = Parser.read(dot)
       targetFormat match {

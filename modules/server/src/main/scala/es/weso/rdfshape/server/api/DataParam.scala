@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api
 
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
@@ -10,7 +11,6 @@ import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.merged.CompoundData
 import es.weso.rdfshape.server.html2rdf.HTML2RDF
 import es.weso.utils.IOUtils._
-import org.log4s.getLogger
 
 import java.net.URI
 
@@ -27,8 +27,7 @@ case class DataParam(
     targetDataFormat: Option[DataFormat],
     activeDataTab: Option[String],
     compoundData: Option[String]
-) {
-  private[this] val logger = getLogger
+) extends LazyLogging {
 
   sealed abstract class DataInputType {
     val id: String
@@ -64,7 +63,7 @@ case class DataParam(
 
   val dataFormat: Option[DataFormat] = {
     val dataTab = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab))
-    pprint.log(dataTab)
+    logger.debug(s"Data tab received: $dataTab")
     dataTab match {
       case Right(`dataUrlType`)  => dataFormatUrl orElse dataFormatValue
       case Right(`dataFileType`) => dataFormatFile orElse dataFormatValue
@@ -85,7 +84,7 @@ case class DataParam(
       resourceRdf: Resource[IO, RDFReasoner],
       optInference: Option[String]
   ): Resource[IO, RDFReasoner] = {
-    logger.debug(s"############# Applying inference $optInference")
+    logger.debug(s"Applying inference $optInference")
     optInference match {
       case None => resourceRdf
       case Some(str) =>
@@ -111,7 +110,7 @@ case class DataParam(
       relativeBase: Option[IRI]
   ): IO[(Option[String], Resource[IO, RDFReasoner])] = {
     val base = relativeBase.map(_.str)
-    pprint.log(s"ActiveDataTab: $activeDataTab")
+    logger.debug(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
       case Some(a)                         => parseDataTab(a)
       case None if compoundData.isDefined  => Right(compoundDataType)
@@ -121,10 +120,11 @@ case class DataParam(
       case None if maybeEndpoint.isDefined => Right(dataEndpointType)
       case None                            => Right(dataTextAreaType)
     }
-    pprint.log(inputType)
+    logger.debug(s"Input type: $inputType")
     val x: IO[(Option[String], Resource[IO, RDFReasoner])] = inputType match {
 
       case Right(`compoundDataType`) =>
+        logger.debug(s"Input - compoundDataType: $data")
         for {
           cd <- IO.fromEither(
             CompoundData
@@ -135,6 +135,7 @@ case class DataParam(
         } yield (None, res)
 
       case Right(`dataUrlType`) =>
+        logger.debug(s"Input - dataUrlType: $data")
         dataURL match {
           case None => err(s"Non value for dataURL")
           case Some(dataUrl) =>
@@ -144,6 +145,7 @@ case class DataParam(
             } yield (None, rdf)
         }
       case Right(`dataFileType`) =>
+        logger.debug(s"Input - dataFileType: $data")
         dataFile match {
           case None => err(s"No value for dataFile")
           case Some(dataStr) =>
@@ -166,6 +168,7 @@ case class DataParam(
         }
 
       case Right(`dataEndpointType`) =>
+        logger.debug(s"Input - dataEndpointType: $data")
         maybeEndpoint match {
           case None => err(s"No value for endpoint")
           case Some(endpointUrl) =>
@@ -175,7 +178,7 @@ case class DataParam(
             } yield (None, Resource.pure[IO, RDFReasoner](endpoint))
         }
       case Right(`dataTextAreaType`) =>
-        pprint.log(data)
+        logger.debug(s"Input - dataTextAreaType: $data")
         data match {
           case None => RDFAsJenaModel.empty.flatMap(e => IO((None, e)))
           case d @ Some(data) =>
@@ -183,7 +186,6 @@ case class DataParam(
               dataFormatValue.getOrElse(DataFormat.default)
             )
             val x: IO[(Option[String], Resource[IO, RDFReasoner])] = for {
-              _   <- IO { pprint.log("@@@ DataTextArea") }
               res <- rdfFromString(data, dataFormat, base)
               res2 = extendWithInference(
                 res.onFinalize(showFinalize),
@@ -193,21 +195,30 @@ case class DataParam(
             x
         }
 
-      case Right(other) => err(s"Unknown value for activeDataTab: $other")
+      case Right(other) => {
+        val msg = s"Unknown value for activeDataTab: $other"
+        logger.error(msg)
+        err(msg)
+      }
 
-      case Left(msg) => err(msg)
+      case Left(msg) => {
+        logger.error(msg)
+        err(msg)
+      }
     }
     x
   }
 
-  private def showFinalize: IO[Unit] = IO { println(s"Closing RDF data") }
+  private def showFinalize: IO[Unit] = IO {
+    logger.debug("Closing RDF data")
+  }
 
   private def rdfFromString(
       str: String,
       format: Format,
       base: Option[String]
   ): IO[Resource[IO, RDFReasoner]] = {
-    pprint.log(format)
+    logger.debug(s"RDF from string with format: $format")
     format.name match {
       case f if HTML2RDF.availableExtractorNames contains f =>
         IO(HTML2RDF.extractFromString(str, f)) /*for {
@@ -257,9 +268,7 @@ case class DataParam(
 
 }
 
-object DataParam {
-
-  private[this] val logger = getLogger
+object DataParam extends LazyLogging {
 
   private[api] def mkData(
       partsMap: PartsMap,
@@ -288,7 +297,7 @@ object DataParam {
         .fromString(str)
         .fold(
           err => {
-            pprint.log(s"Unsupported dataFormat for $name: $str")
+            logger.warn(s"Unsupported dataFormat for $name: $str")
             None
           },
           df => Some(df)
@@ -309,17 +318,19 @@ object DataParam {
     targetDataFormat   <- getDataFormat("targetDataFormat", partsMap)
     activeDataTab      <- partsMap.optPartValue("activeTab")
   } yield {
-    pprint.log(data)
-    pprint.log(compoundData)
-    pprint.log(dataFormatValue)
-    pprint.log(dataFormatTextArea)
-    pprint.log(dataFormatUrl)
-    pprint.log(dataFormatFile)
-    pprint.log(dataURL)
-    pprint.log(endpoint)
-    pprint.log(activeDataTab)
-    pprint.log(targetDataFormat)
-    pprint.log(inference)
+
+    logger.debug(s"data: $data")
+    logger.debug(s"compoundData: $compoundData")
+    logger.debug(s"dataFormatValue: $dataFormatValue")
+    logger.debug(s"dataFormatTextArea: $dataFormatTextArea")
+    logger.debug(s"dataFormatUrl: $dataFormatUrl")
+    logger.debug(s"dataFormatFile: $dataFormatFile")
+    logger.debug(s"dataURL: $dataURL")
+    logger.debug(s"endpoint: $endpoint")
+    logger.debug(s"activeDataTab: $activeDataTab")
+    logger.debug(s"targetDataFormat: $targetDataFormat")
+    logger.debug(s"inference: $inference")
+
     val endpointRegex = "Endpoint: (.+)".r
     val finalEndpoint = endpoint.fold(data match {
       case None => None
@@ -330,7 +341,7 @@ object DataParam {
         }
     })(Some(_))
     val finalActiveDataTab = activeDataTab
-    pprint.log(finalEndpoint)
+    logger.debug(s"Final endpoint: $finalEndpoint")
 
     val dp = DataParam(
       data,

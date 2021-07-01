@@ -1,5 +1,6 @@
 package es.weso.rdfshape.server.html2rdf
 import cats.effect.{Resource => CatsResource, _}
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
@@ -10,7 +11,6 @@ import org.apache.any23.extractor.microdata.MicrodataExtractor
 import org.apache.any23.extractor.rdfa.RDFa11Extractor
 import org.apache.any23.source.{HTTPDocumentSource, StringDocumentSource}
 import org.apache.any23.writer._
-import scala.util.Try
 import org.apache.jena.rdf.model.{
   Property => JenaProperty,
   RDFNode => JenaRDFNode,
@@ -26,7 +26,9 @@ import org.eclipse.rdf4j.model.{
   IRI => RDF4jIRI
 }
 
-object HTML2RDF {
+import scala.util.Try
+
+object HTML2RDF extends LazyLogging {
 
   val availableExtractors =
     List(RDFA11, Microdata)
@@ -45,7 +47,9 @@ object HTML2RDF {
       val httpClient = any23.getHTTPClient
       val source     = new StringDocumentSource(htmlStr, "http://example.org/")
       val handler    = JenaTripleHandler(model)
-      println("Initialization ready for extractor...")
+
+      logger.debug("Initialization ready for extractor...")
+
       try {
         any23.extract(source, handler)
       } finally {
@@ -118,7 +122,8 @@ object HTML2RDF {
         context: ExtractionContext
     ): Unit = {
       m.add(cnvSubj(s), cnvIRI(p), cnvObj(o))
-      println(s"Triple: <$s,$p,$o>")
+
+      logger.debug(s"Triple: <$s,$p,$o>")
     }
 
     def cnvSubj(r: Resource): JenaResource = r match {
@@ -144,11 +149,11 @@ object HTML2RDF {
 
     override def startDocument(
         documentIRI: RDF4jIRI
-    ): Unit = {} // println(s"Start")
+    ): Unit = {}
 
     override def openContext(
         context: ExtractionContext
-    ): Unit = {} // println(s"New context")
+    ): Unit = {}
 
     override def receiveNamespace(
         prefix: String,

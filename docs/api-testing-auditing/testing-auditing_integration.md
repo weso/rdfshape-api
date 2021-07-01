@@ -1,5 +1,5 @@
 ---
-id: testing_integration
+id: testing-auditing_integration
 title: Integration tests and other
 ---
 

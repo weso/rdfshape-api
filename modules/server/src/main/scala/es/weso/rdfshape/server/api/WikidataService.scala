@@ -36,12 +36,14 @@ import es.weso.shex.ResolvedSchema
 import es.weso.shex.validator.Validator
 import es.weso.schema.ShapeMapTrigger
 import es.weso.utils.internal.CollectionCompat._
+
 import scala.util.control.NoStackTrace
 import scala.util.matching.Regex
 import es.weso.wikibaserdf._
 import ApiHelper._
+import com.typesafe.scalalogging.LazyLogging
 
-class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
+class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri            = uri"/api/wikidata/entity"
@@ -83,7 +85,6 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/$wdSchema")
       )
 
-      println(s"wikidata/schemaContent: ${uri.toString}")
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.run(req).use {
@@ -115,7 +116,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
       val requestUrl = s"""${endpoint.getOrElse("https://www.wikidata.org")}"""
-      println(requestUrl)
+      
       val uri = Uri
         .fromString(requestUrl)
         .valueOr(throw _)
@@ -127,7 +128,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         .withQueryParam("continue", continue)
         .withQueryParam("format", "json")
 
-      println(s"wikidata/searchEntity: ${uri.toString}")
+      logger.debug(s"wikidata searchEntity uri: ${uri.toString}")
 
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
@@ -198,9 +199,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         ContinueParam(maybeContinue) => {
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
-
-      println(s"SearchLexeme!!")
-
+      
       val uri = uri"https://www.wikidata.org"
         .withPath(Uri.Path.unsafeFromString("/w/api.php"))
         .withQueryParam("action", "wbsearchentities")
@@ -210,9 +209,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         .withQueryParam("continue", continue)
         .withQueryParam("type", "lexeme")
         .withQueryParam("format", "json")
-
-//      println(s"wikidata/searchLexeme: ${uri.toString}")
-
+      
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.run(req).use {
@@ -243,7 +240,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
         .withQueryParam("wbclprop", "code|autonym")
         .withQueryParam("format", "json")
 
-      println(s"wikidata/languages: ${uri.toString}")
+      logger.debug(s"wikidata/languages uri: ${uri.toString}")
 
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
@@ -303,13 +300,12 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
       }
 
     case req @ POST -> Root / `api` / "wikidata" / "extract" => {
-      println(s"POST /api/wikidata/extract, Request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val r: EitherT[IO, String, Response[IO]] = for {
           label  <- EitherT(partsMap.eitherPartValue("entity"))
           info   <- either2es[InfoEntity](cnvEntity(label))
-          _      <- { println(s"URI: ${info.uri}"); ok_esf[Unit, IO](()) }
+          _      <- { logger.debug(s"Extraction URI: ${info.uri}"); ok_esf[Unit, IO](()) }
           strRdf <- io2es(redirectClient.expect[String](info.uri))
           eitherInferred <- io2es(
             RDFAsJenaModel
@@ -335,7 +331,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
             val (schema, _) = pair
             schema.serialize("SHEXC")
           })
-          _    <- { println(s"ShExC str: $shExCStr"); ok_es[Unit](()) }
+          _    <- { logger.trace(s"ShExC str: $shExCStr"); ok_es[Unit](()) }
           resp <- io2es(Ok(mkExtractAnswer(shExCStr, label)))
         } yield resp
         for {
@@ -345,9 +341,8 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
       }
     }
 
-    // This one doesn't work. It gives a timeout response
+    // TODO: This one doesn't work. It gives a timeout response
     case req @ POST -> Root / `api` / "wikidata" / "shexer" => {
-      println(s"POST /api/wikidata/shexer, Request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val r: EitherT[IO, String, Response[IO]] = for {
@@ -358,9 +353,9 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
             uri = uri"http://156.35.94.158:8081/shexer"
           ).withHeaders(`Content-Type`(MediaType.application.`json`))
             .withEntity[Json](jsonParams)
-          _      <- { println(s"URI: ${jsonParams.spaces2}"); ok_es[Unit](()) }
+          _      <- { logger.debug(s"URI: ${jsonParams.spaces2}"); ok_es[Unit](()) }
           result <- f2es(redirectClient.expect[Json](postRequest))
-          _      <- { println(s"Result\n${result.spaces2}"); ok_es[Unit](()) }
+          _      <- { logger.trace(s"Result\n${result.spaces2}"); ok_es[Unit](()) }
           resp   <- f2es(Ok(result))
         } yield resp
         for {
@@ -371,18 +366,18 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     }
 
     case req @ POST -> Root / `api` / "wikidata" / "validate" => {
-      println(s"POST /api/wikidata/validate, Request: $req")
+      logger.debug(s"Wikidata validate request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val r: IO[Response[IO]] = for {
           eitherItem <- partsMap.eitherPartValue("item")
-          _          <- { pprint.log(eitherItem); IO.pure(()) }
+          _          <- { logger.debug(eitherItem.toString); IO.pure(()) }
           item       <- fromEither(eitherItem)
-          _          <- { pprint.log(item); IO.pure(()) }
+          _          <- { logger.debug(item); IO.pure(()) }
           info       <- fromEither(cnvEntity2(item))
-          _          <- { pprint.log(info); IO.pure(()) }
+          _          <- { logger.debug(info.toString); IO.pure(()) }
           pair       <- WikibaseSchemaParam.mkSchema(partsMap, None, client)
-          _          <- { pprint.log(pair); IO.pure(()) }
+          _          <- { logger.debug(pair.toString()); IO.pure(()) }
           (schema, wbp) = pair
           iriItem  <- fromEither(IRI.fromString(info.sourceUri))
           shapeMap <- fromEither(ShapeMap.empty.add(iriItem, Start))
@@ -503,13 +498,13 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     entity match {
       case wdRegex(_, _) => {
         val matches = wdRegex.findAllIn(entity)
-        pprint.log(matches)
+        logger.debug(s"Wikidata matches: ${matches.groupCount}")
         if(matches.groupCount == 2) {
           val localName = matches.group(2)
           val sourceUri = matches.group(1)
           val uri =
             uri"https://www.wikidata.org" / "wiki" / "Special:EntityData" / (localName + ".ttl")
-          pprint.log(uri)
+          logger.debug(s"Wikidata item uri: $uri")
           InfoEntity(localName, uri, sourceUri).asRight[String]
         } else
           s"Entity: $entity doesn't match regular expression: $wdRegex"
@@ -557,7 +552,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
     e.fold(msg => Some(jsonErr(entity, msg)), identity)
 
   private def getUri(entity: String): EitherT[IO, String, Uri] = {
-    println(s"getUri: $entity")
+    logger.debug(s"get entity: $entity")
     val q = """Q(\d*)""".r
     entity match {
       case q(n) => EitherT.pure(wikidataEntityUrl / ("Q" + n))
@@ -571,7 +566,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] {
   }
 
   private def resolve(uri: Uri): EitherT[IO, String, Stream[IO, String]] = {
-    println(s"Resolve: $uri")
+    logger.debug(s"Resolve: $uri")
     for {
       eitherData <- EitherT.liftF(resolveStream[IO](uri, client))
       data <- EitherT.fromEither[IO](

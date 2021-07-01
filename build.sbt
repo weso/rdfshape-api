@@ -1,13 +1,14 @@
 import scala.language.postfixOps
-// Centralized control of the application name
+// Centralized control of the application's core settings
 // See version in version.sbt
-Global / name := "RDFShape API" // Friendly app name
+Global / name := "RDFShape API"    // Friendly app name
 Global / packageName := "rdfshape" // Output filename of "sbt-native-packager" tasks
 Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
+Global / scalaVersion := scala213
 
-lazy val scala212 = "2.12.13"
-lazy val scala213 = "2.13.5"
+lazy val scala212               = "2.12.13"
+lazy val scala213               = "2.13.6"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Lint-excluded keys
@@ -22,8 +23,10 @@ Global / excludeLintKeys ++= Set(
 /* GITHUB INTEGRATION settings */
 
 // "sbt-github-actions" plugin settings
-val JavaCIVersion = "adopt@1.11"
+val JavaCIVersion  = "adopt@1.11"
+val ScalaCIVersion = "2.13.6"
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
+ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 
 /* ------------------------------------------------------------------------- */
 
@@ -56,7 +59,7 @@ lazy val compilationSettings = Seq(
 
 // Scaladoc settings for docs generation. Run task "doc" or "server / doc".
 // https://www.scala-sbt.org/1.x/docs/Howto-Scaladoc.html
-/* https://github.com/scala/scala/blob/2.11.x/src/scaladoc/scala/tools/nsc/doc/Settings.scala */
+/* https://github.com/scala/scala/blob/2.13.x/src/scaladoc/scala/tools/nsc/doc/Settings.scala */
 lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
   // Generate documentation on a separated "docs" folder
   Compile / doc / target := baseDirectory.value / "target" / "scaladoc",
@@ -81,7 +84,8 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     "org:buildinfo",
     // Other settings
     "-diagrams",
-    "-implicits"
+    "-implicits",
+    "-private"
   ),
   // Need to generate docs to publish to oss
   Compile / packageDoc / publishArtifact := true
@@ -90,16 +94,16 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
 // Setup Mdoc + Docusaurus settings
 lazy val mdocSettings = Seq(
   mdocVariables := Map(
-    "APP_NAME" -> (Global / name).value,
-    "INNER_NAME" -> name.value,
-    "VERSION" -> (ThisBuild / version).value,
-    "WEBPAGE_URL" -> "https://www.weso.es/rdfshape-api/",
-    "API_URL" -> "https://api.rdfshape.weso.es",
+    "APP_NAME"               -> (Global / name).value,
+    "INNER_NAME"             -> name.value,
+    "VERSION"                -> (ThisBuild / version).value,
+    "WEBPAGE_URL"            -> "https://www.weso.es/rdfshape-api/",
+    "API_URL"                -> "https://api.rdfshape.weso.es",
     "API_CONTAINER_REGISTRY" -> "https://github.com/orgs/weso/packages/container/package/rdfshape-api",
-    "CLIENT_NAME" -> "RDFShape Client",
-    "CLIENT_REPO" -> "https://github.com/weso/rdfshape-client/",
-    "CLIENT_URL" -> "https://rdfshape.weso.es/",
-    "WESOLOCAL_URL" -> "https://github.com/weso/wesolocal/wiki/RDFShape",
+    "CLIENT_NAME"            -> "RDFShape Client",
+    "CLIENT_REPO"            -> "https://github.com/weso/rdfshape-client/",
+    "CLIENT_URL"             -> "https://rdfshape.weso.es/",
+    "WESOLOCAL_URL"          -> "https://github.com/weso/wesolocal/wiki/RDFShape"
   ),
   /* When creating/publishing the docusaurus site, update the dynamic mdoc and
    * the static scaladoc first */
@@ -142,7 +146,8 @@ lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
     "org:buildinfo",
     // Other settings
     "-diagrams",
-    "-implicits"
+    "-implicits",
+    "-private"
   )
 )
 
@@ -241,7 +246,8 @@ lazy val rdfshape = project
     crossScalaVersions := Nil,
     libraryDependencies ++= Seq(
       logbackClassic,
-      scalaLogging
+      scalaLogging,
+      groovy
     )
   )
 
@@ -277,7 +283,7 @@ lazy val server = project
       plantuml,
       graphvizJava,
       scalaj,
-      wesoUtils % Test,
+      wesoUtils   % Test,
       munitEffect % Test,
       mongodb
     )
@@ -295,7 +301,7 @@ lazy val docs = project
     noPublishSettings,
     // Custom settings
     name := s"${(Global / packageName).value}-api-docs",
-    moduleName := s"${(Global / packageName).value}-api-docs",
+    moduleName := s"${(Global / packageName).value}-api-docs"
   )
 
 lazy val MUnitFramework = new TestFramework("munit.Framework")
@@ -303,23 +309,24 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* ------------------------------------------------------------------------- */
 
 /* DEPENDENCY versions */
-lazy val http4sVersion = "1.0.0-M21"
-lazy val catsVersion = "2.5.0"
-lazy val mongodbVersion = "4.1.1"
-lazy val any23Version = "2.2"
-lazy val rdf4jVersion = "2.2.4"
+lazy val http4sVersion       = "1.0.0-M21"
+lazy val catsVersion         = "2.5.0"
+lazy val mongodbVersion      = "4.1.1"
+lazy val any23Version        = "2.2"
+lazy val rdf4jVersion        = "2.2.4"
 lazy val graphvizJavaVersion = "0.5.2"
-lazy val logbackVersion = "1.2.3"
-lazy val loggingVersion = "3.9.2"
-lazy val munitVersion = "0.7.23"
-lazy val munitEffectVersion = "1.0.2"
-lazy val plantumlVersion = "1.2021.5"
-lazy val scalajVersion = "2.4.2"
-lazy val scalatagsVersion = "0.7.0"
+lazy val logbackVersion      = "1.2.3"
+lazy val loggingVersion      = "3.9.3"
+lazy val groovyVersion       = "3.0.8"
+lazy val munitVersion        = "0.7.23"
+lazy val munitEffectVersion  = "1.0.2"
+lazy val plantumlVersion     = "1.2021.5"
+lazy val scalajVersion       = "2.4.2"
+lazy val scalatagsVersion    = "0.7.0"
 // WESO dependencies
-lazy val shaclexVersion = "0.1.91"
+lazy val shaclexVersion    = "0.1.91"
 lazy val umlShaclexVersion = "0.0.82"
-lazy val wesoUtilsVersion = "0.1.98"
+lazy val wesoUtilsVersion  = "0.1.98"
 
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
@@ -331,31 +338,32 @@ lazy val http4sEmberClient =
   "org.http4s" %% "http4s-ember-client" % http4sVersion
 lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
 
-lazy val catsCore = "org.typelevel" %% "cats-core" % catsVersion
+lazy val catsCore   = "org.typelevel" %% "cats-core"   % catsVersion
 lazy val catsKernel = "org.typelevel" %% "cats-kernel" % catsVersion
 
 lazy val mongodb = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVersion
 
 lazy val any23_core = "org.apache.any23" % "apache-any23-core" % any23Version
-lazy val any23_api = "org.apache.any23" % "apache-any23-api" % any23Version
+lazy val any23_api  = "org.apache.any23" % "apache-any23-api"  % any23Version
 lazy val any23_scraper =
   "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.2"
 
-lazy val rdf4j_runtime = "org.eclipse.rdf4j" % "rdf4j-runtime" % rdf4jVersion
-lazy val graphvizJava = "guru.nidi" % "graphviz-java" % graphvizJavaVersion
-lazy val plantuml = "net.sourceforge.plantuml" % "plantuml" % plantumlVersion
+lazy val rdf4j_runtime = "org.eclipse.rdf4j"        % "rdf4j-runtime" % rdf4jVersion
+lazy val graphvizJava  = "guru.nidi"                % "graphviz-java" % graphvizJavaVersion
+lazy val plantuml      = "net.sourceforge.plantuml" % "plantuml"      % plantumlVersion
 
 lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % logbackVersion
 lazy val scalaLogging =
   "com.typesafe.scala-logging" %% "scala-logging" % loggingVersion
+lazy val groovy = "org.codehaus.groovy" % "groovy" % groovyVersion
 
 lazy val munit = "org.scalameta" %% "munit" % munitVersion
 lazy val munitEffect =
   "org.typelevel" %% "munit-cats-effect-3" % munitEffectVersion
 
-lazy val scalaj = "org.scalaj" %% "scalaj-http" % scalajVersion
-lazy val scalatags = "com.lihaoyi" %% "scalatags" % scalatagsVersion
+lazy val scalaj    = "org.scalaj"  %% "scalaj-http" % scalajVersion
+lazy val scalatags = "com.lihaoyi" %% "scalatags"   % scalatagsVersion
 // WESO dependencies
-lazy val shaclex = "es.weso" %% "shexs" % shaclexVersion
+lazy val shaclex    = "es.weso" %% "shexs"      % shaclexVersion
 lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
-lazy val wesoUtils = "es.weso" %% "utilstest" % wesoUtilsVersion
+lazy val wesoUtils  = "es.weso" %% "utilstest"  % wesoUtilsVersion

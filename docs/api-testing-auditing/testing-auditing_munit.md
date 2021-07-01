@@ -1,5 +1,5 @@
 ---
-id: testing_munit
+id: testing-auditing_munit
 title: Unit tests with Munit
 ---
 

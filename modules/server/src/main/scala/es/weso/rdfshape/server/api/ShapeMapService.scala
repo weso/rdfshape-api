@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api
 
 import cats.effect._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.APIDefinitions._
 import es.weso.rdfshape.server.api.ApiHelper._
 import es.weso.rdfshape.server.api.results.ShapeMapInfoResult
@@ -12,7 +13,9 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.multipart._
 
-class ShapeMapService(client: Client[IO]) extends Http4sDsl[IO] {
+class ShapeMapService(client: Client[IO])
+    extends Http4sDsl[IO]
+    with LazyLogging {
 
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
@@ -23,7 +26,6 @@ class ShapeMapService(client: Client[IO]) extends Http4sDsl[IO] {
 
     case req @ POST -> Root / `api` / "shapeMap" / "info" =>
       req.decode[Multipart[IO]] { m =>
-        println(s"ShapeMap/info")
         val partsMap = PartsMap(m.parts)
         val t: IO[(ShapeMap, ShapeMapParam)] =
           ShapeMapParam.mkShapeMap(partsMap)

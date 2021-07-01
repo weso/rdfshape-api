@@ -3,6 +3,7 @@ package es.weso.rdfshape.server.api
 import cats.data._
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
 import es.weso.rdfshape.server.api.APIDefinitions._
@@ -23,9 +24,8 @@ import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.multipart.Multipart
-import org.log4s.getLogger
 
-class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
+class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
@@ -202,8 +202,6 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
               sp.targetSchemaEngine
             )
           } yield {
-            /* println(s"schema / convert ---target: ${sp.targetSchemaFormat},
-             * ${sp.targetSchemaEngine}") */
             converted.toJson
           }
           for {
@@ -278,13 +276,11 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
           None,
           optActiveSchemaTab
         )
-        _ <- { println(s"#####<<<< Before...getSchema"); ok_es(()) }
         pair <- EitherT(
           sp.getSchema(None)
             .attempt
             .map(_.leftMap(s => s"Error obtaining schema: ${s.getMessage}"))
         )
-        _ <- { println(s"#####<<<< After...getSchema"); ok_es(()) }
         (_, either: Either[String, Schema]) = pair
         svg <- either.fold(
           s => fail_es(s"Error parsing schema: $s"),
@@ -380,11 +376,10 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
                 val msg =
                   s"2 shape-map parameters with different values: $sm1 and $sm2. We use: $sm1"
                 logger.error(msg)
-                println(msg)
                 Some(sm1)
               }
           }
-          println(s"#### optShapeMap: $collectShapeMap")
+          logger.debug(s"collectShapeMap: $collectShapeMap")
           val tp = TriggerModeParam(
             optTriggerMode,
             collectShapeMap,
@@ -467,19 +462,12 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] {
   }
   private val relativeBase = Defaults.relativeBase
 
-//   val L = implicitly[LiftIO[F]]
-  private val logger = getLogger
-
   // TODO: Move this method to a more generic place...
   private def errJson(msg: String): IO[Response[IO]] =
     Ok(mkJsonErr(msg)) //
 
   private def info(msg: String): EitherT[IO, String, Unit] =
-    EitherT.liftF[IO, String, Unit](IO(println(msg)))
-
-  private def pp[A](v: A): IO[Unit] = {
-    IO { pprint.log(v) }
-  }
+    EitherT.liftF[IO, String, Unit](IO(logger.info(msg)))
 
   private def applyInference(
       rdf: RDFReasoner,
