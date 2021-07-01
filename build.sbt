@@ -9,7 +9,7 @@ Global / scalaVersion := scala213
 
 lazy val scala212               = "2.12.13"
 lazy val scala213               = "2.13.6"
-lazy val supportedScalaVersions = List(scala212, scala213)
+lazy val supportedScalaVersions = List(scala213)
 
 // Lint-excluded keys
 Global / excludeLintKeys ++= Set(
