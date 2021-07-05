@@ -15,6 +15,7 @@ statusListener(NopStatusListener)
  * Folder, relative to the program's execution path, where program logs will be stored
  */
 def LOGS_FOLDER = "logs"
+def LOGS_FILENAME = "rdfshape-api.log"
 /**
  * Name (key) of the system property determining the application verbosity
  */
@@ -24,16 +25,31 @@ def systemPropertyVerbosity = "rdfshape.api.verbosity.level"
 
 /**
  * Rolling file appender. Create several files inside LOGS_FOLDER. Archives and compresses old logs.
- * Store 3 months of logs before rollback (http://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy)
+ * Choices are: 
+ * - Store some time of logs before rollback (http://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy)
+ * -> Store N compressed log files of size M before rollback (http://logback.qos.ch/manual/appenders.html#SizeBasedTriggeringPolicy)
  */
 appender("ROLLING", RollingFileAppender) {
+    file = "$LOGS_FOLDER/$LOGS_FILENAME"
     encoder(PatternLayoutEncoder) {
         Pattern = "%d %level %thread %mdc %logger - %m%n"
     }
-    rollingPolicy(TimeBasedRollingPolicy) {
-        FileNamePattern = "$LOGS_FOLDER/%d{yyyy/MM}/%d{yyyy-MM-dd, aux}.log"
-        maxHistory = 3
+
+    rollingPolicy(FixedWindowRollingPolicy) {
+        FileNamePattern = "$LOGS_FOLDER/$LOGS_FILENAME.%i.zip"
+        minIndex = 1
+        maxIndex = 15
     }
+    triggeringPolicy(SizeBasedTriggeringPolicy) {
+        maxFileSize = "100MB"
+    }
+
+    /* Example implementation of a time based log rollback
+        rollingPolicy(TimeBasedRollingPolicy) {
+            FileNamePattern = "$LOGS_FOLDER/%d{yyyy/MM}/%d{yyyy-MM-dd, aux}.log"
+            maxHistory = 3
+        }
+    */
 }
 
 /**
