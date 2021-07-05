@@ -34,8 +34,9 @@ The logs written to the files:
 - Are located inside a `logs` folder, in the application's execution path. Therefore, make sure you run the app with a
   user with write access and from a location that is writable.
 
-- Follow a [time-based rolling policy](http://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy), which
-  implies that logs are rotated and compressed in a periodic basis defined in logback's configuration file.
+- Follow a [size-based rolling policy](http://logback.qos.ch/manual/appenders.html#SizeBasedTriggeringPolicy), which
+  implies that logs are rotated and compressed when they reach a certain file size defined in logback's configuration
+  file.
 
 ### Adding custom functionality
 
