@@ -5,8 +5,8 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
 import es.weso.rdfshape.server.api._
-import es.weso.rdfshape.server.utils.error.SysUtils
 import es.weso.rdfshape.server.utils.error.exceptions.SSLContextCreationException
+import es.weso.rdfshape.server.utils.error.{ExitCodes, SysUtils}
 import es.weso.rdfshape.server.utils.secure.SSLHelper
 import fs2.Stream
 import org.http4s.client.Client
@@ -53,9 +53,9 @@ private class Server(
   }
 
   /** Create an instance of a secure SSLContext for the application.
-    * @return None, if no HTTPS is required; an SSLContext if HTTPS is required and the context could be created
+    * @return None if no HTTPS is required; an SSLContext if HTTPS is required and the context could be created
     * @see {@link es.weso.rdfshape.server.utils.secure.SSLHelper}
-    * @note If an error occurs creating the SSLContext, program termination will be ordered
+    * @note If an error occurs creating the SSLContext, program termination will occur
     */
   private def getSslContext: Option[SSLContext] = {
     if(!https) return None
@@ -65,7 +65,7 @@ private class Server(
       case Failure(exception) =>
         val e = SSLContextCreationException(exception.getMessage, exception)
         SysUtils.fatalError(
-          SysUtils.sslContextCreationError,
+          ExitCodes.SSL_CONTEXT_CREATION_ERROR,
           e.getMessage
         )
         None
@@ -88,15 +88,6 @@ private class Server(
     } yield exitCode
   }.drain
 
-  /** Create an http4s application object
-    * @param client Http4s' client in charge of the application
-    * @return Http4s' application with the given client and a request-logging middleware
-    */
-  private def createApp(client: Client[IO]): HttpApp[IO] = {
-    val app = routesService(client).orNotFound
-    Logger.httpApp(logHeaders = true, logBody = false)(app)
-  }
-
   /** Create the final http4s server
     * @param client Http4s' client in charge of the application
     * @param sslContext SSLContext used by the application
@@ -117,6 +108,15 @@ private class Server(
       case None          => baseServer
       case Some(context) => baseServer.withSslContext(context)
     }
+  }
+
+  /** Create an http4s application object
+    * @param client Http4s' client in charge of the application
+    * @return Http4s' application with the given client and a request-logging middleware
+    */
+  private def createApp(client: Client[IO]): HttpApp[IO] = {
+    val app = routesService(client).orNotFound
+    Logger.httpApp(logHeaders = true, logBody = false)(app)
   }
 }
 

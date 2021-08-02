@@ -57,21 +57,10 @@ object LoggingManager {
     */
   def mapVerbosityValueToLogLevel(verbosity: Int): String = {
     verbosity match {
-      case 0 => LoggingLevel.ERROR // No verbose argument. Show errors.
-      case 1 => LoggingLevel.WARN  // -v. Show warnings.
-      case 2 => LoggingLevel.INFO  // -vv. Show info.
-      case _ => LoggingLevel.DEBUG // -vvv and forth. Show debug information.
+      case 0 => LoggingLevels.ERROR // No verbose argument. Show errors.
+      case 1 => LoggingLevels.WARN  // -v. Show warnings.
+      case 2 => LoggingLevels.INFO  // -vv. Show info.
+      case _ => LoggingLevels.DEBUG // -vvv and forth. Show debug information.
     }
   }
-}
-
-/** Enum classifying the accepted logging levels by their String representation.
-  */
-object LoggingLevel extends Enumeration {
-  type LoggingLevel = String
-  val ERROR = "ERROR"
-  val WARN  = "WARN"
-  val INFO  = "INFO"
-  val DEBUG = "DEBUG"
-  val TRACE = "TRACE"
 }

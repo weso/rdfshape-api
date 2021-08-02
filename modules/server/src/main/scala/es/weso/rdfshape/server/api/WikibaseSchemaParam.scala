@@ -1,17 +1,18 @@
 package es.weso.rdfshape.server.api
+
 import cats.effect._
 import es.weso.rdf.RDFReasoner
 import es.weso.rdfshape.server.wikibase._
 import es.weso.schema.{Schema, Schemas}
 import org.http4s.client._
 import org.http4s.dsl.io._
-import org.http4s.{Uri, _}
+import org.http4s._
 
 case class WikibaseSchemaParam(
     maybeSchemaParam: Option[SchemaParam],
     maybeEntitySchema: Option[String],
     schemaStr: Option[String],
-    wikibase: Wikibase = Wikidata
+    wikidata: Wikibase = Wikidata
 ) {
 
   def getSchema(
@@ -34,7 +35,7 @@ case class WikibaseSchemaParam(
       es: String,
       client: Client[IO]
   ): IO[(Option[String], Either[String, Schema])] = {
-    val uriSchema = wikibase.schemaEntityUri(es)
+    val uriSchema = wikidata.schemaEntityUri(es)
     val r: IO[(Schema, String)] = for {
       strSchema <- deref(uriSchema, client)
       schema    <- Schemas.fromString(strSchema, "ShEXC", "ShEx")
@@ -104,8 +105,10 @@ object WikibaseSchemaParam {
 
   // TODO: Move this code to es.weso.utils.IOUtils
   private def ok_f[A](v: A): IO[A] = IO.pure(v)
+
   private def err_f[A](err: String): IO[A] =
     IO.raiseError[A](new RuntimeException(err))
+
   private def either2f[A](e: Either[String, A]): IO[A] =
     e.fold(s => IO.raiseError(new RuntimeException(s)), IO.pure)
 
