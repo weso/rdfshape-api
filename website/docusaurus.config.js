@@ -13,6 +13,10 @@ module.exports = {
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "favicon.ico",
+  trailingSlash: true,
+  customFields: {
+    docsUrl,
+  },
   themeConfig: {
     image: "img/preview.png",
     hideableSidebar: false,
@@ -23,8 +27,8 @@ module.exports = {
       switchConfig: {
         darkIcon: "🌙",
         lightIcon: "\u2600",
-        darkIconStyle: { marginLeft: "2px" },
-        lightIconStyle: { marginLeft: "1px" },
+        darkIconStyle: {marginLeft: "2px"},
+        lightIconStyle: {marginLeft: "1px"},
       },
     },
     navbar: {
@@ -37,14 +41,20 @@ module.exports = {
         // Web docs
         {
           to: "/docs",
-          position: "left",
           label: "Web docs",
+          position: "left",
+        },
+        // Scaladoc
+        {
+          to: docsUrl,
+          label: "Scaladoc",
+          position: "left",
         },
         // Link to repo
         {
           href: "https://github.com/weso/rdfshape-api",
           label: "GitHub",
-          position: "left",
+          position: "right",
         },
       ],
     },
@@ -74,11 +84,11 @@ module.exports = {
           items: [
             {
               label: "GitHub",
-              href: "https://github.com/weso",
+              to: "https://github.com/weso",
             },
             {
               label: "Twitter",
-              href: "https://twitter.com/wesoviedo",
+              to: "https://twitter.com/wesoviedo",
             },
           ],
         },
@@ -91,7 +101,7 @@ module.exports = {
             },
             {
               label: "More software by WESO",
-              href: "https://www.weso.es/#software",
+              to: "https://www.weso.es/#software",
             },
           ],
         },
@@ -111,9 +121,7 @@ module.exports = {
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
-        sitemap: {
-          trailingSlash: true,
-        },
+        sitemap: {},
       },
     ],
   ],
