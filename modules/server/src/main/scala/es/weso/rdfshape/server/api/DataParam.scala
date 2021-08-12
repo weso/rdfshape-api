@@ -29,38 +29,6 @@ case class DataParam(
     compoundData: Option[String]
 ) extends LazyLogging {
 
-  sealed abstract class DataInputType {
-    val id: String
-  }
-  case object dataUrlType extends DataInputType {
-    override val id = "#dataUrl"
-  }
-  case object dataFileType extends DataInputType {
-    override val id = "#dataFile"
-  }
-  case object dataEndpointType extends DataInputType {
-    override val id = "#dataEndpoint"
-  }
-  case object dataTextAreaType extends DataInputType {
-    override val id = "#dataTextArea"
-  }
-  case object compoundDataType extends DataInputType {
-    override val id = "#compoundData"
-  }
-
-  def parseDataTab(tab: String): Either[String, DataInputType] = {
-    logger.debug(s"parseDataTab: tab = $tab")
-    val inputTypes =
-      List(dataUrlType, dataFileType, dataEndpointType, dataTextAreaType)
-    inputTypes.find(_.id == tab) match {
-      case Some(x) => Right(x)
-      case None =>
-        Left(
-          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
-        )
-    }
-  }
-
   val dataFormat: Option[DataFormat] = {
     val dataTab = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab))
     logger.debug(s"Data tab received: $dataTab")
@@ -73,35 +41,8 @@ case class DataParam(
     }
   }
 
-  private def applyInference(
-      rdf: Resource[IO, RDFReasoner],
-      inference: Option[String],
-      dataFormat: Format
-  ): Resource[IO, RDFReasoner] =
-    extendWithInference(rdf, inference)
-
-  private def extendWithInference(
-      resourceRdf: Resource[IO, RDFReasoner],
-      optInference: Option[String]
-  ): Resource[IO, RDFReasoner] = {
-    logger.debug(s"Applying inference $optInference")
-    optInference match {
-      case None => resourceRdf
-      case Some(str) =>
-        InferenceEngine.fromString(str) match {
-          case Right(engine) =>
-            resourceRdf.evalMap(rdf => rdf.applyInference(engine))
-          case Left(err) =>
-            // TODO: Check how to invoke using Resource.raiseError...
-            throw new RuntimeException(
-              s"Error parsing inference engine param ($str): $err"
-            )
-        }
-
-    }
-  }
-
   /** get RDF data from data parameters
+    *
     * @return a pair where the first value can be Some(string)
     *         if it has string representation and the second parameter
     *         is the resource with the RDF data
@@ -209,6 +150,19 @@ case class DataParam(
     x
   }
 
+  def parseDataTab(tab: String): Either[String, DataInputType] = {
+    logger.debug(s"parseDataTab: tab = $tab")
+    val inputTypes =
+      List(dataUrlType, dataFileType, dataEndpointType, dataTextAreaType)
+    inputTypes.find(_.id == tab) match {
+      case Some(x) => Right(x)
+      case None =>
+        Left(
+          s"Wrong value of tab: $tab, must be one of [${inputTypes.map(_.id).mkString(",")}]"
+        )
+    }
+  }
+
   private def showFinalize: IO[Unit] = IO {
     logger.debug("Closing RDF data")
   }
@@ -220,8 +174,10 @@ case class DataParam(
   ): IO[Resource[IO, RDFReasoner]] = {
     logger.debug(s"RDF from string with format: $format")
     format.name match {
-      case f if HTML2RDF.availableExtractorNames contains f =>
-        IO(HTML2RDF.extractFromString(str, f)) /*for {
+      case formatName if HTML2RDF.availableExtractorNames contains formatName =>
+        IO(
+          HTML2RDF.extractFromString(str, formatName)
+        ) /*for {
         eitherRdf <-
       } yield eitherRdf */
       case _ =>
@@ -238,21 +194,19 @@ case class DataParam(
       base: Option[String]
   ): IO[Resource[IO, RDFReasoner]] = {
     format.name.toLowerCase match {
-      case f if HTML2RDF.availableExtractorNames contains f =>
-        IO(HTML2RDF.extractFromUrl(uri.toString, f))
+      case formatName if HTML2RDF.availableExtractorNames contains formatName =>
+        IO(
+          HTML2RDF.extractFromUrl(
+            uri.toString,
+            formatName
+          )
+        )
       case _ =>
         for {
           baseIri <- mkBase(base)
           res     <- RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri)
         } yield res
     }
-  }
-
-  private def mkBaseIri(
-      maybeBase: Option[String]
-  ): Either[String, Option[IRI]] = maybeBase match {
-    case None      => Right(None)
-    case Some(str) => IRI.fromString(str).map(Some(_))
   }
 
   private def mkBase(base: Option[String]): IO[Option[IRI]] = base match {
@@ -264,6 +218,65 @@ case class DataParam(
           e => IO.raiseError(new RuntimeException(s"Cannot get IRI from $str")),
           (iri: IRI) => IO(Some(iri))
         )
+  }
+
+  private def applyInference(
+      rdf: Resource[IO, RDFReasoner],
+      inference: Option[String],
+      dataFormat: Format
+  ): Resource[IO, RDFReasoner] =
+    extendWithInference(rdf, inference)
+
+  private def extendWithInference(
+      resourceRdf: Resource[IO, RDFReasoner],
+      optInference: Option[String]
+  ): Resource[IO, RDFReasoner] = {
+    logger.debug(s"Applying inference $optInference")
+    optInference match {
+      case None => resourceRdf
+      case Some(str) =>
+        InferenceEngine.fromString(str) match {
+          case Right(engine) =>
+            resourceRdf.evalMap(rdf => rdf.applyInference(engine))
+          case Left(err) =>
+            // TODO: Check how to invoke using Resource.raiseError...
+            throw new RuntimeException(
+              s"Error parsing inference engine param ($str): $err"
+            )
+        }
+
+    }
+  }
+
+  private def mkBaseIri(
+      maybeBase: Option[String]
+  ): Either[String, Option[IRI]] = maybeBase match {
+    case None      => Right(None)
+    case Some(str) => IRI.fromString(str).map(Some(_))
+  }
+
+  sealed abstract class DataInputType {
+    val id: String
+  }
+
+  case object dataUrlType extends DataInputType {
+    override val id = "#dataUrl"
+  }
+
+  case object dataFileType extends DataInputType {
+    override val id = "#dataFile"
+  }
+
+  case object dataEndpointType extends DataInputType {
+    override val id = "#dataEndpoint"
+  }
+
+  case object dataTextAreaType extends DataInputType {
+    override val id = "#dataTextArea"
+  }
+
+  case object compoundDataType extends DataInputType {
+    override val id = "#compoundData"
   }
 
 }
@@ -283,25 +296,6 @@ object DataParam extends LazyLogging {
       (rdf, dp.copy(data = optStr))
     }
     r
-  }
-
-  private def getDataFormat(
-      name: String,
-      partsMap: PartsMap
-  ): IO[Option[DataFormat]] = for {
-    maybeStr <- partsMap.optPartValue(name)
-  } yield maybeStr match {
-    case None => None
-    case Some(str) =>
-      DataFormat
-        .fromString(str)
-        .fold(
-          err => {
-            logger.warn(s"Unsupported dataFormat for $name: $str")
-            None
-          },
-          df => Some(df)
-        )
   }
 
   private[api] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
@@ -358,6 +352,25 @@ object DataParam extends LazyLogging {
       compoundData
     )
     dp
+  }
+
+  private def getDataFormat(
+      name: String,
+      partsMap: PartsMap
+  ): IO[Option[DataFormat]] = for {
+    maybeStr <- partsMap.optPartValue(name)
+  } yield maybeStr match {
+    case None => None
+    case Some(str) =>
+      DataFormat
+        .fromString(str)
+        .fold(
+          err => {
+            logger.warn(s"Unsupported dataFormat for $name: $str")
+            None
+          },
+          df => Some(df)
+        )
   }
 
   private[api] def empty: DataParam =

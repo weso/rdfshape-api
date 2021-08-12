@@ -1,34 +1,32 @@
 package es.weso.rdfshape.server.html2rdf
 
-import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.utils.IOUtils._
-import es.weso.rdf.RDFReader
-import cats.implicits._
 import cats.effect.IO
+import cats.implicits._
+import es.weso.rdf.jena.RDFAsJenaModel
 import munit._
 
 class HTML2RDFTest extends CatsEffectSuite {
 
   shouldExtract(
     """|<body prefix = "xsd: http://www.w3.org/2001/XMLSchema#"
-         |      vocab = "http://schema.org/" >
-         |<div resource="http://example.org/post" typeOf="Blog">
-         |  <p>Post created
-         |     <span content="2018-10-30"
-         |           property="created"
-         |           datatype="xsd:date">last saturday</span>.
-         |  </p>
-         |</div>
-         |</body>
+       |      vocab = "http://schema.org/" >
+       |<div resource="http://example.org/post" typeOf="Blog">
+       |  <p>Post created
+       |     <span content="2018-10-30"
+       |           property="created"
+       |           datatype="xsd:date">last saturday</span>.
+       |  </p>
+       |</div>
+       |</body>
       """.stripMargin,
     """|prefix rdfa:   <http://www.w3.org/ns/rdfa#>
-         |prefix schema: <http://schema.org/>
-         |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
-         |
-         |<http://example.org/>  rdfa:usesVocabulary schema: .
-         |
-         |<http://example.org/post> a schema:Blog ;
-         |         schema:created "2018-10-30"^^xsd:date .
+       |prefix schema: <http://schema.org/>
+       |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+       |
+       |<http://example.org/>  rdfa:usesVocabulary schema: .
+       |
+       |<http://example.org/post> a schema:Blog ;
+       |         schema:created "2018-10-30"^^xsd:date .
       """.stripMargin,
     "html-rdfa11"
   )
@@ -50,32 +48,32 @@ class HTML2RDFTest extends CatsEffectSuite {
 
   shouldExtract(
     """|<div itemscope
-         |    itemtype="https://vocab.example.net/book">
-         |</div>
-         |""".stripMargin,
+       |    itemtype="https://vocab.example.net/book">
+       |</div>
+       |""".stripMargin,
     """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
-         |
-         |<http://example.org/>  md:item [
-         |  a  <https://vocab.example.net/book>
-         |] .
+       |
+       |<http://example.org/>  md:item [
+       |  a  <https://vocab.example.net/book>
+       |] .
       """.stripMargin,
     "html-microdata"
   )
 
   shouldExtract(
     """|<div itemscope
-         |     itemtype="http://schema.org/Person"
-         |     itemid="http://person.info/alice" style="font-size:25pt;">
-         |  My name is <span itemprop="name">Alice</span>.
-         |</div>
-        |
+       |     itemtype="http://schema.org/Person"
+       |     itemid="http://person.info/alice" style="font-size:25pt;">
+       |  My name is <span itemprop="name">Alice</span>.
+       |</div>
+       |
       """.stripMargin,
     """|prefix md:   <http://www.w3.org/1999/xhtml/microdata#>
-         |prefix person: <http://person.info/>
-         |<http://example.org/>  md:item person:alice .
-         |person:alice a <http://schema.org/Person> ;
-         |  <http://schema.org/Person/name> "Alice" .
-         |""".stripMargin,
+       |prefix person: <http://person.info/>
+       |<http://example.org/>  md:item person:alice .
+       |person:alice a <http://schema.org/Person> ;
+       |  <http://schema.org/Person/name> "Alice" .
+       |""".stripMargin,
     "html-microdata"
   )
 
@@ -94,12 +92,14 @@ class HTML2RDFTest extends CatsEffectSuite {
       s"Should extract from \n$html\n and obtain\n$expected\nExtractor $extractorName"
     ) {
       val r: IO[(Boolean, String, String)] = for {
-        res1 <- IO(HTML2RDF.extractFromString(html, extractorName))
+        res1 <- IO(
+          HTML2RDF.extractFromString(html, extractorName)
+        )
         res2 <- RDFAsJenaModel.fromChars(expected, "TURTLE")
         vv <- (res1, res2).tupled.use { case (rdf, expected) =>
           for {
-            expectedStr <- expected.serialize("TURTLE")
-            rdfObtained <- rdf.serialize("TURTLE")
+            expectedStr  <- expected.serialize("TURTLE")
+            rdfObtained  <- rdf.serialize("TURTLE")
             isIsomorphic <- rdf.isIsomorphicWith(expected)
           } yield (isIsomorphic, rdfObtained, expectedStr)
         }
@@ -111,11 +111,11 @@ class HTML2RDFTest extends CatsEffectSuite {
           assertEquals(ok, true)
         } else {
           fail(s"""Model extracted is not isomorphic with expected one:
-                   |Model extracted
-                   |${expected}
-                   |Model expected
-                   |${rdf}
-                   |""".stripMargin)
+               |Model extracted
+               |${expected}
+               |Model expected
+               |${rdf}
+               |""".stripMargin)
         }
       })
     }

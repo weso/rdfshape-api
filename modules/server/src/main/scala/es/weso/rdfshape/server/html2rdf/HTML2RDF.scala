@@ -1,9 +1,9 @@
 package es.weso.rdfshape.server.html2rdf
+
 import cats.effect.{Resource => CatsResource, _}
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.rdf.nodes.IRI
 import es.weso.utils.IOUtils._
 import org.apache.any23.Any23
 import org.apache.any23.extractor._
@@ -28,51 +28,106 @@ import org.eclipse.rdf4j.model.{
 
 import scala.util.Try
 
+/** Utilities for extracting RDF models from different sources
+  */
 object HTML2RDF extends LazyLogging {
 
+  /** List of all available RDF data extractors
+    */
   val availableExtractors =
     List(RDFA11, Microdata)
 
+  /** List of the names of all available RDF data extractors
+    */
   val availableExtractorNames: List[String] =
     availableExtractors.map(_.name)
 
+  /** For a given HTML string, extract the inner RDF data model
+    *
+    * @param htmlStr       HTML string
+    * @param extractorName Name of the extractor to be used
+    * @return RDF Reasoner allowing operations on the extracted RDF data
+    */
   def extractFromString(
       htmlStr: String,
       extractorName: String
   ): CatsResource[IO, RDFReasoner] = {
+    extractFromSource(RdfSourceTypes.STRING, htmlStr, extractorName)
+  }
+
+  /** For a given URI, extract its content's inner RDF data model
+    *
+    * @param uri           URI containing the RDF data
+    * @param extractorName Name of the extractor to be used
+    * @return RDF Reasoner allowing operations on the extracted RDF data
+    */
+  def extractFromUrl(
+      uri: String,
+      extractorName: String
+  ): CatsResource[IO, RDFReasoner] = {
+    extractFromSource(RdfSourceTypes.URI, uri, extractorName)
+  }
+
+  /** @param sourceType   Origin of the RDF data, used to perform different extraction operations
+    * @param rdfData       String with the RDF data or the location of it
+    * @param extractorName Name of the extractor to be used
+    * @return RDF Reasoner allowing operations on the extracted RDF data
+    */
+  private def extractFromSource(
+      sourceType: RdfSourceTypes.Value,
+      rdfData: String,
+      extractorName: String
+  ): CatsResource[IO, RDFReasoner] = {
     Try {
+      logger.debug(
+        s"Extracting RDF from ${sourceType.toString} with extractor $extractorName"
+      )
+
+      // Common code to all RDF extractions
       val model = ModelFactory.createDefaultModel()
       val any23 = new Any23(extractorName)
       any23.setHTTPUserAgent("test-user-agent")
-      val httpClient = any23.getHTTPClient
-      val source     = new StringDocumentSource(htmlStr, "http://example.org/")
-      val handler    = JenaTripleHandler(model)
+      val handler = JenaTripleHandler(model)
 
-      logger.debug("Initialization ready for extractor...")
+      // Check the RDF source and get the data accordingly
+      val source = sourceType match {
+        case RdfSourceTypes.STRING =>
+          new StringDocumentSource(rdfData, "http://example.org/")
+        case RdfSourceTypes.URI =>
+          val httpClient = any23.getHTTPClient
+          new HTTPDocumentSource(httpClient, rdfData)
+      }
 
+      // Extract RDF from data
       try {
         any23.extract(source, handler)
       } finally {
         handler.close()
       }
+      // Return RDF model
       model
     }.fold(
-      e =>
+      // Error handling
+      e => {
+        val errorMsg =
+          s"Error obtaining RDF from HTML string: ${e.getMessage}\nHTML String: $rdfData\nExtractor name: $extractorName"
+        logger.error(errorMsg)
         CatsResource.eval(
-          err(
-            s"Error obtaining RDF from HTML string: ${e.getMessage}\nHTML String: $htmlStr\nExtractor name: $extractorName"
-          )
-        ),
+          err(errorMsg)
+        )
+      },
       model => {
-        fromModel(model, None)
-      } // Ref.of[IO,Model](model).flatMap(ref => )
+        fromModel(model)
+      }
     )
   }
 
-  private def fromModel(
-      model: Model,
-      uri: Option[IRI]
-  ): CatsResource[IO, RDFAsJenaModel] = {
+  /** Get an RDF model object from a general Jena model
+    *
+    * @param model Input RDF model
+    * @return RDF model
+    */
+  private def fromModel(model: Model): CatsResource[IO, RDFAsJenaModel] = {
     CatsResource.make(
       Ref
         .of[IO, Model](model)
@@ -80,39 +135,17 @@ object HTML2RDF extends LazyLogging {
     )(m => m.getModel.flatMap(m => IO(m.close())))
   }
 
-  def extractFromUrl(
-      uri: String,
-      extractorName: String
-  ): CatsResource[IO, RDFReasoner] = {
-    Try {
-      val model = ModelFactory.createDefaultModel()
-      val any23 = new Any23(extractorName)
-      any23.setHTTPUserAgent("test-user-agent")
-      val httpClient = any23.getHTTPClient
-      val source     = new HTTPDocumentSource(httpClient, uri)
-      // val out = new ByteArrayOutputStream()
-      val handler = JenaTripleHandler(model)
-      try {
-        any23.extract(source, handler)
-      } finally {
-        handler.close()
-      }
-      // val n3: String = out.toString("UTF-8")
-      model
-    }.fold(
-      e =>
-        CatsResource.eval(
-          err(s"Exception obtaining RDF from URI: ${e.getMessage}\nURI:\n$uri")
-        ),
-      model => fromModel(model, Some(IRI(uri)))
-    )
-  }
-
+  /** Interface comprising all RDF data extractors
+    */
   sealed trait Extractor {
     val name: String
   }
 
-  case class JenaTripleHandler(m: Model) extends TripleHandler {
+  /** RDF triple handler based on Apache Jena
+    *
+    * @param model Base model
+    */
+  case class JenaTripleHandler(model: Model) extends TripleHandler {
 
     override def receiveTriple(
         s: Resource,
@@ -121,7 +154,7 @@ object HTML2RDF extends LazyLogging {
         g: RDF4jIRI,
         context: ExtractionContext
     ): Unit = {
-      m.add(cnvSubj(s), cnvIRI(p), cnvObj(o))
+      model.add(cnvSubj(s), cnvIRI(p), cnvObj(o))
 
       logger.debug(s"Triple: <$s,$p,$o>")
     }
@@ -131,21 +164,21 @@ object HTML2RDF extends LazyLogging {
       case b: BNode    => cnvBNode(b)
     }
 
-    def cnvIRI(p: RDF4jIRI): JenaProperty =
-      m.createProperty(p.toString)
-
-    def cnvBNode(b: BNode): JenaResource =
-      m.createResource(AnonId.create(b.getID))
-
     def cnvObj(o: Value): JenaRDFNode = o match {
       case i: RDF4jIRI => cnvIRI(i)
       case b: BNode    => cnvBNode(b)
       case l: Literal =>
         if(l.getLanguage.isPresent) {
-          m.createLiteral(l.getLabel, l.getLanguage.get)
+          model.createLiteral(l.getLabel, l.getLanguage.get)
         } else
-          m.createTypedLiteral(l.getLabel, l.getDatatype.toString)
+          model.createTypedLiteral(l.getLabel, l.getDatatype.toString)
     }
+
+    def cnvBNode(b: BNode): JenaResource =
+      model.createResource(AnonId.create(b.getID))
+
+    def cnvIRI(p: RDF4jIRI): JenaProperty =
+      model.createProperty(p.toString)
 
     override def startDocument(
         documentIRI: RDF4jIRI
@@ -171,11 +204,15 @@ object HTML2RDF extends LazyLogging {
 
   }
 
+  /** RDFA11 extractor
+    */
   case object RDFA11 extends Extractor {
     val extractor    = new RDFa11Extractor()
     val name: String = extractor.getDescription.getExtractorName
   }
 
+  /** Microdata extractor
+    */
   case object Microdata extends Extractor {
     val extractor    = new MicrodataExtractor
     val name: String = extractor.getDescription.getExtractorName
