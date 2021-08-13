@@ -4,7 +4,15 @@ import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
-import es.weso.rdfshape.server.api._
+import es.weso.rdfshape.server.api.routes.api.APIService
+import es.weso.rdfshape.server.api.routes.data.DataService
+import es.weso.rdfshape.server.api.routes.endpoint.EndpointService
+import es.weso.rdfshape.server.api.routes.fetch.FetchService
+import es.weso.rdfshape.server.api.routes.permalink.PermalinkService
+import es.weso.rdfshape.server.api.routes.schema.SchemaService
+import es.weso.rdfshape.server.api.routes.shapemap.ShapeMapService
+import es.weso.rdfshape.server.api.routes.shex.ShExService
+import es.weso.rdfshape.server.api.routes.wikibase.WikidataService
 import es.weso.rdfshape.server.utils.error.exceptions.SSLContextCreationException
 import es.weso.rdfshape.server.utils.error.{ExitCodes, SysUtils}
 import es.weso.rdfshape.server.utils.secure.SSLHelper

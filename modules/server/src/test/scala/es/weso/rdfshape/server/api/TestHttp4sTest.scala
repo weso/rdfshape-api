@@ -3,13 +3,16 @@ import cats.effect._
 import io.circe.Json
 import fs2._
 import munit.CatsEffectSuite
+import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.implicits._
-import org.http4s.{HttpRoutes, Request, Response, _}
 
+/** API service for testing purposes
+  * @param client HTTP4S client object
+  */
 class TestService(client: Client[IO]) extends Http4sDsl[IO] {
 
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] { case GET -> Root / "hi" =>

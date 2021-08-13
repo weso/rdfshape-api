@@ -2,8 +2,8 @@ package es.weso.rdfshape.server.api.results
 
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.ApiHelper
 import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.routes.ApiHelper
 import es.weso.rdfshape.server.utils.json.JsonUtilsServer._
 import io.circe.Json
 
