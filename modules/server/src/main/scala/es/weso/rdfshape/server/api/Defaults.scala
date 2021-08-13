@@ -2,15 +2,15 @@ package es.weso.rdfshape.server.api
 
 import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.format._
-import es.weso.schema.{Schemas, _}
+import es.weso.schema._
 import es.weso.shapemaps.ShapeMap
 
 object Defaults {
 
   val availableDataFormats: List[DataFormat]     = DataFormat.availableFormats
-  val defaultDataFormat: DataFormat              = DataFormat.default
+  val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
   val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
-  val defaultSchemaFormat: SchemaFormat          = SchemaFormat.default
+  val defaultSchemaFormat: SchemaFormat          = SchemaFormat.defaultFormat
   val availableSchemaEngines: List[String]       = Schemas.availableSchemaNames
   val defaultSchemaEngine: String                = Schemas.defaultSchemaName
   val availableTriggerModes: List[String]        = Schemas.availableTriggerModes

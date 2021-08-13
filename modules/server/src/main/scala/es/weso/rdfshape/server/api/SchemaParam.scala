@@ -61,7 +61,7 @@ case class SchemaParam(
                 case Right(schema) =>
                   for {
                     str <- schema.serialize(
-                      schemaFormat.getOrElse(SchemaFormat.default).name
+                      schemaFormat.getOrElse(SchemaFormat.defaultFormat).name
                     )
                   } yield (Some(str), Right(schema))
               }
@@ -90,7 +90,7 @@ case class SchemaParam(
                   )
                   schema <- Schemas.fromString(
                     str,
-                    schemaFormat.getOrElse(SchemaFormat.default).name,
+                    schemaFormat.getOrElse(SchemaFormat.defaultFormat).name,
                     schemaEngine.getOrElse(defaultSchemaEngine),
                     ApiHelper.getBase
                   ) // .leftMap(s => s"Error parsing contents of $schemaUrl: $s\nContents:\n$str")
@@ -112,7 +112,7 @@ case class SchemaParam(
               case None => IO((None, Left(s"No value for schemaFile")))
               case Some(schemaStr) =>
                 val schemaFormatStr =
-                  schemaFormat.getOrElse(SchemaFormat.default).name
+                  schemaFormat.getOrElse(SchemaFormat.defaultFormat).name
                 val schemaEngineStr =
                   schemaEngine.getOrElse(defaultSchemaEngine)
                 Schemas
@@ -137,7 +137,7 @@ case class SchemaParam(
               pair <- Schemas
                 .fromString(
                   schemaStr,
-                  schemaFormat.getOrElse(SchemaFormat.default).name,
+                  schemaFormat.getOrElse(SchemaFormat.defaultFormat).name,
                   schemaEngine.getOrElse(defaultSchemaEngine),
                   ApiHelper.getBase
                 )

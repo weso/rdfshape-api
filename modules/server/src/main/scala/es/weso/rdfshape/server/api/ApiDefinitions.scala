@@ -1,5 +1,5 @@
 package es.weso.rdfshape.server.api
 
-object APIDefinitions {
+object ApiDefinitions {
   val api = "api"
 }

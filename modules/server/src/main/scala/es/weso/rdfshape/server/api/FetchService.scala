@@ -1,7 +1,7 @@
 package es.weso.rdfshape.server.api
 
 import cats.effect._
-import es.weso.rdfshape.server.api.APIDefinitions._
+import es.weso.rdfshape.server.api.ApiDefinitions._
 import es.weso.rdfshape.server.api.QueryParams.UrlParam
 import org.http4s._
 import org.http4s.client.Client

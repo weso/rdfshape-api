@@ -5,7 +5,7 @@ import cats.effect._
 import cats.implicits._
 import es.weso.rdf.jena.Endpoint
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.APIDefinitions._
+import es.weso.rdfshape.server.api.ApiDefinitions._
 import es.weso.rdfshape.server.api.QueryParams._
 import es.weso.utils.IOUtils._
 import io.circe._
@@ -24,7 +24,7 @@ class APIService(client: Client[IO]) extends Http4sDsl[IO] {
 
     case req @ GET -> Root / `api` / "health" =>
       Ok("OK")
-      
+
     case req @ GET -> Root / `api` / "endpoint" / "outgoing" :?
         OptEndpointParam(optEndpoint) +&
         OptNodeParam(optNode) +&

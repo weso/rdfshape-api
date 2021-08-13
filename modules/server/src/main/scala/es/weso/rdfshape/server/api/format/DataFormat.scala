@@ -2,109 +2,62 @@ package es.weso.rdfshape.server.api.format
 
 import org.http4s.MediaType
 
-trait DataFormat extends Format {
-  val default: DataFormat = Turtle
+/** Extension of the Format interface to represent RDF data formats
+  */
+class DataFormat(formatName: String, formatMimeType: MediaType) extends Format {
+  override val name: String        = formatName
+  override val mimeType: MediaType = formatMimeType
 }
 
-object DataFormat {
+/** Companion object with all DataFormat static utilities
+  */
+object DataFormat extends FormatCompanion[DataFormat] {
 
-  val default: DataFormat = Turtle
+  override lazy val availableFormats: List[DataFormat] = List(
+    Turtle,
+    JsonLd,
+    NTriples,
+    RdfXml,
+    RdfJson,
+    Trig,
+    HtmlMicrodata,
+    HtmlRdfa11,
+    Dot,
+    Svg,
+    Png,
+    JsonDataFormat
+  )
+  override val defaultFormat: DataFormat = Turtle
+}
 
-  def fromString(name: String): Either[String, DataFormat] =
-    if(name == "") Right(default)
-    else {
-      formatsMap.get(name.toLowerCase) match {
-        case None =>
-          Left(
-            s"Not found format: $name. Available formats: ${availableFormats.mkString(",")}"
-          )
-        case Some(df) => Right(df)
-      }
-    }
-
-  private def formatsMap: Map[String, DataFormat] = {
-    def toPair(f: DataFormat): (String, DataFormat) = (f.name.toLowerCase(), f)
-    availableFormats.map(toPair).toMap
-  }
-
-  lazy val availableFormats: List[DataFormat] =
-    List(
-      Turtle,
-      JsonLd,
-      NTriples,
-      RdfXml,
-      RdfJson,
-      Trig,
-      HtmlMicrodata,
-      HtmlRdfa11,
-      Dot,
-      Svg,
-      Png,
-      JsonDataFormat
+/** Represents the mime-type "application/json"
+  */
+case object JsonDataFormat
+    extends DataFormat(
+      formatName = "json",
+      formatMimeType = new MediaType("application", "json")
     )
 
-}
+/** Represents the mime-type "text/vnd.graphviz"
+  */
+case object Dot
+    extends DataFormat(
+      formatName = "dot",
+      formatMimeType = new MediaType("text", "vnd.graphviz")
+    )
 
-case object JsonDataFormat extends DataFormat {
-  override val name     = "json"
-  override val mimeType = new MediaType("application", "json")
-}
+/** Represents the mime-type "image/svg+xml"
+  */
+case object Svg
+    extends DataFormat(
+      formatName = "svg",
+      formatMimeType = MediaType.image.`svg+xml`
+    )
 
-case object Dot extends DataFormat {
-  override val name     = "dot"
-  override val mimeType = new MediaType("text", "vnd.graphviz")
-}
-
-case object Svg extends DataFormat {
-  override val name     = "svg"
-  override val mimeType = MediaType.image.`svg+xml`
-}
-
-case object Png extends DataFormat {
-  override val name     = "png"
-  override val mimeType = MediaType.image.png
-}
-
-sealed trait RDFFormat extends DataFormat
-
-case object Turtle extends RDFFormat {
-  override val name     = "turtle"
-  override val mimeType = new MediaType("text", "turtle")
-}
-
-case object NTriples extends RDFFormat {
-  override val name     = "n-triples"
-  override val mimeType = new MediaType("application", "n-triples")
-}
-
-case object Trig extends RDFFormat {
-  override val name     = "trig"
-  override val mimeType = new MediaType("application", "trig")
-}
-
-case object JsonLd extends RDFFormat {
-  override val name     = "json-ld"
-  override val mimeType = new MediaType("application", "ld+json")
-}
-
-case object RdfXml extends RDFFormat {
-  override val name     = "rdf/xml"
-  override val mimeType = new MediaType("application", "rdf+xml")
-}
-
-case object RdfJson extends RDFFormat {
-  override val name     = "rdf/json"
-  override val mimeType = MediaType.application.json
-}
-
-sealed trait HtmlFormat extends DataFormat
-
-case object HtmlRdfa11 extends HtmlFormat {
-  override val name     = "html-rdfa11"
-  override val mimeType = MediaType.text.html
-}
-
-case object HtmlMicrodata extends HtmlFormat {
-  override val name     = "html-microdata"
-  override val mimeType = MediaType.text.html
-}
+/** Represents the mime-type "image/png"
+  */
+case object Png
+    extends DataFormat(
+      formatName = "png",
+      formatMimeType = MediaType.image.png
+    )

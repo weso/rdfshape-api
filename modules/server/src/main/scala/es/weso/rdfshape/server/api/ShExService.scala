@@ -1,6 +1,6 @@
 package es.weso.rdfshape.server.api
 import cats.effect._
-import es.weso.rdfshape.server.api.APIDefinitions._
+import es.weso.rdfshape.server.api.ApiDefinitions._
 import es.weso.schema._
 import io.circe._
 import org.http4s._
