@@ -6,8 +6,8 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
-import es.weso.rdfshape.server.api.APIDefinitions._
-import es.weso.rdfshape.server.api.ApiHelper.{SchemaInfoReply, _}
+import es.weso.rdfshape.server.api.ApiDefinitions._
+import es.weso.rdfshape.server.api.ApiHelper._
 import es.weso.rdfshape.server.api.Defaults._
 import es.weso.rdfshape.server.api.QueryParams._
 import es.weso.rdfshape.server.api.format._
@@ -196,7 +196,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
             converted <- convertSchema(
               schema,
               sp.schema,
-              sp.schemaFormat.getOrElse(SchemaFormat.default),
+              sp.schemaFormat.getOrElse(SchemaFormat.defaultFormat),
               sp.schemaEngine.getOrElse(defaultSchemaEngine),
               targetSchemaFormat,
               sp.targetSchemaEngine

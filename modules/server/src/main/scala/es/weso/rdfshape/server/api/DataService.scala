@@ -3,7 +3,7 @@ package es.weso.rdfshape.server.api
 import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.APIDefinitions._
+import es.weso.rdfshape.server.api.ApiDefinitions._
 import es.weso.rdfshape.server.api.ApiHelper._
 import es.weso.rdfshape.server.api.Defaults.defaultDataFormat
 import es.weso.rdfshape.server.api.QueryParams._
@@ -39,7 +39,7 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
       Ok(json)
 
     case GET -> Root / `api` / "data" / "formats" / "default" =>
-      val dataFormat = DataFormat.default.name
+      val dataFormat = DataFormat.defaultFormat.name
       Ok(Json.fromString(dataFormat))
 
     case GET -> Root / `api` / "data" / "inferenceEngines" =>

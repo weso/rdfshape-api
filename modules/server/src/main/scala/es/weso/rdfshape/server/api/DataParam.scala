@@ -80,10 +80,11 @@ case class DataParam(
         dataURL match {
           case None => err(s"Non value for dataURL")
           case Some(dataUrl) =>
-            val dataFormat = dataFormatUrl.getOrElse(DataFormat.default)
+            val dataFormat = dataFormatUrl.getOrElse(DataFormat.defaultFormat)
             for {
               rdf <- rdfFromUri(new URI(dataUrl), dataFormat, base)
             } yield (None, rdf)
+            RDFFormat
         }
       case Right(`dataFileType`) =>
         logger.debug(s"Input - dataFileType: $data")
@@ -91,7 +92,7 @@ case class DataParam(
           case None => err(s"No value for dataFile")
           case Some(dataStr) =>
             val dataFormat: Format =
-              dataFormatFile.getOrElse(DataFormat.default)
+              dataFormatFile.getOrElse(DataFormat.defaultFormat)
             /* io2es(RDFAsJenaModel.fromString(dataStr, dataFormat.name,
              * iriBase).use(rdf => for { iriBase <- mkBase(base) newRdf <-
              * extendWithInference(rdf, inference) eitherStr <-
@@ -124,7 +125,7 @@ case class DataParam(
           case None => RDFAsJenaModel.empty.flatMap(e => IO((None, e)))
           case d @ Some(data) =>
             val dataFormat = dataFormatTextarea.getOrElse(
-              dataFormatValue.getOrElse(DataFormat.default)
+              dataFormatValue.getOrElse(DataFormat.defaultFormat)
             )
             val x: IO[(Option[String], Resource[IO, RDFReasoner])] = for {
               res <- rdfFromString(data, dataFormat, base)

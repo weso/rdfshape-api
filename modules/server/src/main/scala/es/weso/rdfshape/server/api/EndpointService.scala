@@ -2,7 +2,7 @@ package es.weso.rdfshape.server.api
 import cats.data.EitherT
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.APIDefinitions._
+import es.weso.rdfshape.server.api.ApiDefinitions._
 import es.weso.rdfshape.server.api.{Query => ServerQuery}
 import es.weso.utils.IOUtils._
 import io.circe.Json

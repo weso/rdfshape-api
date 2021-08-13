@@ -24,7 +24,7 @@ import org.http4s.headers._
 import org.http4s.multipart._
 import org.http4s.implicits._
 import es.weso.rdf.sgraph._
-import APIDefinitions._
+import ApiDefinitions._
 import es.weso.utils.IOUtils._
 import org.http4s.client.middleware.FollowRedirect
 import es.weso.shapemaps.{Status => _, _}
@@ -43,7 +43,9 @@ import es.weso.wikibaserdf._
 import ApiHelper._
 import com.typesafe.scalalogging.LazyLogging
 
-class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
+class WikidataService(client: Client[IO])
+    extends Http4sDsl[IO]
+    with LazyLogging {
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri            = uri"/api/wikidata/entity"
@@ -116,7 +118,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
       val requestUrl = s"""${endpoint.getOrElse("https://www.wikidata.org")}"""
-      
+
       val uri = Uri
         .fromString(requestUrl)
         .valueOr(throw _)
@@ -199,7 +201,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging
         ContinueParam(maybeContinue) => {
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
-      
+
       val uri = uri"https://www.wikidata.org"
         .withPath(Uri.Path.unsafeFromString("/w/api.php"))
         .withQueryParam("action", "wbsearchentities")
@@ -209,7 +211,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging
         .withQueryParam("continue", continue)
         .withQueryParam("type", "lexeme")
         .withQueryParam("format", "json")
-      
+
       val req: Request[IO] = Request(method = GET, uri = uri)
       for {
         eitherValues <- client.run(req).use {
@@ -303,9 +305,11 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val r: EitherT[IO, String, Response[IO]] = for {
-          label  <- EitherT(partsMap.eitherPartValue("entity"))
-          info   <- either2es[InfoEntity](cnvEntity(label))
-          _      <- { logger.debug(s"Extraction URI: ${info.uri}"); ok_esf[Unit, IO](()) }
+          label <- EitherT(partsMap.eitherPartValue("entity"))
+          info  <- either2es[InfoEntity](cnvEntity(label))
+          _ <- {
+            logger.debug(s"Extraction URI: ${info.uri}"); ok_esf[Unit, IO](())
+          }
           strRdf <- io2es(redirectClient.expect[String](info.uri))
           eitherInferred <- io2es(
             RDFAsJenaModel
@@ -528,7 +532,7 @@ class WikidataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging
 //          data <- resolve(uri)
 //          rdf <- getRDF(data)
 //          maybeDot <- generateDot(rdf, withDot)/* if (generateDot)
-/* EitherT.fromEither[F](RDF2Dot.rdf2dot(rdf).bimap(e => s"Error
+          /* EitherT.fromEither[F](RDF2Dot.rdf2dot(rdf).bimap(e => s"Error
            * converting to Dot: $e", s => Some(s.toString))) */
 //                  else EitherT.pure(none) */
           json <- prepareJson(
