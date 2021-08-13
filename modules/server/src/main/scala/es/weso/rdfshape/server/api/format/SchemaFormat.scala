@@ -7,7 +7,7 @@ import org.http4s.MediaType
   */
 class SchemaFormat(formatName: String, formatMimeType: MediaType)
     extends DataFormat(formatName, formatMimeType) {
-  def this(format: Format) {
+  def this(format: Format) = {
     this(format.name, format.mimeType)
   }
 }

@@ -84,7 +84,6 @@ case class DataParam(
             for {
               rdf <- rdfFromUri(new URI(dataUrl), dataFormat, base)
             } yield (None, rdf)
-            RDFFormat
         }
       case Right(`dataFileType`) =>
         logger.debug(s"Input - dataFileType: $data")
@@ -137,16 +136,14 @@ case class DataParam(
             x
         }
 
-      case Right(other) => {
+      case Right(other) =>
         val msg = s"Unknown value for activeDataTab: $other"
         logger.error(msg)
         err(msg)
-      }
 
-      case Left(msg) => {
+      case Left(msg) =>
         logger.error(msg)
         err(msg)
-      }
     }
     x
   }
@@ -189,6 +186,17 @@ case class DataParam(
     }
   }
 
+  private def mkBase(base: Option[String]): IO[Option[IRI]] = base match {
+    case None => IO(None)
+    case Some(str) =>
+      IRI
+        .fromString(str)
+        .fold(
+          e => IO.raiseError(new RuntimeException(s"Cannot get IRI from $str")),
+          (iri: IRI) => IO(Some(iri))
+        )
+  }
+
   private def rdfFromUri(
       uri: URI,
       format: Format,
@@ -210,24 +218,6 @@ case class DataParam(
     }
   }
 
-  private def mkBase(base: Option[String]): IO[Option[IRI]] = base match {
-    case None => IO(None)
-    case Some(str) =>
-      IRI
-        .fromString(str)
-        .fold(
-          e => IO.raiseError(new RuntimeException(s"Cannot get IRI from $str")),
-          (iri: IRI) => IO(Some(iri))
-        )
-  }
-
-  private def applyInference(
-      rdf: Resource[IO, RDFReasoner],
-      inference: Option[String],
-      dataFormat: Format
-  ): Resource[IO, RDFReasoner] =
-    extendWithInference(rdf, inference)
-
   private def extendWithInference(
       resourceRdf: Resource[IO, RDFReasoner],
       optInference: Option[String]
@@ -248,6 +238,13 @@ case class DataParam(
 
     }
   }
+
+  private def applyInference(
+      rdf: Resource[IO, RDFReasoner],
+      inference: Option[String],
+      dataFormat: Format
+  ): Resource[IO, RDFReasoner] =
+    extendWithInference(rdf, inference)
 
   private def mkBaseIri(
       maybeBase: Option[String]
