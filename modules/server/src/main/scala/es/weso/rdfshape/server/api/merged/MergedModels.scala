@@ -1,21 +1,23 @@
 package es.weso.rdfshape.server.api.merged
 
-import cats.effect._
-import cats.implicits._
-import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf._
-import io.circe.Json
-import fs2._
-import org.slf4j._
-// import fs2.Stream
-import _root_.es.weso.rdf.{PrefixMap, RDFBuilder, RDFReader, RDFReasoner}
+import _root_.es.weso.rdf._
 import _root_.es.weso.rdf.jena.RDFAsJenaModel
 import _root_.es.weso.rdf.nodes.{IRI, RDFNode}
 import _root_.es.weso.rdf.path.SHACLPath
 import _root_.es.weso.rdf.triples.RDFTriple
 import cats.data.NonEmptyList
+import cats.effect._
+import cats.implicits._
+import com.typesafe.scalalogging.LazyLogging
+import io.circe.Json
+import fs2._
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 
+/** Data class representing an RDF model compound of several smaller RDF models
+  *
+  * @param members     RDF models conforming the merged model
+  * @param mergedModel Unified RDF model containing the rest
+  */
 case class MergedModels(
     members: NonEmptyList[RDFAsJenaModel],
     mergedModel: Ref[IO, RDFAsJenaModel]
@@ -24,16 +26,11 @@ case class MergedModels(
     with LazyLogging {
 
   type Rdf = MergedModels
-
-  def getModel: IO[RDFAsJenaModel] = mergedModel.get
-
-  /* def mergeModels: IO[RDFAsJenaModel] = { val zero: Model =
-   * RDFAsJenaModel(ModelFactory.createDefaultModel()) def cmb(v: Model, r:
-   * Model): Model = RDFAsJenaModel(model = r.model.add(v.model))
-   * members.map(_.getModel) foldRight(zero)(cmb) } */
+  val id = s"MergedModels"
 
   override def getPrefixMap: IO[PrefixMap] = {
     val zero: PrefixMap = PrefixMap.empty
+
     def cmb(pm: PrefixMap, v: RDFAsJenaModel): IO[PrefixMap] = for {
       newPm <- v.getPrefixMap
     } yield pm.addPrefixMap(newPm)
@@ -41,23 +38,26 @@ case class MergedModels(
     members.foldM(zero)(cmb)
   }
 
-  val id = s"MergedModels"
+  /** Available parse formats, similar to those in Jena models
+    */
+  def availableParseFormats: List[String] = RDFAsJenaModel.availableFormats
 
-  def availableParseFormats: List[String]     = RDFAsJenaModel.availableFormats
+  /** Available serialize formats, similar to those in Jena models
+    */
   def availableSerializeFormats: List[String] = RDFAsJenaModel.availableFormats
 
-  val log = LoggerFactory.getLogger("MergedModels")
-
-  /* override def fromString(cs: CharSequence, format: String, base:
-   * Option[IRI]): RDFRead[MergedModels] = for { rdf <-
-   * RDFAsJenaModel.fromString(cs.toString, format, base) } yield
-   * MergedModels(List(rdf)) */
-
+  /* Override and replicate the functionalities inherited from RDF
+   * Reader/Reasoner */
   override def serialize(format: String, base: Option[IRI]): RDFRead[String] =
     for {
       mergedRdf <- getModel
       str       <- mergedRdf.serialize(format, base)
     } yield str
+
+  /* override def fromString(cs: CharSequence, format: String, base:
+   * Option[IRI]): RDFRead[MergedModels] = for { rdf <-
+   * RDFAsJenaModel.fromString(cs.toString, format, base) } yield
+   * MergedModels(List(rdf)) */
 
   override def iris(): RDFStream[IRI] = {
     Stream.eval(getModel).flatMap(_.iris())
@@ -148,14 +148,24 @@ case class MergedModels(
   override def hasPredicateWithSubject(n: RDFNode, p: IRI): RDFRead[Boolean] =
     getModel.flatMap(_.hasPredicateWithSubject(n, p))
 
+  def getModel: IO[RDFAsJenaModel] = mergedModel.get
+
 }
 
+/** Static utilities to work with several RDF models
+  */
 object MergedModels {
-  def fromList(ls: List[RDFAsJenaModel]): IO[RDFReasoner] =
-    NonEmptyList.fromList(ls) match {
+
+  /** Merge multiple RDF sources, entered as a list, into one
+    *
+    * @param models List containing the RDF models to be merged
+    * @return A unified RDF model containing all the models in the list
+    */
+  def fromList(models: List[RDFAsJenaModel]): IO[RDFReasoner] =
+    NonEmptyList.fromList(models) match {
       case Some(nel) =>
         for {
-          rdfModel    <- mergeModels(ls)
+          rdfModel    <- mergeModels(models)
           refRdfModel <- Ref.of[IO, RDFAsJenaModel](rdfModel)
         } yield MergedModels(nel, refRdfModel)
       case None =>
@@ -164,11 +174,18 @@ object MergedModels {
         } yield RDFAsJenaModel(ref, None, None, Map(), Map())
     }
 
-  private def mergeModels(ls: List[RDFAsJenaModel]): IO[RDFAsJenaModel] = {
-    val zero: Model                    = ModelFactory.createDefaultModel()
+  /** Merge multiple RDF sources into one
+    *
+    * @param models List of RDF models to be merged
+    * @return A unified RDF model containing all the models passed as arguments
+    */
+  private def mergeModels(models: List[RDFAsJenaModel]): IO[RDFAsJenaModel] = {
+    val zero: Model = ModelFactory.createDefaultModel()
+
     def cmb(v: Model, r: Model): Model = r.add(v)
+
     for {
-      model <- ls.map(_.getModel).sequence.map(_.foldLeft(zero)(cmb))
+      model <- models.map(_.getModel).sequence.map(_.foldLeft(zero)(cmb))
       r     <- Ref.of[IO, Model](model)
     } yield RDFAsJenaModel(r, None, None, Map(), Map())
   }

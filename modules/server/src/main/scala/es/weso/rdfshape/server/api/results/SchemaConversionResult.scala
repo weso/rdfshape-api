@@ -5,6 +5,17 @@ import es.weso.shapemaps.ShapeMap
 import io.circe.Json
 import io.circe.syntax._
 
+/** Data class representing the output of an conversion operation (input schema -> output schema)
+  *
+  * @param msg                Output informational message after processing. Used in case of error.
+  * @param schema             Input schema
+  * @param schemaFormat       Input schema format
+  * @param schemaEngine       Input schema engine
+  * @param targetSchemaFormat Target schema format
+  * @param targetSchemaEngine Target schema engine
+  * @param result             Output schema
+  * @param resultShapeMap     Output shapemap
+  */
 case class SchemaConversionResult(
     msg: String,
     schema: Option[String],
@@ -16,6 +27,10 @@ case class SchemaConversionResult(
     resultShapeMap: Option[ShapeMap]
 ) {
 
+  /** Convert a conversion result to its JSON representation
+    *
+    * @return JSON information of the conversion result
+    */
   def toJson: Json = Json.fromFields(
     List(
       ("msg", Json.fromString(msg))
@@ -35,8 +50,15 @@ case class SchemaConversionResult(
 }
 
 object SchemaConversionResult {
+
+  /** @param msg Error message contained in the result
+    * @return A SchemaConversionResult consisting of a single error message and no data
+    */
   def fromMsg(msg: String): SchemaConversionResult =
     SchemaConversionResult(msg, None, None, None, None, None, None, None)
+
+  /** @return A SchemaConversionResult, given all the parameters needed to build it (schemas, formats, results, etc.)
+    */
   def fromConversion(
       source: String,
       schemaFormat: String,

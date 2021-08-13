@@ -1,4 +1,5 @@
 package es.weso.rdfshape.server.api.merged
+
 import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
@@ -7,6 +8,15 @@ import es.weso.rdfshape.server.api.Defaults
 import es.weso.rdfshape.server.api.format.DataFormat
 import io.circe._
 
+/** Represent each chunk of RDF data submitted (mainly on RDF-merging operations)
+  *
+  * @param data          Raw RDF data (plain text)
+  * @param dataUrl       URL containing the RDF data
+  * @param endpoint      RDF data endpoint to use
+  * @param dataFile      File containing the RDF data
+  * @param dataFormat    Format of the RDF data
+  * @param activeDataTab Active tab in the client's view, used to choose which RDF source should be read
+  */
 case class DataElement(
     data: Option[String],
     dataUrl: Option[String],
@@ -15,6 +25,12 @@ case class DataElement(
     dataFormat: DataFormat,
     activeDataTab: ActiveDataTab
 ) extends LazyLogging {
+
+  /** Given an RDF source of data sent by a client, try to parse it and get the RDF model representation
+    *
+    * @return RDF (Jena) model of RDF data received from a client
+    * @note Iteratively compares the different possible values of activeDataTab against the one the client attached to decide an extracting strategy
+    */
   def toRDF: IO[Resource[IO, RDFAsJenaModel]] = activeDataTab match {
 
     case DataTextArea =>
@@ -40,7 +56,7 @@ case class DataElement(
       logger.error(s"Data element error")
       IO.raiseError(
         new RuntimeException(
-          s"Not implemented yet compound with activeTab: ${activeDataTab}"
+          s"Not implemented yet compound with activeTab: $activeDataTab"
         )
       )
   }
@@ -48,18 +64,22 @@ case class DataElement(
 
 object DataElement extends LazyLogging {
 
+  /** Empty and most basic data element
+    */
   val empty: DataElement = DataElement(
-    None,
-    None,
-    None,
-    None,
+    data = None,
+    dataUrl = None,
+    endpoint = None,
+    dataFile = None,
     Defaults.defaultDataFormat,
     ActiveDataTab.default
   )
 
+  /** Encoder used to transform DataElement instances to JSON values
+    */
   implicit val encodeDataElement: Encoder[DataElement] =
-    new Encoder[DataElement] {
-      final def apply(a: DataElement): Json = a.activeDataTab match {
+    (a: DataElement) =>
+      a.activeDataTab match {
         case DataTextArea =>
           Json.obj(
             ("data", Json.fromString(a.data.getOrElse(""))),
@@ -85,14 +105,15 @@ object DataElement extends LazyLogging {
             ("dataFormat", Json.fromString(a.dataFormat.name))
           )
       }
-    }
 
+  /** Decoder used to extract DataElement instances from JSON values
+    */
   implicit val decodeDataElement: Decoder[DataElement] =
     new Decoder[DataElement] {
-      final def apply(c: HCursor): Decoder.Result[DataElement] = {
+      final def apply(cursor: HCursor): Decoder.Result[DataElement] = {
         for {
-          dataActiveTab <- parseActiveTab(c)
-          dataFormat    <- parseDataFormat(c)
+          dataActiveTab <- parseActiveTab(cursor)
+          dataFormat    <- parseDataFormat(cursor)
           base = DataElement.empty.copy(
             dataFormat = dataFormat,
             activeDataTab = dataActiveTab
@@ -101,52 +122,60 @@ object DataElement extends LazyLogging {
             case DataTextArea =>
               logger.debug("Data element decoder - DataTextArea")
               for {
-                data <- c.downField("data").as[String]
+                data <- cursor.downField("data").as[String]
               } yield base.copy(data = Some(data))
             case DataFile =>
               logger.debug("Data element decoder - DataFile")
               /* TODO: either send the file text through the request (bad idea)
                * or decode the file appropriately */
-              logger.debug(c.downField("dataFile").toString)
+              logger.debug(cursor.downField("dataFile").toString)
               for {
-                dataFile <- c.downField("dataFile").as[String]
+                dataFile <- cursor.downField("dataFile").as[String]
               } yield base.copy(dataFile = Some(dataFile))
             case DataUrl =>
               logger.debug("Data element decoder - DaraUrl")
               for {
-                dataUrl <- c.downField("dataURL").as[String]
+                dataUrl <- cursor.downField("dataURL").as[String]
               } yield base.copy(dataUrl = Some(dataUrl))
             case DataEndpoint =>
               logger.debug("Data element decoder - DataEndpoint")
               for {
-                endpoint <- c.downField("endpoint").as[String]
+                endpoint <- cursor.downField("endpoint").as[String]
               } yield base.copy(endpoint = Some(endpoint))
           }
         } yield rest
       }
 
-      private def parseActiveTab(c: HCursor): Decoder.Result[ActiveDataTab] = {
+      /** @param cursor Cursor to operate JSON abstractions
+        * @return The ActiveDataTab specified in a JSON encoded DataElement
+        */
+      private def parseActiveTab(
+          cursor: HCursor
+      ): Decoder.Result[ActiveDataTab] = {
         for {
-          str <- c.downField("activeTab").as[String] orElse Right(
+          activeTabId <- cursor.downField("activeTab").as[String] orElse Right(
             ActiveDataTab.default.id
           )
-          a <- ActiveDataTab.fromString(str).leftMap(DecodingFailure(_, List()))
+          a <- ActiveDataTab
+            .fromString(activeTabId)
+            .leftMap(DecodingFailure(_, List()))
         } yield a
       }
 
-      private def parseDataFormat(c: HCursor): Decoder.Result[DataFormat] =
+      /** @param cursor Cursor to operate JSON abstractions
+        * @return The DataFormat specified in a JSON encoded DataElement
+        */
+      private def parseDataFormat(cursor: HCursor): Decoder.Result[DataFormat] =
         for {
-          str <- c
+          dataFormatStr <- cursor
             .downField("dataFormat")
             .as[String]
             .orElse(Right(Defaults.defaultDataFormat.name))
-          df <- DataFormat
-            .fromString(str)
+          dataFormat <- DataFormat
+            .fromString(dataFormatStr)
             .leftMap(s =>
               DecodingFailure(s"Non supported dataFormat: $s", List())
             )
-        } yield df
-
+        } yield dataFormat
     }
-
 }

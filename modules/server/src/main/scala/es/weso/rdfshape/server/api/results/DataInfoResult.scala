@@ -7,6 +7,15 @@ import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.utils.json.JsonUtilsServer._
 import io.circe.Json
 
+/** Data class representing the output of an "information" operation
+  *
+  * @param msg              Output informational message after processing. Used in case of error.
+  * @param data             RDF input data
+  * @param dataFormat       RDF input data format
+  * @param predicates       List of predicates of the RDF input
+  * @param numberStatements Number of statements in the RDF input
+  * @param prefixMap        Prefix map of the RDF input
+  */
 case class DataInfoResult private (
     msg: String,
     data: Option[String],
@@ -15,6 +24,14 @@ case class DataInfoResult private (
     numberStatements: Option[Int],
     prefixMap: Option[PrefixMap]
 ) {
+
+  /** Prefix map: defaults to empty.
+    */
+  lazy val pm: PrefixMap = prefixMap.getOrElse(PrefixMap.empty)
+
+  /** Convert an information result to its JSON representation
+    * @return JSON information of the extraction result
+    */
   def toJson: Json = {
     Json.fromFields(
       List(("msg", Json.fromString(msg))) ++
@@ -34,8 +51,9 @@ case class DataInfoResult private (
     )
   }
 
-  lazy val pm = prefixMap.getOrElse(PrefixMap.empty)
-
+  /** @param iri IRI to be converted
+    * @return JSON representation of the IRI
+    */
   private def iri2Json(iri: IRI): Json = {
     Json.fromString(pm.qualifyIRI(iri))
   }
@@ -43,8 +61,19 @@ case class DataInfoResult private (
 }
 
 object DataInfoResult {
+
+  /** Message attached to the result when created successfully
+    */
+  val successMessage = "Well formed RDF"
+
+  /** @param msg Error message contained in the result
+    * @return A DataInfoResult consisting of a single error message and no data
+    */
   def fromMsg(msg: String): DataInfoResult =
     DataInfoResult(msg, None, None, None, None, None)
+
+  /** @return A DataInfoResult, given all the parameters needed to build it (input, predicates, etc.)
+    */
   def fromData(
       data: Option[String],
       dataFormat: Option[DataFormat],
@@ -53,7 +82,7 @@ object DataInfoResult {
       prefixMap: PrefixMap
   ): DataInfoResult =
     DataInfoResult(
-      "Well formed RDF",
+      successMessage,
       data,
       dataFormat,
       Some(predicates),
