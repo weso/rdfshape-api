@@ -50,6 +50,8 @@ class WikidataService(client: Client[IO])
   val defaultContinue   = 0
   val redirectClient    = FollowRedirect(3)(client)
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "wikidata" / "test" => {
@@ -157,7 +159,7 @@ class WikidataService(client: Client[IO])
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      val requestUrl = s"${endpoint.getOrElse("https:  //www.wikidata.org")}"
+      val requestUrl = s"${endpoint.getOrElse("https:    //www.wikidata.org")}"
       val uri = Uri
         .fromString(requestUrl)
         .valueOr(throw _)
@@ -746,6 +748,12 @@ class WikidataService(client: Client[IO])
 }
 
 object WikidataService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new Wikidata Service
+    */
   def apply(client: Client[IO]): WikidataService =
     new WikidataService(client)
 }

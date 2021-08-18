@@ -4,8 +4,8 @@ import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.results.ShapeMapInfoResult
 import es.weso.rdfshape.server.api.routes.ApiDefinitions._
-import es.weso.rdfshape.server.api.routes.ApiHelper._
 import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.shapemaps.ShapeMap
 import io.circe._
 import org.http4s._
@@ -22,6 +22,8 @@ class ShapeMapService(client: Client[IO])
     extends Http4sDsl[IO]
     with LazyLogging {
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "shapeMap" / "formats" =>
@@ -36,7 +38,7 @@ class ShapeMapService(client: Client[IO])
           ShapeMapParam.mkShapeMap(partsMap)
         t.attempt.flatMap(
           _.fold(
-            e => Ok(mkJsonErr(e.getMessage())),
+            e => responseJson(e.getMessage, BadRequest),
             pair => {
               val (sm, smp) = pair
               val smi: ShapeMapInfoResult = ShapeMapInfoResult.fromShapeMap(
@@ -54,5 +56,11 @@ class ShapeMapService(client: Client[IO])
 }
 
 object ShapeMapService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new ShapeMap Service
+    */
   def apply(client: Client[IO]): ShapeMapService = new ShapeMapService(client)
 }

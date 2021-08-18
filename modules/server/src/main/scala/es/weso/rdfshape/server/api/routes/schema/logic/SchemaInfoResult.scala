@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema
+package es.weso.rdfshape.server.api.routes.schema.logic
 
 import io.circe.Json
 

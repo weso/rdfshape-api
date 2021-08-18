@@ -33,6 +33,8 @@ class EndpointService(client: Client[IO])
 
   private val relativeBase = Defaults.relativeBase
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case req @ POST -> Root / `api` / "endpoint" / "query" =>
@@ -136,6 +138,12 @@ class EndpointService(client: Client[IO])
 }
 
 object EndpointService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new Endpoint Service
+    */
   def apply(client: Client[IO]): EndpointService =
     new EndpointService(client)
 }

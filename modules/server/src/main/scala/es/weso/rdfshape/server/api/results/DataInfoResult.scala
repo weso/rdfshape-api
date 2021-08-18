@@ -4,7 +4,7 @@ import es.weso.rdf.PrefixMap
 import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.routes.ApiHelper
-import es.weso.rdfshape.server.utils.json.JsonUtilsServer._
+import es.weso.rdfshape.server.utils.json.JsonUtils._
 import io.circe.Json
 
 /** Data class representing the output of an "information" operation

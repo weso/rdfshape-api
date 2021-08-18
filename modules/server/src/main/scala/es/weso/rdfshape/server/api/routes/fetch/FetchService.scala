@@ -10,6 +10,8 @@ import scalaj.http.Http
 
 class FetchService() extends Http4sDsl[IO] {
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Query URL and return the response
@@ -32,6 +34,12 @@ class FetchService() extends Http4sDsl[IO] {
 }
 
 object FetchService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new Fetch Service
+    */
   def apply(client: Client[IO]): FetchService =
     new FetchService()
 }

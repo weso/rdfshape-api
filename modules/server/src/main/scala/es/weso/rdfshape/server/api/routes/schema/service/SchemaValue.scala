@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema
+package es.weso.rdfshape.server.api.routes.schema.service
 
 import es.weso.rdfshape.server.api.format.SchemaFormat
 

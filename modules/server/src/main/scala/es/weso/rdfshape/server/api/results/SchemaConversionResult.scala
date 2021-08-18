@@ -1,6 +1,6 @@
 package es.weso.rdfshape.server.api.results
 
-import es.weso.rdfshape.server.utils.json.JsonUtilsServer.maybeField
+import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.shapemaps.ShapeMap
 import io.circe.Json
 import io.circe.syntax._

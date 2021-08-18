@@ -12,10 +12,13 @@ import org.http4s.server.staticcontent.resourceServiceBuilder
 import org.log4s.getLogger
 
 /** API service to handle multiple general tasks (server status, etc.)
+  *
   * @param client HTTP4S client object
   */
 class APIService(client: Client[IO]) extends Http4sDsl[IO] with ApiService {
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case req @ GET -> Root / `api` / "health" =>
@@ -33,6 +36,12 @@ class APIService(client: Client[IO]) extends Http4sDsl[IO] with ApiService {
 }
 
 object APIService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new API Service
+    */
   def apply(client: Client[IO]): APIService =
     new APIService(client)
 }

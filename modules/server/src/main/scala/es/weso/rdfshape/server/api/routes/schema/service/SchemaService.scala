@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema
+package es.weso.rdfshape.server.api.routes.schema.service
 
 import cats.data._
 import cats.effect._
@@ -13,9 +13,22 @@ import es.weso.rdfshape.server.api.routes.ApiHelper._
 import es.weso.rdfshape.server.api.routes.Defaults._
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.routes.data.DataParam
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.{
+  schema2SVG,
+  schemaCytoscape,
+  schemaInfo,
+  schemaVisualize
+}
+import es.weso.rdfshape.server.api.routes.schema.logic.{
+  SchemaInfo,
+  SchemaInfoResult
+}
 import es.weso.rdfshape.server.api.routes.{Defaults, PartsMap}
 import es.weso.rdfshape.server.api.utils.OptEitherF._
+import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.schema._
+import es.weso.shacl.converter.Shacl2ShEx
+import es.weso.shapemaps.ShapeMap
 import es.weso.utils.IOUtils._
 import io.circe._
 import io.circe.generic.auto._
@@ -28,10 +41,13 @@ import org.http4s.headers._
 import org.http4s.multipart.Multipart
 
 /** API service to handle schema-related operations
+  *
   * @param client HTTP4S client object
   */
 class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "schema" / "engines" =>
@@ -98,7 +114,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
           .fromString(schemaStr, schemaFormat, schemaEngine, None)
           .attempt
         r <- either.fold(
-          e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
+          e => responseJson(s"Error reading schema: $e\nString: $schemaStr"),
           schema => {
             val shapes: List[String] = schema.shapes
             val jsonShapes           = Json.fromValues(shapes.map(Json.fromString))
@@ -124,13 +140,13 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
             schemaPair <- SchemaParam.mkSchema(partsMap, None)
             (schema, sp) = schemaPair
           } yield {
-            schemaInfo(schema)
+            schemaInfo(schema).toJson
           }
           for {
             e <- r.attempt
             v <- e.fold(
               t => {
-                Ok(SchemaInfoReply.fromError(t.getMessage).toJson)
+                Ok(SchemaInfo.fromError(t.getMessage).toJson)
               },
               Ok(_)
             )
@@ -138,7 +154,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         }
       }
 
-    case req @ GET -> Root / `api` / "schema" / "convert" :?
+    case GET -> Root / `api` / "schema" / "convert" :?
         OptSchemaParam(optSchema) +&
         SchemaFormatParam(optSchemaFormat) +&
         SchemaEngineParam(optSchemaEngine) +&
@@ -159,7 +175,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
           .fromString(schemaStr, schemaFormat.name, schemaEngine, None)
           .attempt
         r <- either.fold(
-          e => errJson(s"Error reading schema: $e\nString: $schemaStr"),
+          e => responseJson(s"Error reading schema: $e\nString: $schemaStr"),
           schema => {
             for {
               optTargetSchemaFormat <- optEither2f(
@@ -233,7 +249,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
           }
           for {
             e <- r.attempt
-            v <- e.fold(t => errJson(t.getMessage), Ok(_))
+            v <- e.fold(t => responseJson(t.getMessage), Ok(_))
           } yield v
         }
       }
@@ -251,7 +267,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
           }
           for {
             e <- r.attempt
-            v <- e.fold(t => errJson(t.getMessage), Ok(_))
+            v <- e.fold(t => responseJson(t.getMessage), Ok(_))
           } yield v
         }
       }
@@ -297,7 +313,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
       for {
         either <- run_es(r)
         v <- either.fold(
-          s => errJson(s"Error obtaining schema $s"),
+          s => responseJson(s"Error obtaining schema $s"),
           svg => {
             Ok(svg).map(
               _.withContentType(`Content-Type`(MediaType.image.`svg+xml`))
@@ -337,7 +353,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         } yield (df, sf)
 
       either match {
-        case Left(str) => errJson(str)
+        case Left(str) => responseJson(str, status = BadRequest)
         case Right(pair) =>
           val (optDataFormat, optSchemaFormat) = pair
           val baseUri                          = req.uri
@@ -395,8 +411,6 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
             optShapeMapFormat, // TODO: Maybe a more specific param for File format?
             optActiveShapeMapTab
           )
-
-          // val (dataStr, eitherRDF) =
 
           val eitherResult: IO[Response[IO]] = for {
             pairData <- io2f(dp.getData(relativeBase))
@@ -460,16 +474,106 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 
           for {
             e <- r.attempt
-            v <- e.fold(t => errJson(t.getMessage), json => Ok(json))
+            v <- e.fold(t => responseJson(t.getMessage), json => Ok(json))
           } yield v
         }
       }
   }
   private val relativeBase = Defaults.relativeBase
 
-  // TODO: Move this method to a more generic place...
-  private def errJson(msg: String): IO[Response[IO]] =
-    Ok(mkJsonErr(msg)) //
+  /** Given an input schema, convert it to another output schema with the parameters specified.
+    *
+    * @param schema                Input schema
+    * @param schemaStr             Input schema contents
+    * @param schemaFormat          Input schema format
+    * @param schemaEngine          Input schema engine
+    * @param optTargetSchemaFormat Output schema desired format
+    * @param optTargetSchemaEngine Output schema desired engine
+    * @return Optionally, the raw output schema contents
+    */
+  private[schema] def convertSchema(
+      schema: Schema,
+      schemaStr: Option[String],
+      schemaFormat: SchemaFormat,
+      schemaEngine: String,
+      optTargetSchemaFormat: Option[SchemaFormat],
+      optTargetSchemaEngine: Option[String]
+  ): IO[SchemaConversionResult] = {
+    val result: IO[SchemaConversionResult] = for {
+      pair <- doSchemaConversion(
+        schema,
+        optTargetSchemaFormat.map(_.name),
+        optTargetSchemaEngine
+      )
+      sourceStr <- schemaStr match {
+        case None         => schema.serialize(schemaFormat.name)
+        case Some(source) => IO(source)
+      }
+      (resultStr, resultShapeMap) = pair
+    } yield SchemaConversionResult.fromConversion(
+      sourceStr,
+      schemaFormat.name,
+      schemaEngine,
+      optTargetSchemaFormat.map(_.name),
+      optTargetSchemaEngine,
+      resultStr,
+      resultShapeMap
+    )
+
+    for {
+      either <- result.attempt
+    } yield either.fold(
+      err => SchemaConversionResult.fromMsg(s"error converting schema: $err"),
+      identity
+    )
+  }
+
+  private def doSchemaConversion(
+      schema: Schema,
+      targetSchemaFormat: Option[String],
+      optTargetSchemaEngine: Option[String]
+  ): IO[(String, ShapeMap)] = {
+    logger.debug(
+      s"Schema conversion, name: ${schema.name}, targetSchema: $targetSchemaFormat"
+    )
+    val default = for {
+      str <- schema.convert(targetSchemaFormat, optTargetSchemaEngine, None)
+    } yield (str, ShapeMap.empty)
+    schema match {
+      case shacl: ShaclexSchema =>
+        optTargetSchemaEngine.map(_.toUpperCase()) match {
+          case Some("SHEX") =>
+            logger.debug("Schema conversion: SHACLEX -> SHEX")
+            Shacl2ShEx
+              .shacl2ShEx(shacl.schema)
+              .fold(
+                e =>
+                  IO.raiseError(
+                    new RuntimeException(
+                      s"Error converting SHACL -> ShEx: $e"
+                    )
+                  ),
+                pair => {
+                  val (schema, shapeMap) = pair
+                  logger.debug(s"shapeMap: $shapeMap")
+                  for {
+                    emptyBuilder <- RDFAsJenaModel.empty
+                    str <- emptyBuilder.use(builder =>
+                      es.weso.shex.Schema.serialize(
+                        schema,
+                        targetSchemaFormat.getOrElse("SHEXC"),
+                        None,
+                        builder
+                      )
+                    )
+                  } yield (str, shapeMap)
+                }
+              )
+          case _ => default
+        }
+      case _ => default
+    }
+  }
 
   private def info(msg: String): EitherT[IO, String, Unit] =
     EitherT.liftF[IO, String, Unit](IO(logger.info(msg)))
@@ -498,6 +602,12 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 }
 
 object SchemaService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new Schema Service
+    */
   def apply(client: Client[IO]): SchemaService =
     new SchemaService(client)
 }

@@ -1,6 +1,6 @@
 package es.weso.rdfshape.server.api.results
 
-import es.weso.rdfshape.server.utils.json.JsonUtilsServer._
+import es.weso.rdfshape.server.utils.json.JsonUtils._
 import es.weso.shapemaps._
 import io.circe.Json
 

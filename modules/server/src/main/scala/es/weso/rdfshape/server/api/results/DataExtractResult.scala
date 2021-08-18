@@ -6,7 +6,7 @@ import es.weso.rdfshape.server.api.routes.Defaults.{
   defaultSchemaEngine,
   defaultSchemaFormat
 }
-import es.weso.rdfshape.server.utils.json.JsonUtilsServer._
+import es.weso.rdfshape.server.utils.json.JsonUtils._
 import es.weso.schema.Schema
 import es.weso.shapemaps.ResultShapeMap
 import io.circe.Json

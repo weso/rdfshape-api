@@ -9,7 +9,7 @@ import es.weso.rdfshape.server.api.routes.data.DataService
 import es.weso.rdfshape.server.api.routes.endpoint.EndpointService
 import es.weso.rdfshape.server.api.routes.fetch.FetchService
 import es.weso.rdfshape.server.api.routes.permalink.PermalinkService
-import es.weso.rdfshape.server.api.routes.schema.SchemaService
+import es.weso.rdfshape.server.api.routes.schema.service.SchemaService
 import es.weso.rdfshape.server.api.routes.shapemap.ShapeMapService
 import es.weso.rdfshape.server.api.routes.shex.ShExService
 import es.weso.rdfshape.server.api.routes.wikibase.WikidataService
@@ -34,11 +34,12 @@ import scala.util.{Failure, Success, Try}
   * A single Server is meant to be running simultaneously.
   * This class is private and closed to external usage modification, server initialization
   * is managed via its companion object.
-  * @param port Port where the API server is exposed
-  * @param https Whether if the server should try to create a secure context or not, given the user's
-  *              environment configuration
+  *
+  * @param port           Port where the API server is exposed
+  * @param https          Whether if the server should try to create a secure context or not, given the user's
+  *                       environment configuration
   * @param requestTimeout Http4s application request timeout
-  * @param idleTimeout Http4s application idle timeout
+  * @param idleTimeout    Http4s application idle timeout
   */
 private class Server(
     val port: Int,
@@ -49,18 +50,20 @@ private class Server(
     with LazyLogging {
 
   /** Start running the server, using the configuration stored in the instance attributes
+    *
     * @param args Arguments passed to the IOApp. Should be an empty list since the arguments have been processed beforehand.
     * @return Application's exit code
     */
   override def run(args: List[String]): IO[ExitCode] = {
     println(s"""
-        |Starting server on port $port...
-        |Serving via ${if(https) "HTTPS" else "HTTP"}...
-        |""".stripMargin)
+         |Starting server on port $port...
+         |Serving via ${if(https) "HTTPS" else "HTTP"}...
+         |""".stripMargin)
     stream(getSslContext).compile.drain.as(ExitCode.Success)
   }
 
   /** Create an instance of a secure SSLContext for the application.
+    *
     * @return None if no HTTPS is required; an SSLContext if HTTPS is required and the context could be created
     * @see {@link es.weso.rdfshape.server.utils.secure.SSLHelper}
     * @note If an error occurs creating the SSLContext, program termination will occur
@@ -81,6 +84,7 @@ private class Server(
   }
 
   /** Start an infinite stream in charge of processing incoming requests
+    *
     * @param sslContext SSLContext used by the application (may be empty)
     * @return Application's exit code
     */
@@ -97,7 +101,8 @@ private class Server(
   }.drain
 
   /** Create the final http4s server
-    * @param client Http4s' client in charge of the application
+    *
+    * @param client     Http4s' client in charge of the application
     * @param sslContext SSLContext used by the application
     * @return The final http4s server, with the proper application and SSLContext bound
     */
@@ -119,6 +124,7 @@ private class Server(
   }
 
   /** Create an http4s application object
+    *
     * @param client Http4s' client in charge of the application
     * @return Http4s' application with the given client and a request-logging middleware
     */
@@ -168,7 +174,9 @@ object Server {
   )
 
   // Act as a server factory
+
   /** Apply method, used as a factory for Server objects
+    *
     * @param port Port where the API server will be exposed
     */
   def apply(port: Int): Unit = {
@@ -176,7 +184,8 @@ object Server {
   }
 
   /** Apply method, used as a factory for Server objects
-    * @param port Port where the API server will be exposed
+    *
+    * @param port  Port where the API server will be exposed
     * @param https Whether if the server will try to create a secure context or not
     */
   def apply(port: Int, https: Boolean): Unit = {
@@ -184,14 +193,13 @@ object Server {
     s.main(Array.empty[String])
   }
 
-  // Linked routes
   /** Configure the http4s application to use the specified sources as API routes
     */
   private def routesService(client: Client[IO]): HttpRoutes[IO] =
     CORS(
-      SchemaService(client).routes <+>
-        APIService(client).routes <+>
+      APIService(client).routes <+>
         DataService(client).routes <+>
+        SchemaService(client).routes <+>
         ShExService(client).routes <+>
         ShapeMapService(client).routes <+>
         WikidataService(client).routes <+>

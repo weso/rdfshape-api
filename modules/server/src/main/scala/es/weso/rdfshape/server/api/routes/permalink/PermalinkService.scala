@@ -38,6 +38,9 @@ class PermalinkService(client: Client[IO])
 
   // Utils for url generation
   val random: Random.type = Random
+
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Insert a reference to the permalink in DB
@@ -226,5 +229,11 @@ class PermalinkService(client: Client[IO])
 }
 
 object PermalinkService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new Permalink Service
+    */
   def apply(client: Client[IO]): PermalinkService = new PermalinkService(client)
 }

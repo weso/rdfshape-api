@@ -11,6 +11,8 @@ import org.http4s.dsl.Http4sDsl
 
 class ShExService(client: Client[IO]) extends Http4sDsl[IO] {
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "shEx" / "formats" =>
@@ -21,6 +23,12 @@ class ShExService(client: Client[IO]) extends Http4sDsl[IO] {
 }
 
 object ShExService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new ShEx Service
+    */
   def apply(client: Client[IO]): ShExService =
     new ShExService(client)
 }

@@ -25,10 +25,13 @@ import org.http4s.multipart.Multipart
 import scala.util.Try
 
 /** API Service to handle RDF data
+  *
   * @param client HTTP4S client object
   */
 class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 
+  /** Describe the API routes handled by this service and the actions performed on each of them
+    */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Input RDF data formats include html-microdata, turtle, json-ld...
@@ -278,6 +281,12 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
 }
 
 object DataService {
+
+  /** Service factory
+    *
+    * @param client Underlying http4s client
+    * @return A new Data Service
+    */
   def apply(client: Client[IO]): DataService =
     new DataService(client)
 }
