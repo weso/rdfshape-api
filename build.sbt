@@ -33,9 +33,6 @@ lazy val packagingSettings = Seq(
   // Output filename on "sbt-native-packager" tasks
   Universal / packageName := (Global / packageName).value
 )
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
-ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
-
 /* ------------------------------------------------------------------------- */
 // Shared compilation settings for all modules.
 // https://docs.scala-lang.org/overviews/compiler-options/index.html
@@ -49,6 +46,7 @@ lazy val compilationSettings = Seq(
     "-Yrangepos"
   )
 )
+
 // Scaladoc settings for docs generation. Run task "doc" or "server / doc".
 // https://www.scala-sbt.org/1.x/docs/Howto-Scaladoc.html
 /* https://github.com/scala/scala/blob/2.13.x/src/scaladoc/scala/tools/nsc/doc/Settings.scala */
@@ -82,12 +80,14 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
   // Need to generate docs to publish to oss
   Compile / packageDoc / publishArtifact := true
 )
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
+ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 // Setup Mdoc + Docusaurus settings
 lazy val mdocSettings = Seq(
   mdocVariables := Map(
     "APP_NAME"               -> (Global / name).value,
     "INNER_NAME"             -> name.value,
-    "VERSION"                -> (ThisBuild / version).value,
+    "VERSION"                -> version.value,
     "WEBPAGE_URL"            -> "https://www.weso.es/rdfshape-api/",
     "API_URL"                -> "https://api.rdfshape.weso.es",
     "API_CONTAINER_REGISTRY" -> "https://github.com/orgs/weso/packages/container/package/rdfshape-api",
@@ -271,7 +271,6 @@ lazy val server = project
       mongodb
     )
   )
-
 /* ------------------------------------------------------------------------- */
 // Documentation project, for MDoc + Docusaurus documentation
 lazy val docs = project
@@ -291,7 +290,6 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* DEPENDENCY versions */
 lazy val http4sVersion = "1.0.0-M21"
 lazy val catsVersion   = "2.5.0"
-
 /* ------------------------------------------------------------------------- */
 lazy val mongodbVersion      = "4.1.1"
 lazy val any23Version        = "2.2"

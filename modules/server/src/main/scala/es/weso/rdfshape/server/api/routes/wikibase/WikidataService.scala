@@ -10,10 +10,9 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.sgraph._
-import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.routes.wikibase.WikibaseSchemaParam
 import es.weso.rdfshape.server.api.routes.ApiDefinitions._
 import es.weso.rdfshape.server.api.routes.ApiHelper._
+import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.api.utils.Http4sUtils._
 import es.weso.schema.{Schema, ShapeMapTrigger}
@@ -37,6 +36,7 @@ import scala.util.control.NoStackTrace
 import scala.util.matching.Regex
 
 /** API service to handle wikidata related operations
+  *
   * @param client HTTP4S client object
   */
 class WikidataService(client: Client[IO])
@@ -157,7 +157,7 @@ class WikidataService(client: Client[IO])
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
-      val requestUrl = s"${endpoint.getOrElse("https: //www.wikidata.org")}"
+      val requestUrl = s"${endpoint.getOrElse("https:  //www.wikidata.org")}"
       val uri = Uri
         .fromString(requestUrl)
         .valueOr(throw _)
@@ -333,7 +333,8 @@ class WikidataService(client: Client[IO])
             schema.serialize("SHEXC")
           })
           _ <- {
-            logger.trace(s"ShExC str: $shExCStr"); ok_es[Unit](())
+            logger.trace(s"ShExC str: $shExCStr");
+            ok_es[Unit](())
           }
           resp <- io2es(Ok(mkExtractAnswer(shExCStr, label)))
         } yield resp
@@ -357,11 +358,13 @@ class WikidataService(client: Client[IO])
           ).withHeaders(`Content-Type`(MediaType.application.`json`))
             .withEntity[Json](jsonParams)
           _ <- {
-            logger.debug(s"URI: ${jsonParams.spaces2}"); ok_es[Unit](())
+            logger.debug(s"URI: ${jsonParams.spaces2}");
+            ok_es[Unit](())
           }
           result <- f2es(redirectClient.expect[Json](postRequest))
           _ <- {
-            logger.trace(s"Result\n${result.spaces2}"); ok_es[Unit](())
+            logger.trace(s"Result\n${result.spaces2}");
+            ok_es[Unit](())
           }
           resp <- f2es(Ok(result))
         } yield resp
@@ -379,19 +382,23 @@ class WikidataService(client: Client[IO])
         val r: IO[Response[IO]] = for {
           eitherItem <- partsMap.eitherPartValue("item")
           _ <- {
-            logger.debug(eitherItem.toString); IO.pure(())
+            logger.debug(eitherItem.toString);
+            IO.pure(())
           }
           item <- fromEither(eitherItem)
           _ <- {
-            logger.debug(item); IO.pure(())
+            logger.debug(item);
+            IO.pure(())
           }
           info <- fromEither(cnvEntity2(item))
           _ <- {
-            logger.debug(info.toString); IO.pure(())
+            logger.debug(info.toString);
+            IO.pure(())
           }
           pair <- WikibaseSchemaParam.mkSchema(partsMap, None, client)
           _ <- {
-            logger.debug(pair.toString()); IO.pure(())
+            logger.debug(pair.toString());
+            IO.pure(())
           }
           (schema, wbp) = pair
           iriItem  <- fromEither(IRI.fromString(info.sourceUri))
@@ -684,6 +691,8 @@ class WikidataService(client: Client[IO])
     else
       EitherT.pure(None)
 
+  private def fromIO[A](io: IO[A]): EitherT[IO, String, A] = EitherT.liftF(io)
+
   private def prepareJsonOk(
       entity: String,
       uri: Uri,
@@ -698,8 +707,6 @@ class WikidataService(client: Client[IO])
       ("rdf", Json.fromString(serialized))
     ) ++ dotField(maybeDot)
   )
-
-  private def fromIO[A](io: IO[A]): EitherT[IO, String, A] = EitherT.liftF(io)
 
   private def dotField(maybeDot: Option[String]): List[(String, Json)] =
     maybeDot.fold(List[(String, Json)]())(s =>

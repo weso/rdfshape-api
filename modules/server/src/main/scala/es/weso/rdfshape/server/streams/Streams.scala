@@ -15,7 +15,7 @@ import java.io.{OutputStream, StringWriter}
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets.UTF_8
 
-/** Utilities for working with RDF data and its extraction from remote source
+/** Utilities for working with RDF data and its extraction from remote sources
   */
 object Streams extends LazyLogging {
 
@@ -40,44 +40,6 @@ object Streams extends LazyLogging {
         }
       }
     )
-
-  }
-
-  /** Generic function for private use. Given an RDF-extracting function, executes it while checking for errors and closing all resources used in the process.
-    *
-    * @param uri         URI to read from
-    * @param lang        Output RDF syntax (turtle, n-triples...)
-    * @param getRdfLogic Logic in charge of extracting RDF from sources
-    * @param encoding    Encoding with which the data extracted is stored
-    * @return String representation of the RDF data extracted (in the specified language and encoding)
-    */
-  private def getRdf(
-      uri: Uri,
-      lang: Lang,
-      getRdfLogic: (StringWriter, OutputStream, StreamRDF) => IO[String],
-      encoding: Charset = UTF_8
-  ): IO[String] = {
-
-    /* Get the necessary elements (writer, streams, etc.) to read the RDF data
-     * and store it in plain text if needed. */
-    val streamsIOElements = StreamsIOElements(lang, encoding)
-    val (stringWriter, outputStream, rdfStream) =
-      StreamsIOElements.unapply(streamsIOElements)
-
-    /* Extract the String representation of the URI and pick up the data from
-     * the initial StringWriter.
-     * DATA => StreamRDF => OutputStream => StringWriter */
-    try {
-      getRdfLogic(stringWriter, outputStream, rdfStream)
-    } catch {
-      // Log errors before throwing
-      case e: Throwable =>
-        logger.error(s"Error parsing RDF data from $uri: ${e.getMessage}")
-        throw e
-    } finally {
-      // Always close the output stream
-      outputStream.close()
-    }
 
   }
 
@@ -137,6 +99,44 @@ object Streams extends LazyLogging {
         }
       }
     )
+
+  /** Generic function for private use. Given an RDF-extracting function, executes it while checking for errors and closing all resources used in the process.
+    *
+    * @param uri         URI to read from
+    * @param lang        Output RDF syntax (turtle, n-triples...)
+    * @param getRdfLogic Logic in charge of extracting RDF from sources
+    * @param encoding    Encoding with which the data extracted is stored
+    * @return String representation of the RDF data extracted (in the specified language and encoding)
+    */
+  private def getRdf(
+      uri: Uri,
+      lang: Lang,
+      getRdfLogic: (StringWriter, OutputStream, StreamRDF) => IO[String],
+      encoding: Charset = UTF_8
+  ): IO[String] = {
+
+    /* Get the necessary elements (writer, streams, etc.) to read the RDF data
+     * and store it in plain text if needed. */
+    val streamsIOElements = StreamsIOElements(lang, encoding)
+    val (stringWriter, outputStream, rdfStream) =
+      StreamsIOElements.unapply(streamsIOElements)
+
+    /* Extract the String representation of the URI and pick up the data from
+     * the initial StringWriter.
+     * DATA => StreamRDF => OutputStream => StringWriter */
+    try {
+      getRdfLogic(stringWriter, outputStream, rdfStream)
+    } catch {
+      // Log errors before throwing
+      case e: Throwable =>
+        logger.error(s"Error parsing RDF data from $uri: ${e.getMessage}")
+        throw e
+    } finally {
+      // Always close the output stream
+      outputStream.close()
+    }
+
+  }
 
 }
 
