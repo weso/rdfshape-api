@@ -4,7 +4,10 @@ import cats.effect.IO
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.PrefixMap
-import es.weso.rdfshape.server.api.routes.Defaults._
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
+  defaultActiveShapeMapTab,
+  defaultShapeMapFormat
+}
 import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.shapemaps.ShapeMap
 

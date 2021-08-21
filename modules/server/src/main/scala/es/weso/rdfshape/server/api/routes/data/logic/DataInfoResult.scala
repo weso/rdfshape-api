@@ -1,9 +1,9 @@
-package es.weso.rdfshape.server.api.results
+package es.weso.rdfshape.server.api.routes.data.logic
 
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.format._
-import es.weso.rdfshape.server.api.routes.ApiHelper
+import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.prefixMap2Json
 import es.weso.rdfshape.server.utils.json.JsonUtils._
 import io.circe.Json
 
@@ -42,7 +42,7 @@ case class DataInfoResult private (
           (df: DataFormat) => Json.fromString(df.name)
         ) ++
         maybeField(numberStatements, "numberStatements", Json.fromInt) ++
-        maybeField(prefixMap, "prefixMap", ApiHelper.prefixMap2Json) ++
+        maybeField(prefixMap, "prefixMap", prefixMap2Json) ++
         maybeField(
           predicates,
           "predicates",

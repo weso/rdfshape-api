@@ -1,11 +1,11 @@
-package es.weso.rdfshape.server.api.results
+package es.weso.rdfshape.server.api.routes.data.logic
 
 import cats.effect.IO
-import es.weso.rdfshape.server.api.format._
-import es.weso.rdfshape.server.api.routes.Defaults.{
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
   defaultSchemaEngine,
   defaultSchemaFormat
 }
+import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.utils.json.JsonUtils._
 import es.weso.schema.Schema
 import es.weso.shapemaps.ResultShapeMap

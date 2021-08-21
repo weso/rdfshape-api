@@ -6,24 +6,23 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
-import es.weso.rdfshape.server.api.format._
-import es.weso.rdfshape.server.api.results._
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
-import es.weso.rdfshape.server.api.routes.ApiHelper._
-import es.weso.rdfshape.server.api.routes.Defaults._
-import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.routes.data.DataParam
-import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.{
-  schema2SVG,
-  schemaCytoscape,
-  schemaInfo,
-  schemaVisualize
+import es.weso.rdfshape.server.api.definitions.ApiDefaults
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
+  defaultSchemaEngine,
+  defaultSchemaFormat
 }
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
+import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
+import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.prefixMap2Json
+import es.weso.rdfshape.server.api.routes.data.service.DataParam
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations._
 import es.weso.rdfshape.server.api.routes.schema.logic.{
+  SchemaConversionResult,
   SchemaInfo,
   SchemaInfoResult
 }
-import es.weso.rdfshape.server.api.routes.{Defaults, PartsMap}
 import es.weso.rdfshape.server.api.utils.OptEitherF._
 import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.schema._
@@ -427,17 +426,15 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
                         new RuntimeException(s"Error obtaining schema: $s")
                       )
                     )
-                    res <- validate(
+                    res <- schemaValidate(
                       rdf,
-                      dp,
                       schema,
-                      sp,
                       tp,
                       relativeBase,
                       builder
                     )
                     (result, maybeTrigger, time) = res
-                    json <- result2json(res._1)
+                    json <- schemaResult2json(res._1)
                   } yield json
               }
             } yield vv)
@@ -464,9 +461,9 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
                   tp     <- TriggerModeParam.mkTriggerModeParam(partsMap)
                   newRdf <- applyInference(rdf, dp.inference)
                   r <- io2f(
-                    validate(newRdf, dp, schema, sp, tp, relativeBase, builder)
+                    schemaValidate(newRdf, schema, tp, relativeBase, builder)
                   )
-                  json <- io2f(result2json(r._1))
+                  json <- io2f(schemaResult2json(r._1))
                 } yield json
               }
             } yield vv
@@ -479,7 +476,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         }
       }
   }
-  private val relativeBase = Defaults.relativeBase
+  private val relativeBase = ApiDefaults.relativeBase
 
   /** Given an input schema, convert it to another output schema with the parameters specified.
     *

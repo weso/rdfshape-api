@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.shapemap
+package es.weso.rdfshape.server.api.routes.shapemap.service
 
 import cats.effect.IO
 import cats.implicits._

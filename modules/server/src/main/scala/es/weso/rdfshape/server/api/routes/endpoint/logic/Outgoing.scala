@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.endpoint
+package es.weso.rdfshape.server.api.routes.endpoint.logic
 
 import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.rdf.triples.RDFTriple

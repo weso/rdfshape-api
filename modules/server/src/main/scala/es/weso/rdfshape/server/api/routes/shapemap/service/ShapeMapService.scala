@@ -1,10 +1,10 @@
-package es.weso.rdfshape.server.api.routes.shapemap
+package es.weso.rdfshape.server.api.routes.shapemap.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.results.ShapeMapInfoResult
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapInfoResult
 import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.shapemaps.ShapeMap
 import io.circe._

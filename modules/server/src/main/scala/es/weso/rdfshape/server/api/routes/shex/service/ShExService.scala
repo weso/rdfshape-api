@@ -1,7 +1,7 @@
-package es.weso.rdfshape.server.api.routes.shex
+package es.weso.rdfshape.server.api.routes.shex.service
 
 import cats.effect._
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.schema._
 import io.circe._
 import org.http4s._

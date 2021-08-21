@@ -4,9 +4,13 @@ import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
+  defaultActiveSchemaTab,
+  defaultSchemaEngine
+}
 import es.weso.rdfshape.server.api.format._
-import es.weso.rdfshape.server.api.routes.Defaults._
-import es.weso.rdfshape.server.api.routes.{ApiHelper, PartsMap}
+import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.getBase
 import es.weso.schema.{Schema, Schemas}
 
 import scala.io.Source
@@ -93,7 +97,7 @@ case class SchemaParam(
                     str,
                     schemaFormat.getOrElse(SchemaFormat.defaultFormat).name,
                     schemaEngine.getOrElse(defaultSchemaEngine),
-                    ApiHelper.getBase
+                    getBase
                   ) // .leftMap(s => s"Error parsing contents of $schemaUrl: $s\nContents:\n$str")
                   _ <- IO { logger.debug("Schema parsed") }
                 } yield (str, schema)
@@ -121,7 +125,7 @@ case class SchemaParam(
                     schemaStr,
                     schemaFormatStr,
                     schemaEngineStr,
-                    ApiHelper.getBase
+                    getBase
                   )
                   .attempt
                   .map(
@@ -140,7 +144,7 @@ case class SchemaParam(
                   schemaStr,
                   schemaFormat.getOrElse(SchemaFormat.defaultFormat).name,
                   schemaEngine.getOrElse(defaultSchemaEngine),
-                  ApiHelper.getBase
+                  getBase
                 )
                 .attempt
                 .map(

@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.data
+package es.weso.rdfshape.server.api.routes.data.logic
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
@@ -7,7 +7,7 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.rdfshape.server.api.format.DataFormat
 import es.weso.rdfshape.server.api.merged.CompoundData
-import es.weso.rdfshape.server.api.results.DataConversionResult
+import es.weso.rdfshape.server.api.routes.data.logic
 import es.weso.utils.IOUtils.{either2io, err}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
@@ -107,7 +107,7 @@ object DataConverter extends LazyLogging {
 
     for {
       converted <- doConversion
-    } yield DataConversionResult(
+    } yield logic.DataConversionResult(
       "Conversion successful!",
       data,
       dataFormat,

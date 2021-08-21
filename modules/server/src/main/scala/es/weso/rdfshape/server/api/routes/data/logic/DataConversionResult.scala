@@ -1,7 +1,7 @@
-package es.weso.rdfshape.server.api.results
+package es.weso.rdfshape.server.api.routes.data.logic
 
 import es.weso.rdfshape.server.api.format.DataFormat
-import es.weso.rdfshape.server.utils.json.JsonUtils._
+import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import io.circe.Json
 
 /** Data class representing the output of a conversion operation

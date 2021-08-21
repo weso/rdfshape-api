@@ -1,7 +1,7 @@
-package es.weso.rdfshape.server.api.routes.fetch
+package es.weso.rdfshape.server.api.routes.fetch.service
 
 import cats.effect._
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.UrlParam
 import org.http4s._
 import org.http4s.client.Client

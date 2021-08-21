@@ -1,8 +1,8 @@
-package es.weso.rdfshape.server.api.routes.permalink
+package es.weso.rdfshape.server.api.routes.permalink.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.{
   UrlCodeParam,
   UrlParam

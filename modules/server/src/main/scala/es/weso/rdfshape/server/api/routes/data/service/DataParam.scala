@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.data
+package es.weso.rdfshape.server.api.routes.data.service
 
 import cats.effect._
 import cats.implicits._
@@ -6,9 +6,9 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultActiveDataTab
 import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.merged.CompoundData
-import es.weso.rdfshape.server.api.routes.Defaults._
 import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.html2rdf.HTML2RDF
 import es.weso.utils.IOUtils.err

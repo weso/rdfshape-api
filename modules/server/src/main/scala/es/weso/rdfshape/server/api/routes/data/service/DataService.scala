@@ -1,16 +1,29 @@
-package es.weso.rdfshape.server.api.routes.data
+package es.weso.rdfshape.server.api.routes.data.service
 
 import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.definitions.ApiDefaults
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
+  availableInferenceEngines,
+  defaultDataFormat,
+  defaultInference
+}
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format._
-import es.weso.rdfshape.server.api.results._
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
-import es.weso.rdfshape.server.api.routes.ApiHelper._
-import es.weso.rdfshape.server.api.routes.Defaults.defaultDataFormat
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.routes.endpoint.SparqlQueryParam
-import es.weso.rdfshape.server.api.routes.{Defaults, PartsMap}
+import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.{
+  dataExtract,
+  dataFormatOrDefault,
+  dataInfo,
+  dataInfoFromString
+}
+import es.weso.rdfshape.server.api.routes.data.logic.{
+  DataConverter,
+  DataExtractResult
+}
+import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQueryParam
 import es.weso.rdfshape.server.api.utils.OptEitherF._
 import es.weso.schema._
 import es.weso.utils.IOUtils._
@@ -51,12 +64,12 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
       Ok(Json.fromString(dataFormat))
 
     case GET -> Root / `api` / "data" / "inferenceEngines" =>
-      val inferenceEngines = Defaults.availableInferenceEngines
+      val inferenceEngines = availableInferenceEngines
       val json             = Json.fromValues(inferenceEngines.map(Json.fromString))
       Ok(json)
 
     case GET -> Root / `api` / "data" / "inferenceEngines" / "default" =>
-      val defaultInferenceEngine = Defaults.defaultInference
+      val defaultInferenceEngine = defaultInference
       Ok(Json.fromString(defaultInferenceEngine))
 
     case GET -> Root / `api` / "data" / "visualize" / "formats" =>
@@ -78,7 +91,8 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
           for {
             data   <- client.expect[String](dataUrl)
             result <- io2f(dataInfoFromString(data, dataFormat))
-            r <- Ok(result).map(
+            json = result.toJson
+            r <- Ok(json).map(
               _.withContentType(`Content-Type`(MediaType.application.json))
             )
           } yield r
@@ -89,22 +103,22 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         val partsMap = PartsMap(m.parts)
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
-          (resource, dp) = dataParam
-          dataFormat     = dataFormatOrDefault(dp.dataFormat.map(_.name))
+          (resourceRdf, dp) = dataParam
+          dataFormat        = dataFormatOrDefault(dp.dataFormat.map(_.name))
           response <- dp.data match {
             case Some(data) =>
               for {
-                r  <- dataInfoFromString(data, dataFormat)
-                ok <- Ok(r)
+                result <- dataInfoFromString(data, dataFormat)
+                json: Json = result.toJson
+                ok <- Ok(json)
               } yield ok
             case None =>
-              val resp: IO[Json] =
-                resource.use(rdf => dataInfo(rdf, None, dp.dataFormat))
-              val x: IO[Response[IO]] = for {
-                json <- resp
+              for {
+                d <-
+                  resourceRdf.use(rdf => dataInfo(rdf, None, dp.dataFormat))
+                json <- IO(d.toJson)
                 ok   <- Ok(json)
               } yield ok
-              x
           }
         } yield response
       }
@@ -139,10 +153,18 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
               optActiveDataTab,
               optCompoundData
             )
+          //          for {
+          //            dataParam <- io2f(dp.getData(relativeBase))
+          //            (maybeStr, resourceRdf) = dataParam
+          /* json <- io2f(resourceRdf.use(rdf => dataInfo(rdf, maybeStr,
+           * optDataFormat))) */
+          //            ok   <- Ok(json)
+          //          } yield ok
           for {
             dataParam <- io2f(dp.getData(relativeBase))
-            (maybeStr, res) = dataParam
-            json <- io2f(res.use(rdf => dataInfo(rdf, maybeStr, optDataFormat)))
+            (maybeStr, resourceRdf) = dataParam
+            d    <- resourceRdf.use(rdf => dataInfo(rdf, maybeStr, optDataFormat))
+            json <- IO(d.toJson)
             ok   <- Ok(json)
           } yield ok
         }
@@ -200,11 +222,11 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         for {
           dataParam <- DataParam.mkData(partsMap, relativeBase)
           (resourceRdf, dp) = dataParam
-          maybePair <- SparqlQueryParam.mkQuery(partsMap)
+          maybePair <- SparqlQueryParam.getSparqlQuery(partsMap)
           resp <- maybePair match {
             case Left(err) => errJson(s"Error obtaining Query data $err")
             case Right((queryStr, qp)) =>
-              val optQueryStr = qp.query.map(_.str)
+              val optQueryStr = qp.queryRaw
               logger.debug(s"Data query optQueryStr: $optQueryStr")
               for {
                 json <- io2f(
@@ -270,7 +292,7 @@ class DataService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
       }
 
   }
-  private val relativeBase = Defaults.relativeBase
+  private val relativeBase = ApiDefaults.relativeBase
 
   private def parseInt(s: String): Either[String, Int] =
     Try(s.toInt).map(Right(_)).getOrElse(Left(s"$s is not a number"))

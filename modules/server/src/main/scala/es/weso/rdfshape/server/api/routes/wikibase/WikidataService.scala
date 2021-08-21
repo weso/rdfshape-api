@@ -10,8 +10,9 @@ import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.sgraph._
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
-import es.weso.rdfshape.server.api.routes.ApiHelper._
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.schemaResult2json
+import es.weso.rdfshape.server.api.definitions._
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.api.utils.Http4sUtils._
@@ -412,7 +413,7 @@ class WikidataService(client: Client[IO])
             vv <- (res1, res2).tupled.use { case (rdf, builder) =>
               for {
                 r    <- schema.validate(rdf, triggerMode, builder)
-                json <- result2json(r)
+                json <- schemaResult2json(r)
               } yield json
             }
           } yield vv

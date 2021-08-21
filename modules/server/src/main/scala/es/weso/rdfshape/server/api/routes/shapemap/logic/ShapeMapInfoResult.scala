@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.results
+package es.weso.rdfshape.server.api.routes.shapemap.logic
 
 import es.weso.rdfshape.server.utils.json.JsonUtils._
 import es.weso.shapemaps._

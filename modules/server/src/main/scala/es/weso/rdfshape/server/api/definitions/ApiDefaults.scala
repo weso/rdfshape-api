@@ -1,23 +1,13 @@
-package es.weso.rdfshape.server.api.routes
+package es.weso.rdfshape.server.api.definitions
 
 import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.format.{DataFormat, SchemaFormat}
 import es.weso.schema.{Schemas, ShapeMapTrigger}
 import es.weso.shapemaps.ShapeMap
 
-/** Global definitions used in the API
-  */
-object ApiDefinitions {
-
-  /** API route inside the web server
-    */
-  val api = "api"
-}
-
 /** Application-wide defaults
   */
-object Defaults {
-
+case object ApiDefaults {
   val availableDataFormats: List[DataFormat]     = DataFormat.availableFormats
   val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
   val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats

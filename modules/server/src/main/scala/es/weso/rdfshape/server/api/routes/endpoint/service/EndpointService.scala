@@ -1,19 +1,30 @@
-package es.weso.rdfshape.server.api.routes.endpoint
+package es.weso.rdfshape.server.api.routes.endpoint.service
 
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.jena.Endpoint
+import es.weso.rdf.jena.{Endpoint => EndpointJena}
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.routes.ApiDefinitions._
+import es.weso.rdfshape.server.api.definitions.ApiDefaults
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.{
   LimitParam,
   OptEndpointParam,
   OptNodeParam
 }
-import es.weso.rdfshape.server.api.routes.endpoint.{Query => ServerQuery}
-import es.weso.rdfshape.server.api.routes.{Defaults, PartsMap}
+import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
+  getEndpointAsRDFReader,
+  getEndpointInfo,
+  getEndpointUrl
+}
+import es.weso.rdfshape.server.api.routes.endpoint.logic.{
+  Endpoint,
+  Outgoing,
+  SparqlQuery,
+  SparqlQueryParam
+}
 import es.weso.rdfshape.server.utils.numeric.NumericUtils
 import es.weso.utils.IOUtils._
 import io.circe.Json
@@ -31,7 +42,7 @@ class EndpointService(client: Client[IO])
     extends Http4sDsl[IO]
     with LazyLogging {
 
-  private val relativeBase = Defaults.relativeBase
+  private val relativeBase = ApiDefaults.relativeBase
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
@@ -42,19 +53,18 @@ class EndpointService(client: Client[IO])
         val partsMap = PartsMap(m.parts)
 
         val r: EitherT[IO, String, Json] = for {
-          ep <- EndpointParam.mkEndpoint(partsMap)
-          //          json = Json.Null
-          endpoint <- ep.getEndpointAsRDFReader
+          endpointUrl <- getEndpointUrl(partsMap)
+          endpoint    <- getEndpointAsRDFReader(endpointUrl)
           either <- EitherT
             .liftF[IO, String, Either[
               String,
-              (ServerQuery, SparqlQueryParam)
+              (SparqlQuery, SparqlQueryParam)
             ]](
-              SparqlQueryParam.mkQuery(partsMap)
+              SparqlQueryParam.getSparqlQuery(partsMap)
             )
           pair <- EitherT.fromEither[IO](either)
           (_, qp)     = pair
-          optQueryStr = qp.query.map(_.str)
+          optQueryStr = qp.queryRaw
           json <- {
             logger.debug(
               s"Query to endpoint $endpoint: ${optQueryStr.getOrElse("")}"
@@ -77,8 +87,10 @@ class EndpointService(client: Client[IO])
         {
           val partsMap = PartsMap(m.parts)
           val r: EitherT[IO, String, Json] = for {
-            ep <- EndpointParam.mkEndpoint(partsMap)
-            ei <- EitherT.liftF[IO, String, EndpointInfo](ep.getInfo(client))
+            endpointUrl <- getEndpointUrl(partsMap)
+            ei <- EitherT.liftF[IO, String, Endpoint](
+              getEndpointInfo(endpointUrl, client)
+            )
           } yield ei.asJson
           for {
             either <- r.value
@@ -132,7 +144,7 @@ class EndpointService(client: Client[IO])
 
   private def outgoing(endpoint: IRI, node: IRI, limit: Int): ESIO[Outgoing] =
     for {
-      triples <- stream2es(Endpoint(endpoint).triplesWithSubject(node))
+      triples <- stream2es(EndpointJena(endpoint).triplesWithSubject(node))
     } yield Outgoing.fromTriples(node, endpoint, triples.toSet)
 
 }
