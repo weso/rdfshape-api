@@ -6,25 +6,25 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.{Endpoint => EndpointJena}
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.{
   LimitParam,
   OptEndpointParam,
   OptNodeParam
 }
-import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
   getEndpointAsRDFReader,
   getEndpointInfo,
   getEndpointUrl
 }
+import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQuery.getSparqlQuery
 import es.weso.rdfshape.server.api.routes.endpoint.logic.{
   Endpoint,
   Outgoing,
-  SparqlQuery,
-  SparqlQueryParam
+  SparqlQuery
 }
+import es.weso.rdfshape.server.api.routes.{ApiService, PartsMap}
+import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.rdfshape.server.utils.numeric.NumericUtils
 import es.weso.utils.IOUtils._
 import io.circe.Json
@@ -40,15 +40,16 @@ import org.http4s.multipart._
   */
 class EndpointService(client: Client[IO])
     extends Http4sDsl[IO]
+    with ApiService
     with LazyLogging {
 
-  private val relativeBase = ApiDefaults.relativeBase
+  override val verb: String = "endpoint"
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case req @ POST -> Root / `api` / "endpoint" / "query" =>
+    case req @ POST -> Root / `api` / `verb` / "query" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
 
@@ -58,31 +59,31 @@ class EndpointService(client: Client[IO])
           either <- EitherT
             .liftF[IO, String, Either[
               String,
-              (SparqlQuery, SparqlQueryParam)
+              SparqlQuery
             ]](
-              SparqlQueryParam.getSparqlQuery(partsMap)
+              getSparqlQuery(partsMap)
             )
-          pair <- EitherT.fromEither[IO](either)
-          (_, qp)     = pair
-          optQueryStr = qp.queryRaw
+          query <- EitherT.fromEither[IO](either)
+          queryString = query.query
           json <- {
             logger.debug(
-              s"Query to endpoint $endpoint: ${optQueryStr.getOrElse("")}"
+              s"Query to endpoint $endpoint: $queryString"
             )
-            io2es(endpoint.queryAsJson(optQueryStr.getOrElse("")))
+            io2es(endpoint.queryAsJson(queryString))
           }
         } yield json
 
         for {
           either <- r.value
           resp <- either.fold(
-            e => errJson(s"Error querying endpoint: $e"),
+            e =>
+              responseJson(s"Error querying endpoint: $e", InternalServerError),
             json => Ok(json)
           )
         } yield resp
       }
 
-    case req @ POST -> Root / `api` / "endpoint" / "info" =>
+    case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -95,29 +96,30 @@ class EndpointService(client: Client[IO])
           for {
             either <- r.value
             resp <- either.fold(
-              e => errJson(s"Error obtaining info on Endpoint $e"),
+              e =>
+                responseJson(
+                  s"Error obtaining info on Endpoint $e",
+                  InternalServerError
+                ),
               json => Ok(json)
             )
           } yield resp
         }
       }
 
-    case GET -> Root / `api` / "endpoint" / "outgoing" :?
+    case GET -> Root / `api` / `verb` / "outgoing" :?
         OptEndpointParam(optEndpoint) +&
         OptNodeParam(optNode) +&
         LimitParam(optLimit) =>
       for {
         eitherOutgoing <- getOutgoing(optEndpoint, optNode, optLimit).value
         resp <- eitherOutgoing.fold(
-          (s: String) => errJson(s"Error: $s"),
+          (s: String) => responseJson(s"Error: $s", InternalServerError),
           (outgoing: Outgoing) => Ok(outgoing.toJson)
         )
       } yield resp
 
   }
-
-  private def errJson(msg: String): IO[Response[IO]] =
-    Ok(Json.fromFields(List(("error", Json.fromString(msg)))))
 
   private def getOutgoing(
       optEndpoint: Option[String],

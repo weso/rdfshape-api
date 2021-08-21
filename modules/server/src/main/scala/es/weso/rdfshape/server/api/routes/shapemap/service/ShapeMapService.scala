@@ -3,8 +3,8 @@ package es.weso.rdfshape.server.api.routes.shapemap.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapInfoResult
+import es.weso.rdfshape.server.api.routes.{ApiService, PartsMap}
 import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.shapemaps.ShapeMap
 import io.circe._
@@ -20,18 +20,21 @@ import org.http4s.multipart._
   */
 class ShapeMapService(client: Client[IO])
     extends Http4sDsl[IO]
+    with ApiService
     with LazyLogging {
+
+  override val verb: String = "shapeMap"
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case GET -> Root / `api` / "shapeMap" / "formats" =>
+    case GET -> Root / `api` / `verb` / "formats" =>
       val formats = ShapeMap.availableFormats
       val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
       Ok(json)
 
-    case req @ POST -> Root / `api` / "shapeMap" / "info" =>
+    case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val t: IO[(ShapeMap, ShapeMapParam)] =

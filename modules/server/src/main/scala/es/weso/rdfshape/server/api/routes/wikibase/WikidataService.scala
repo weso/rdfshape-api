@@ -14,7 +14,7 @@ import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.schemaRe
 import es.weso.rdfshape.server.api.definitions._
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.{ApiService, PartsMap}
 import es.weso.rdfshape.server.api.utils.Http4sUtils._
 import es.weso.schema.{Schema, ShapeMapTrigger}
 import es.weso.schemaInfer.{InferOptions, SchemaInfer}
@@ -42,7 +42,10 @@ import scala.util.matching.Regex
   */
 class WikidataService(client: Client[IO])
     extends Http4sDsl[IO]
+    with ApiService
     with LazyLogging {
+
+  override val verb: String = "wikidata"
 
   val wikidataEntityUrl = uri"http://www.wikidata.org/entity"
   val apiUri            = uri"/api/wikidata/entity"
@@ -55,11 +58,11 @@ class WikidataService(client: Client[IO])
     */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case GET -> Root / `api` / "wikidata" / "test" => {
+    case GET -> Root / `api` / `verb` / "test" => {
       Ok("Wikidata Test")
     }
 
-    case GET -> Root / `api` / "wikidata" / "entityLabel" :?
+    case GET -> Root / `api` / `verb` / "entityLabel" :?
         WdEntityParam(entity) +&
         LanguageParam(language) =>
       val uri = Uri.unsafeFromString(
@@ -80,7 +83,7 @@ class WikidataService(client: Client[IO])
         resp <- Ok(either.fold(Json.fromString, identity))
       } yield resp
 
-    case GET -> Root / `api` / "wikidata" / "schemaContent" :?
+    case GET -> Root / `api` / `verb` / "schemaContent" :?
         WdSchemaParam(wdSchema) => {
       val uri = uri"https://www.wikidata.org".withPath(
         Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/$wdSchema")
@@ -107,7 +110,7 @@ class WikidataService(client: Client[IO])
 
     }
 
-    case GET -> Root / `api` / "wikidata" / "searchEntity" :?
+    case GET -> Root / `api` / `verb` / "searchEntity" :?
         OptEndpointParam(endpoint) +&
         LabelParam(label) +&
         LanguageParam(language) +&
@@ -151,7 +154,7 @@ class WikidataService(client: Client[IO])
       } yield resp
     }
 
-    case GET -> Root / `api` / "wikidata" / "searchProperty" :?
+    case GET -> Root / `api` / `verb` / "searchProperty" :?
         OptEndpointParam(endpoint) +&
         LabelParam(label) +&
         LanguageParam(language) +&
@@ -193,7 +196,7 @@ class WikidataService(client: Client[IO])
       } yield resp
     }
 
-    case GET -> Root / `api` / "wikidata" / "searchLexeme" :?
+    case GET -> Root / `api` / `verb` / "searchLexeme" :?
         LabelParam(label) +&
         LanguageParam(language) +&
         LimitParam(maybelimit) +&
@@ -231,7 +234,7 @@ class WikidataService(client: Client[IO])
       } yield resp
     }
 
-    case GET -> Root / `api` / "wikidata" / "languages" => {
+    case GET -> Root / `api` / `verb` / "languages" => {
 
       val uri = uri"https://www.wikidata.org"
         .withPath(Uri.Path.unsafeFromString("/w/api.php"))
@@ -265,7 +268,7 @@ class WikidataService(client: Client[IO])
       } yield resp
     }
 
-    case req @ POST -> Root / `api` / "wikidata" / "query" =>
+    case req @ POST -> Root / `api` / `verb` / "query" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -300,7 +303,7 @@ class WikidataService(client: Client[IO])
         }
       }
 
-    case req @ POST -> Root / `api` / "wikidata" / "extract" => {
+    case req @ POST -> Root / `api` / `verb` / "extract" => {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val r: EitherT[IO, String, Response[IO]] = for {
@@ -349,7 +352,7 @@ class WikidataService(client: Client[IO])
     }
 
     // TODO: This one doesn't work. It gives a timeout response
-    case req @ POST -> Root / `api` / "wikidata" / "shexer" => {
+    case req @ POST -> Root / `api` / `verb` / "shexer" => {
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         val r: EitherT[IO, String, Response[IO]] = for {
@@ -378,7 +381,7 @@ class WikidataService(client: Client[IO])
       }
     }
 
-    case req @ POST -> Root / `api` / "wikidata" / "validate" => {
+    case req @ POST -> Root / `api` / `verb` / "validate" => {
       logger.debug(s"Wikidata validate request: $req")
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)

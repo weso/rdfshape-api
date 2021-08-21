@@ -1,21 +1,25 @@
 package es.weso.rdfshape.server.api.routes.fetch.service
 
 import cats.effect._
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
+import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.UrlParam
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import scalaj.http.Http
 
-class FetchService() extends Http4sDsl[IO] {
+class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
+
+  override val verb: String = "fetch"
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Query URL and return the response
-    case GET -> Root / `api` / "fetch" :?
+    case GET -> Root / `api` / `verb` :?
         UrlParam(url) =>
       try {
         val res = Http(url).asString

@@ -3,6 +3,7 @@ package es.weso.rdfshape.server.api.routes.permalink.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
+import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.{
   UrlCodeParam,
   UrlParam
@@ -29,13 +30,14 @@ import scala.util.Random
   */
 class PermalinkService(client: Client[IO])
     extends Http4sDsl[IO]
+    with ApiService
     with LazyLogging {
 
   lazy val mongoClient: MongoClient = MongoClient(mongoConnectionString)
   lazy val db: MongoDatabase        = mongoClient.getDatabase(mongoDatabase)
   lazy val collection: MongoCollection[Document] =
     db.getCollection(collectionName)
-
+  override val verb: String = "permalink"
   // Utils for url generation
   val random: Random.type = Random
 
@@ -44,7 +46,7 @@ class PermalinkService(client: Client[IO])
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // Insert a reference to the permalink in DB
-    case GET -> Root / `api` / "permalink" / "generate" :?
+    case GET -> Root / `api` / `verb` / "generate" :?
         UrlParam(url) =>
       // Store only query path and query params
       val urlObj  = new URL(url)
@@ -100,7 +102,7 @@ class PermalinkService(client: Client[IO])
       }
 
     // Retrieve a URL given the link
-    case GET -> Root / `api` / "permalink" / "get" :?
+    case GET -> Root / `api` / `verb` / "get" :?
         UrlCodeParam(urlCode) =>
       try {
         val code    = urlCode.toLong

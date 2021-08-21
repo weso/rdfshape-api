@@ -9,7 +9,7 @@ import es.weso.rdf.{RDFBuilder, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.UmlDefinitions.umlOptions
 import es.weso.rdfshape.server.api.format.{DataFormat, SchemaFormat}
-import es.weso.rdfshape.server.api.routes.data.service.DataParam
+import es.weso.rdfshape.server.api.routes.data.logic.DataParam
 import es.weso.rdfshape.server.api.routes.schema.service.{
   SchemaParam,
   TriggerModeParam

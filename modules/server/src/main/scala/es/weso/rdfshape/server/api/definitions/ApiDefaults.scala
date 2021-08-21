@@ -25,7 +25,6 @@ case object ApiDefaults {
   val defaultInference: String               = availableInferenceEngines.head
   val defaultActiveDataTab                   = "#dataTextArea"
   val defaultActiveSchemaTab                 = "#schemaTextArea"
-  val defaultActiveQueryTab                  = "#queryTextArea"
   val defaultShapeMapFormat: String          = ShapeMap.defaultFormat
   val availableShapeMapFormats: List[String] = ShapeMap.formats
   val defaultActiveShapeMapTab               = "#shapeMapTextArea"

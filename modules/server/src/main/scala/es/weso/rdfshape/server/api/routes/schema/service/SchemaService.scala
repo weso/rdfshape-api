@@ -14,15 +14,15 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.prefixMap2Json
-import es.weso.rdfshape.server.api.routes.data.service.DataParam
+import es.weso.rdfshape.server.api.routes.data.logic.DataParam
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations._
 import es.weso.rdfshape.server.api.routes.schema.logic.{
   SchemaConversionResult,
   SchemaInfo,
   SchemaInfoResult
 }
+import es.weso.rdfshape.server.api.routes.{ApiService, PartsMap}
 import es.weso.rdfshape.server.api.utils.OptEitherF._
 import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
 import es.weso.schema._
@@ -43,18 +43,23 @@ import org.http4s.multipart.Multipart
   *
   * @param client HTTP4S client object
   */
-class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
+class SchemaService(client: Client[IO])
+    extends Http4sDsl[IO]
+    with ApiService
+    with LazyLogging {
+
+  override val verb: String = "schema"
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case GET -> Root / `api` / "schema" / "engines" =>
+    case GET -> Root / `api` / `verb` / "engines" =>
       val engines = Schemas.availableSchemaNames
       val json    = Json.fromValues(engines.map(str => Json.fromString(str)))
       Ok(json)
 
-    case GET -> Root / `api` / "schema" / "engines" / "shacl" =>
+    case GET -> Root / `api` / `verb` / "engines" / "shacl" =>
       val shaclSchemas =
         List(Schemas.shaclex, Schemas.jenaShacl, Schemas.shaclTQ)
       val json = Json.fromValues(
@@ -62,12 +67,12 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
       )
       Ok(json)
 
-    case GET -> Root / `api` / "schema" / "engines" / "default" =>
+    case GET -> Root / `api` / `verb` / "engines" / "default" =>
       val schemaEngine = Schemas.defaultSchemaName
       val json         = Json.fromString(schemaEngine)
       Ok(json)
 
-    case GET -> Root / `api` / "schema" / "formats" :?
+    case GET -> Root / `api` / `verb` / "formats" :?
         SchemaEngineParam(optSchemaEngine) =>
       val schemaEngine = optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
       val r: IO[Json] = Schemas
@@ -93,12 +98,12 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         )
       io2f(r).flatMap(json => Ok(json))
 
-    case GET -> Root / `api` / "schema" / "triggerModes" =>
+    case GET -> Root / `api` / `verb` / "triggerModes" =>
       val triggerModes = ValidationTrigger.triggerValues.map(_._1)
       val json         = Json.fromValues(triggerModes.map(Json.fromString))
       Ok(json)
 
-    case GET -> Root / `api` / "schema" / "info" :?
+    case GET -> Root / `api` / `verb` / "info" :?
         OptSchemaParam(optSchema) +&
         SchemaFormatParam(optSchemaFormat) +&
         SchemaEngineParam(optSchemaEngine) =>
@@ -130,7 +135,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         )
       } yield r
 
-    case req @ POST -> Root / `api` / "schema" / "info" =>
+    case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -153,7 +158,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         }
       }
 
-    case GET -> Root / `api` / "schema" / "convert" :?
+    case GET -> Root / `api` / `verb` / "convert" :?
         OptSchemaParam(optSchema) +&
         SchemaFormatParam(optSchemaFormat) +&
         SchemaEngineParam(optSchemaEngine) +&
@@ -199,7 +204,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         )
       } yield r
 
-    case req @ POST -> Root / `api` / "schema" / "convert" =>
+    case req @ POST -> Root / `api` / `verb` / "convert" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -234,7 +239,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         }
       }
 
-    case req @ POST -> Root / `api` / "schema" / "visualize" =>
+    case req @ POST -> Root / `api` / `verb` / "visualize" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -253,7 +258,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         }
       }
 
-    case req @ POST -> Root / `api` / "schema" / "cytoscape" =>
+    case req @ POST -> Root / `api` / `verb` / "cytoscape" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
@@ -271,7 +276,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         }
       }
 
-    case req @ GET -> Root / `api` / "schema" / "visualize" :?
+    case req @ GET -> Root / `api` / `verb` / "visualize" :?
         SchemaURLParam(optSchemaURL) +&
         OptSchemaParam(optSchema) +&
         SchemaFormatParam(optSchemaFormatStr) +&
@@ -321,7 +326,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
         )
       } yield v
 
-    case req @ GET -> Root / `api` / "schema" / "validate" :?
+    case req @ GET -> Root / `api` / `verb` / "validate" :?
         OptDataParam(optData) +&
         OptDataURLParam(optDataURL) +&
         DataFormatParam(maybeDataFormatStr) +&
@@ -445,7 +450,7 @@ class SchemaService(client: Client[IO]) extends Http4sDsl[IO] with LazyLogging {
           eitherResult
       }
 
-    case req @ POST -> Root / `api` / "schema" / "validate" =>
+    case req @ POST -> Root / `api` / `verb` / "validate" =>
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)

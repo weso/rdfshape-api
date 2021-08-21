@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.data.service
+package es.weso.rdfshape.server.api.routes.data.logic
 
 import cats.effect._
 import cats.implicits._
@@ -15,7 +15,7 @@ import es.weso.utils.IOUtils.err
 
 import java.net.URI
 
-case class DataParam(
+sealed case class DataParam(
     data: Option[String],
     dataURL: Option[String],
     dataFile: Option[String],
@@ -93,11 +93,7 @@ case class DataParam(
           case Some(dataStr) =>
             val dataFormat: Format =
               dataFormatFile.getOrElse(DataFormat.defaultFormat)
-            /* io2es(RDFAsJenaModel.fromString(dataStr, dataFormat.name,
-             * iriBase).use(rdf => for { iriBase <- mkBase(base) newRdf <-
-             * extendWithInference(rdf, inference) eitherStr <-
-             * newRdf.serialize(dataFormat.name,None).attempt optStr =
-             * eitherStr.toOption } yield (optStr,newRdf))) */
+
             for {
               iriBase <- mkBase(base)
               res <- RDFAsJenaModel.fromString(

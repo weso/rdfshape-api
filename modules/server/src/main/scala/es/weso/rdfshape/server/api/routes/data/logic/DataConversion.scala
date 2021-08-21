@@ -8,10 +8,12 @@ import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.rdfshape.server.api.format.DataFormat
 import es.weso.rdfshape.server.api.merged.CompoundData
 import es.weso.rdfshape.server.api.routes.data.logic
+import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.utils.IOUtils.{either2io, err}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
 import guru.nidi.graphviz.parse.Parser
+import io.circe.Json
 
 import java.io.ByteArrayOutputStream
 import java.util.Base64
@@ -19,7 +21,40 @@ import javax.imageio.ImageIO
 import scala.collection.immutable
 import scala.util.Try
 
-object DataConverter extends LazyLogging {
+/** Data class representing the output of a conversion operation
+  *
+  * @param msg          Output informational message after conversion
+  * @param data         Data to be converted
+  * @param dataFormat   Initial data format
+  * @param targetFormat Target data format
+  * @param result       Data after conversion
+  */
+final case class DataConversion(
+    msg: String,
+    data: Option[String],
+    dataFormat: DataFormat,
+    targetFormat: String,
+    result: String
+) {
+
+  /** Convert a conversion result to its JSON representation
+    *
+    * @return JSON representation of the conversion result
+    */
+  def toJson: Json = Json.fromFields(
+    List(
+      ("msg", Json.fromString(msg)),
+      ("result", Json.fromString(result)),
+      ("dataFormat", Json.fromString(dataFormat.name)),
+      ("targetDataFormat", Json.fromString(targetFormat))
+    ) ++
+      maybeField(data, "data", Json.fromString)
+  )
+}
+
+/** Static utilities for data conversion
+  */
+private[api] object DataConversion extends LazyLogging {
 
   lazy val availableGraphFormatNames: immutable.Seq[String] =
     availableGraphFormats.map(_.name)
@@ -36,7 +71,7 @@ object DataConverter extends LazyLogging {
       dataFormat: DataFormat,
       maybeCompoundData: Option[String],
       targetFormat: String
-  ): IO[DataConversionResult] = {
+  ): IO[DataConversion] = {
     logger.debug(
       s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat"
     )
@@ -72,7 +107,7 @@ object DataConverter extends LazyLogging {
       data: Option[String],
       dataFormat: DataFormat,
       targetFormat: String
-  ): IO[DataConversionResult] = {
+  ): IO[DataConversion] = {
     val doConversion: IO[String] = {
       logger.info(s"Conversion target format: $targetFormat")
       targetFormat.toUpperCase match {
@@ -107,7 +142,7 @@ object DataConverter extends LazyLogging {
 
     for {
       converted <- doConversion
-    } yield logic.DataConversionResult(
+    } yield logic.DataConversion(
       "Conversion successful!",
       data,
       dataFormat,

@@ -13,6 +13,8 @@ import org.http4s.dsl.Http4sDsl
   */
 class APIService(client: Client[IO]) extends Http4sDsl[IO] with ApiService {
 
+  override val verb: String = ""
+
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
