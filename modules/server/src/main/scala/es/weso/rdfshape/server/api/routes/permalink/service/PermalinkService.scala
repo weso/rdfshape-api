@@ -4,9 +4,9 @@ import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.{
-  UrlCodeParam,
-  UrlParam
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  UrlCodeParameter,
+  UrlParameter
 }
 import org.http4s._
 import org.http4s.client.Client
@@ -45,9 +45,13 @@ class PermalinkService(client: Client[IO])
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    // Insert a reference to the permalink in DB
+    /** Create a permalink to another resource.
+      * Receives the URL to be linked:
+      *  - url [String]: URL to be linked
+      *    Returns the permalink unique code in the response body
+      */
     case GET -> Root / `api` / `verb` / "generate" :?
-        UrlParam(url) =>
+        UrlParameter(url) =>
       // Store only query path and query params
       val urlObj  = new URL(url)
       val urlPath = s"${urlObj.getPath}?${urlObj.getQuery}"
@@ -101,9 +105,13 @@ class PermalinkService(client: Client[IO])
 
       }
 
-    // Retrieve a URL given the link
+    /** Retrieve a URL to a resource given its permalink code.
+      * Receives the permalink code to be checked:
+      *  - urlCode [String]: code to be checked
+      *    Returns the permalink target (if present in the database) in the response body
+      */
     case GET -> Root / `api` / `verb` / "get" :?
-        UrlCodeParam(urlCode) =>
+        UrlCodeParameter(urlCode) =>
       try {
         val code    = urlCode.toLong
         val promise = Promise[IO[Response[IO]]]()
@@ -158,16 +166,37 @@ class PermalinkService(client: Client[IO])
       }
   }
   // DB credentials. Access is limited to application needs.
+  /** Database user. Can be overridden by environment variables.
+    */
   private val mongoUser = sys.env.getOrElse("MONGO_USER", "rdfshape-user")
+
+  /** Database password. Can be overridden by environment variables.
+    */
   private val mongoPassword =
     sys.env.getOrElse("MONGO_PASSWORD", "rdfshape-user")
+
+  /** Database name. Can be overridden by environment variables.
+    */
   private val mongoDatabase = sys.env.getOrElse("MONGO_DATABASE", "rdfshape")
+
+  /** Database collection name. Can be overridden by environment variables.
+    */
   private val collectionName =
     sys.env.getOrElse("MONGO_COLLECTION", "permalinks")
+
+  /** Final connection String formed by interpolating database credentials.
+    */
   private val mongoConnectionString =
     s"mongodb+srv://$mongoUser:$mongoPassword@cluster0.pnja6.mongodb.net/$mongoDatabase" +
       "?retryWrites=true&w=majority"
 
+  /** Given a URL, search for a permalink already targeting it.
+    *
+    * @param urlPath URL which we want to find a permalink for
+    * @return Optionally, the identifier of the permalink targeting the given URL
+    * @note This is internally used to prevent creating multiple permalinks for the same targets.
+    *       Instead, the access-date of the permalink is updated.
+    */
   private def retrieveUrlCode(urlPath: String): Option[Long] = {
 
     val promise = Promise[Option[Long]]()
@@ -207,6 +236,10 @@ class PermalinkService(client: Client[IO])
     result
   }
 
+  /** Update the access date of a given permalink (invoked when it is accessed)
+    *
+    * @param code Unique identofier of the permalink
+    */
   private def updateUrl(code: Long): Unit = {
     logger.debug(s"URL code to update: $code")
     // Update date of document in database

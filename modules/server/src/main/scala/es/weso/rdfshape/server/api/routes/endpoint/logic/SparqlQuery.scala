@@ -2,22 +2,25 @@ package es.weso.rdfshape.server.api.routes.endpoint.logic
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.routes.PartsMap
 import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQueryTab.{
   SparqlQueryTab,
   defaultActiveQueryTab
 }
-
-import java.net.URL
-import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  ActiveQueryTabParameter,
+  QueryFileParameter,
+  QueryParameter,
+  QueryURLParameter
+}
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 
 /** Data class representing a SPARQL query and its current source
   *
   * @param query          Query raw text
   * @param activeQueryTab Active tab, used to know which source the query comes from
   */
-sealed case class SparqlQuery(
+sealed case class SparqlQuery private (
     query: String,
     activeQueryTab: SparqlQueryTab
 )
@@ -30,17 +33,17 @@ private[api] object SparqlQuery extends LazyLogging {
 
   /** Given a request's parameters, try to extract a SPARQL query from them
     *
-    * @param partsMap Request's parameter
+    * @param partsMap Request's parameters
     * @return Either the SPARQL query or an error message
     */
   def getSparqlQuery(
       partsMap: PartsMap
   ): IO[Either[String, SparqlQuery]] =
     for {
-      queryStr       <- partsMap.optPartValue("query")
-      queryURL       <- partsMap.optPartValue("queryURL")
-      queryFile      <- partsMap.optPartValue("queryFile")
-      activeQueryTab <- partsMap.optPartValue("activeQueryTab")
+      queryStr       <- partsMap.optPartValue(QueryParameter.name)
+      queryUrl       <- partsMap.optPartValue(QueryURLParameter.name)
+      queryFile      <- partsMap.optPartValue(QueryFileParameter.name)
+      activeQueryTab <- partsMap.optPartValue(ActiveQueryTabParameter.name)
 
       _ = logger.debug(
         s"Getting SPARQL from params. Query tab: $activeQueryTab"
@@ -56,7 +59,7 @@ private[api] object SparqlQuery extends LazyLogging {
               Right(SparqlQuery(queryRaw, SparqlQueryTab.TEXT))
           }
         case SparqlQueryTab.URL =>
-          queryURL match {
+          queryUrl match {
             case None => Left(s"No value for the query URL")
             case Some(queryUrl) =>
               getUrlContents(queryUrl) match {
@@ -82,33 +85,12 @@ private[api] object SparqlQuery extends LazyLogging {
 
     } yield maybeQuery
 
-  /** Error-safe way of obtaining the raw contents in a given URL
-    *
-    * @param urlString URL to be fetched (String representation)
-    * @return Either the contents if the URL or an error message
-    */
-  private def getUrlContents(urlString: String): Either[String, String] = {
-    Try {
-      val url = new URL(urlString)
-      val src = Source.fromURL(url)
-      val str = src.mkString
-      src.close()
-      str
-    } match {
-      case Success(urlContent) => Right(urlContent)
-      case Failure(exception) =>
-        val msg =
-          s"Error obtaining data from url $urlString: ${exception.getMessage}"
-        logger.warn(msg)
-        Left(msg)
-    }
-  }
 }
 
 /** Enumeration of the different possible QueryTabs sent by the client.
   * The tab sent indicates the API if the Query was sent in raw text, as a URL
   * to be fetched or as a text file containing the query.
-  * In case the client submits the query in several formats, the selected tab will indicate the preferred format.
+  * In case the client submits the query in several formats, the selected tab will indicate the one format.
   */
 private[logic] object SparqlQueryTab extends Enumeration {
   type SparqlQueryTab = String

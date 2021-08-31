@@ -8,7 +8,8 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
   defaultActiveShapeMapTab,
   defaultShapeMapFormat
 }
-import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.shapemaps.ShapeMap
 
 case class TriggerModeParam(
@@ -146,16 +147,22 @@ object TriggerModeParam extends LazyLogging {
 
   def mkTriggerModeParam(partsMap: PartsMap): IO[TriggerModeParam] = {
     val tp: IO[TriggerModeParam] = for {
-      optTriggerMode  <- partsMap.optPartValue("triggerMode")
-      optShapeMap     <- partsMap.optPartValue("shapeMap")
-      optShapeMapURL  <- partsMap.optPartValue("shapeMapURL")
-      optShapeMapFile <- partsMap.optPartValue("shapeMapFile")
+      optTriggerMode  <- partsMap.optPartValue(TriggerModeParameter.name)
+      optShapeMap     <- partsMap.optPartValue(ShapeMapTextParameter.name)
+      optShapeMapURL  <- partsMap.optPartValue(ShapeMapUrlParameter.name)
+      optShapeMapFile <- partsMap.optPartValue(ShapeMapFileParameter.name)
       optShapeMapFormatTextArea <- partsMap.optPartValue(
-        "shapeMapFormatTextArea"
+        ShapeMapFormatTextAreaParameter.name
       )
-      optShapeMapFormatUrl  <- partsMap.optPartValue("shapeMapFormatURL")
-      optShapeMapFormatFile <- partsMap.optPartValue("shapeMapFormatFile")
-      optActiveShapeMapTab  <- partsMap.optPartValue("shapeMapActiveTab")
+      optShapeMapFormatUrl <- partsMap.optPartValue(
+        ShapeMapFormatUrlParameter.name
+      )
+      optShapeMapFormatFile <- partsMap.optPartValue(
+        ShapeMapFormatFileParameter.name
+      )
+      optActiveShapeMapTab <- partsMap.optPartValue(
+        ActiveShapeMapTabParameter.name
+      )
     } yield {
       logger.debug(s"optTriggerMode: $optTriggerMode")
       logger.debug(s"optShapeMap: $optShapeMap")

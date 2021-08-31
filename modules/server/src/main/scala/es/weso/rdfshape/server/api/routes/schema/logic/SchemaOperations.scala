@@ -5,16 +5,15 @@ import cats.syntax.either._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
-import es.weso.rdf.{RDFBuilder, RDFReasoner}
+import es.weso.rdf.{InferenceEngine, RDFBuilder, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.UmlDefinitions.umlOptions
 import es.weso.rdfshape.server.api.format.{DataFormat, SchemaFormat}
 import es.weso.rdfshape.server.api.routes.data.logic.DataParam
-import es.weso.rdfshape.server.api.routes.schema.service.{
-  SchemaParam,
-  TriggerModeParam
-}
-import es.weso.schema.{Result, Schema, ValidationTrigger}
+import es.weso.rdfshape.server.api.routes.schema.service.TriggerModeParam
+import es.weso.schema.{Result, Schema, ShaclexSchema, ValidationTrigger}
+import es.weso.shacl.converter.Shacl2ShEx
+import es.weso.shapemaps.ShapeMap
 import es.weso.uml.Schema2UML
 import io.circe.Json
 
@@ -77,13 +76,10 @@ private[api] object SchemaOperations extends LazyLogging {
     val info            = schema.info
     val fields: List[(String, Json)] =
       List(
-        ("schemaName", Json.fromString(info.schemaName)),
+        ("schemaType", Json.fromString(info.schemaName)),
         ("schemaEngine", Json.fromString(info.schemaEngine)),
-        ("wellFormed", Json.fromBoolean(info.isWellFormed)),
-        ("errors", Json.fromValues(info.errors.map(Json.fromString))),
-        ("parsed", Json.fromString("Parsed OK")),
         ("svg", Json.fromString(svg)),
-        ("plantUML", Json.fromString(plantuml))
+        ("plantUml", Json.fromString(plantuml))
       )
     Json.fromFields(fields)
   }
@@ -91,7 +87,12 @@ private[api] object SchemaOperations extends LazyLogging {
   def schema2SVG(schema: Schema): IO[(String, String)] = {
     val eitherUML = Schema2UML.schema2UML(schema)
     eitherUML.fold(
-      e => IO.pure((s"SVG conversion: $e", s"Error converting UML: $e")),
+      e => {
+        val errMsg = s"Error in SVG conversion: $e"
+        logger.error(errMsg)
+        IO.raiseError(new RuntimeException(errMsg))
+        //        IO.pure((s"SVG conversion: $e", s"Error converting UML: $e"))
+      },
       pair => {
         val (uml, _) = pair
         logger.debug(s"UML converted: $uml")
@@ -100,11 +101,8 @@ private[api] object SchemaOperations extends LazyLogging {
         } yield {
           (str, uml.toPlantUML(umlOptions))
         }).handleErrorWith(e =>
-          IO.pure(
-            (
-              s"SVG conversion error: ${e.getMessage}",
-              uml.toPlantUML(umlOptions)
-            )
+          IO.raiseError(
+            new RuntimeException(s"SVG conversion error: ${e.getMessage}")
           )
         )
       }
@@ -151,12 +149,12 @@ private[api] object SchemaOperations extends LazyLogging {
   ): IO[(Result, Option[ValidationTrigger], Long)] = {
     val dp = DataParam.empty.copy(
       data = Some(data),
-      dataFormatTextarea = optDataFormat,
+      optDataFormat = optDataFormat,
       inference = optInference
     )
     val sp = SchemaParam.empty.copy(
       schema = optSchema,
-      schemaFormatTextArea = optSchemaFormat,
+      optSchemaFormat = optSchemaFormat,
       schemaEngine = optSchemaEngine
     )
 
@@ -245,5 +243,122 @@ private[api] object SchemaOperations extends LazyLogging {
     */
   private def schemaErr(msg: String) =
     IO((Result.errStr(s"Error: $msg"), None, NoTime))
+
+  /** Given an input schema, convert it to another output schema with the parameters specified.
+    *
+    * @param schema                Input schema
+    * @param schemaStr             Input schema contents
+    * @param schemaFormat          Input schema format
+    * @param schemaEngine          Input schema engine
+    * @param optTargetSchemaFormat Output schema desired format
+    * @param optTargetSchemaEngine Output schema desired engine
+    * @return Optionally, the raw output schema contents
+    */
+  private[schema] def convertSchema(
+      schema: Schema,
+      schemaStr: Option[String],
+      schemaFormat: SchemaFormat,
+      schemaEngine: String,
+      optTargetSchemaFormat: Option[SchemaFormat],
+      optTargetSchemaEngine: Option[String]
+  ): IO[SchemaConversionResult] = {
+    val result: IO[SchemaConversionResult] = for {
+      pair <- doSchemaConversion(
+        schema,
+        optTargetSchemaFormat.map(_.name),
+        optTargetSchemaEngine
+      )
+      sourceStr <- schemaStr match {
+        case None         => schema.serialize(schemaFormat.name)
+        case Some(source) => IO(source)
+      }
+      (resultStr, resultShapeMap) = pair
+    } yield SchemaConversionResult.fromConversion(
+      sourceStr,
+      schemaFormat.name,
+      schemaEngine,
+      optTargetSchemaFormat.map(_.name),
+      optTargetSchemaEngine,
+      resultStr,
+      resultShapeMap
+    )
+
+    for {
+      either <- result.attempt
+    } yield either.fold(
+      err => SchemaConversionResult.fromMsg(s"Error converting schema: $err"),
+      identity
+    )
+  }
+
+  private def doSchemaConversion(
+      schema: Schema,
+      targetSchemaFormat: Option[String],
+      optTargetSchemaEngine: Option[String]
+  ): IO[(String, ShapeMap)] = {
+    logger.debug(
+      s"Schema conversion, name: ${schema.name}, targetSchema: $targetSchemaFormat"
+    )
+    val default = for {
+      str <- schema.convert(targetSchemaFormat, optTargetSchemaEngine, None)
+    } yield (str, ShapeMap.empty)
+    schema match {
+      case shacl: ShaclexSchema =>
+        optTargetSchemaEngine.map(_.toUpperCase()) match {
+          case Some("SHEX") =>
+            logger.debug("Schema conversion: SHACLEX -> SHEX")
+            Shacl2ShEx
+              .shacl2ShEx(shacl.schema)
+              .fold(
+                e =>
+                  IO.raiseError(
+                    new RuntimeException(
+                      s"Error converting SHACL -> ShEx: $e"
+                    )
+                  ),
+                pair => {
+                  val (schema, shapeMap) = pair
+                  logger.debug(s"shapeMap: $shapeMap")
+                  for {
+                    emptyBuilder <- RDFAsJenaModel.empty
+                    str <- emptyBuilder.use(builder =>
+                      es.weso.shex.Schema.serialize(
+                        schema,
+                        targetSchemaFormat.getOrElse("SHEXC"),
+                        None,
+                        builder
+                      )
+                    )
+                  } yield (str, shapeMap)
+                }
+              )
+          case _ => default
+        }
+      case _ => default
+    }
+  }
+
+  /** Apply inference
+    *
+    * @param rdf           Data over which the inference should be applied
+    * @param inferenceName Name of the inference to be applied
+    * @return The RDF data after applying the inference
+    */
+  private[schema] def applyInference(
+      rdf: RDFReasoner,
+      inferenceName: Option[String]
+  ): IO[RDFReasoner] = inferenceName match {
+    case None => IO.pure(rdf)
+    case Some(name) =>
+      InferenceEngine.fromString(name) match {
+        case Left(str) =>
+          IO.raiseError(
+            new RuntimeException(
+              s"Error parsing inference engine: $name: $str"
+            )
+          )
+        case Right(engine) => rdf.applyInference(engine)
+      }
+  }
 
 }

@@ -50,7 +50,7 @@ final case class DataExtract private (
         schemaStr <- schema.serialize(schemaFormat)
       } yield Json.fromFields(
         List(
-          ("msg", Json.fromString(msg)),
+          ("message", Json.fromString(msg)),
           ("inferredShape", Json.fromString(schemaStr)),
           ("schemaFormat", Json.fromString(schemaFormat)),
           ("schemaEngine", Json.fromString(engine))

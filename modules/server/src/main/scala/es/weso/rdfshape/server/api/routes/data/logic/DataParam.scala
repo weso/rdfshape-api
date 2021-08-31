@@ -6,11 +6,12 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultActiveDataTab
 import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.merged.CompoundData
-import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.html2rdf.HTML2RDF
+import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import es.weso.utils.IOUtils.err
 
 import java.net.URI
@@ -20,27 +21,15 @@ sealed case class DataParam(
     dataURL: Option[String],
     dataFile: Option[String],
     maybeEndpoint: Option[String],
-    dataFormatValue: Option[DataFormat],
-    dataFormatTextarea: Option[DataFormat],
-    dataFormatUrl: Option[DataFormat],
-    dataFormatFile: Option[DataFormat],
+    optDataFormat: Option[DataFormat],
     inference: Option[String],
     targetDataFormat: Option[DataFormat],
     activeDataTab: Option[String],
     compoundData: Option[String]
 ) extends LazyLogging {
-
-  val dataFormat: Option[DataFormat] = {
-    val dataTab = parseDataTab(activeDataTab.getOrElse(defaultActiveDataTab))
-    logger.debug(s"Data tab received: $dataTab")
-    dataTab match {
-      case Right(`dataUrlType`)  => dataFormatUrl orElse dataFormatValue
-      case Right(`dataFileType`) => dataFormatFile orElse dataFormatValue
-      case Right(`dataTextAreaType`) =>
-        dataFormatTextarea orElse dataFormatValue
-      case _ => dataFormatValue
-    }
-  }
+  val dataFormat: DataFormat = optDataFormat.getOrElse(
+    DataFormat.defaultFormat
+  )
 
   /** get RDF data from data parameters
     *
@@ -81,9 +70,12 @@ sealed case class DataParam(
         dataURL match {
           case None => err(s"Non value for dataURL")
           case Some(dataUrl) =>
-            val dataFormat = dataFormatUrl.getOrElse(DataFormat.defaultFormat)
             for {
-              rdf <- rdfFromUri(new URI(dataUrl), dataFormat, base)
+              rdf <- rdfFromUri(
+                new URI(dataUrl),
+                dataFormat,
+                base
+              )
             } yield (None, rdf)
         }
       case Right(`dataFileType`) =>
@@ -91,9 +83,6 @@ sealed case class DataParam(
         dataFile match {
           case None => err(s"No value for dataFile")
           case Some(dataStr) =>
-            val dataFormat: Format =
-              dataFormatFile.getOrElse(DataFormat.defaultFormat)
-
             for {
               iriBase <- mkBase(base)
               res <- RDFAsJenaModel.fromString(
@@ -120,9 +109,6 @@ sealed case class DataParam(
         data match {
           case None => RDFAsJenaModel.empty.flatMap(e => IO((None, e)))
           case d @ Some(data) =>
-            val dataFormat = dataFormatTextarea.getOrElse(
-              dataFormatValue.getOrElse(DataFormat.defaultFormat)
-            )
             val x: IO[(Option[String], Resource[IO, RDFReasoner])] = for {
               res <- rdfFromString(data, dataFormat, base)
               res2 = extendWithInference(
@@ -199,20 +185,28 @@ sealed case class DataParam(
       format: Format,
       base: Option[String]
   ): IO[Resource[IO, RDFReasoner]] = {
-    format.name.toLowerCase match {
-      case formatName if HTML2RDF.availableExtractorNames contains formatName =>
-        IO(
-          HTML2RDF.extractFromUrl(
-            uri.toString,
-            formatName
-          )
-        )
+
+    getUrlContents(uri.toString) match {
+      case Left(errMsg) => IO.raiseError(new RuntimeException(errMsg))
       case _ =>
-        for {
-          baseIri <- mkBase(base)
-          res     <- RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri)
-        } yield res
+        format.name.toLowerCase match {
+          case formatName
+              if HTML2RDF.availableExtractorNames contains formatName =>
+            IO(
+              HTML2RDF.extractFromUrl(
+                uri.toString,
+                formatName
+              )
+            )
+          case _ =>
+            for {
+              baseIri <- mkBase(base)
+              res     <- RDFAsJenaModel.fromURI(uri.toString, format.name, baseIri)
+            } yield res
+        }
+
     }
+
   }
 
   private def extendWithInference(
@@ -294,26 +288,20 @@ object DataParam extends LazyLogging {
   }
 
   private[api] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
-    data               <- partsMap.optPartValue("data")
-    compoundData       <- partsMap.optPartValue("compoundData")
-    dataURL            <- partsMap.optPartValue("dataURL")
-    dataFile           <- partsMap.optPartValue("dataFile")
-    endpoint           <- partsMap.optPartValue("endpoint")
-    dataFormatTextArea <- getDataFormat("dataFormatTextArea", partsMap)
-    dataFormatUrl      <- getDataFormat("dataFormatUrl", partsMap)
-    dataFormatFile     <- getDataFormat("dataFormatFile", partsMap)
-    dataFormatValue    <- getDataFormat("dataFormat", partsMap)
-    inference          <- partsMap.optPartValue("inference")
-    targetDataFormat   <- getDataFormat("targetDataFormat", partsMap)
-    activeDataTab      <- partsMap.optPartValue("activeTab")
+    data             <- partsMap.optPartValue(DataParameter.name)
+    compoundData     <- partsMap.optPartValue(CompoundDataParameter.name)
+    dataURL          <- partsMap.optPartValue(DataURLParameter.name)
+    dataFile         <- partsMap.optPartValue(DataFileParameter.name)
+    endpoint         <- partsMap.optPartValue(EndpointParameter.name)
+    dataFormat       <- getDataFormat(DataFormatParameter.name, partsMap)
+    inference        <- partsMap.optPartValue(InferenceParameter.name)
+    targetDataFormat <- getDataFormat(TargetDataFormatParameter.name, partsMap)
+    activeDataTab    <- partsMap.optPartValue(ActiveDataTabParameter.name)
   } yield {
 
     logger.debug(s"data: $data")
     logger.debug(s"compoundData: $compoundData")
-    logger.debug(s"dataFormatValue: $dataFormatValue")
-    logger.debug(s"dataFormatTextArea: $dataFormatTextArea")
-    logger.debug(s"dataFormatUrl: $dataFormatUrl")
-    logger.debug(s"dataFormatFile: $dataFormatFile")
+    logger.debug(s"dataFormat: $dataFormat")
     logger.debug(s"dataURL: $dataURL")
     logger.debug(s"endpoint: $endpoint")
     logger.debug(s"activeDataTab: $activeDataTab")
@@ -337,10 +325,7 @@ object DataParam extends LazyLogging {
       dataURL,
       dataFile,
       finalEndpoint,
-      dataFormatValue,
-      dataFormatTextArea,
-      dataFormatUrl,
-      dataFormatFile,
+      dataFormat,
       inference,
       targetDataFormat,
       finalActiveDataTab,
@@ -370,17 +355,29 @@ object DataParam extends LazyLogging {
 
   private[api] def empty: DataParam =
     DataParam(
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None,
-      None
+      data = None,
+      dataURL = None,
+      dataFile = None,
+      maybeEndpoint = None,
+      optDataFormat = None,
+      inference = None,
+      targetDataFormat = None,
+      activeDataTab = None,
+      compoundData = None
     )
+}
+
+/** Enumeration of the different possible Schema tabs sent by the client.
+  * The tab sent indicates the API if the schema was sent in raw text, as a URL
+  * to be fetched or as a text file containing the schema.
+  * In case the client submits the schema in several formats, the selected tab will indicate the preferred one.
+  */
+private[logic] object DataTab extends Enumeration {
+  type DataTab = String
+
+  val TEXT = "#dataTextArea"
+  val URL  = "#dataUrl"
+  val FILE = "#dataFile"
+
+  val defaultActiveShapeMapTab: DataTab = TEXT
 }

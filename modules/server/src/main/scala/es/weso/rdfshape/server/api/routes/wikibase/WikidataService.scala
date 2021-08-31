@@ -13,8 +13,8 @@ import es.weso.rdf.sgraph._
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.schemaResult2json
 import es.weso.rdfshape.server.api.definitions._
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.routes.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.routes.{ApiService, PartsMap}
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
+import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.utils.Http4sUtils._
 import es.weso.schema.{Schema, ShapeMapTrigger}
 import es.weso.schemaInfer.{InferOptions, SchemaInfer}
@@ -35,6 +35,7 @@ import org.http4s.multipart._
 
 import scala.util.control.NoStackTrace
 import scala.util.matching.Regex
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 
 /** API service to handle wikidata related operations
   *
@@ -58,13 +59,9 @@ class WikidataService(client: Client[IO])
     */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    case GET -> Root / `api` / `verb` / "test" => {
-      Ok("Wikidata Test")
-    }
-
     case GET -> Root / `api` / `verb` / "entityLabel" :?
-        WdEntityParam(entity) +&
-        LanguageParam(language) =>
+        WdEntityParameter(entity) +&
+        LanguageParameter(language) =>
       val uri = Uri.unsafeFromString(
         s"https://www.wikidata.org/w/api.php?action=wbgetentities&props=labels&ids=$entity&languages=$language&format=json"
       )
@@ -84,7 +81,7 @@ class WikidataService(client: Client[IO])
       } yield resp
 
     case GET -> Root / `api` / `verb` / "schemaContent" :?
-        WdSchemaParam(wdSchema) => {
+        WdSchemaParameter(wdSchema) => {
       val uri = uri"https://www.wikidata.org".withPath(
         Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/$wdSchema")
       )
@@ -111,11 +108,11 @@ class WikidataService(client: Client[IO])
     }
 
     case GET -> Root / `api` / `verb` / "searchEntity" :?
-        OptEndpointParam(endpoint) +&
-        LabelParam(label) +&
-        LanguageParam(language) +&
-        LimitParam(maybelimit) +&
-        ContinueParam(maybeContinue) => {
+        EndpointParameter(endpoint) +&
+        LabelParameter(label) +&
+        LanguageParameter(language) +&
+        LimitParameter(maybelimit) +&
+        ContinueParameter(maybeContinue) => {
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
@@ -155,11 +152,11 @@ class WikidataService(client: Client[IO])
     }
 
     case GET -> Root / `api` / `verb` / "searchProperty" :?
-        OptEndpointParam(endpoint) +&
-        LabelParam(label) +&
-        LanguageParam(language) +&
-        LimitParam(maybelimit) +&
-        ContinueParam(maybeContinue) => {
+        EndpointParameter(endpoint) +&
+        LabelParameter(label) +&
+        LanguageParameter(language) +&
+        LimitParameter(maybelimit) +&
+        ContinueParameter(maybeContinue) => {
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 
@@ -197,10 +194,10 @@ class WikidataService(client: Client[IO])
     }
 
     case GET -> Root / `api` / `verb` / "searchLexeme" :?
-        LabelParam(label) +&
-        LanguageParam(language) +&
-        LimitParam(maybelimit) +&
-        ContinueParam(maybeContinue) => {
+        LabelParameter(label) +&
+        LanguageParameter(language) +&
+        LimitParameter(maybelimit) +&
+        ContinueParameter(maybeContinue) => {
       val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
       val continue: String = maybeContinue.getOrElse(defaultContinue.toString)
 

@@ -4,11 +4,14 @@ import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.UrlParam
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.UrlParameter
+import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import scalaj.http.Http
+
+import scala.util.{Failure, Success, Try}
 
 class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
 
@@ -18,19 +21,27 @@ class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    // Query URL and return the response
+    /** Query a given URL and return the response.
+      * Receives the URL to be queried:
+      *  - url [String]: URL to be queried
+      *    Returns the URL contents (response body)
+      */
     case GET -> Root / `api` / `verb` :?
-        UrlParam(url) =>
-      try {
-        val res = Http(url).asString
-        if(res.isSuccess) {
-          Ok(res.body)
-        } else {
-          InternalServerError("Could not fetch URL")
-        }
-      } catch {
-        case _: Exception =>
-          InternalServerError("Could not fetch URL")
+        UrlParameter(url) =>
+      Try {
+        Http(url).asString
+      } match {
+        case Success(res) if res.isSuccess => Ok(res.body)
+        case Success(res) =>
+          errorResponseJson(
+            s"Could not fetch URL: status ${res.code}",
+            InternalServerError
+          )
+        case Failure(exc) =>
+          errorResponseJson(
+            s"Could not fetch URL: ${exc.getMessage}",
+            InternalServerError
+          )
       }
   }
 

@@ -2,30 +2,29 @@ package es.weso.rdfshape.server.api.routes.endpoint.service
 
 import cats.data.EitherT
 import cats.effect._
-import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.jena.{Endpoint => EndpointJena}
-import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.routes.IncomingRequestParameters.{
-  LimitParam,
-  OptEndpointParam,
-  OptNodeParam
-}
+import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
   getEndpointAsRDFReader,
   getEndpointInfo,
   getEndpointUrl
 }
+import es.weso.rdfshape.server.api.routes.endpoint.logic.EndpointStatus._
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing.getOutgoing
 import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQuery.getSparqlQuery
 import es.weso.rdfshape.server.api.routes.endpoint.logic.{
   Endpoint,
   Outgoing,
   SparqlQuery
 }
-import es.weso.rdfshape.server.api.routes.{ApiService, PartsMap}
-import es.weso.rdfshape.server.utils.json.JsonUtils.responseJson
-import es.weso.rdfshape.server.utils.numeric.NumericUtils
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  EndpointParameter,
+  LimitParameter,
+  NodeParameter
+}
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import es.weso.utils.IOUtils._
 import io.circe.Json
 import org.http4s._
@@ -49,6 +48,17 @@ class EndpointService(client: Client[IO])
     */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
+    /** Perform a SPARQL query targeted to a specific endpoint.
+      * Receives a JSON object with the input endpoint query:
+      *  - query [String]: Input query
+      *  - endpoint [String]: Target endpoint
+      *  - activeQueryTab [String]: Identifies the source of the query (raw, URL, file...)
+      *    Returns a JSON object with the query results:
+      *    - head [Object]: Query metadata
+      *      - vars: [Array]: Query variables
+      *    - results [Object]: Query results
+      *      - bindings: [Array]: Query results, each item being an object mapping each variable to its value
+      */
     case req @ POST -> Root / `api` / `verb` / "query" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
@@ -77,77 +87,60 @@ class EndpointService(client: Client[IO])
           either <- r.value
           resp <- either.fold(
             e =>
-              responseJson(s"Error querying endpoint: $e", InternalServerError),
+              errorResponseJson(
+                s"Query failed. $e",
+                InternalServerError
+              ),
             json => Ok(json)
           )
         } yield resp
       }
 
+    /** Attempt to contact an endpoint and return metadata about it.
+      * Receives a JSON object with the input endpoint:
+      *  - endpoint [String]: Target endpoint
+      *    Returns a JSON object with the endpoint response:
+      *    - head [Object]: Query metadata
+      *      - vars: [Array]: Query variables
+      *    - results [Object]: Query results
+      *      - bindings: [Array]: Query results, each item being an object mapping each variable to its value
+      */
     case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
-        {
-          val partsMap = PartsMap(m.parts)
-          val r: EitherT[IO, String, Json] = for {
-            endpointUrl <- getEndpointUrl(partsMap)
-            ei <- EitherT.liftF[IO, String, Endpoint](
-              getEndpointInfo(endpointUrl, client)
-            )
-          } yield ei.asJson
-          for {
-            either <- r.value
-            resp <- either.fold(
-              e =>
-                responseJson(
-                  s"Error obtaining info on Endpoint $e",
-                  InternalServerError
-                ),
-              json => Ok(json)
-            )
-          } yield resp
-        }
+        val partsMap = PartsMap(m.parts)
+        for {
+          endpointUrl <- getEndpointUrl(partsMap).value
+          response <- endpointUrl match {
+            case Left(err) => errorResponseJson(err, BadRequest)
+            case Right(endpointUrl) =>
+              val endpointInfo = getEndpointInfo(endpointUrl)
+              endpointInfo match {
+                case Endpoint(errMsg, OFFLINE) =>
+                  errorResponseJson(
+                    errMsg,
+                    InternalServerError
+                  )
+                case _ => Ok(endpointInfo.asJson)
+              }
+          }
+        } yield response
+
       }
 
+    // TODO: document
     case GET -> Root / `api` / `verb` / "outgoing" :?
-        OptEndpointParam(optEndpoint) +&
-        OptNodeParam(optNode) +&
-        LimitParam(optLimit) =>
+        EndpointParameter(optEndpoint) +&
+        NodeParameter(optNode) +&
+        LimitParameter(optLimit) =>
       for {
         eitherOutgoing <- getOutgoing(optEndpoint, optNode, optLimit).value
         resp <- eitherOutgoing.fold(
-          (s: String) => responseJson(s"Error: $s", InternalServerError),
+          (s: String) => errorResponseJson(s"Error: $s", InternalServerError),
           (outgoing: Outgoing) => Ok(outgoing.toJson)
         )
       } yield resp
 
   }
-
-  private def getOutgoing(
-      optEndpoint: Option[String],
-      optNode: Option[String],
-      optLimit: Option[String]
-  ): EitherT[IO, String, Outgoing] = {
-    for {
-      endpointIRI <- EitherT.fromEither[IO](
-        Either
-          .fromOption(optEndpoint, "No endpoint provided")
-          .flatMap(IRI.fromString(_))
-      )
-      node <- EitherT.fromEither[IO](
-        Either
-          .fromOption(optNode, "No node provided")
-          .flatMap(IRI.fromString(_))
-      )
-      limit <- EitherT.fromEither[IO](
-        NumericUtils.parseInt(optLimit.getOrElse("1"))
-      )
-      o <- outgoing(endpointIRI, node, limit)
-    } yield o
-  }
-
-  private def outgoing(endpoint: IRI, node: IRI, limit: Int): ESIO[Outgoing] =
-    for {
-      triples <- stream2es(EndpointJena(endpoint).triplesWithSubject(node))
-    } yield Outgoing.fromTriples(node, endpoint, triples.toSet)
 
 }
 

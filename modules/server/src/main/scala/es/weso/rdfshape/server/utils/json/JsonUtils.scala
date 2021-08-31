@@ -72,7 +72,7 @@ object JsonUtils extends Http4sDsl[IO] {
     * @param status Desired HTTP status of the response
     * @return The response object, ready to be dispatched elsewhere
     */
-  def responseJson(msg: String, status: Status = Ok): IO[Response[IO]] = {
+  def errorResponseJson(msg: String, status: Status = Ok): IO[Response[IO]] = {
     val responseMessage = mkJson(msg)
     mapStatusCodes(status) match {
       case Status.Created             => Created(responseMessage)

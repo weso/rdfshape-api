@@ -20,7 +20,7 @@ class APIService(client: Client[IO]) extends Http4sDsl[IO] with ApiService {
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case GET -> Root / `api` / "health" =>
-      Ok("OK")
+      Ok("Healthy")
   }
 
 }

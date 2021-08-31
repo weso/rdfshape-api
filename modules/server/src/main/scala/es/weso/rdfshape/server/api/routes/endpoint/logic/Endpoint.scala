@@ -5,10 +5,15 @@ import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.{Endpoint => EndpointJena}
-import es.weso.rdfshape.server.api.routes.PartsMap
+import es.weso.rdfshape.server.api.routes.endpoint.logic.EndpointStatus.{
+  EndpointStatus,
+  OFFLINE,
+  ONLINE
+}
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import es.weso.utils.IOUtils.{ESIO, io2es}
 import io.circe.Json
-import org.http4s.client.Client
 
 import java.net.URL
 import scala.util.{Failure, Success, Try}
@@ -18,11 +23,11 @@ import scala.util.{Failure, Success, Try}
   * @param msg    Message attached to the information/returned by the endpoint
   * @param status Status of the endpoint
   */
-case class Endpoint(msg: String, status: Option[String] = None) {
+sealed case class Endpoint(msg: String, status: EndpointStatus) {
   def asJson: Json = Json.fromFields(
     List(
-      ("msg", Json.fromString(msg)),
-      ("status", Json.fromString(status.getOrElse("")))
+      ("message", Json.fromString(msg)),
+      ("status", Json.fromString(status))
     )
   )
 }
@@ -43,12 +48,14 @@ private[api] object Endpoint extends LazyLogging {
   /** Given an endpoint URL, fetch and return its data
     *
     * @param url    Endpoint URL
-    * @param client Client used to fetch the URL
-    * @return An instance of EndpointInfo with the information contained in the endpoint
+    * @return An instance of Endpoint with the information contained in the endpoint
     */
-  def getEndpointInfo(url: URL, client: Client[IO]): IO[Endpoint] = {
-    IO.println(s"Obtaining info of endpoint $url") *>
-      client.expect[String](url.toString).map(Endpoint(_))
+  def getEndpointInfo(url: URL): Endpoint = {
+    logger.debug(s"Obtaining info of endpoint $url")
+    getUrlContents(url.toString) match {
+      case Left(errMsg)    => Endpoint(errMsg, OFFLINE)
+      case Right(response) => Endpoint(response, ONLINE)
+    }
   }
 
   /** Given a request's parameters, try to extract an endpoint URL from them
@@ -64,7 +71,7 @@ private[api] object Endpoint extends LazyLogging {
     )
     ep <- maybeStr match {
       case None =>
-        EitherT.leftT[IO, URL](s"No value for param endpoint")
+        EitherT.leftT[IO, URL](s"No value provided for parameter endpoint")
       case Some(str) =>
         Try(new URL(str)) match {
           case Success(url) => EitherT.rightT[IO, String](url)
@@ -72,4 +79,14 @@ private[api] object Endpoint extends LazyLogging {
         }
     }
   } yield ep
+}
+
+/** Enumeration of the different possible Endpoint states.
+  */
+private[endpoint] object EndpointStatus extends Enumeration {
+  type EndpointStatus = String
+
+  val ONLINE  = "online"
+  val OFFLINE = "offline"
+
 }

@@ -7,7 +7,6 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.rdfshape.server.api.format.DataFormat
 import es.weso.rdfshape.server.api.merged.CompoundData
-import es.weso.rdfshape.server.api.routes.data.logic
 import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.utils.IOUtils.{either2io, err}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
@@ -43,7 +42,7 @@ final case class DataConversion(
     */
   def toJson: Json = Json.fromFields(
     List(
-      ("msg", Json.fromString(msg)),
+      ("message", Json.fromString(msg)),
       ("result", Json.fromString(result)),
       ("dataFormat", Json.fromString(dataFormat.name)),
       ("targetDataFormat", Json.fromString(targetFormat))
@@ -65,13 +64,14 @@ private[api] object DataConversion extends LazyLogging {
     GraphFormat("PNG", "application/png", Format.PNG),
     GraphFormat("PS", "application/ps", Format.PS)
   )
+  val successMessage = "Conversion successful!"
 
   private[api] def dataConvert(
       maybeData: Option[String],
       dataFormat: DataFormat,
       maybeCompoundData: Option[String],
       targetFormat: String
-  ): IO[DataConversion] = {
+  ): IO[Either[String, DataConversion]] = {
     logger.debug(
       s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat"
     )
@@ -86,17 +86,31 @@ private[api] object DataConversion extends LazyLogging {
               ecd <- either2io(CompoundData.fromString(compoundDataStr))
               cd  <- cnvEither(ecd, str => s"dataConvert: Error: $str")
               result <- cd.toRDF.flatMap(
-                _.use(rdf => rdfConvert(rdf, None, dataFormat, targetFormat))
+                _.use(rdf =>
+                  rdfConvert(rdf, None, dataFormat, targetFormat).attempt.map(
+                    _.fold(exc => Left(exc.getMessage), dc => Right(dc))
+                  )
+                )
               )
+
             } yield result
         }
       case Some(data) =>
-        RDFAsJenaModel
-          .fromChars(data, dataFormat.name, None)
-          .flatMap(
-            _.use(rdf => rdfConvert(rdf, Some(data), dataFormat, targetFormat))
-          )
+        val maybeConversion =
+          RDFAsJenaModel
+            .fromChars(data, dataFormat.name, None)
+            .flatMap(
+              _.use(rdf =>
+                rdfConvert(rdf, Some(data), dataFormat, targetFormat)
+              )
+            )
+
+        maybeConversion.attempt.map(
+          _.fold(exc => Left(exc.getMessage), dc => Right(dc))
+        )
+
     }
+
   }
 
   private def cnvEither[A](e: Either[String, A], cnv: String => String): IO[A] =
@@ -142,7 +156,7 @@ private[api] object DataConversion extends LazyLogging {
 
     for {
       converted <- doConversion
-    } yield logic.DataConversion(
+    } yield DataConversion(
       "Conversion successful!",
       data,
       dataFormat,

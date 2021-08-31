@@ -2,8 +2,9 @@ package es.weso.rdfshape.server.api.routes.wikibase
 
 import cats.effect._
 import es.weso.rdf.RDFReasoner
-import es.weso.rdfshape.server.api.routes.PartsMap
-import es.weso.rdfshape.server.api.routes.schema.service.SchemaParam
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaParam
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.WdSchemaParameter
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.wikibase._
 import es.weso.schema.{Schema, Schemas}
 import org.http4s._
@@ -83,7 +84,7 @@ object WikibaseSchemaParam {
       partsMap: PartsMap
   ): IO[WikibaseSchemaParam] =
     for {
-      maybeSchema <- partsMap.eitherPartValue("entitySchema")
+      maybeSchema <- partsMap.eitherPartValue(WdSchemaParameter.name)
       // endpointStr      <- partsMap.partValue("endpoint")
       // endpoint         <- either2f(IRI.fromString(endpointStr))
       maybeSchemaParam <- SchemaParam.mkSchemaParam(partsMap).attempt

@@ -33,7 +33,7 @@ case class SchemaConversionResult(
     */
   def toJson: Json = Json.fromFields(
     List(
-      ("msg", Json.fromString(msg))
+      ("message", Json.fromString(msg))
     ) ++
       maybeField(schema, "schema", Json.fromString) ++
       maybeField(schemaFormat, "schemaFormat", Json.fromString) ++

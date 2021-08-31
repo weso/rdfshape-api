@@ -5,7 +5,7 @@ import io.circe.Json
 
 /** Data class representing the data contained in a schema
   *
-  * @param schemaName      Name of the schema
+  * @param schemaType      Name of the schema
   * @param schemaEngine    Engine of the schema
   * @param wellFormed      Is the schema well formed
   * @param shapes          List of shapes in the schema
@@ -13,7 +13,7 @@ import io.circe.Json
   * @param errors          Errors in the schema
   */
 private[schema] case class SchemaInfo(
-    schemaName: Option[String],
+    schemaType: Option[String],
     schemaEngine: Option[String],
     wellFormed: Boolean,
     shapes: List[String],
@@ -27,7 +27,7 @@ private[schema] case class SchemaInfo(
     */
   def toJson: Json = Json.fromFields(
     List(
-      ("schemaName", schemaName.fold(Json.Null)(Json.fromString)),
+      ("schemaType", schemaType.fold(Json.Null)(Json.fromString)),
       ("schemaEngine", schemaEngine.fold(Json.Null)(Json.fromString)),
       ("wellFormed", Json.fromBoolean(wellFormed)),
       ("shapes", Json.fromValues(shapes.map(Json.fromString))),
@@ -44,7 +44,7 @@ private[schema] case class SchemaInfo(
           )
         )
       ),
-      ("errors", Json.fromValues(errors.map(Json.fromString)))
+      ("error", Json.fromValues(errors.map(Json.fromString)))
     )
   )
 }
