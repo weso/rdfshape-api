@@ -15,33 +15,27 @@ object IncomingRequestParameters {
   lazy val dataFormat       = "dataFormat"
   lazy val targetDataFormat = "targetDataFormat"
 
-  lazy val schema               = "schema"
-  lazy val schemaURL            = "schemaURL"
-  lazy val schemaFile           = "schemaFile"
-  lazy val schemaFormat         = "schemaFormat"
-  lazy val schemaFormatTextArea = "schemaFormatTextArea"
-  lazy val schemaFormatUrl      = "schemaFormatUrl"
-  lazy val schemaFormatFile     = "schemaFormatFile"
-  lazy val schemaEngine         = "schemaEngine"
-  lazy val targetSchemaFormat   = "targetSchemaFormat"
-  lazy val targetSchemaEngine   = "targetSchemaEngine"
-  lazy val inference            = "inference"
-  lazy val triggerMode          = "triggerMode"
+  lazy val schema             = "schema"
+  lazy val schemaURL          = "schemaURL"
+  lazy val schemaFile         = "schemaFile"
+  lazy val schemaFormat       = "schemaFormat"
+  lazy val schemaEngine       = "schemaEngine"
+  lazy val targetSchemaFormat = "targetSchemaFormat"
+  lazy val targetSchemaEngine = "targetSchemaEngine"
+  lazy val inference          = "inference"
+  lazy val triggerMode        = "triggerMode"
 
   lazy val shape        = "shape"
   lazy val entity       = "entity"
   lazy val node         = "node"
   lazy val nodeSelector = "nodeSelector"
 
-  lazy val shapeMap               = "shapeMap"
-  lazy val shape_map              = "shape-map"
-  lazy val shapeMapURL            = "shapeMapURL"
-  lazy val shapeMapFile           = "shapeMapFile"
-  lazy val shapeMapFormat         = "shapeMapFormat"
-  lazy val shapeMapFormatTextArea = "shapeMapFormatTextArea"
-  lazy val shapeMapFormatUrl      = "shapeMapFormatUrl"
-  lazy val shapeMapFormatFile     = "shapeMapFormatFile"
-  lazy val targetShapeMapFormat   = "targetShapeMapFormat"
+  lazy val shapeMap             = "shapeMap"
+  lazy val shape_map            = "shape-map"
+  lazy val shapeMapURL          = "shapeMapURL"
+  lazy val shapeMapFile         = "shapeMapFile"
+  lazy val shapeMapFormat       = "shapeMapFormat"
+  lazy val targetShapeMapFormat = "targetShapeMapFormat"
 
   lazy val query     = "query"
   lazy val queryURL  = "queryURL"
@@ -118,21 +112,6 @@ object IncomingRequestParameters {
     val name: String = schemaFormat
   }
 
-  object SchemaFormatTextAreaParameter
-      extends OptionalQueryParamDecoderMatcher[String](schemaFormatTextArea) {
-    val name: String = schemaFormatTextArea
-  }
-
-  object SchemaFormatUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](schemaFormatUrl) {
-    val name: String = schemaFormatUrl
-  }
-
-  object SchemaFormatFileParameter
-      extends OptionalQueryParamDecoderMatcher[String](schemaFormatFile) {
-    val name: String = schemaFormatFile
-  }
-
   object SchemaEngineParameter
       extends OptionalQueryParamDecoderMatcher[String](schemaEngine) {
     val name: String = schemaEngine
@@ -200,21 +179,6 @@ object IncomingRequestParameters {
   object ShapeMapFormatParameter
       extends OptionalQueryParamDecoderMatcher[String](shapeMapFormat) {
     val name: String = shapeMapFormat
-  }
-
-  object ShapeMapFormatTextAreaParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapFormatTextArea) {
-    val name: String = shapeMapFormatTextArea
-  }
-
-  object ShapeMapFormatUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapFormatUrl) {
-    val name: String = shapeMapFormatUrl
-  }
-
-  object ShapeMapFormatFileParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapFormatFile) {
-    val name: String = shapeMapFormatFile
   }
 
   object TargetShapeMapFormatParameter

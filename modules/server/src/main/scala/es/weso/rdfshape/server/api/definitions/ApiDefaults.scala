@@ -1,7 +1,11 @@
 package es.weso.rdfshape.server.api.definitions
 
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.format.{DataFormat, SchemaFormat}
+import es.weso.rdfshape.server.api.format.{
+  DataFormat,
+  SchemaFormat,
+  ShapeMapFormat
+}
 import es.weso.schema.{Schemas, ShapeMapTrigger}
 import es.weso.shapemaps.ShapeMap
 
@@ -25,7 +29,7 @@ case object ApiDefaults {
   val defaultInference: String               = availableInferenceEngines.head
   val defaultActiveDataTab                   = "#dataTextArea"
   val defaultActiveSchemaTab                 = "#schemaTextArea"
-  val defaultShapeMapFormat: String          = ShapeMap.defaultFormat
+  val defaultShapeMapFormat: ShapeMapFormat  = ShapeMapFormat.defaultFormat
   val availableShapeMapFormats: List[String] = ShapeMap.formats
   val defaultActiveShapeMapTab               = "#shapeMapTextArea"
   val defaultShapeLabel: IRI                 = IRI("Shape")

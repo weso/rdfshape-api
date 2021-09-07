@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.wikibase
+package es.weso.rdfshape.server.api.routes.wikibase.logic
 
 import cats.effect._
 import es.weso.rdf.RDFReasoner

@@ -4,10 +4,8 @@ import cats.effect.IO
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.PrefixMap
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
-  defaultActiveShapeMapTab,
-  defaultShapeMapFormat
-}
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultActiveShapeMapTab
+import es.weso.rdfshape.server.api.format.ShapeMapFormat
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.shapemaps.ShapeMap
@@ -15,22 +13,11 @@ import es.weso.shapemaps.ShapeMap
 case class TriggerModeParam(
     triggerMode: Option[String],
     shapeMap: Option[String],
-    shapeMapFormatTextarea: Option[String],
     shapeMapURL: Option[String],
-    shapeMapFormatUrl: Option[String],
     shapeMapFile: Option[String],
-    shapeMapFormatFile: Option[String],
+    shapeMapFormat: ShapeMapFormat,
     activeShapeMapTab: Option[String]
 ) extends LazyLogging {
-
-  val shapeMapFormat: Option[String] = parseShapeMapTab(
-    activeShapeMapTab.getOrElse(defaultActiveShapeMapTab)
-  ) match {
-    case Right(`shapeMapUrlType`)      => shapeMapFormatUrl
-    case Right(`shapeMapFileType`)     => shapeMapFormatFile
-    case Right(`shapeMapTextAreaType`) => shapeMapFormatTextarea
-    case _                             => None
-  }
 
   def getShapeMap(
       nodesPrefixMap: PrefixMap,
@@ -49,12 +36,10 @@ case class TriggerModeParam(
           case Some(shapeMapUrl) =>
             logger.trace(s"ShapeMapUrl: $shapeMapUrl")
 
-            val shapeMapFormat =
-              shapeMapFormatUrl.getOrElse(defaultShapeMapFormat)
             ShapeMap
               .fromURI(
                 shapeMapUrl,
-                shapeMapFormat,
+                shapeMapFormat.name,
                 None,
                 nodesPrefixMap,
                 shapesPrefixMap
@@ -79,9 +64,7 @@ case class TriggerModeParam(
           case Some(shapeMapStr) =>
             logger.trace(s"ShapeMapFile: $shapeMapStr")
 
-            val shapeMapFormat =
-              shapeMapFormatFile.getOrElse(defaultShapeMapFormat)
-            ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
+            ShapeMap.fromString(shapeMapStr, shapeMapFormat.name, None) match {
               case Left(ls) =>
                 IO.pure((Some(shapeMapStr), Left(ls.toList.mkString("\n"))))
               case Right(parsedShapeMap) =>
@@ -96,9 +79,7 @@ case class TriggerModeParam(
           case Some(shapeMapStr) =>
             logger.trace(s"ShapeMapText: $shapeMapStr")
 
-            val shapeMapFormat =
-              shapeMapFormatTextarea.getOrElse(defaultShapeMapFormat)
-            ShapeMap.fromString(shapeMapStr, shapeMapFormat, None) match {
+            ShapeMap.fromString(shapeMapStr, shapeMapFormat.name, None) match {
               case Left(ls) =>
                 IO.pure((Some(shapeMapStr), Left(ls.toList.mkString("\n"))))
               case Right(parsedShapeMap) =>
@@ -151,14 +132,10 @@ object TriggerModeParam extends LazyLogging {
       optShapeMap     <- partsMap.optPartValue(ShapeMapTextParameter.name)
       optShapeMapURL  <- partsMap.optPartValue(ShapeMapUrlParameter.name)
       optShapeMapFile <- partsMap.optPartValue(ShapeMapFileParameter.name)
-      optShapeMapFormatTextArea <- partsMap.optPartValue(
-        ShapeMapFormatTextAreaParameter.name
-      )
-      optShapeMapFormatUrl <- partsMap.optPartValue(
-        ShapeMapFormatUrlParameter.name
-      )
-      optShapeMapFormatFile <- partsMap.optPartValue(
-        ShapeMapFormatFileParameter.name
+
+      shapeMapFormat <- getShapeMapFormat(
+        ShapeMapFormatParameter.name,
+        partsMap
       )
       optActiveShapeMapTab <- partsMap.optPartValue(
         ActiveShapeMapTabParameter.name
@@ -167,16 +144,14 @@ object TriggerModeParam extends LazyLogging {
       logger.debug(s"optTriggerMode: $optTriggerMode")
       logger.debug(s"optShapeMap: $optShapeMap")
       logger.debug(s"optActiveShapeMapTab: $optActiveShapeMapTab")
-      logger.debug(s"optShapeMapFormatFile: $optShapeMapFormatFile")
+      logger.debug(s"optShapeMapFormat: $shapeMapFormat")
       TriggerModeParam(
-        optTriggerMode,
-        optShapeMap,
-        optShapeMapFormatTextArea,
-        optShapeMapURL,
-        optShapeMapFormatUrl,
-        optShapeMapFile,
-        optShapeMapFormatFile,
-        optActiveShapeMapTab
+        triggerMode = optTriggerMode,
+        shapeMap = optShapeMap,
+        shapeMapURL = optShapeMapURL,
+        shapeMapFile = optShapeMapFile,
+        shapeMapFormat = shapeMapFormat,
+        activeShapeMapTab = optActiveShapeMapTab
       )
     }
     val r: IO[Either[String, TriggerModeParam]] = tp.map(_.asRight[String])
@@ -189,5 +164,24 @@ object TriggerModeParam extends LazyLogging {
         IO.pure
       )
     )
+  }
+
+  /** Try to build a {@link es.weso.rdfshape.server.api.format.ShapeMapFormat} object from a request's parameters
+    *
+    * @param parameter    Name of the parameter with the format name
+    * @param parameterMap Request parameters
+    * @return The ShapeMapFormat found or the default one
+    */
+  private def getShapeMapFormat(
+      parameter: String,
+      parameterMap: PartsMap
+  ): IO[ShapeMapFormat] = {
+    for {
+      maybeFormat <- PartsMap.getFormat(parameter, parameterMap)
+    } yield maybeFormat match {
+      case None         => ShapeMapFormat.defaultFormat
+      case Some(format) => new ShapeMapFormat(format)
+    }
+
   }
 }

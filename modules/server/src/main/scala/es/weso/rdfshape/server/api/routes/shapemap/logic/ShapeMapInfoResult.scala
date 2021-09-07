@@ -24,7 +24,7 @@ case class ShapeMapInfoResult private (
     */
   def toJson: Json = {
     Json.fromFields(
-      List(("msg", Json.fromString(msg))) ++
+      List(("message", Json.fromString(msg))) ++
         maybeField(shapeMap, "shapeMap", Json.fromString) ++
         maybeField(
           shapeMapFormat,

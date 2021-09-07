@@ -4,8 +4,9 @@ import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
+import es.weso.rdfshape.server.utils.error.exceptions.WikibaseServiceException
 
-/** Static utility methods to help work with Optional and Either types
+/** Static utility methods to help work with Optional, Either or IO types
   */
 object OptEitherF {
 
@@ -49,6 +50,15 @@ object OptEitherF {
   ): EitherT[IO, String, Option[B]] = maybe match {
     case None        => EitherT.pure(None)
     case Some(value) => EitherT.fromEither(function(value).map(Some(_)))
+  }
+
+  /** Given an Either, try to obtain an IO wrapping its value
+    * @param either Input Either
+    * @tparam A Type of value contained in the either and result
+    * @return IO wrapping the Either value if right, an IO error if left
+    */
+  def ioFromEither[A](either: Either[String, A]): IO[A] = {
+    either.fold(err => IO.raiseError(WikibaseServiceException(err)), IO.pure)
   }
 
 }

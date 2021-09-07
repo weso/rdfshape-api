@@ -14,25 +14,27 @@ class DataFormat(formatName: String, formatMimeType: MediaType) extends Format {
 object DataFormat extends FormatCompanion[DataFormat] {
 
   override lazy val availableFormats: List[DataFormat] = List(
-    Turtle,
-    JsonLd,
-    NTriples,
-    RdfXml,
-    RdfJson,
-    Trig,
-    HtmlMicrodata,
-    HtmlRdfa11,
+    Json,
     Dot,
     Svg,
     Png,
-    JsonDataFormat
+    Turtle,
+    NTriples,
+    Trig,
+    JsonLd,
+    RdfXml,
+    RdfJson,
+    HtmlMicrodata,
+    HtmlRdfa11,
+    ShExC,
+    Compact
   )
-  override val defaultFormat: DataFormat = Turtle
+  override val defaultFormat: DataFormat = Json
 }
 
 /** Represents the mime-type "application/json"
   */
-case object JsonDataFormat
+case object Json
     extends DataFormat(
       formatName = "json",
       formatMimeType = new MediaType("application", "json")

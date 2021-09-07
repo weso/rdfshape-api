@@ -4,10 +4,7 @@ import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
-  defaultSchemaEngine,
-  defaultSchemaFormat
-}
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
 import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.getBase
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
@@ -21,15 +18,12 @@ sealed case class SchemaParam(
     schema: Option[String],
     schemaURL: Option[String],
     schemaFile: Option[String],
-    optSchemaFormat: Option[SchemaFormat],
+    schemaFormat: SchemaFormat,
     schemaEngine: Option[String],
     targetSchemaEngine: Option[String],
     targetSchemaFormat: Option[String],
     activeSchemaTab: Option[String]
 ) extends LazyLogging {
-
-  val schemaFormat: SchemaFormat =
-    optSchemaFormat.getOrElse(defaultSchemaFormat)
 
   def getSchema(
       data: Option[RDFReasoner]
@@ -193,7 +187,7 @@ object SchemaParam extends LazyLogging {
         pair => {
           val (maybeStr, maybeSchema) = pair
           maybeSchema match {
-            // TODO: HERE ERROR IS NULL
+            // TODO: HERE "SRT" ERROR IS NULL
             case Left(str) => IO.pure(Left(str))
             case Right(schema) =>
               IO.pure(Right((schema, sp.copy(schema = maybeStr))))
@@ -215,11 +209,11 @@ object SchemaParam extends LazyLogging {
   }
 
   private[api] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {
-    schema            <- partsMap.optPartValue(SchemaParameter.name)
-    schemaURL         <- partsMap.optPartValue(SchemaURLParameter.name)
-    schemaFile        <- partsMap.optPartValue(SchemaFileParameter.name)
-    schemaFormatValue <- getSchemaFormat(SchemaFormatParameter.name, partsMap)
-    schemaEngine      <- partsMap.optPartValue(SchemaEngineParameter.name)
+    schema       <- partsMap.optPartValue(SchemaParameter.name)
+    schemaURL    <- partsMap.optPartValue(SchemaURLParameter.name)
+    schemaFile   <- partsMap.optPartValue(SchemaFileParameter.name)
+    schemaFormat <- getSchemaFormat(SchemaFormatParameter.name, partsMap)
+    schemaEngine <- partsMap.optPartValue(SchemaEngineParameter.name)
     targetSchemaEngine <- partsMap.optPartValue(
       TargetSchemaEngineParameter.name
     )
@@ -232,7 +226,7 @@ object SchemaParam extends LazyLogging {
       schema,
       schemaURL,
       schemaFile,
-      schemaFormatValue,
+      schemaFormat,
       schemaEngine,
       targetSchemaEngine,
       targetSchemaFormat,
@@ -240,23 +234,23 @@ object SchemaParam extends LazyLogging {
     )
   }
 
+  /** Try to build a {@link es.weso.rdfshape.server.api.format.SchemaFormat} object from a request's parameters
+    *
+    * @param parameter    Name of the parameter with the format name
+    * @param parameterMap Request parameters
+    * @return The SchemaFormat found or the default one
+    */
   private def getSchemaFormat(
-      name: String,
-      partsMap: PartsMap
-  ): IO[Option[SchemaFormat]] = for {
-    maybeStr <- partsMap.optPartValue(name)
-  } yield maybeStr match {
-    case None => None
-    case Some(str) =>
-      SchemaFormat
-        .fromString(str)
-        .fold(
-          err => {
-            logger.error(s"Unsupported schemaFormat for $name: $str")
-            None
-          },
-          df => Some(df)
-        )
+      parameter: String,
+      parameterMap: PartsMap
+  ): IO[SchemaFormat] = {
+    for {
+      maybeFormat <- PartsMap.getFormat(parameter, parameterMap)
+    } yield maybeFormat match {
+      case None         => SchemaFormat.defaultFormat
+      case Some(format) => new SchemaFormat(format)
+    }
+
   }
 
   private[api] def empty: SchemaParam =
@@ -264,7 +258,7 @@ object SchemaParam extends LazyLogging {
       schema = None,
       schemaURL = None,
       schemaFile = None,
-      optSchemaFormat = None,
+      schemaFormat = SchemaFormat.defaultFormat,
       schemaEngine = None,
       targetSchemaEngine = None,
       targetSchemaFormat = None,

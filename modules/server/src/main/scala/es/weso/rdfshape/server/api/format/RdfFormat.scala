@@ -7,7 +7,23 @@ import org.http4s.MediaType
   * @see {@link es.weso.rdfshape.server.api.format.DataFormat}
   */
 sealed class RDFFormat(formatName: String, formatMimeType: MediaType)
-    extends DataFormat(formatName, formatMimeType)
+    extends DataFormat(formatName, formatMimeType) {}
+
+/** Companion object with all RDFFormat static utilities
+  */
+object RDFFormat extends FormatCompanion[RDFFormat] {
+
+  override lazy val availableFormats: List[RDFFormat] =
+    List(
+      Turtle,
+      NTriples,
+      Trig,
+      JsonLd,
+      RdfXml,
+      RdfJson
+    )
+  override val defaultFormat: RDFFormat = Turtle
+}
 
 /** Represents the mime-type "text/turtle"
   */

@@ -7,7 +7,19 @@ import org.http4s.MediaType
   * @see {@link es.weso.rdfshape.server.api.format.DataFormat}
   */
 class HtmlFormat(formatName: String)
-    extends DataFormat(formatName, MediaType.text.html)
+    extends DataFormat(formatName, MediaType.text.html) {}
+
+/** Companion object with all HtmlFormat static utilities
+  */
+object HtmlFormat extends FormatCompanion[HtmlFormat] {
+
+  override lazy val availableFormats: List[HtmlFormat] =
+    List(
+      HtmlRdfa11,
+      HtmlMicrodata
+    )
+  override val defaultFormat: HtmlFormat = HtmlRdfa11
+}
 
 /** Represents the mime-type "text/html" when used along rdfa11
   */

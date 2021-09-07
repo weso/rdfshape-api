@@ -2,7 +2,7 @@ package es.weso.rdfshape.server.api.format
 
 import org.http4s.MediaType
 
-/** Dummy trait to differentiate schema formats from the more generic DataFormat
+/** Dummy class to differentiate shapemap formats from the more generic DataFormat
   * @see {@link es.weso.rdfshape.server.api.format.DataFormat}
   */
 class SchemaFormat(formatName: String, formatMimeType: MediaType)

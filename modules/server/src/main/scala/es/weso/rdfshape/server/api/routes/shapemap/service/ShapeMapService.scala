@@ -3,6 +3,7 @@ package es.weso.rdfshape.server.api.routes.shapemap.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
+import es.weso.rdfshape.server.api.format.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap.getShapeMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.{
@@ -11,7 +12,6 @@ import es.weso.rdfshape.server.api.routes.shapemap.logic.{
 }
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
-import es.weso.shapemaps.{ShapeMap => ShapeMapW}
 import io.circe._
 import org.http4s._
 import org.http4s.circe._
@@ -34,11 +34,28 @@ class ShapeMapService(client: Client[IO])
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
+    /** Returns a JSON array with the accepted shapeMap formats.
+      */
     case GET -> Root / `api` / `verb` / "formats" =>
-      val formats = ShapeMapW.availableFormats
+      val formats = ShapeMapFormat.availableFormats.map(_.name)
       val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
       Ok(json)
 
+    /** Obtain information about a shapeMap.
+      * Receives a JSON object with the input shapeMap information:
+      *  - shapeMap [String]: Raw shapemap data
+      *  - shapeMapUrl [String]: Url containing the shapemap
+      *  - shapeMapFile [File Object]: File containing the shapemap
+      *  - shapeMapFormat [String]: Format of the shapeMap
+      *  - activeShapeMapTab [String]: Identifies the source of the shapeMap (raw, URL, file...)
+      *    Returns a JSON object with the shapeMap information:
+      *    - message [String]: Informational message on success
+      *    - shapeMap [String]: Input shapeMap string
+      *    - shapeMapFormat [String]: Input shapeMap format
+      *    - shapeMapJson [Array]: Array of the elements in the shapeMap
+      *        - node [String]: Referenced node
+      *        - shape [String]: Target shape for the node
+      */
     case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)

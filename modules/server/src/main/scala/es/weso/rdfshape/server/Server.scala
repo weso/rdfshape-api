@@ -12,7 +12,7 @@ import es.weso.rdfshape.server.api.routes.permalink.service.PermalinkService
 import es.weso.rdfshape.server.api.routes.schema.service.SchemaService
 import es.weso.rdfshape.server.api.routes.shapemap.service.ShapeMapService
 import es.weso.rdfshape.server.api.routes.shex.service.ShExService
-import es.weso.rdfshape.server.api.routes.wikibase.WikidataService
+import es.weso.rdfshape.server.api.routes.wikibase.service.WikibaseService
 import es.weso.rdfshape.server.utils.error.exceptions.SSLContextCreationException
 import es.weso.rdfshape.server.utils.error.{ExitCodes, SysUtils}
 import es.weso.rdfshape.server.utils.secure.SSLHelper
@@ -202,7 +202,7 @@ object Server {
         SchemaService(client).routes <+>
         ShExService(client).routes <+>
         ShapeMapService(client).routes <+>
-        WikidataService(client).routes <+>
+        WikibaseService(client).routes <+>
         EndpointService(client).routes <+>
         PermalinkService(client).routes <+>
         FetchService(client).routes,

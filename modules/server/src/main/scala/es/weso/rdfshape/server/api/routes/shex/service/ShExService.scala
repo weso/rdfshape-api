@@ -22,6 +22,8 @@ class ShExService(client: Client[IO])
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
+    /** Returns a JSON array with the accepted ShEx schema formats
+      */
     case GET -> Root / `api` / `verb` / "formats" =>
       val formats = Schemas.availableFormats
       val json    = Json.fromValues(formats.map(str => Json.fromString(str)))

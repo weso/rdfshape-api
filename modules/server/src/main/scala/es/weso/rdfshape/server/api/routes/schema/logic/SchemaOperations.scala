@@ -154,7 +154,7 @@ private[api] object SchemaOperations extends LazyLogging {
     )
     val sp = SchemaParam.empty.copy(
       schema = optSchema,
-      optSchemaFormat = optSchemaFormat,
+      schemaFormat = optSchemaFormat.getOrElse(SchemaFormat.defaultFormat),
       schemaEngine = optSchemaEngine
     )
 

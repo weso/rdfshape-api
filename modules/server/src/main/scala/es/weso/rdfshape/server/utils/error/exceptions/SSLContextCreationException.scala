@@ -8,7 +8,7 @@ package es.weso.rdfshape.server.utils.error.exceptions
 final case class SSLContextCreationException(
     private val message: String,
     private val cause: Throwable
-) extends Exception(message, cause) {}
+) extends Exception(message, cause)
 
 object SSLContextCreationException {
 

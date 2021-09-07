@@ -19,6 +19,16 @@ trait Format {
 
 }
 
+object Format extends FormatCompanion[Format] {
+
+  override val defaultFormat: Format = DataFormat.defaultFormat
+
+  // Should append all available formats in the future.
+  // Currently, all formats are data formats.
+  override val availableFormats: List[Format] =
+    DataFormat.availableFormats // ++ futureFormats
+}
+
 trait FormatCompanion[F <: Format] extends LazyLogging {
 
   /** Default format to be used when none specified
@@ -33,7 +43,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     * DataFormat
     *
     * @param name String name of the format we require
-    * @return the DataFormat object with the format data (an error String if it does not exist)
+    * @return the Format object with the format data (an error String if it does not exist)
     */
   def fromString(name: String): Either[String, F] = {
     if(name.isBlank) Right(defaultFormat)

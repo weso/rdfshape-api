@@ -18,7 +18,7 @@ import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import es.weso.schema._
 import es.weso.utils.IOUtils._
-import io.circe._
+import io.circe.Json
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
