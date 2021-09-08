@@ -55,15 +55,15 @@ final case class DataExtract private (
           ("schemaFormat", Json.fromString(schemaFormat)),
           ("schemaEngine", Json.fromString(engine))
         ) ++
-          maybeField(optData, "data", Json.fromString) ++
+          maybeField("data", optData, Json.fromString) ++
           maybeField(
-            optDataFormat,
             "dataFormat",
+            optDataFormat,
             (df: DataFormat) => Json.fromString(df.name)
           ) ++
           maybeField(
-            optResultShapeMap,
             "resultShapeMap",
+            optResultShapeMap,
             (r: ResultShapeMap) => Json.fromString(r.toString)
           )
       )

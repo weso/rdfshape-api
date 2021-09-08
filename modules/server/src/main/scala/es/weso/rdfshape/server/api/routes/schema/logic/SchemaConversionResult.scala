@@ -35,15 +35,15 @@ case class SchemaConversionResult(
     List(
       ("message", Json.fromString(msg))
     ) ++
-      maybeField(schema, "schema", Json.fromString) ++
-      maybeField(schemaFormat, "schemaFormat", Json.fromString) ++
-      maybeField(schemaEngine, "schemaEngine", Json.fromString) ++
-      maybeField(targetSchemaFormat, "targetSchemaFormat", Json.fromString) ++
-      maybeField(targetSchemaEngine, "targetSchemaEngine", Json.fromString) ++
-      maybeField(result, "result", Json.fromString) ++
+      maybeField("schema", schema, Json.fromString) ++
+      maybeField("schemaFormat", schemaFormat, Json.fromString) ++
+      maybeField("schemaEngine", schemaEngine, Json.fromString) ++
+      maybeField("targetSchemaFormat", targetSchemaFormat, Json.fromString) ++
+      maybeField("targetSchemaEngine", targetSchemaEngine, Json.fromString) ++
+      maybeField("result", result, Json.fromString) ++
       maybeField(
-        resultShapeMap,
         "shapeMap",
+        resultShapeMap,
         (sm: ShapeMap) => sm.toString.asJson
       )
   )

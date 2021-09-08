@@ -81,7 +81,7 @@ object PartsMap extends LazyLogging{
       maybeFormatName <- parameterMap.optPartValue(parameter)
     } yield maybeFormatName match {
       case None =>
-        logger.error(s"No valid format found. No parameter \"$parameter\"")
+        logger.info(s"No valid format found for parameter \"$parameter\"")
         None
       case Some(formatNameParsed) =>
         logger.info(s"Format value \"$formatNameParsed\" found in parameter \"$parameter\"")

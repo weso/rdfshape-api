@@ -30,21 +30,21 @@ object JsonUtils extends Http4sDsl[IO] {
 
   /** Converts some object to JSON, given a converter function.
     *
-    * @param data Data to be converted to JSON
-    * @param name Name given to the data
-    * @param cnv  Converter function from A to Json
+    * @param data      Data to be converted to JSON
+    * @param name      Name given to the data
+    * @param converter Converter function from A to Json
     * @tparam A Type of the data to be converted to JSON
     * @return A list with containing a single tuple: the name given to the data and the JSON representation of "A" itself.
     *         The list will be empty if no data is provided for conversion.
     */
   def maybeField[A](
-      data: Option[A],
       name: String,
-      cnv: A => Json
+      data: Option[A],
+      converter: A => Json
   ): List[(String, Json)] =
     data match {
       case None    => List()
-      case Some(v) => List((name, cnv(v)))
+      case Some(v) => List((name, converter(v)))
     }
 
   /** Converts some object to JSON, given a converter function.

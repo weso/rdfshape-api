@@ -40,17 +40,17 @@ final case class DataInfo private (
   def toJson: Json = {
     Json.fromFields(
       List(("message", Json.fromString(message))) ++
-        maybeField(data, "data", Json.fromString) ++
+        maybeField("data", data, Json.fromString) ++
         maybeField(
-          dataFormat,
           "dataFormat",
+          dataFormat,
           (df: DataFormat) => Json.fromString(df.name)
         ) ++
-        maybeField(numberOfStatements, "numberOfStatements", Json.fromInt) ++
-        maybeField(prefixMap, "prefixMap", prefixMap2Json) ++
+        maybeField("numberOfStatements", numberOfStatements, Json.fromInt) ++
+        maybeField("prefixMap", prefixMap, prefixMap2Json) ++
         maybeField(
-          predicates,
           "predicates",
+          predicates,
           (preds: Set[IRI]) => Json.fromValues(preds.map(iri2Json))
         )
     )

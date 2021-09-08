@@ -1,6 +1,6 @@
 package es.weso.rdfshape.server.utils.error.exceptions
 
-/** Custom exception thrown when a failure occurs when trying to create an SSL Context from user's environment data
+/** Custom exception thrown when a failure occurs while trying to create an SSL Context from user's environment data
   *
   * @param message Reason/explanation of why the exception occurred
   * @param cause   Nested exception that caused the SSL Context creation to fail

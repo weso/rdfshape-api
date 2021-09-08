@@ -47,7 +47,7 @@ final case class DataConversion(
       ("dataFormat", Json.fromString(dataFormat.name)),
       ("targetDataFormat", Json.fromString(targetFormat))
     ) ++
-      maybeField(data, "data", Json.fromString)
+      maybeField("data", data, Json.fromString)
   )
 }
 

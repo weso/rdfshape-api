@@ -5,11 +5,8 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.ApiService
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap.getShapeMap
-import es.weso.rdfshape.server.api.routes.shapemap.logic.{
-  ShapeMap,
-  ShapeMapInfoResult
-}
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import io.circe._
@@ -18,6 +15,8 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.multipart._
+
+import scala.util.{Failure, Success, Try}
 
 /** API service to handle shapemap-related operations
   *
@@ -49,7 +48,6 @@ class ShapeMapService(client: Client[IO])
       *  - shapeMapFormat [String]: Format of the shapeMap
       *  - activeShapeMapTab [String]: Identifies the source of the shapeMap (raw, URL, file...)
       *    Returns a JSON object with the shapeMap information:
-      *    - message [String]: Informational message on success
       *    - shapeMap [String]: Input shapeMap string
       *    - shapeMapFormat [String]: Input shapeMap format
       *    - shapeMapJson [Array]: Array of the elements in the shapeMap
@@ -74,15 +72,16 @@ class ShapeMapService(client: Client[IO])
                   // Error creating the inner ShapeMap instance from the data
                   case Left(errorStr) =>
                     errorResponseJson(errorStr, InternalServerError)
-                  // Success creating the inner ShapeMap instance from the data
-                  case Right(innerSm) =>
-                    val shapeMapInfo: ShapeMapInfoResult =
-                      ShapeMapInfoResult.fromShapeMap(
-                        Some(shapeMap.shapeMap),
-                        Some(shapeMap.shapeMapFormat),
-                        innerSm
-                      )
-                    Ok(shapeMapInfo.toJson)
+                  // Success creating the inner ShapeMap instance from the data.
+                  // Try to get JSON representation
+                  case Right(_) =>
+                    Try {
+                      shapeMap.shapeMapJson
+                    } match {
+                      case Failure(exc) =>
+                        errorResponseJson(exc.getMessage, InternalServerError)
+                      case Success(json) => Ok(json)
+                    }
                 }
             }
           )

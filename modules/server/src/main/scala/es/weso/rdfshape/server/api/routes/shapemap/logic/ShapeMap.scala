@@ -2,16 +2,21 @@ package es.weso.rdfshape.server.api.routes.shapemap.logic
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.format.{Compact, ShapeMapFormat}
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.utils.error.exceptions.JsonConversionException
+import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
-import es.weso.shapemaps.{Compact, ShapeMapFormat, ShapeMap => ShapeMapW}
+import es.weso.shapemaps.{ShapeMap => ShapeMapW}
+import io.circe.Json
 
-/** Data class representing a ShapeMap and its current source
+/** Data class representing a ShapeMap and its current source.
+  * @note Invalid initial data is accepted, but may cause exceptions when operating with it (like converting to JSON).
   *
   * @param shapeMap             Shapemap raw text
   * @param shapeMapFormat       Shapemap format
-  * @param targetShapeMapFormat Shapemap target format
+  * @param targetShapeMapFormat Shapemap target format (only present in conversion operations)
   * @param activeShapeMapTab    Active tab, used to know which source the shapemap comes from
   */
 sealed case class ShapeMap private (
@@ -25,12 +30,38 @@ sealed case class ShapeMap private (
     *
     * @return A ShapeMap instance used by WESO libraries in validation
     */
-  val innerShapeMap: Either[String, ShapeMapW] = {
+  lazy val innerShapeMap: Either[String, ShapeMapW] = {
     ShapeMapW
       .fromString(shapeMap, shapeMapFormat.name) match {
       case Left(errorList) => Left(errorList.toList.mkString("\n"))
-      case Right(sm)       => Right(sm)
+      case Right(shapeMap) => Right(shapeMap)
     }
+  }
+
+  /** JSON representation of this shapemap to be used in API responses
+    *
+    * @return JSON information of the shapemap (raw content, format, JSON structure) or an
+    */
+  @throws(classOf[JsonConversionException])
+  lazy val shapeMapJson: Json = {
+    innerShapeMap match {
+      case Left(err) => throw JsonConversionException(err)
+      case Right(dataShapeMap) =>
+        Json.fromFields(
+          maybeField("shapeMap", Some(shapeMap), Json.fromString) ++
+            maybeField(
+              "shapeMapFormat",
+              Some(shapeMapFormat),
+              (format: ShapeMapFormat) => Json.fromString(format.name)
+            ) ++
+            maybeField(
+              "shapeMapJson",
+              Some(dataShapeMap.toJson),
+              identity[Json]
+            )
+        )
+    }
+
   }
 }
 
@@ -57,11 +88,11 @@ private[api] object ShapeMap extends LazyLogging {
       shapeMapStr  <- partsMap.optPartValue(ShapeMapTextParameter.name)
       shapeMapUrl  <- partsMap.optPartValue(ShapeMapUrlParameter.name)
       shapeMapFile <- partsMap.optPartValue(ShapeMapFileParameter.name)
-      optShapeMapFormat <- getShapeMapFormat(
+      shapeMapFormat <- getShapeMapFormat(
         ShapeMapFormatParameter.name,
         partsMap
       )
-      optTargetShapeMapFormat <- getShapeMapFormat(
+      targetShapeMapFormat <- getShapeMapFormat(
         TargetShapeMapFormatParameter.name,
         partsMap
       )
@@ -71,12 +102,6 @@ private[api] object ShapeMap extends LazyLogging {
 
       _ = logger.debug(
         s"Getting ShapeMap from params. ShapeMap tab: $activeShapeMapTab"
-      )
-
-      // Get the shapemap formats or use the defaults
-      shapeMapFormat = optShapeMapFormat.getOrElse(defaultShapeMapFormat)
-      targetShapeMapFormat = optTargetShapeMapFormat.getOrElse(
-        defaultShapeMapFormat
       )
 
       // Create the shapemap depending on the client's selected method
@@ -136,31 +161,24 @@ private[api] object ShapeMap extends LazyLogging {
     } yield maybeShapeMap
   }
 
-  /** Given a list of query parameters and a parameter name, try to create a ShapeMapFormat instance from the format name contained in the parameter
+  /** Try to build a {@link es.weso.rdfshape.server.api.format.ShapeMapFormat} object from a request's parameters
     *
-    * @param name     Query parameter containing the format name
-    * @param partsMap Query parameters
-    * @return Optionally, a ShapeMapFormat instance corresponding to the shapemap format specified in the query parameters
+    * @param parameter    Name of the parameter with the format name
+    * @param parameterMap Request parameters
+    * @return The ShapeMap format found or the default one
     */
   private def getShapeMapFormat(
-      name: String,
-      partsMap: PartsMap
-  ): IO[Option[ShapeMapFormat]] =
+      parameter: String,
+      parameterMap: PartsMap
+  ): IO[ShapeMapFormat] = {
     for {
-      maybeFormat <- partsMap.optPartValue(name)
+      maybeFormat <- PartsMap.getFormat(parameter, parameterMap)
     } yield maybeFormat match {
-      case None => None
-      case Some(str) =>
-        ShapeMapFormat
-          .fromString(str)
-          .fold(
-            err => {
-              logger.error(s"Unsupported shapeMapFormat: $str ($err)")
-              None
-            },
-            format => Some(format)
-          )
+      case None         => ShapeMapFormat.defaultFormat
+      case Some(format) => new ShapeMapFormat(format)
     }
+
+  }
 
   /** Empty shapemap representation, with no inner data and all defaults
     *
@@ -168,10 +186,10 @@ private[api] object ShapeMap extends LazyLogging {
     */
   def empty: ShapeMap =
     ShapeMap(
-      emptyShapeMapValue,
-      defaultShapeMapFormat,
-      defaultShapeMapFormat,
-      ShapeMapTab.defaultActiveShapeMapTab
+      shapeMap = emptyShapeMapValue,
+      shapeMapFormat = defaultShapeMapFormat,
+      targetShapeMapFormat = defaultShapeMapFormat,
+      activeShapeMapTab = ShapeMapTab.defaultActiveShapeMapTab
     )
 
 }
