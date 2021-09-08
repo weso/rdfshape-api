@@ -127,7 +127,18 @@ class EndpointService(client: Client[IO])
 
       }
 
-    // TODO: document
+    /** Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it.
+      * Receives a JSON object with the input endpoint, node and limits:
+      *  - endpoint [String]: Target endpoint
+      *  - node [String]: Node identifier in the target wikibase
+      *  - limit [Int]: Max number of results
+      *    Returns a JSON object with the endpoint response:
+      *    - endpoint [String]: Target endpoint
+      *    - node [String]: Node identifier in the target wikibase
+      *    - children [Array]: List of returned objects, each being a triplet:
+      *      - pred: [String]: Predicate identifier in the target wikibase
+      *      - values: [Array]: List of raw values for the entity and predicate
+      */
     case GET -> Root / `api` / `verb` / "outgoing" :?
         EndpointParameter(optEndpoint) +&
         NodeParameter(optNode) +&
