@@ -17,11 +17,11 @@ import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 
 /** Data class representing a SPARQL query and its current source
   *
-  * @param query          Query raw text
+  * @param queryRaw          Query raw text
   * @param activeQueryTab Active tab, used to know which source the query comes from
   */
 sealed case class SparqlQuery private (
-    query: String,
+    queryRaw: String,
     activeQueryTab: SparqlQueryTab
 )
 
@@ -49,41 +49,67 @@ private[api] object SparqlQuery extends LazyLogging {
         s"Getting SPARQL from params. Query tab: $activeQueryTab"
       )
 
-      maybeQuery: Either[String, SparqlQuery] = activeQueryTab.getOrElse(
-        defaultActiveQueryTab
-      ) match {
-        case SparqlQueryTab.TEXT =>
-          queryStr match {
-            case None => Left("No value for the query string")
-            case Some(queryRaw) =>
-              Right(SparqlQuery(queryRaw, SparqlQueryTab.TEXT))
-          }
-        case SparqlQueryTab.URL =>
-          queryUrl match {
-            case None => Left(s"No value for the query URL")
-            case Some(queryUrl) =>
-              getUrlContents(queryUrl) match {
-                case Right(queryRaw) =>
-                  Right(SparqlQuery(queryRaw, SparqlQueryTab.URL))
-                case Left(err) => Left(err)
-              }
-
-          }
-        case SparqlQueryTab.FILE =>
-          queryFile match {
-            case None => Left(s"No value for the query file")
-            case Some(queryRaw) =>
-              Right(SparqlQuery(queryRaw, SparqlQueryTab.FILE))
-          }
-
-        case other =>
-          val msg = s"Unknown value for activeQueryTab: $other"
-          logger.warn(msg)
-          Left(msg)
-
-      }
+      maybeQuery: Either[String, SparqlQuery] = mkSparqlQuery(
+        queryStr,
+        queryUrl,
+        queryFile,
+        activeQueryTab
+      )
 
     } yield maybeQuery
+
+  /** Create a SparqlQuery instance, given its source and data
+    *
+    * @param queryStr       Optionally, the raw contents of the query
+    * @param queryUrl       Optionally, the URL with the contents of the query
+    * @param queryFile      Optionally, the file with the contents of the query
+    * @param activeQueryTab Optionally, the indicator of the query source (raw, url or file)
+    * @return
+    */
+  def mkSparqlQuery(
+      queryStr: Option[String],
+      queryUrl: Option[String],
+      queryFile: Option[String],
+      activeQueryTab: Option[SparqlQueryTab]
+  ): Either[String, SparqlQuery] = {
+
+    // Create the query depending on the client's selected method
+    val maybeQuery: Either[String, SparqlQuery] = activeQueryTab.getOrElse(
+      defaultActiveQueryTab
+    ) match {
+      case SparqlQueryTab.TEXT =>
+        queryStr match {
+          case None => Left("No value for the query string")
+          case Some(queryRaw) =>
+            Right(SparqlQuery(queryRaw, SparqlQueryTab.TEXT))
+        }
+      case SparqlQueryTab.URL =>
+        queryUrl match {
+          case None => Left(s"No value for the query URL")
+          case Some(queryUrl) =>
+            getUrlContents(queryUrl) match {
+              case Right(queryRaw) =>
+                Right(SparqlQuery(queryRaw, SparqlQueryTab.URL))
+              case Left(err) => Left(err)
+            }
+
+        }
+      case SparqlQueryTab.FILE =>
+        queryFile match {
+          case None => Left(s"No value for the query file")
+          case Some(queryRaw) =>
+            Right(SparqlQuery(queryRaw, SparqlQueryTab.FILE))
+        }
+
+      case other =>
+        val msg = s"Unknown value for activeQueryTab: $other"
+        logger.warn(msg)
+        Left(msg)
+
+    }
+
+    maybeQuery
+  }
 
 }
 

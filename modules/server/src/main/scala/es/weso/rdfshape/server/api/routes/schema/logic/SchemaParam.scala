@@ -5,7 +5,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
-import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.getBase
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
@@ -209,10 +209,13 @@ object SchemaParam extends LazyLogging {
   }
 
   private[api] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {
-    schema       <- partsMap.optPartValue(SchemaParameter.name)
-    schemaURL    <- partsMap.optPartValue(SchemaURLParameter.name)
-    schemaFile   <- partsMap.optPartValue(SchemaFileParameter.name)
-    schemaFormat <- getSchemaFormat(SchemaFormatParameter.name, partsMap)
+    schema     <- partsMap.optPartValue(SchemaParameter.name)
+    schemaURL  <- partsMap.optPartValue(SchemaURLParameter.name)
+    schemaFile <- partsMap.optPartValue(SchemaFileParameter.name)
+    optSchemaFormat <- SchemaFormat.fromRequestParams(
+      SchemaFormatParameter.name,
+      partsMap
+    )
     schemaEngine <- partsMap.optPartValue(SchemaEngineParameter.name)
     targetSchemaEngine <- partsMap.optPartValue(
       TargetSchemaEngineParameter.name
@@ -223,34 +226,15 @@ object SchemaParam extends LazyLogging {
     activeSchemaTab <- partsMap.optPartValue(ActiveSchemaTabParameter.name)
   } yield {
     SchemaParam(
-      schema,
-      schemaURL,
-      schemaFile,
-      schemaFormat,
-      schemaEngine,
-      targetSchemaEngine,
-      targetSchemaFormat,
-      activeSchemaTab
+      schema = schema,
+      schemaURL = schemaURL,
+      schemaFile = schemaFile,
+      schemaFormat = optSchemaFormat.getOrElse(SchemaFormat.defaultFormat),
+      schemaEngine = schemaEngine,
+      targetSchemaEngine = targetSchemaEngine,
+      targetSchemaFormat = targetSchemaFormat,
+      activeSchemaTab = activeSchemaTab
     )
-  }
-
-  /** Try to build a {@link es.weso.rdfshape.server.api.format.SchemaFormat} object from a request's parameters
-    *
-    * @param parameter    Name of the parameter with the format name
-    * @param parameterMap Request parameters
-    * @return The SchemaFormat found or the default one
-    */
-  private def getSchemaFormat(
-      parameter: String,
-      parameterMap: PartsMap
-  ): IO[SchemaFormat] = {
-    for {
-      maybeFormat <- PartsMap.getFormat(parameter, parameterMap)
-    } yield maybeFormat match {
-      case None         => SchemaFormat.defaultFormat
-      case Some(format) => new SchemaFormat(format)
-    }
-
   }
 
   private[api] def empty: SchemaParam =

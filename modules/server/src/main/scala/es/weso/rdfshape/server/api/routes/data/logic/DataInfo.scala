@@ -5,7 +5,7 @@ import cats.effect.IO
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{PrefixMap, RDFReasoner}
-import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.prefixMap2Json
 import es.weso.rdfshape.server.utils.json.JsonUtils._
 import es.weso.utils.IOUtils.{either2es, io2es}

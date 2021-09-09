@@ -7,6 +7,7 @@ import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, RDFReasoner}
 import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.merged.CompoundData
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
@@ -209,6 +210,13 @@ sealed case class DataParam(
 
   }
 
+  private def applyInference(
+      rdf: Resource[IO, RDFReasoner],
+      inference: Option[String],
+      dataFormat: Format
+  ): Resource[IO, RDFReasoner] =
+    extendWithInference(rdf, inference)
+
   private def extendWithInference(
       resourceRdf: Resource[IO, RDFReasoner],
       optInference: Option[String]
@@ -229,13 +237,6 @@ sealed case class DataParam(
 
     }
   }
-
-  private def applyInference(
-      rdf: Resource[IO, RDFReasoner],
-      inference: Option[String],
-      dataFormat: Format
-  ): Resource[IO, RDFReasoner] =
-    extendWithInference(rdf, inference)
 
   private def mkBaseIri(
       maybeBase: Option[String]

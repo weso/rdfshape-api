@@ -7,7 +7,7 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.data.logic.DataParam
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations._
@@ -17,7 +17,7 @@ import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import es.weso.schema._
-import es.weso.utils.IOUtils._
+import es.weso.utils.IOUtils.io2f
 import io.circe.Json
 import org.http4s._
 import org.http4s.circe._
@@ -283,7 +283,7 @@ class SchemaService(client: Client[IO])
       req.decode[Multipart[IO]] { m =>
         {
           val partsMap = PartsMap(m.parts)
-          val r: IO[Json] = for {
+          val r = for {
             dataPair <- DataParam.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             res <- for {
@@ -291,25 +291,42 @@ class SchemaService(client: Client[IO])
               vv <- (resourceRdf, emptyRes).tupled.use { case (rdf, builder) =>
                 for {
                   schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
-                  (schema, sp) = schemaPair
-                  tp     <- TriggerModeParam.mkTriggerModeParam(partsMap)
-                  newRdf <- applyInference(rdf, dp.inference)
-                  r <- io2f(
-                    schemaValidate(newRdf, schema, tp, relativeBase, builder)
-                  )
-                  json <- io2f(schemaResult2json(r._1))
-                } yield json
+                  (schema, _) = schemaPair
+                  maybeTriggerMode <- TriggerMode.getTriggerModeParam(partsMap)
+                  newRdf           <- applyInference(rdf, dp.inference)
+                  ret <- maybeTriggerMode match {
+                    case Left(err) =>
+                      IO.raiseError(
+                        new RuntimeException(
+                          s"Could not obtain validation trigger: $err"
+                        )
+                      )
+                    case Right(triggerMode) =>
+                      for {
+                        r <- io2f(
+                          schemaValidate(
+                            newRdf,
+                            schema,
+                            triggerMode,
+                            relativeBase,
+                            builder
+                          )
+                        )
+                        json <- io2f(schemaResult2json(r._1))
+                      } yield json
+                  }
+                } yield ret
               }
             } yield vv
           } yield res
 
           for {
             e <- r.attempt
-            v <- e.fold(
-              t => errorResponseJson(t.getMessage, BadRequest),
+            res <- e.fold(
+              exc => errorResponseJson(exc.getMessage, BadRequest),
               json => Ok(json)
             )
-          } yield v
+          } yield res
         }
       }
   }

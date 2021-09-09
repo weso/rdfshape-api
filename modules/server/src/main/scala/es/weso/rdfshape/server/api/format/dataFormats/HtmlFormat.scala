@@ -1,10 +1,11 @@
-package es.weso.rdfshape.server.api.format
+package es.weso.rdfshape.server.api.format.dataFormats
 
+import es.weso.rdfshape.server.api.format.FormatCompanion
 import org.http4s.MediaType
 
 /** Dummy class to differentiate HTML-based formats from the more generic DataFormat
   *
-  * @see {@link es.weso.rdfshape.server.api.format.DataFormat}
+  * @see {@link DataFormat}
   */
 class HtmlFormat(formatName: String)
     extends DataFormat(formatName, MediaType.text.html) {}

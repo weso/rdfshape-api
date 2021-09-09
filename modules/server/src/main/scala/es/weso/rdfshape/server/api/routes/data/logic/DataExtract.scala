@@ -9,7 +9,7 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
   defaultSchemaFormat,
   defaultShapeLabel
 }
-import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
 import es.weso.rdfshape.server.utils.json.JsonUtils._
 import es.weso.schema.Schema
 import es.weso.schemaInfer.{InferOptions, PossiblePrefixes, SchemaInfer}

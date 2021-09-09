@@ -74,7 +74,7 @@ class EndpointService(client: Client[IO])
               getSparqlQuery(partsMap)
             )
           query <- EitherT.fromEither[IO](either)
-          queryString = query.query
+          queryString = query.queryRaw
           json <- {
             logger.debug(
               s"Query to endpoint $endpoint: $queryString"

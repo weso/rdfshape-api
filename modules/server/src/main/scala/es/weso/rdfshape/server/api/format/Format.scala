@@ -1,6 +1,9 @@
 package es.weso.rdfshape.server.api.format
 
+import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import org.http4s.MediaType
 
 /** Generic interface for any format any data transmitted to/from the API may have
@@ -29,6 +32,9 @@ object Format extends FormatCompanion[Format] {
     DataFormat.availableFormats // ++ futureFormats
 }
 
+/** Static utilities to be used with formats
+  * @tparam F Specific format type that we are handling
+  */
 trait FormatCompanion[F <: Format] extends LazyLogging {
 
   /** Default format to be used when none specified
@@ -38,6 +44,30 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
   /** List of all formats available for the current type of entity
     */
   val availableFormats: List[F]
+
+  /** Try to build a Format object from a request's parameters
+    *
+    * @param parameter    Name of the parameter with the format name
+    * @param parameterMap Request parameters
+    * @return Optionally, a new Format instance of type F with the format
+    */
+  def fromRequestParams(
+      parameter: String,
+      parameterMap: PartsMap
+  ): IO[Option[F]] = {
+    for {
+      maybeFormatName <- parameterMap.optPartValue(parameter)
+    } yield maybeFormatName match {
+      case None =>
+        logger.info(s"No valid format found for parameter '$parameter'")
+        None
+      case Some(formatNameParsed) =>
+        logger.info(
+          s"Format value '$formatNameParsed' found in parameter '$parameter'"
+        )
+        fromString(formatNameParsed).toOption
+    }
+  }
 
   /** Given a format name, get its corresponding DataFormat object
     * DataFormat

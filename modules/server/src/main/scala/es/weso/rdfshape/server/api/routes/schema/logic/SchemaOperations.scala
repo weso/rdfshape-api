@@ -8,9 +8,9 @@ import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, RDFBuilder, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.UmlDefinitions.umlOptions
-import es.weso.rdfshape.server.api.format.{DataFormat, SchemaFormat}
+import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
 import es.weso.rdfshape.server.api.routes.data.logic.DataParam
-import es.weso.rdfshape.server.api.routes.schema.service.TriggerModeParam
+import es.weso.rdfshape.server.api.routes.schema.service.TriggerMode
 import es.weso.schema.{Result, Schema, ShaclexSchema, ValidationTrigger}
 import es.weso.shacl.converter.Shacl2ShEx
 import es.weso.shapemaps.ShapeMap
@@ -142,7 +142,7 @@ private[api] object SchemaOperations extends LazyLogging {
       optSchema: Option[String],
       optSchemaFormat: Option[SchemaFormat],
       optSchemaEngine: Option[String],
-      tp: TriggerModeParam,
+      tp: TriggerMode,
       optInference: Option[String],
       relativeBase: Option[IRI],
       builder: RDFBuilder
@@ -182,7 +182,7 @@ private[api] object SchemaOperations extends LazyLogging {
     *
     * @param rdf          Input RDF data
     * @param schema       Input schema
-    * @param tp           Trigger mode
+    * @param triggerMode  Trigger mode
     * @param relativeBase Relative base (optional)
     * @param builder      RDF builder
     * @return
@@ -190,31 +190,29 @@ private[api] object SchemaOperations extends LazyLogging {
   def schemaValidate(
       rdf: RDFReasoner,
       schema: Schema,
-      tp: TriggerModeParam,
+      triggerMode: TriggerMode,
       relativeBase: Option[IRI],
       builder: RDFBuilder
   ): IO[(Result, Option[ValidationTrigger], Long)] = {
-    logger.debug(s"APIHelper: validate")
 
-    val base        = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
-    val triggerMode = tp.triggerMode
+    val base           = relativeBase.map(_.str) // Some(FileUtils.currentFolderURL)
+    val triggerModeStr = triggerMode.triggerModeStr
     for {
-      pm <- rdf.getPrefixMap
-      p  <- tp.getShapeMap(pm, schema.pm)
-      (optShapeMapStr, _) = p
+      prefixMap <- rdf.getPrefixMap
+      shapeMapRaw = triggerMode.shapeMap.shapeMapRaw
       pair <-
         ValidationTrigger.findTrigger(
-          triggerMode.getOrElse(ApiDefaults.defaultTriggerMode),
-          optShapeMapStr.getOrElse(""),
+          triggerModeStr,
+          shapeMapRaw,
           base,
           None,
           None,
-          pm,
+          prefixMap,
           schema.pm
         ) match {
           case Left(msg) =>
             schemaErr(
-              s"Cannot obtain trigger: $triggerMode\nshapeMap: $optShapeMapStr\nmsg: $msg"
+              s"Cannot obtain trigger: $triggerModeStr\nshapeMap: $shapeMapRaw\nmsg: $msg"
             )
           case Right(trigger) =>
             val run = for {

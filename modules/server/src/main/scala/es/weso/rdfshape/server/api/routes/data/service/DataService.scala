@@ -9,7 +9,7 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
   defaultInference
 }
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.data.logic.DataExtract.dataExtract
 import es.weso.rdfshape.server.api.routes.data.logic.DataInfo.{
@@ -224,7 +224,7 @@ class DataService(client: Client[IO])
               errorResponseJson(s"Error obtaining query data: $err", BadRequest)
             case Right(query) =>
               // Query was parsed, but may be invalid still
-              val optQueryStr = query.query
+              val optQueryStr = query.queryRaw
               logger.debug(s"Data query with querystring: $optQueryStr")
               for {
                 result <- io2f(

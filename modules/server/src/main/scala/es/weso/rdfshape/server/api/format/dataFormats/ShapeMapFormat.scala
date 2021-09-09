@@ -1,9 +1,10 @@
-package es.weso.rdfshape.server.api.format
+package es.weso.rdfshape.server.api.format.dataFormats
 
+import es.weso.rdfshape.server.api.format.{Format, FormatCompanion}
 import org.http4s.MediaType
 
 /** Dummy trait to differentiate shapemap formats from the more generic DataFormat
-  * @see {@link es.weso.rdfshape.server.api.format.DataFormat}
+  * @see {@link DataFormat}
   */
 class ShapeMapFormat(formatName: String, formatMimeType: MediaType)
     extends DataFormat(formatName, formatMimeType) {

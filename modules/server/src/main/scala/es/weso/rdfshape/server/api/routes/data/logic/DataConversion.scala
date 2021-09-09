@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
-import es.weso.rdfshape.server.api.format.DataFormat
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.merged.CompoundData
 import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.utils.IOUtils.{either2io, err}

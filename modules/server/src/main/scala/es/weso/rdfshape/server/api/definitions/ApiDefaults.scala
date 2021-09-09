@@ -1,7 +1,7 @@
 package es.weso.rdfshape.server.api.definitions
 
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.format.{
+import es.weso.rdfshape.server.api.format.dataFormats.{
   DataFormat,
   SchemaFormat,
   ShapeMapFormat

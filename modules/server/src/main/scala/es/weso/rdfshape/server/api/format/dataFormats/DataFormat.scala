@@ -1,5 +1,6 @@
-package es.weso.rdfshape.server.api.format
+package es.weso.rdfshape.server.api.format.dataFormats
 
+import es.weso.rdfshape.server.api.format._
 import org.http4s.MediaType
 
 /** Extension of the Format interface to represent RDF data formats

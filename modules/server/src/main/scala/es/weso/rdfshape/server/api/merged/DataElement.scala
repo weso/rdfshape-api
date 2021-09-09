@@ -5,7 +5,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
-import es.weso.rdfshape.server.api.format.DataFormat
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import io.circe._
 
 /** Represent each chunk of RDF data submitted (mainly on RDF-merging operations)
