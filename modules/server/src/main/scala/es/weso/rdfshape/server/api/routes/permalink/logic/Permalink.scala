@@ -18,9 +18,4 @@ sealed case class Permalink(
     editionDate: Date
 )
 
-private[api] object Permalink extends LazyLogging {
-
-  /** Placeholder value used for the permalink query whenever an empty target is issued/needed.
-    */
-  private val emptyTargetValue = ""
-}
+private[api] object Permalink extends LazyLogging {}

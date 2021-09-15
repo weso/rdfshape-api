@@ -15,9 +15,9 @@ import io.circe.Json
 /** Data class representing a ShapeMap and its current source.
   *
   * @note Invalid initial data is accepted, but may cause exceptions when operating with it (like converting to JSON).
-  * @param shapeMapRaw             Shapemap raw text
+  * @param shapeMapRaw          Shapemap raw text
   * @param shapeMapFormat       Shapemap format
-  * @param targetShapeMapFormat Shapemap target format (only present in conversion operations)
+  * @param targetShapeMapFormat Shapemap target format (only for conversion operations)
   * @param activeShapeMapTab    Active tab, used to know which source the shapemap comes from
   */
 sealed case class ShapeMap private (
@@ -119,12 +119,13 @@ private[api] object ShapeMap extends LazyLogging {
   }
 
   /** Create a ShapeMap instance, given its source and format
-    * @param shapeMapStr Optionally, the raw contents of the shapemap
-    * @param shapeMapUrl Optionally, the URL with the contents of the shapemap
-    * @param shapeMapFile Optionally, the file with the contents of the shapemap
-    * @param shapeMapFormat Optionally, the format of the shapemap
+    *
+    * @param shapeMapStr          Optionally, the raw contents of the shapemap
+    * @param shapeMapUrl          Optionally, the URL with the contents of the shapemap
+    * @param shapeMapFile         Optionally, the file with the contents of the shapemap
+    * @param shapeMapFormat       Optionally, the format of the shapemap
     * @param targetShapeMapFormat Optionally, the target format of the shapemap (for conversions)
-    * @param activeShapeMapTab Optionally, the indicator of the shapemap source (raw, url or file)
+    * @param activeShapeMapTab    Optionally, the indicator of the shapemap source (raw, url or file)
     * @return
     */
   def mkShapeMap(
@@ -198,9 +199,7 @@ private[api] object ShapeMap extends LazyLogging {
     maybeShapeMap
   }
 
-  /** Empty shapemap representation, with no inner data and all defaults
-    *
-    * @return
+  /** @return Empty shapemap representation, with no inner data and all defaults
     */
   private def empty: ShapeMap =
     ShapeMap(

@@ -2,17 +2,17 @@ package es.weso.rdfshape.server.api.routes.wikibase.logic
 
 import cats.effect._
 import es.weso.rdf.RDFReasoner
-import es.weso.rdfshape.server.api.routes.schema.logic.SchemaParam
+import es.weso.rdfshape.server.api.routes.schema.logic.Schema
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.WdSchemaParameter
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.wikibase._
-import es.weso.schema.{Schema, Schemas}
+import es.weso.schema.{Schemas, Schema => SchemaW}
 import org.http4s._
 import org.http4s.client._
 import org.http4s.dsl.io._
 
 case class WikibaseSchemaParam(
-    maybeSchemaParam: Option[SchemaParam],
+    maybeSchemaParam: Option[Schema],
     maybeEntitySchema: Option[String],
     schemaStr: Option[String],
     wikidata: Wikibase = Wikidata
@@ -21,7 +21,7 @@ case class WikibaseSchemaParam(
   def getSchema(
       maybeData: Option[RDFReasoner],
       client: Client[IO]
-  ): IO[(Option[String], Either[String, Schema])] = {
+  ): IO[(Option[String], Either[String, SchemaW])] = {
     (maybeSchemaParam, maybeEntitySchema) match {
       case (None, None) =>
         IO.pure((None, Left(s"No values for entity schema or schema")))
@@ -37,9 +37,9 @@ case class WikibaseSchemaParam(
   def schemaFromEntitySchema(
       es: String,
       client: Client[IO]
-  ): IO[(Option[String], Either[String, Schema])] = {
+  ): IO[(Option[String], Either[String, SchemaW])] = {
     val uriSchema = wikidata.schemaEntityUri(es)
-    val r: IO[(Schema, String)] = for {
+    val r: IO[(SchemaW, String)] = for {
       strSchema <- deref(uriSchema, client)
       schema    <- Schemas.fromString(strSchema, "ShEXC", "ShEx")
     } yield (schema, strSchema)
@@ -64,8 +64,8 @@ object WikibaseSchemaParam {
       partsMap: PartsMap,
       data: Option[RDFReasoner],
       client: Client[IO]
-  ): IO[(Schema, WikibaseSchemaParam)] = {
-    val r: IO[(Schema, WikibaseSchemaParam)] = for {
+  ): IO[(SchemaW, WikibaseSchemaParam)] = {
+    val r: IO[(SchemaW, WikibaseSchemaParam)] = for {
       sp <- mkWikibaseSchemaParam(partsMap)
       p  <- sp.getSchema(data, client)
       (maybeStr, maybeSchema) = p
@@ -87,7 +87,7 @@ object WikibaseSchemaParam {
       maybeSchema <- partsMap.eitherPartValue(WdSchemaParameter.name)
       // endpointStr      <- partsMap.partValue("endpoint")
       // endpoint         <- either2f(IRI.fromString(endpointStr))
-      maybeSchemaParam <- SchemaParam.mkSchemaParam(partsMap).attempt
+      maybeSchemaParam <- Schema.mkSchema(partsMap).attempt
       result <- (maybeSchema, maybeSchemaParam) match {
         case (Left(_), Right(sp)) =>
           ok_f(WikibaseSchemaParam.empty.copy(maybeSchemaParam = Some(sp)))

@@ -9,12 +9,12 @@ import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.getBase
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.schema.{Schema, Schemas}
+import es.weso.schema.{Schemas, Schema => SchemaW}
 
 import scala.io.Source
 import scala.util.Try
 
-sealed case class SchemaParam(
+sealed case class Schema(
     schema: Option[String],
     schemaURL: Option[String],
     schemaFile: Option[String],
@@ -27,7 +27,7 @@ sealed case class SchemaParam(
 
   def getSchema(
       data: Option[RDFReasoner]
-  ): IO[(Option[String], Either[String, Schema])] = {
+  ): IO[(Option[String], Either[String, SchemaW])] = {
 
     logger.debug(s"activeSchemaTab: $activeSchemaTab")
     logger.debug(s"schemaEngine: $schemaEngine")
@@ -39,14 +39,14 @@ sealed case class SchemaParam(
       case None                         => Right(SchemaTextAreaType)
     }
     logger.debug(s"inputType: $inputType")
-    val maybeSchema: IO[(Option[String], Either[String, Schema])] =
+    val maybeSchema: IO[(Option[String], Either[String, SchemaW])] =
       inputType match {
         case Right(`SchemaUrlType`) =>
           logger.debug("Schema input type - SchemaUrlType")
           schemaURL match {
             case None => IO((None, Left(s"Non value for schemaURL")))
             case Some(schemaUrl) =>
-              val e: IO[(String, Schema)] = for {
+              val e: IO[(String, SchemaW)] = for {
                 str <- IO.fromEither(
                   Try(Source.fromURL(schemaUrl).mkString).toEither
                 )
@@ -62,7 +62,7 @@ sealed case class SchemaParam(
               } yield (str, schema)
               e.attempt.map(
                 _.fold(
-                  s => (none[String], s.getMessage.asLeft[Schema]),
+                  s => (none[String], s.getMessage.asLeft[SchemaW]),
                   pair => {
                     val (str, schema) = pair
                     (Some(str), Right(schema))
@@ -171,15 +171,15 @@ sealed case class SchemaParam(
 
 }
 
-object SchemaParam extends LazyLogging {
+object Schema extends LazyLogging {
 
   private[api] def mkSchema(
       partsMap: PartsMap,
       data: Option[RDFReasoner]
-  ): IO[(Schema, SchemaParam)] = {
-    val result: IO[Either[String, (Schema, SchemaParam)]] = for {
+  ): IO[(SchemaW, Schema)] = {
+    val result: IO[Either[String, (SchemaW, Schema)]] = for {
       sp <- {
-        mkSchemaParam(partsMap)
+        mkSchema(partsMap)
       }
       eitherPair <- sp.getSchema(data).attempt
       resp <- eitherPair.fold(
@@ -208,7 +208,7 @@ object SchemaParam extends LazyLogging {
     )
   }
 
-  private[api] def mkSchemaParam(partsMap: PartsMap): IO[SchemaParam] = for {
+  private[api] def mkSchema(partsMap: PartsMap): IO[Schema] = for {
     schema     <- partsMap.optPartValue(SchemaParameter.name)
     schemaURL  <- partsMap.optPartValue(SchemaURLParameter.name)
     schemaFile <- partsMap.optPartValue(SchemaFileParameter.name)
@@ -225,7 +225,7 @@ object SchemaParam extends LazyLogging {
     )
     activeSchemaTab <- partsMap.optPartValue(ActiveSchemaTabParameter.name)
   } yield {
-    SchemaParam(
+    Schema(
       schema = schema,
       schemaURL = schemaURL,
       schemaFile = schemaFile,
@@ -237,8 +237,8 @@ object SchemaParam extends LazyLogging {
     )
   }
 
-  private[api] def empty: SchemaParam =
-    SchemaParam(
+  private[api] def empty: Schema =
+    Schema(
       schema = None,
       schemaURL = None,
       schemaFile = None,

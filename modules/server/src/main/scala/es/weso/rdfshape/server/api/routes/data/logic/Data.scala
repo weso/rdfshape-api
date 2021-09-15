@@ -16,12 +16,25 @@ import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import es.weso.utils.IOUtils.err
 
 import java.net.URI
+import scala.util.matching.Regex
 
-sealed case class DataParam(
+/** Data class representing RDF data and its current source
+  *
+  * @param data
+  * @param dataURL
+  * @param dataFile
+  * @param optEndpoint
+  * @param optDataFormat    Data format
+  * @param inference        Data inference
+  * @param targetDataFormat Data target format (only for conversion operations)
+  * @param activeDataTab    Active tab, used to know which source the data comes from
+  * @param compoundData
+  */
+sealed case class Data(
     data: Option[String],
     dataURL: Option[String],
     dataFile: Option[String],
-    maybeEndpoint: Option[String],
+    optEndpoint: Option[String],
     optDataFormat: Option[DataFormat],
     inference: Option[String],
     targetDataFormat: Option[DataFormat],
@@ -44,13 +57,13 @@ sealed case class DataParam(
     val base = relativeBase.map(_.str)
     logger.debug(s"ActiveDataTab: $activeDataTab")
     val inputType = activeDataTab match {
-      case Some(a)                         => parseDataTab(a)
-      case None if compoundData.isDefined  => Right(compoundDataType)
-      case None if data.isDefined          => Right(dataTextAreaType)
-      case None if dataURL.isDefined       => Right(dataUrlType)
-      case None if dataFile.isDefined      => Right(dataFileType)
-      case None if maybeEndpoint.isDefined => Right(dataEndpointType)
-      case None                            => Right(dataTextAreaType)
+      case Some(a)                        => parseDataTab(a)
+      case None if compoundData.isDefined => Right(compoundDataType)
+      case None if data.isDefined         => Right(dataTextAreaType)
+      case None if dataURL.isDefined      => Right(dataUrlType)
+      case None if dataFile.isDefined     => Right(dataFileType)
+      case None if optEndpoint.isDefined  => Right(dataEndpointType)
+      case None                           => Right(dataTextAreaType)
     }
     logger.debug(s"Input type: $inputType")
     val x: IO[(Option[String], Resource[IO, RDFReasoner])] = inputType match {
@@ -97,7 +110,7 @@ sealed case class DataParam(
 
       case Right(`dataEndpointType`) =>
         logger.debug(s"Input - dataEndpointType: $data")
-        maybeEndpoint match {
+        optEndpoint match {
           case None => err(s"No value for endpoint")
           case Some(endpointUrl) =>
             for {
@@ -210,13 +223,6 @@ sealed case class DataParam(
 
   }
 
-  private def applyInference(
-      rdf: Resource[IO, RDFReasoner],
-      inference: Option[String],
-      dataFormat: Format
-  ): Resource[IO, RDFReasoner] =
-    extendWithInference(rdf, inference)
-
   private def extendWithInference(
       resourceRdf: Resource[IO, RDFReasoner],
       optInference: Option[String]
@@ -237,6 +243,13 @@ sealed case class DataParam(
 
     }
   }
+
+  private def applyInference(
+      rdf: Resource[IO, RDFReasoner],
+      inference: Option[String],
+      dataFormat: Format
+  ): Resource[IO, RDFReasoner] =
+    extendWithInference(rdf, inference)
 
   private def mkBaseIri(
       maybeBase: Option[String]
@@ -271,57 +284,51 @@ sealed case class DataParam(
 
 }
 
-object DataParam extends LazyLogging {
+private[api] object Data extends LazyLogging {
 
-  private[api] def mkData(
+  /** Regular expressions used for identifying if a custom endpoint was given for this data sample
+    */
+  private val endpointRegex: Regex = "Endpoint: (.+)".r
+
+  def mkData(
       partsMap: PartsMap,
       relativeBase: Option[IRI]
-  ): IO[(Resource[IO, RDFReasoner], DataParam)] = {
+  ): IO[(Resource[IO, RDFReasoner], Data)] = {
 
-    val r: IO[(Resource[IO, RDFReasoner], DataParam)] = for {
-      dp   <- mkDataParam(partsMap)
-      pair <- dp.getData(relativeBase)
+    val r: IO[(Resource[IO, RDFReasoner], Data)] = for {
+      data <- mkData(partsMap)
+      pair <- data.getData(relativeBase)
     } yield {
       val (optStr, rdf) = pair
-      (rdf, dp.copy(data = optStr))
+      (rdf, data.copy(data = optStr))
     }
     r
   }
 
-  private[api] def mkDataParam(partsMap: PartsMap): IO[DataParam] = for {
-    data             <- partsMap.optPartValue(DataParameter.name)
-    compoundData     <- partsMap.optPartValue(CompoundDataParameter.name)
-    dataURL          <- partsMap.optPartValue(DataURLParameter.name)
-    dataFile         <- partsMap.optPartValue(DataFileParameter.name)
-    endpoint         <- partsMap.optPartValue(EndpointParameter.name)
-    dataFormat       <- getDataFormat(DataFormatParameter.name, partsMap)
-    inference        <- partsMap.optPartValue(InferenceParameter.name)
-    targetDataFormat <- getDataFormat(TargetDataFormatParameter.name, partsMap)
-    activeDataTab    <- partsMap.optPartValue(ActiveDataTabParameter.name)
+  def mkData(partsMap: PartsMap): IO[Data] = for {
+    data         <- partsMap.optPartValue(DataParameter.name)
+    dataURL      <- partsMap.optPartValue(DataURLParameter.name)
+    dataFile     <- partsMap.optPartValue(DataFileParameter.name)
+    compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
+    endpoint     <- partsMap.optPartValue(EndpointParameter.name)
+    dataFormat <- DataFormat.fromRequestParams(
+      DataFormatParameter.name,
+      partsMap
+    )
+    inference <- partsMap.optPartValue(InferenceParameter.name)
+    targetDataFormat <- DataFormat.fromRequestParams(
+      TargetDataFormatParameter.name,
+      partsMap
+    )
+    activeDataTab <- partsMap.optPartValue(ActiveDataTabParameter.name)
   } yield {
 
-    logger.debug(s"data: $data")
-    logger.debug(s"compoundData: $compoundData")
-    logger.debug(s"dataFormat: $dataFormat")
-    logger.debug(s"dataURL: $dataURL")
-    logger.debug(s"endpoint: $endpoint")
-    logger.debug(s"activeDataTab: $activeDataTab")
-    logger.debug(s"targetDataFormat: $targetDataFormat")
-    logger.debug(s"inference: $inference")
+    val finalEndpoint = getEndpoint(endpoint)
 
-    val endpointRegex = "Endpoint: (.+)".r
-    val finalEndpoint = endpoint.fold(data match {
-      case None => None
-      case Some(str) =>
-        str match {
-          case endpointRegex(ep) => Some(ep)
-          case _                 => None
-        }
-    })(Some(_))
     val finalActiveDataTab = activeDataTab
     logger.debug(s"Final endpoint: $finalEndpoint")
 
-    val dp = DataParam(
+    val dp = Data(
       data,
       dataURL,
       dataFile,
@@ -335,31 +342,70 @@ object DataParam extends LazyLogging {
     dp
   }
 
-  private def getDataFormat(
-      name: String,
-      partsMap: PartsMap
-  ): IO[Option[DataFormat]] = for {
-    maybeStr <- partsMap.optPartValue(name)
-  } yield maybeStr match {
-    case None => None
-    case Some(str) =>
-      DataFormat
-        .fromString(str)
-        .fold(
-          err => {
-            logger.warn(s"Unsupported dataFormat for $name: $str")
-            None
-          },
-          df => Some(df)
-        )
+  //  def mkData(partsMap: PartsMap): IO[Data] = for {
+  //    data         <- partsMap.optPartValue(DataParameter.name)
+  //    compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
+  //    dataURL      <- partsMap.optPartValue(DataURLParameter.name)
+  //    dataFile     <- partsMap.optPartValue(DataFileParameter.name)
+  //    endpoint     <- partsMap.optPartValue(EndpointParameter.name)
+  //    dataFormat <- DataFormat.fromRequestParams(
+  //      DataFormatParameter.name,
+  //      partsMap
+  //    )
+  //    inference <- partsMap.optPartValue(InferenceParameter.name)
+  //    targetDataFormat <- DataFormat.fromRequestParams(
+  //      TargetDataFormatParameter.name,
+  //      partsMap
+  //    )
+  //    activeDataTab <- partsMap.optPartValue(ActiveDataTabParameter.name)
+  //  } yield {
+  //
+  //    val finalEndpoint = getEndpoint(endpoint)
+  //
+  //    val finalActiveDataTab = activeDataTab
+  //    logger.debug(s"Final endpoint: $finalEndpoint")
+  //
+  //    val dp = Data(
+  //      data,
+  //      dataURL,
+  //      dataFile,
+  //      finalEndpoint,
+  //      dataFormat,
+  //      inference,
+  //      targetDataFormat,
+  //      finalActiveDataTab,
+  //      compoundData
+  //    )
+  //    dp
+  //  }
+
+  /** @param endpointStr  String containing the endpoint
+    * @param endpointRegex Regex used to look for the endpoint in the string
+    * @return Optionally, the endpoint contained in a given data string
+    */
+  private def getEndpoint(
+      endpointStr: Option[String],
+      endpointRegex: Regex = endpointRegex
+  ): Option[String] = {
+    endpointStr match {
+      case None => None
+      case Some(endpoint) =>
+        endpoint match {
+          case endpointRegex(endpoint) => Some(endpoint)
+          case _                       => None
+        }
+
+    }
   }
 
-  private[api] def empty: DataParam =
-    DataParam(
+  /** @return Empty data representation, with no inner data and all defaults to none
+    */
+  def empty: Data =
+    Data(
       data = None,
       dataURL = None,
       dataFile = None,
-      maybeEndpoint = None,
+      optEndpoint = None,
       optDataFormat = None,
       inference = None,
       targetDataFormat = None,
@@ -376,9 +422,11 @@ object DataParam extends LazyLogging {
 private[logic] object DataTab extends Enumeration {
   type DataTab = String
 
-  val TEXT = "#dataTextArea"
-  val URL  = "#dataUrl"
-  val FILE = "#dataFile"
+  val TEXT     = "#dataTextArea"
+  val URL      = "#dataUrl"
+  val FILE     = "#dataFile"
+  val COMPOUND = "#compoundData"
+  val ENDPOINT = "#dataEndpoint"
 
   val defaultActiveShapeMapTab: DataTab = TEXT
 }

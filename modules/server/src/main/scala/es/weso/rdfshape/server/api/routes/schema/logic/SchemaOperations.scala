@@ -9,8 +9,7 @@ import es.weso.rdf.{InferenceEngine, RDFBuilder, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.UmlDefinitions.umlOptions
 import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
-import es.weso.rdfshape.server.api.routes.data.logic.DataParam
-import es.weso.rdfshape.server.api.routes.schema.service.TriggerMode
+import es.weso.rdfshape.server.api.routes.data.logic.Data
 import es.weso.schema.{Result, Schema, ShaclexSchema, ValidationTrigger}
 import es.weso.shacl.converter.Shacl2ShEx
 import es.weso.shapemaps.ShapeMap
@@ -147,12 +146,12 @@ private[api] object SchemaOperations extends LazyLogging {
       relativeBase: Option[IRI],
       builder: RDFBuilder
   ): IO[(Result, Option[ValidationTrigger], Long)] = {
-    val dp = DataParam.empty.copy(
+    val dp = Data.empty.copy(
       data = Some(data),
       optDataFormat = optDataFormat,
       inference = optInference
     )
-    val sp = SchemaParam.empty.copy(
+    val sp = Schema.empty.copy(
       schema = optSchema,
       schemaFormat = optSchemaFormat.getOrElse(SchemaFormat.defaultFormat),
       schemaEngine = optSchemaEngine

@@ -9,9 +9,9 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.data.logic.DataParam
+import es.weso.rdfshape.server.api.routes.data.logic.Data
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations._
-import es.weso.rdfshape.server.api.routes.schema.logic.SchemaParam
+import es.weso.rdfshape.server.api.routes.schema.logic.{Schema, TriggerMode}
 import es.weso.rdfshape.server.api.utils.OptEitherF._
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
@@ -120,7 +120,7 @@ class SchemaService(client: Client[IO])
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
           val r: IO[Json] = for {
-            schemaPair <- SchemaParam.mkSchema(partsMap, None)
+            schemaPair <- Schema.mkSchema(partsMap, None)
             (schema, sp) = schemaPair
           } yield {
             schemaInfo(schema).toJson
@@ -164,7 +164,7 @@ class SchemaService(client: Client[IO])
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
           val r: IO[Json] = for {
-            schemaPair <- SchemaParam.mkSchema(partsMap, None)
+            schemaPair <- Schema.mkSchema(partsMap, None)
             (schema, sp) = schemaPair
 
             targetSchemaFormat <- optEither2f(
@@ -211,7 +211,7 @@ class SchemaService(client: Client[IO])
         {
           val partsMap = PartsMap(m.parts)
           val r: IO[Json] = for {
-            schemaPair <- SchemaParam.mkSchema(partsMap, None)
+            schemaPair <- Schema.mkSchema(partsMap, None)
             (schema, _) = schemaPair
             v <- schemaVisualize(schema)
           } yield {
@@ -231,7 +231,7 @@ class SchemaService(client: Client[IO])
           val partsMap = PartsMap(m.parts)
           logger.info(s"POST info partsMap. $partsMap")
           val r: IO[Json] = for {
-            schemaPair <- SchemaParam.mkSchema(partsMap, None)
+            schemaPair <- Schema.mkSchema(partsMap, None)
             (schema, _) = schemaPair
           } yield {
             schemaCytoscape(schema)
@@ -284,13 +284,13 @@ class SchemaService(client: Client[IO])
         {
           val partsMap = PartsMap(m.parts)
           val r = for {
-            dataPair <- DataParam.mkData(partsMap, relativeBase)
+            dataPair <- Data.mkData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             res <- for {
               emptyRes <- RDFAsJenaModel.empty
               vv <- (resourceRdf, emptyRes).tupled.use { case (rdf, builder) =>
                 for {
-                  schemaPair <- SchemaParam.mkSchema(partsMap, Some(rdf))
+                  schemaPair <- Schema.mkSchema(partsMap, Some(rdf))
                   (schema, _) = schemaPair
                   maybeTriggerMode <- TriggerMode.getTriggerModeParam(partsMap)
                   newRdf           <- applyInference(rdf, dp.inference)

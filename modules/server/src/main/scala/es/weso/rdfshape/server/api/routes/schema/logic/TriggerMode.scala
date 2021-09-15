@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema.service
+package es.weso.rdfshape.server.api.routes.schema.logic
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging

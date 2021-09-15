@@ -20,8 +20,8 @@ import io.circe._
 case class DataElement(
     data: Option[String],
     dataUrl: Option[String],
-    endpoint: Option[String],
     dataFile: Option[String],
+    endpoint: Option[String],
     dataFormat: DataFormat,
     activeDataTab: ActiveDataTab
 ) extends LazyLogging {
@@ -69,8 +69,8 @@ object DataElement extends LazyLogging {
   val empty: DataElement = DataElement(
     data = None,
     dataUrl = None,
-    endpoint = None,
     dataFile = None,
+    endpoint = None,
     ApiDefaults.defaultDataFormat,
     ActiveDataTab.default
   )
