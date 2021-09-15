@@ -12,13 +12,13 @@ object IncomingRequestParameters {
   // String constants representing each parameter name expected by the server
   lazy val data             = "data"
   lazy val compoundData     = "compoundData"
-  lazy val dataURL          = "dataURL"
+  lazy val dataUrl          = "dataUrl"
   lazy val dataFile         = "dataFile"
   lazy val dataFormat       = "dataFormat"
   lazy val targetDataFormat = "targetDataFormat"
 
   lazy val schema             = "schema"
-  lazy val schemaURL          = "schemaURL"
+  lazy val schemaUrl          = "schemaUrl"
   lazy val schemaFile         = "schemaFile"
   lazy val schemaFormat       = "schemaFormat"
   lazy val schemaEngine       = "schemaEngine"
@@ -34,21 +34,21 @@ object IncomingRequestParameters {
 
   lazy val shapeMap             = "shapeMap"
   lazy val shape_map            = "shape-map"
-  lazy val shapeMapURL          = "shapeMapURL"
+  lazy val shapeMapUrl          = "shapeMapUrl"
   lazy val shapeMapFile         = "shapeMapFile"
   lazy val shapeMapFormat       = "shapeMapFormat"
   lazy val targetShapeMapFormat = "targetShapeMapFormat"
 
   lazy val query     = "query"
-  lazy val queryURL  = "queryURL"
+  lazy val queryUrl  = "queryUrl"
   lazy val queryFile = "queryFile"
 
   lazy val endpoint = "endpoint"
 
-  lazy val activeDataTab     = "activeDataTab"
-  lazy val activeSchemaTab   = "activeSchemaTab"
-  lazy val activeShapeMapTab = "activeShapeMapTab"
-  lazy val activeQueryTab    = "activeQueryTab"
+  lazy val activeDataSource     = "activeDataSource"
+  lazy val activeSchemaSource   = "activeSchemaSource"
+  lazy val activeShapeMapSource = "activeShapeMapSource"
+  lazy val activeQuerySource    = "activeQuerySource"
 
   lazy val wdEntity = "wdEntity"
   lazy val wdSchema = "wdSchema"
@@ -58,7 +58,7 @@ object IncomingRequestParameters {
   lazy val hostname    = "hostname"
   lazy val view        = "view"
   lazy val examples    = "examples"
-  lazy val manifestURL = "manifestURL"
+  lazy val manifestUrl = "manifestUrl"
   lazy val language    = "language"
   lazy val label       = "label"
   lazy val limit       = "limit"
@@ -80,9 +80,9 @@ object IncomingRequestParameters {
 
   /** Parameter expected to contain a URL where RDF data is located
     */
-  object DataURLParameter
-      extends OptionalQueryParamDecoderMatcher[String](dataURL) {
-    val name: String = dataURL
+  object DataUrlParameter
+      extends OptionalQueryParamDecoderMatcher[String](dataUrl) {
+    val name: String = dataUrl
   }
 
   /** Parameter expected to contain a file where RDF data is located
@@ -115,9 +115,9 @@ object IncomingRequestParameters {
 
   /** Parameter expected to contain a URL where a validation schema is located
     */
-  object SchemaURLParameter
-      extends OptionalQueryParamDecoderMatcher[String](schemaURL) {
-    val name: String = schemaURL
+  object SchemaUrlParameter
+      extends OptionalQueryParamDecoderMatcher[String](schemaUrl) {
+    val name: String = schemaUrl
   }
 
   /** Parameter expected to contain the contents a file where a validation schema is located
@@ -213,8 +213,8 @@ object IncomingRequestParameters {
   /** Parameter expected to contain a URL where a shapemap is located
     */
   object ShapeMapUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapURL) {
-    val name: String = shapeMapURL
+      extends OptionalQueryParamDecoderMatcher[String](shapeMapUrl) {
+    val name: String = shapeMapUrl
   }
 
   /** Parameter expected to contain a file where a shapemap is located
@@ -247,9 +247,9 @@ object IncomingRequestParameters {
 
   /** Parameter expected to contain a URL where a SPARQL query is located
     */
-  object QueryURLParameter
-      extends OptionalQueryParamDecoderMatcher[String](queryURL) {
-    val name: String = queryURL
+  object QueryUrlParameter
+      extends OptionalQueryParamDecoderMatcher[String](queryUrl) {
+    val name: String = queryUrl
   }
 
   /** Parameter expected to contain a file where a SPARQL query is located
@@ -269,33 +269,33 @@ object IncomingRequestParameters {
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in data-related operations
     */
-  object ActiveDataTabParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeDataTab) {
-    val name: String = activeDataTab
+  object ActiveDataSourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](activeDataSource) {
+    val name: String = activeDataSource
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in schema-related operations
     */
-  object ActiveSchemaTabParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeSchemaTab) {
-    val name: String = activeSchemaTab
+  object ActiveSchemaSourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](activeSchemaSource) {
+    val name: String = activeSchemaSource
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in shapemap-related operations
     */
-  object ActiveShapeMapTabParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeShapeMapTab) {
-    val name: String = activeShapeMapTab
+  object ActiveShapeSourceTabParameter
+      extends OptionalQueryParamDecoderMatcher[String](activeShapeMapSource) {
+    val name: String = activeShapeMapSource
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in query-related operations
     */
-  object ActiveQueryTabParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeQueryTab) {
-    val name: String = activeQueryTab
+  object ActiveQuerySourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](activeQuerySource) {
+    val name: String = activeQuerySource
   }
 
   /** Parameter expected to contain a valid identifier/name/label of a wikidata entity

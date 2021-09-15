@@ -21,7 +21,7 @@ import scala.util.matching.Regex
 /** Data class representing RDF data and its current source
   *
   * @param data
-  * @param dataURL
+  * @param dataUrl
   * @param dataFile
   * @param optEndpoint
   * @param optDataFormat    Data format
@@ -32,7 +32,7 @@ import scala.util.matching.Regex
   */
 sealed case class Data(
     data: Option[String],
-    dataURL: Option[String],
+    dataUrl: Option[String],
     dataFile: Option[String],
     optEndpoint: Option[String],
     optDataFormat: Option[DataFormat],
@@ -60,7 +60,7 @@ sealed case class Data(
       case Some(a)                        => parseDataTab(a)
       case None if compoundData.isDefined => Right(compoundDataType)
       case None if data.isDefined         => Right(dataTextAreaType)
-      case None if dataURL.isDefined      => Right(dataUrlType)
+      case None if dataUrl.isDefined      => Right(dataUrlType)
       case None if dataFile.isDefined     => Right(dataFileType)
       case None if optEndpoint.isDefined  => Right(dataEndpointType)
       case None                           => Right(dataTextAreaType)
@@ -81,8 +81,8 @@ sealed case class Data(
 
       case Right(`dataUrlType`) =>
         logger.debug(s"Input - dataUrlType: $data")
-        dataURL match {
-          case None => err(s"Non value for dataURL")
+        dataUrl match {
+          case None => err(s"Non value for dataUrl")
           case Some(dataUrl) =>
             for {
               rdf <- rdfFromUri(
@@ -223,6 +223,13 @@ sealed case class Data(
 
   }
 
+  private def applyInference(
+      rdf: Resource[IO, RDFReasoner],
+      inference: Option[String],
+      dataFormat: Format
+  ): Resource[IO, RDFReasoner] =
+    extendWithInference(rdf, inference)
+
   private def extendWithInference(
       resourceRdf: Resource[IO, RDFReasoner],
       optInference: Option[String]
@@ -243,13 +250,6 @@ sealed case class Data(
 
     }
   }
-
-  private def applyInference(
-      rdf: Resource[IO, RDFReasoner],
-      inference: Option[String],
-      dataFormat: Format
-  ): Resource[IO, RDFReasoner] =
-    extendWithInference(rdf, inference)
 
   private def mkBaseIri(
       maybeBase: Option[String]
@@ -307,7 +307,7 @@ private[api] object Data extends LazyLogging {
 
   def mkData(partsMap: PartsMap): IO[Data] = for {
     data         <- partsMap.optPartValue(DataParameter.name)
-    dataURL      <- partsMap.optPartValue(DataURLParameter.name)
+    dataUrl      <- partsMap.optPartValue(DataUrlParameter.name)
     dataFile     <- partsMap.optPartValue(DataFileParameter.name)
     compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
     endpoint     <- partsMap.optPartValue(EndpointParameter.name)
@@ -320,7 +320,7 @@ private[api] object Data extends LazyLogging {
       TargetDataFormatParameter.name,
       partsMap
     )
-    activeDataTab <- partsMap.optPartValue(ActiveDataTabParameter.name)
+    activeDataTab <- partsMap.optPartValue(ActiveDataSourceParameter.name)
   } yield {
 
     val finalEndpoint = getEndpoint(endpoint)
@@ -330,7 +330,7 @@ private[api] object Data extends LazyLogging {
 
     val dp = Data(
       data,
-      dataURL,
+      dataUrl,
       dataFile,
       finalEndpoint,
       dataFormat,
@@ -345,7 +345,7 @@ private[api] object Data extends LazyLogging {
   //  def mkData(partsMap: PartsMap): IO[Data] = for {
   //    data         <- partsMap.optPartValue(DataParameter.name)
   //    compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
-  //    dataURL      <- partsMap.optPartValue(DataURLParameter.name)
+  //    dataUrl      <- partsMap.optPartValue(DataURLParameter.name)
   //    dataFile     <- partsMap.optPartValue(DataFileParameter.name)
   //    endpoint     <- partsMap.optPartValue(EndpointParameter.name)
   //    dataFormat <- DataFormat.fromRequestParams(
@@ -367,7 +367,7 @@ private[api] object Data extends LazyLogging {
   //
   //    val dp = Data(
   //      data,
-  //      dataURL,
+  //      dataUrl,
   //      dataFile,
   //      finalEndpoint,
   //      dataFormat,
@@ -403,7 +403,7 @@ private[api] object Data extends LazyLogging {
   def empty: Data =
     Data(
       data = None,
-      dataURL = None,
+      dataUrl = None,
       dataFile = None,
       optEndpoint = None,
       optDataFormat = None,
@@ -414,12 +414,12 @@ private[api] object Data extends LazyLogging {
     )
 }
 
-/** Enumeration of the different possible Schema tabs sent by the client.
-  * The tab sent indicates the API if the schema was sent in raw text, as a URL
+/** Enumeration of the different possible Data sources sent by the client.
+  * The source sent indicates the API if the schema was sent in raw text, as a URL
   * to be fetched or as a text file containing the schema.
-  * In case the client submits the schema in several formats, the selected tab will indicate the preferred one.
+  * In case the client submits the data in several formats, the selected source will indicate the preferred one.
   */
-private[logic] object DataTab extends Enumeration {
+private[logic] object DataSource extends Enumeration {
   type DataTab = String
 
   val TEXT     = "#dataTextArea"

@@ -16,7 +16,7 @@ import scala.util.Try
 
 sealed case class Schema(
     schema: Option[String],
-    schemaURL: Option[String],
+    schemaUrl: Option[String],
     schemaFile: Option[String],
     schemaFormat: SchemaFormat,
     schemaEngine: Option[String],
@@ -34,7 +34,7 @@ sealed case class Schema(
     val inputType = activeSchemaTab match {
       case Some(a)                      => parseSchemaTab(a)
       case None if schema.isDefined     => Right(SchemaTextAreaType)
-      case None if schemaURL.isDefined  => Right(SchemaUrlType)
+      case None if schemaUrl.isDefined  => Right(SchemaUrlType)
       case None if schemaFile.isDefined => Right(SchemaFileType)
       case None                         => Right(SchemaTextAreaType)
     }
@@ -43,8 +43,8 @@ sealed case class Schema(
       inputType match {
         case Right(`SchemaUrlType`) =>
           logger.debug("Schema input type - SchemaUrlType")
-          schemaURL match {
-            case None => IO((None, Left(s"Non value for schemaURL")))
+          schemaUrl match {
+            case None => IO((None, Left(s"Non value for schemaUrl")))
             case Some(schemaUrl) =>
               val e: IO[(String, SchemaW)] = for {
                 str <- IO.fromEither(
@@ -210,7 +210,7 @@ object Schema extends LazyLogging {
 
   private[api] def mkSchema(partsMap: PartsMap): IO[Schema] = for {
     schema     <- partsMap.optPartValue(SchemaParameter.name)
-    schemaURL  <- partsMap.optPartValue(SchemaURLParameter.name)
+    schemaUrl  <- partsMap.optPartValue(SchemaUrlParameter.name)
     schemaFile <- partsMap.optPartValue(SchemaFileParameter.name)
     optSchemaFormat <- SchemaFormat.fromRequestParams(
       SchemaFormatParameter.name,
@@ -223,11 +223,11 @@ object Schema extends LazyLogging {
     targetSchemaFormat <- partsMap.optPartValue(
       TargetSchemaFormatParameter.name
     )
-    activeSchemaTab <- partsMap.optPartValue(ActiveSchemaTabParameter.name)
+    activeSchemaTab <- partsMap.optPartValue(ActiveSchemaSourceParameter.name)
   } yield {
     Schema(
       schema = schema,
-      schemaURL = schemaURL,
+      schemaUrl = schemaUrl,
       schemaFile = schemaFile,
       schemaFormat = optSchemaFormat.getOrElse(SchemaFormat.defaultFormat),
       schemaEngine = schemaEngine,
@@ -240,7 +240,7 @@ object Schema extends LazyLogging {
   private[api] def empty: Schema =
     Schema(
       schema = None,
-      schemaURL = None,
+      schemaUrl = None,
       schemaFile = None,
       schemaFormat = SchemaFormat.defaultFormat,
       schemaEngine = None,
@@ -251,12 +251,12 @@ object Schema extends LazyLogging {
 
 }
 
-/** Enumeration of the different possible Schema tabs sent by the client.
-  * The tab sent indicates the API if the schema was sent in raw text, as a URL
+/** Enumeration of the different possible Schema sources sent by the client.
+  * The source sent indicates the API if the schema was sent in raw text, as a URL
   * to be fetched or as a text file containing the schema.
-  * In case the client submits the schema in several formats, the selected tab will indicate the preferred one.
+  * In case the client submits the schema in several formats, the selected source will indicate the preferred one.
   */
-private[logic] object SchemaTab extends Enumeration {
+private[logic] object SchemaSource extends Enumeration {
   type SchemaTab = String
 
   val TEXT = "#schemaTextArea"

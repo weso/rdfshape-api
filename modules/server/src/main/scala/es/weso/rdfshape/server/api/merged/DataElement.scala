@@ -88,7 +88,7 @@ object DataElement extends LazyLogging {
           )
         case DataUrl =>
           Json.obj(
-            ("dataURL", Json.fromString(a.dataUrl.getOrElse(""))),
+            ("dataUrl", Json.fromString(a.dataUrl.getOrElse(""))),
             ("activeTab", Json.fromString(a.activeDataTab.id)),
             ("dataFormat", Json.fromString(a.dataFormat.name))
           )
@@ -133,9 +133,9 @@ object DataElement extends LazyLogging {
                 dataFile <- cursor.downField("dataFile").as[String]
               } yield base.copy(dataFile = Some(dataFile))
             case DataUrl =>
-              logger.debug("Data element decoder - DaraUrl")
+              logger.debug("Data element decoder - DataUrl")
               for {
-                dataUrl <- cursor.downField("dataURL").as[String]
+                dataUrl <- cursor.downField("dataUrl").as[String]
               } yield base.copy(dataUrl = Some(dataUrl))
             case DataEndpoint =>
               logger.debug("Data element decoder - DataEndpoint")

@@ -292,7 +292,7 @@ class SchemaService(client: Client[IO])
                 for {
                   schemaPair <- Schema.mkSchema(partsMap, Some(rdf))
                   (schema, _) = schemaPair
-                  maybeTriggerMode <- TriggerMode.getTriggerModeParam(partsMap)
+                  maybeTriggerMode <- TriggerMode.mkTriggerMode(partsMap)
                   newRdf           <- applyInference(rdf, dp.inference)
                   ret <- maybeTriggerMode match {
                     case Left(err) =>

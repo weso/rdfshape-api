@@ -12,7 +12,7 @@ import es.weso.shapemaps.{ShapeMap => ShapeMapW}
 /** Data class representing a TriggerMode and its current source.
   *
   * @param triggerModeStr Trigger mode name
-  * @param shapeMap    Inner shapemap associated to the TriggerMode
+  * @param shapeMap       Inner shapemap associated to the TriggerMode
   */
 sealed case class TriggerMode private (
     triggerModeStr: String,
@@ -33,7 +33,7 @@ private[api] object TriggerMode extends LazyLogging {
     * @param partsMap Request's parameters
     * @return Either the trigger mode or an error message
     */
-  def getTriggerModeParam(
+  def mkTriggerMode(
       partsMap: PartsMap
   ): IO[Either[String, TriggerMode]] = {
     for {
@@ -48,7 +48,7 @@ private[api] object TriggerMode extends LazyLogging {
         partsMap
       )
       activeShapeMapTab <- partsMap.optPartValue(
-        ActiveShapeMapTabParameter.name
+        ActiveShapeSourceTabParameter.name
       )
 
       // Get companion shapemap
@@ -62,14 +62,27 @@ private[api] object TriggerMode extends LazyLogging {
       )
 
     } yield {
-      maybeShapeMap.map(shapeMap =>
-        TriggerMode(
-          triggerModeStr =
-            triggerMode.getOrElse(ApiDefaults.defaultTriggerMode),
-          shapeMap = shapeMap
-        )
-      )
+      maybeShapeMap.flatMap(sm => mkTriggerMode(triggerMode, sm))
     }
+
+  }
+
+  /** Create a TriggerMode instance, given its mode and shapemap
+    *
+    * @param triggerMode Optionally, the trigger mode name
+    * @param shapeMap    Optionally, the inner shapemap associated to the TriggerMode
+    * @return A new TriggerMode based on the given parameters
+    */
+  def mkTriggerMode(
+      triggerMode: Option[String],
+      shapeMap: ShapeMap
+  ): Either[String, TriggerMode] = {
+    Right(
+      TriggerMode(
+        triggerModeStr = triggerMode.getOrElse(ApiDefaults.defaultTriggerMode),
+        shapeMap = shapeMap
+      )
+    )
 
   }
 

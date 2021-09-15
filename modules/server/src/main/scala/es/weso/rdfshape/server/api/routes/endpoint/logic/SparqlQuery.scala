@@ -2,15 +2,15 @@ package es.weso.rdfshape.server.api.routes.endpoint.logic
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQueryTab.{
+import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQuerySource.{
   SparqlQueryTab,
   defaultActiveQueryTab
 }
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
-  ActiveQueryTabParameter,
+  ActiveQuerySourceParameter,
   QueryFileParameter,
   QueryParameter,
-  QueryURLParameter
+  QueryUrlParameter
 }
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
@@ -41,9 +41,9 @@ private[api] object SparqlQuery extends LazyLogging {
   ): IO[Either[String, SparqlQuery]] =
     for {
       queryStr       <- partsMap.optPartValue(QueryParameter.name)
-      queryUrl       <- partsMap.optPartValue(QueryURLParameter.name)
+      queryUrl       <- partsMap.optPartValue(QueryUrlParameter.name)
       queryFile      <- partsMap.optPartValue(QueryFileParameter.name)
-      activeQueryTab <- partsMap.optPartValue(ActiveQueryTabParameter.name)
+      activeQueryTab <- partsMap.optPartValue(ActiveQuerySourceParameter.name)
 
       _ = logger.debug(
         s"Getting SPARQL from params. Query tab: $activeQueryTab"
@@ -77,28 +77,28 @@ private[api] object SparqlQuery extends LazyLogging {
     val maybeQuery: Either[String, SparqlQuery] = activeQueryTab.getOrElse(
       defaultActiveQueryTab
     ) match {
-      case SparqlQueryTab.TEXT =>
+      case SparqlQuerySource.TEXT =>
         queryStr match {
           case None => Left("No value for the query string")
           case Some(queryRaw) =>
-            Right(SparqlQuery(queryRaw, SparqlQueryTab.TEXT))
+            Right(SparqlQuery(queryRaw, SparqlQuerySource.TEXT))
         }
-      case SparqlQueryTab.URL =>
+      case SparqlQuerySource.URL =>
         queryUrl match {
           case None => Left(s"No value for the query URL")
           case Some(queryUrl) =>
             getUrlContents(queryUrl) match {
               case Right(queryRaw) =>
-                Right(SparqlQuery(queryRaw, SparqlQueryTab.URL))
+                Right(SparqlQuery(queryRaw, SparqlQuerySource.URL))
               case Left(err) => Left(err)
             }
 
         }
-      case SparqlQueryTab.FILE =>
+      case SparqlQuerySource.FILE =>
         queryFile match {
           case None => Left(s"No value for the query file")
           case Some(queryRaw) =>
-            Right(SparqlQuery(queryRaw, SparqlQueryTab.FILE))
+            Right(SparqlQuery(queryRaw, SparqlQuerySource.FILE))
         }
 
       case other =>
@@ -113,12 +113,12 @@ private[api] object SparqlQuery extends LazyLogging {
 
 }
 
-/** Enumeration of the different possible QueryTabs sent by the client.
-  * The tab sent indicates the API if the Query was sent in raw text, as a URL
+/** Enumeration of the different possible Query sources by the client.
+  * The source sent indicates the API if the Query was sent in raw text, as a URL
   * to be fetched or as a text file containing the query.
-  * In case the client submits the query in several formats, the selected tab will indicate the one format.
+  * In case the client submits the query in several formats, the selected source will indicate the one format.
   */
-private[logic] object SparqlQueryTab extends Enumeration {
+private[logic] object SparqlQuerySource extends Enumeration {
   type SparqlQueryTab = String
 
   val TEXT = "#queryTextArea"

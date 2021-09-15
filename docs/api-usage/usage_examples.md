@@ -37,7 +37,7 @@ the [Cytoscape component](https://github.com/plotly/react-cytoscapejs).
 
 ```
 curl -k -i -X POST -H "Content-type:multipart/form-data" 'https://api.rdfshape.weso.es/api/data/convert' \
-  --form-string 'dataURL=http://tb.plazi.org/GgServer/rdf/9D767B515A0BFFC3C0F7919FF301FC8D' \
+  --form-string 'dataUrl=http://tb.plazi.org/GgServer/rdf/9D767B515A0BFFC3C0F7919FF301FC8D' \
   --form-string 'dataFormatUrl=rdf/xml' --form-string 'targetDataFormat=JSON' \
 ```
 

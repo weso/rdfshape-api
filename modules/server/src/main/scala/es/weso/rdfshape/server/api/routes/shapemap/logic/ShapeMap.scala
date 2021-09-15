@@ -3,7 +3,7 @@ package es.weso.rdfshape.server.api.routes.shapemap.logic
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.format.dataFormats.{Compact, ShapeMapFormat}
-import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapTab.ShapeMapTab
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.ShapeMapTab
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.error.exceptions.JsonConversionException
@@ -98,7 +98,7 @@ private[api] object ShapeMap extends LazyLogging {
         partsMap
       )
       activeShapeMapTab <- partsMap.optPartValue(
-        ActiveShapeMapTabParameter.name
+        ActiveShapeSourceTabParameter.name
       )
 
       _ = logger.debug(
@@ -126,7 +126,7 @@ private[api] object ShapeMap extends LazyLogging {
     * @param shapeMapFormat       Optionally, the format of the shapemap
     * @param targetShapeMapFormat Optionally, the target format of the shapemap (for conversions)
     * @param activeShapeMapTab    Optionally, the indicator of the shapemap source (raw, url or file)
-    * @return
+    * @return A new ShapeMap based on the given parameters
     */
   def mkShapeMap(
       shapeMapStr: Option[String],
@@ -144,9 +144,9 @@ private[api] object ShapeMap extends LazyLogging {
 
     // Create the shapemap depending on the client's selected method
     val maybeShapeMap: Either[String, ShapeMap] = activeShapeMapTab.getOrElse(
-      ShapeMapTab.defaultActiveShapeMapTab
+      ShapeMapSource.defaultActiveShapeMapTab
     ) match {
-      case ShapeMapTab.TEXT =>
+      case ShapeMapSource.TEXT =>
         shapeMapStr match {
           case None => Left("No value for the ShapeMap string")
           case Some(shapeMapRaw) =>
@@ -155,12 +155,12 @@ private[api] object ShapeMap extends LazyLogging {
                 shapeMapRaw,
                 format,
                 targetFormat,
-                ShapeMapTab.TEXT
+                ShapeMapSource.TEXT
               )
             )
         }
 
-      case ShapeMapTab.URL =>
+      case ShapeMapSource.URL =>
         shapeMapUrl match {
           case None => Left(s"No value for the shapemap URL")
           case Some(url) =>
@@ -171,13 +171,13 @@ private[api] object ShapeMap extends LazyLogging {
                     shapeMapRaw,
                     format,
                     targetFormat,
-                    ShapeMapTab.URL
+                    ShapeMapSource.URL
                   )
                 )
               case Left(err) => Left(err)
             }
         }
-      case ShapeMapTab.FILE =>
+      case ShapeMapSource.FILE =>
         shapeMapFile match {
           case None => Left(s"No value for the shapemap file")
           case Some(shapeMapRaw) =>
@@ -186,7 +186,7 @@ private[api] object ShapeMap extends LazyLogging {
                 shapeMapRaw,
                 format,
                 targetFormat,
-                ShapeMapTab.FILE
+                ShapeMapSource.FILE
               )
             )
         }
@@ -206,17 +206,17 @@ private[api] object ShapeMap extends LazyLogging {
       shapeMapRaw = emptyShapeMapValue,
       shapeMapFormat = defaultShapeMapFormat,
       targetShapeMapFormat = defaultShapeMapFormat,
-      activeShapeMapTab = ShapeMapTab.defaultActiveShapeMapTab
+      activeShapeMapTab = ShapeMapSource.defaultActiveShapeMapTab
     )
 
 }
 
-/** Enumeration of the different possible ShapeMap tabs sent by the client.
-  * The tab sent indicates the API if the shapemap was sent in raw text, as a URL
+/** Enumeration of the different possible ShapeMap sources sent by the client.
+  * The source sent indicates the API if the shapemap was sent in raw text, as a URL
   * to be fetched or as a text file containing the shapemap.
-  * In case the client submits the shapemap in several formats, the selected tab will indicate the preferred one.
+  * In case the client submits the shapemap in several formats, the selected source will indicate the preferred one.
   */
-private[api] object ShapeMapTab extends Enumeration {
+private[api] object ShapeMapSource extends Enumeration {
   type ShapeMapTab = String
 
   val TEXT = "#shapeMapTextArea"
