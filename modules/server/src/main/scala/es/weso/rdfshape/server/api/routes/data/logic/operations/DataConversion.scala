@@ -6,7 +6,7 @@ import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
-import es.weso.rdfshape.server.api.merged.CompoundData
+import es.weso.rdfshape.server.api.routes.data.logic.data.CompoundData
 import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.utils.IOUtils.{either2io, err}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
@@ -83,9 +83,9 @@ private[api] object DataConversion extends LazyLogging {
             err(s"dataConvert: no data and no compoundData parameters")
           case Some(compoundDataStr) =>
             for {
-              ecd <- either2io(CompoundData.fromString(compoundDataStr))
+              ecd <- either2io(CompoundData.fromJsonString(compoundDataStr))
               cd  <- cnvEither(ecd, str => s"dataConvert: Error: $str")
-              result <- cd.toRDF.flatMap(
+              result <- cd.toRdf.flatMap(
                 _.use(rdf =>
                   rdfConvert(rdf, None, dataFormat, targetFormat).attempt.map(
                     _.fold(exc => Left(exc.getMessage), dc => Right(dc))

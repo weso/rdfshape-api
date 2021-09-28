@@ -22,16 +22,16 @@ sealed case class Schema(
     schemaEngine: Option[String],
     targetSchemaEngine: Option[String],
     targetSchemaFormat: Option[String],
-    activeSchemaTab: Option[String]
+    activeSchemaSource: Option[String]
 ) extends LazyLogging {
 
   def getSchema(
       data: Option[RDFReasoner]
   ): IO[(Option[String], Either[String, SchemaW])] = {
 
-    logger.debug(s"activeSchemaTab: $activeSchemaTab")
+    logger.debug(s"activeSchemaTab: $activeSchemaSource")
     logger.debug(s"schemaEngine: $schemaEngine")
-    val inputType = activeSchemaTab match {
+    val inputType = activeSchemaSource match {
       case Some(a)                      => parseSchemaTab(a)
       case None if schema.isDefined     => Right(SchemaTextAreaType)
       case None if schemaUrl.isDefined  => Right(SchemaUrlType)
@@ -223,7 +223,9 @@ object Schema extends LazyLogging {
     targetSchemaFormat <- partsMap.optPartValue(
       TargetSchemaFormatParameter.name
     )
-    activeSchemaTab <- partsMap.optPartValue(ActiveSchemaSourceParameter.name)
+    activeSchemaSource <- partsMap.optPartValue(
+      ActiveSchemaSourceParameter.name
+    )
   } yield {
     Schema(
       schema = schema,
@@ -233,7 +235,7 @@ object Schema extends LazyLogging {
       schemaEngine = schemaEngine,
       targetSchemaEngine = targetSchemaEngine,
       targetSchemaFormat = targetSchemaFormat,
-      activeSchemaTab = activeSchemaTab
+      activeSchemaSource = activeSchemaSource
     )
   }
 
@@ -246,7 +248,7 @@ object Schema extends LazyLogging {
       schemaEngine = None,
       targetSchemaEngine = None,
       targetSchemaFormat = None,
-      activeSchemaTab = None
+      activeSchemaSource = None
     )
 
 }
@@ -257,11 +259,11 @@ object Schema extends LazyLogging {
   * In case the client submits the schema in several formats, the selected source will indicate the preferred one.
   */
 private[logic] object SchemaSource extends Enumeration {
-  type SchemaTab = String
+  type SchemaSource = String
 
   val TEXT = "#schemaTextArea"
   val URL  = "#schemaUrl"
   val FILE = "#schemaFile"
 
-  val defaultActiveShapeMapTab: SchemaTab = TEXT
+  val defaultActiveSchemaSource: SchemaSource = TEXT
 }

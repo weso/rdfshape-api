@@ -11,14 +11,15 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
 import es.weso.rdfshape.server.api.routes.ApiService
+import es.weso.rdfshape.server.api.routes.data.logic.DataConversion
 import es.weso.rdfshape.server.api.routes.data.logic.DataExtract.dataExtract
 import es.weso.rdfshape.server.api.routes.data.logic.DataInfo.{
   dataInfoFromRdf,
   dataInfoFromString
 }
 import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.dataFormatOrDefault
-import es.weso.rdfshape.server.api.routes.data.logic.{Data, DataConversion}
-import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQuery
+import es.weso.rdfshape.server.api.routes.data.logic.data.SimpleData
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
 import es.weso.rdfshape.server.api.utils.OptEitherF._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
@@ -110,10 +111,10 @@ class DataService(client: Client[IO])
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          dataParam <- Data.mkData(partsMap, relativeBase)
-          (resourceRdf, dp) = dataParam
-          dataFormat        = dataFormatOrDefault(dp.optDataFormat.map(_.name))
-          response <- dp.data match {
+          dataTuple <- SimpleData.getData(partsMap, relativeBase)
+          (resourceRdf, simpleData) = dataTuple
+          dataFormat                = dataFormatOrDefault(simpleData.optDataFormat.map(_.name))
+          response <- simpleData.data match {
             case Some(data) =>
               for {
                 result <- dataInfoFromString(data, dataFormat)
@@ -126,7 +127,7 @@ class DataService(client: Client[IO])
               for {
                 maybeData <-
                   resourceRdf.use(rdf =>
-                    dataInfoFromRdf(rdf, None, dp.optDataFormat)
+                    dataInfoFromRdf(rdf, None, simpleData.optDataFormat)
                   )
                 response <- maybeData match {
                   case Left(err)  => errorResponseJson(err, InternalServerError)
@@ -160,7 +161,7 @@ class DataService(client: Client[IO])
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          dataParam <- Data.mkData(partsMap, relativeBase)
+          dataParam <- SimpleData.getData(partsMap, relativeBase)
           (resourceRdf, dp) = dataParam
           targetFormat      = dp.targetDataFormat.getOrElse(defaultDataFormat).name
           dataFormat        = dp.optDataFormat.getOrElse(defaultDataFormat)
@@ -214,7 +215,7 @@ class DataService(client: Client[IO])
         for {
           /* TODO: an error is thrown on bad query URLs (IO.raise...), but it is
            * not controlled */
-          dataParam <- Data.mkData(partsMap, relativeBase)
+          dataParam <- SimpleData.getData(partsMap, relativeBase)
 
           (resourceRdf, dp) = dataParam
           maybeQuery <- SparqlQuery.getSparqlQuery(partsMap)
@@ -261,7 +262,7 @@ class DataService(client: Client[IO])
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          maybeData          <- Data.mkData(partsMap, relativeBase).attempt
+          maybeData          <- SimpleData.getData(partsMap, relativeBase).attempt
           schemaEngine       <- partsMap.optPartValue("schemaEngine")
           optSchemaFormatStr <- partsMap.optPartValue("schemaFormat")
           inference          <- partsMap.optPartValue("inference")

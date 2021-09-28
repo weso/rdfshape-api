@@ -51,7 +51,7 @@ object HTML2RDF extends LazyLogging {
   def extractFromString(
       htmlStr: String,
       extractorName: String
-  ): CatsResource[IO, RDFReasoner] = {
+  ): CatsResource[IO, RDFAsJenaModel] = {
     extractFromSource(RdfSourceTypes.STRING, htmlStr, extractorName)
   }
 
@@ -77,7 +77,7 @@ object HTML2RDF extends LazyLogging {
       sourceType: RdfSourceTypes.Value,
       rdfData: String,
       extractorName: String
-  ): CatsResource[IO, RDFReasoner] = {
+  ): CatsResource[IO, RDFAsJenaModel] = {
     Try {
       logger.debug(
         s"Extracting RDF from ${sourceType.toString} with extractor $extractorName"

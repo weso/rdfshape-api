@@ -1,10 +1,10 @@
-package es.weso.rdfshape.server.api.routes.endpoint.logic
+package es.weso.rdfshape.server.api.routes.endpoint.logic.query
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQuerySource.{
-  SparqlQueryTab,
-  defaultActiveQueryTab
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuerySource.{
+  SparqlQuerySource,
+  defaultActiveQuerySource
 }
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   ActiveQuerySourceParameter,
@@ -18,11 +18,11 @@ import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 /** Data class representing a SPARQL query and its current source
   *
   * @param queryRaw          Query raw text
-  * @param activeQueryTab Active tab, used to know which source the query comes from
+  * @param activeQuerySource Active source, used to know which source the query comes from
   */
 sealed case class SparqlQuery private (
     queryRaw: String,
-    activeQueryTab: SparqlQueryTab
+    activeQuerySource: SparqlQuerySource
 )
 
 private[api] object SparqlQuery extends LazyLogging {
@@ -60,22 +60,22 @@ private[api] object SparqlQuery extends LazyLogging {
 
   /** Create a SparqlQuery instance, given its source and data
     *
-    * @param queryStr       Optionally, the raw contents of the query
-    * @param queryUrl       Optionally, the URL with the contents of the query
-    * @param queryFile      Optionally, the file with the contents of the query
-    * @param activeQueryTab Optionally, the indicator of the query source (raw, url or file)
+    * @param queryStr          Optionally, the raw contents of the query
+    * @param queryUrl          Optionally, the URL with the contents of the query
+    * @param queryFile         Optionally, the file with the contents of the query
+    * @param activeQuerySource Optionally, the indicator of the query source (raw, url or file)
     * @return
     */
   def mkSparqlQuery(
       queryStr: Option[String],
       queryUrl: Option[String],
       queryFile: Option[String],
-      activeQueryTab: Option[SparqlQueryTab]
+      activeQuerySource: Option[SparqlQuerySource]
   ): Either[String, SparqlQuery] = {
 
     // Create the query depending on the client's selected method
-    val maybeQuery: Either[String, SparqlQuery] = activeQueryTab.getOrElse(
-      defaultActiveQueryTab
+    val maybeQuery: Either[String, SparqlQuery] = activeQuerySource.getOrElse(
+      defaultActiveQuerySource
     ) match {
       case SparqlQuerySource.TEXT =>
         queryStr match {
@@ -111,19 +111,4 @@ private[api] object SparqlQuery extends LazyLogging {
     maybeQuery
   }
 
-}
-
-/** Enumeration of the different possible Query sources by the client.
-  * The source sent indicates the API if the Query was sent in raw text, as a URL
-  * to be fetched or as a text file containing the query.
-  * In case the client submits the query in several formats, the selected source will indicate the one format.
-  */
-private[logic] object SparqlQuerySource extends Enumeration {
-  type SparqlQueryTab = String
-
-  val TEXT = "#queryTextArea"
-  val URL  = "#queryUrl"
-  val FILE = "#queryFile"
-
-  val defaultActiveQueryTab: SparqlQueryTab = TEXT
 }

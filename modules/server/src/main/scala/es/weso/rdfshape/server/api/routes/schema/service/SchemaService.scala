@@ -9,7 +9,7 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.data.logic.Data
+import es.weso.rdfshape.server.api.routes.data.logic.data.SimpleData
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations._
 import es.weso.rdfshape.server.api.routes.schema.logic.{Schema, TriggerMode}
 import es.weso.rdfshape.server.api.utils.OptEitherF._
@@ -284,7 +284,7 @@ class SchemaService(client: Client[IO])
         {
           val partsMap = PartsMap(m.parts)
           val r = for {
-            dataPair <- Data.mkData(partsMap, relativeBase)
+            dataPair <- SimpleData.getData(partsMap, relativeBase)
             (resourceRdf, dp) = dataPair
             res <- for {
               emptyRes <- RDFAsJenaModel.empty

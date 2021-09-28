@@ -4,6 +4,7 @@ import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import io.circe.{Decoder, Encoder, HCursor, Json}
 import org.http4s.MediaType
 
 /** Generic interface for any format any data transmitted to/from the API may have
@@ -33,6 +34,7 @@ object Format extends FormatCompanion[Format] {
 }
 
 /** Static utilities to be used with formats
+  *
   * @tparam F Specific format type that we are handling
   */
 trait FormatCompanion[F <: Format] extends LazyLogging {
@@ -44,6 +46,24 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
   /** List of all formats available for the current type of entity
     */
   val availableFormats: List[F]
+
+  implicit val encodeFormat: Encoder[F] = (format: F) => {
+    Json.obj(
+      ("name", Json.fromString(format.name)),
+      (
+        "mimeType",
+        Json.fromString(
+          s"${format.mimeType.mainType}/${format.mimeType.subType}"
+        )
+      )
+    )
+  }
+
+  implicit val decodeFormat: Decoder[F] = (cursor: HCursor) =>
+    for {
+      formatStr <- cursor.downField("name").as[String]
+      format: F = fromString(formatStr).toOption.getOrElse(defaultFormat)
+    } yield format
 
   /** Try to build a Format object from a request's parameters
     *

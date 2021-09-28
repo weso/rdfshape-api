@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.merged
+package es.weso.rdfshape.server.api.routes.data.logic.data.merged
 
 import _root_.es.weso.rdf._
 import _root_.es.weso.rdf.jena.RDFAsJenaModel
@@ -141,14 +141,14 @@ case class MergedModels(
   override def asRDFBuilder: RDFRead[RDFBuilder] =
     getModel.flatMap(_.asRDFBuilder)
 
+  def getModel: IO[RDFAsJenaModel] = mergedModel.get
+
   override def rdfReaderName: String = s"MergedModels"
 
   override def sourceIRI: Option[IRI] = None
 
   override def hasPredicateWithSubject(n: RDFNode, p: IRI): RDFRead[Boolean] =
     getModel.flatMap(_.hasPredicateWithSubject(n, p))
-
-  def getModel: IO[RDFAsJenaModel] = mergedModel.get
 
 }
 

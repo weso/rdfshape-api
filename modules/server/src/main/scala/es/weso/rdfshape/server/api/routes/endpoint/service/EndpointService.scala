@@ -12,12 +12,9 @@ import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
 }
 import es.weso.rdfshape.server.api.routes.endpoint.logic.EndpointStatus._
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing.getOutgoing
-import es.weso.rdfshape.server.api.routes.endpoint.logic.SparqlQuery.getSparqlQuery
-import es.weso.rdfshape.server.api.routes.endpoint.logic.{
-  Endpoint,
-  Outgoing,
-  SparqlQuery
-}
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery.getSparqlQuery
+import es.weso.rdfshape.server.api.routes.endpoint.logic.{Endpoint, Outgoing}
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   EndpointParameter,
   LimitParameter,
