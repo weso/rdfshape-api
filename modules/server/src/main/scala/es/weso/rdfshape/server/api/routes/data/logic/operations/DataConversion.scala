@@ -1,18 +1,24 @@
-package es.weso.rdfshape.server.api.routes.data.logic
+package es.weso.rdfshape.server.api.routes.data.logic.operations
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
-import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
-import es.weso.rdfshape.server.api.routes.data.logic.data.CompoundData
-import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
-import es.weso.utils.IOUtils.{either2io, err}
+import es.weso.rdf.{InferenceEngine, NONE}
+import es.weso.rdfshape.server.api.format.dataFormats.{
+  DataFormat,
+  Dot,
+  Png,
+  Svg
+}
+import es.weso.rdfshape.server.api.routes.data.logic.operations.DataConversion.successMessage
+import es.weso.rdfshape.server.api.routes.data.logic.types.{Data, DataSingle}
+import es.weso.utils.IOUtils.either2io
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.MutableGraph
 import guru.nidi.graphviz.parse.Parser
-import io.circe.Json
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
 
 import java.io.ByteArrayOutputStream
 import java.util.Base64
@@ -20,180 +26,208 @@ import javax.imageio.ImageIO
 import scala.collection.immutable
 import scala.util.Try
 
-/** Data class representing the output of a conversion operation
+/** Data class representing the output of a data-conversion operation
   *
-  * @param msg          Output informational message after conversion
-  * @param data         Data to be converted
-  * @param dataFormat   Initial data format
-  * @param targetFormat Target data format
-  * @param result       Data after conversion
+  * @param inputData   Data before conversion
+  * @param targetFormat   Target data format
+  * @param result Data after conversion
   */
-final case class DataConversion(
-    msg: String,
-    data: Option[String],
-    dataFormat: DataFormat,
-    targetFormat: String,
-    result: String
-) {
-
-  /** Convert a conversion result to its JSON representation
-    *
-    * @return JSON representation of the conversion result
-    */
-  def toJson: Json = Json.fromFields(
-    List(
-      ("message", Json.fromString(msg)),
-      ("result", Json.fromString(result)),
-      ("dataFormat", Json.fromString(dataFormat.name)),
-      ("targetDataFormat", Json.fromString(targetFormat))
-    ) ++
-      maybeField("data", data, Json.fromString)
-  )
-}
+final case class DataConversion private (
+    override val inputData: Data,
+    targetFormat: DataFormat,
+    result: Data
+) extends DataOperation(successMessage, inputData)
 
 /** Static utilities for data conversion
   */
 private[api] object DataConversion extends LazyLogging {
 
+  /** List of graph format names
+    */
   lazy val availableGraphFormatNames: immutable.Seq[String] =
     availableGraphFormats.map(_.name)
-  private lazy val rdfDataFormats =
+
+  /** List of available RDF format names (uppercase)
+    */
+  private lazy val rdfDataFormatNames: immutable.Seq[String] =
     RDFAsJenaModel.availableFormats.map(_.toUpperCase)
+
+  /** List of available graph formats
+    */
   private lazy val availableGraphFormats = List(
     GraphFormat("SVG", "application/svg", Format.SVG),
     GraphFormat("PNG", "application/png", Format.PNG),
     GraphFormat("PS", "application/ps", Format.PS)
   )
-  val successMessage = "Conversion successful!"
 
-  private[api] def dataConvert(
-      maybeData: Option[String],
-      dataFormat: DataFormat,
-      maybeCompoundData: Option[String],
-      targetFormat: String
-  ): IO[Either[String, DataConversion]] = {
-    logger.debug(
-      s"Converting $maybeData with format $dataFormat to $targetFormat. OptTargetFormat: $targetFormat"
-    )
+  private val successMessage = "Conversion successful"
 
-    maybeData match {
-      case None =>
-        maybeCompoundData match {
-          case None =>
-            err(s"dataConvert: no data and no compoundData parameters")
-          case Some(compoundDataStr) =>
-            for {
-              ecd <- either2io(CompoundData.fromJsonString(compoundDataStr))
-              cd  <- cnvEither(ecd, str => s"dataConvert: Error: $str")
-              result <- cd.toRdf.flatMap(
-                _.use(rdf =>
-                  rdfConvert(rdf, None, dataFormat, targetFormat).attempt.map(
-                    _.fold(exc => Left(exc.getMessage), dc => Right(dc))
-                  )
-                )
-              )
-
-            } yield result
-        }
-      case Some(data) =>
-        val maybeConversion =
-          RDFAsJenaModel
-            .fromChars(data, dataFormat.name, None)
-            .flatMap(
-              _.use(rdf =>
-                rdfConvert(rdf, Some(data), dataFormat, targetFormat)
-              )
-            )
-
-        maybeConversion.attempt.map(
-          _.fold(exc => Left(exc.getMessage), dc => Right(dc))
+  /** Convert a conversion result to its JSON representation
+    *
+    * @return JSON representation of the conversion result
+    */
+  implicit val encodeResult: Encoder[DataConversion] =
+    (dataConversion: DataConversion) => {
+      Json.fromFields(
+        List(
+          ("message", Json.fromString(dataConversion.successMessage)),
+          ("data", dataConversion.inputData.asJson),
+          ("result", dataConversion.result.asJson),
+          ("inputDataFormat", dataConversion.inputData.format.asJson),
+          ("targetDataFormat", dataConversion.result.format.asJson)
         )
-
+      )
     }
 
-  }
-
-  private def cnvEither[A](e: Either[String, A], cnv: String => String): IO[A] =
-    e.fold(s => IO.raiseError(new RuntimeException(cnv(s))), IO.pure)
-
-  private[api] def rdfConvert(
-      rdf: RDFReasoner,
-      data: Option[String],
-      dataFormat: DataFormat,
-      targetFormat: String
+  /** Perform the actual conversion operation between RDF text formats
+    *
+    * @param inputData    Input conversion data
+    * @param targetFormat Target
+    * @return A new Data instance
+    */
+  def dataConvert(
+      inputData: Data,
+      targetFormat: DataFormat
   ): IO[DataConversion] = {
-    val doConversion: IO[String] = {
-      logger.info(s"Conversion target format: $targetFormat")
-      targetFormat.toUpperCase match {
+    logger.info(s"Conversion target format: $targetFormat")
+
+    for {
+      rdf    <- inputData.toRdf()
+      sgraph <- rdf.use(rdfReasoner => RDF2SGraph.rdf2sgraph(rdfReasoner))
+      targetInference = inputData match {
+        case ds: DataSingle => ds.inference
+        case _              => NONE
+      }
+
+      convertedData <- targetFormat.name.toUpperCase match {
+        // JSON: convert to JSON String and return a DataSingle with it
         case "JSON" =>
-          for {
-            sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-          } yield sgraph.toJson.spaces2
-        case "DOT" =>
-          for {
-            sgraph <- RDF2SGraph.rdf2sgraph(rdf)
-          } yield sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-        case t if rdfDataFormats.contains(t) => rdf.serialize(t)
-        case t if availableGraphFormatNames.contains(t) =>
-          val doS: IO[String] = for {
-            sgraph       <- RDF2SGraph.rdf2sgraph(rdf)
-            eitherFormat <- either2io(getTargetFormat(t))
-            dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-            eitherConverted <- eitherFormat.fold(
-              e => IO.raiseError(new RuntimeException(e)),
-              format => either2io(dotConverter(dotStr, format))
+          IO {
+            DataSingle(
+              dataRaw = sgraph.toJson.spaces2,
+              dataFormat = targetFormat,
+              inference = targetInference,
+              activeDataSource = inputData.dataSource
             )
-            c <- eitherFormat.fold(
-              e => IO.raiseError(new RuntimeException(e)),
+          }
+
+        case "DOT" =>
+          IO {
+            DataSingle(
+              dataRaw = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs),
+              dataFormat = targetFormat,
+              inference = targetInference,
+              activeDataSource = inputData.dataSource
+            )
+          }
+        case tFormat if rdfDataFormatNames.contains(tFormat) =>
+          for {
+            data <- rdf.use(_.serialize(tFormat))
+          } yield DataSingle(
+            dataRaw = data,
+            dataFormat = targetFormat,
+            inference = targetInference,
+            activeDataSource = inputData.dataSource
+          )
+        case tFormat if availableGraphFormatNames.contains(tFormat) =>
+          for {
+            eitherFormat <- either2io(getTargetFormat(tFormat))
+            dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
+            inputDataDot = DataSingle(
+              dataRaw = dotStr,
+              dataFormat = Dot,
+              inference = targetInference,
+              activeDataSource = inputData.dataSource
+            )
+            _ <- eitherFormat.fold(
+              err => IO.raiseError(new RuntimeException(err)),
+              format => dotConvert(inputDataDot, format, targetInference)
+            )
+            data <- eitherFormat.fold(
+              err => IO.raiseError(new RuntimeException(err)),
               _ => IO(dotStr)
             )
-          } yield c
-          doS
+          } yield DataSingle(
+            dataRaw = data,
+            dataFormat = targetFormat,
+            inference = targetInference,
+            activeDataSource = inputData.dataSource
+          )
         case t =>
           IO.raiseError(new RuntimeException(s"Unsupported format: $t"))
       }
-    }
+    } yield DataConversion(inputData, targetFormat, convertedData)
 
-    for {
-      converted <- doConversion
-    } yield DataConversion(
-      "Conversion successful!",
-      data,
-      dataFormat,
-      targetFormat,
-      converted
-    )
   }
 
-  private[api] def dotConverter(
-      dot: String,
-      targetFormat: Format
-  ): Either[String, String] = {
-    logger.debug(s"dotConverter to $targetFormat. dot\n$dot")
-    Try {
-      val g: MutableGraph = Parser.read(dot)
-      targetFormat match {
-        case Format.SVG =>
-          val renderer = Graphviz
-            .fromGraph(g) //.width(200)
-            .render(targetFormat)
-          logger.info(s"SVG converted: ${renderer.toString}")
-          renderer.toString
-        case Format.PNG =>
-          val renderer = Graphviz.fromGraph(g).render(Format.PNG)
-          val image    = renderer.toImage
-          val baos     = new ByteArrayOutputStream()
-          ImageIO.write(image, "png", baos)
-          val data        = Base64.getEncoder.encodeToString(baos.toByteArray)
-          val imageString = "data:image/png;base64," + data
-          "<html><body><img src='" + imageString + "'></body></html>"
-        case _ => s"Error converting to $targetFormat"
-      }
+  /** Perform a conversion from DOT data to another format
+    *
+    * @param inputData    Input Data (DOT format) to be converted
+    * @param targetFormat Target format (graphviz)
+    * @return Data after conversion
+    */
+  def dotConvert(
+      inputData: Data,
+      targetFormat: Format,
+      inference: InferenceEngine = NONE
+  ): IO[Data] = {
+    logger.debug(s"dotConverter to $targetFormat. dot\n$inputData")
+    if(inputData.format.isEmpty)
+      IO.raiseError(new RuntimeException("Unspecified input data format"))
+    else if(inputData.rawData.isEmpty)
+      IO.raiseError(
+        new RuntimeException("Empty or malformed input data contents")
+      )
+    else if(
+      inputData.format.get != es.weso.rdfshape.server.api.format.dataFormats.Dot
+    ) IO.raiseError(new RuntimeException("Input format is not DOT"))
+    else {
+      Try {
+        val g: MutableGraph = new Parser().read(inputData.rawData.get)
+        targetFormat match {
+          case Format.SVG =>
+            val renderer = Graphviz
+              .fromGraph(g) //.width(200)
+              .render(targetFormat)
+            logger.debug(s"SVG converted: ${renderer.toString}")
+            IO {
+              DataSingle(
+                dataRaw = renderer.toString,
+                dataFormat = Svg,
+                inference = inference,
+                activeDataSource = inputData.dataSource
+              )
+            }
+          case Format.PNG =>
+            val renderer = Graphviz.fromGraph(g).render(Format.PNG)
+            val image    = renderer.toImage
+            val baos     = new ByteArrayOutputStream()
+            ImageIO.write(image, "png", baos)
+            val data        = Base64.getEncoder.encodeToString(baos.toByteArray)
+            val imageString = "data:image/png;base64," + data
 
-    }.fold(
-      e => Left(e.getMessage),
-      s => Right(s)
-    )
+            IO {
+              DataSingle(
+                dataRaw =
+                  "<html><body><img src='" + imageString + "'></body></html>",
+                dataFormat = Png,
+                inference = inference,
+                activeDataSource = inputData.dataSource
+              )
+            }
+
+          case _ =>
+            IO.raiseError(
+              new RuntimeException(
+                s"Error converting from DOT to $targetFormat"
+              )
+            )
+        }
+      }.fold(
+        err => IO.raiseError(err),
+        identity
+      )
+    }
   }
 
   private def getTargetFormat(str: String): Either[String, Format] =
@@ -205,5 +239,4 @@ private[api] object DataConversion extends LazyLogging {
     }
 
   private case class GraphFormat(name: String, mime: String, fmt: Format)
-
 }

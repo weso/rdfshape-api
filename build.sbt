@@ -80,8 +80,6 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
   // Need to generate docs to publish to oss
   Compile / packageDoc / publishArtifact := true
 )
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
-ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 // Setup Mdoc + Docusaurus settings
 lazy val mdocSettings = Seq(
   mdocVariables := Map(
@@ -141,6 +139,9 @@ lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
     "-private"
   )
 )
+
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
+ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 // Shared publish settings for all modules.
 lazy val publishSettings = Seq(
   organization := "es.weso",
@@ -258,6 +259,7 @@ lazy val server = project
       http4sCirce,
       scalatags,
       umlShaclex,
+      shexs,
       shaclex,
       any23_core,
       any23_api,
@@ -288,25 +290,26 @@ lazy val docs = project
   )
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* DEPENDENCY versions */
-lazy val http4sVersion = "1.0.0-M21"
-lazy val catsVersion   = "2.5.0"
+lazy val http4sVersion = "1.0.0-M23"
+lazy val catsVersion   = "2.6.1"
 /* ------------------------------------------------------------------------- */
-lazy val mongodbVersion      = "4.1.1"
-lazy val any23Version        = "2.2"
-lazy val rdf4jVersion        = "2.2.4"
-lazy val graphvizJavaVersion = "0.5.2"
-lazy val logbackVersion      = "1.2.3"
-lazy val loggingVersion      = "3.9.3"
+lazy val mongodbVersion      = "4.3.2"
+lazy val any23Version        = "2.4"
+lazy val rdf4jVersion        = "3.7.3"
+lazy val graphvizJavaVersion = "0.18.1"
+lazy val logbackVersion      = "1.2.6"
+lazy val loggingVersion      = "3.9.4"
 lazy val groovyVersion       = "3.0.8"
-lazy val munitVersion        = "0.7.23"
-lazy val munitEffectVersion  = "1.0.2"
-lazy val plantumlVersion     = "1.2021.5"
+lazy val munitVersion        = "0.7.27"
+lazy val munitEffectVersion  = "1.0.6"
+lazy val plantumlVersion     = "8059"
 lazy val scalajVersion       = "2.4.2"
-lazy val scalatagsVersion    = "0.7.0"
+lazy val scalatagsVersion    = "0.9.4"
 // WESO dependencies
-lazy val shaclexVersion    = "0.1.91"
+lazy val shaclexVersion    = "0.1.103-SNAPSHOT"
+lazy val shexsVersion      = "0.1.97"
 lazy val umlShaclexVersion = "0.0.82"
-lazy val wesoUtilsVersion  = "0.1.98"
+lazy val wesoUtilsVersion  = "0.1.99"
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 lazy val http4sBlazeServer =
@@ -322,7 +325,7 @@ lazy val mongodb     = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVers
 lazy val any23_core  = "org.apache.any23"   % "apache-any23-core"  % any23Version
 lazy val any23_api   = "org.apache.any23"   % "apache-any23-api"   % any23Version
 lazy val any23_scraper =
-  "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.2"
+  "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.3"
 lazy val rdf4j_runtime  = "org.eclipse.rdf4j"        % "rdf4j-runtime"   % rdf4jVersion
 lazy val graphvizJava   = "guru.nidi"                % "graphviz-java"   % graphvizJavaVersion
 lazy val plantuml       = "net.sourceforge.plantuml" % "plantuml"        % plantumlVersion
@@ -336,7 +339,8 @@ lazy val munitEffect =
 lazy val scalaj    = "org.scalaj"  %% "scalaj-http" % scalajVersion
 lazy val scalatags = "com.lihaoyi" %% "scalatags"   % scalatagsVersion
 // WESO dependencies
-lazy val shaclex    = "es.weso" %% "shexs"      % shaclexVersion
+lazy val shexs      = "es.weso" %% "shexs"      % shexsVersion
+lazy val shaclex    = "es.weso" %% "shaclex"    % shaclexVersion
 lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
 lazy val wesoUtils  = "es.weso" %% "utilstest"  % wesoUtilsVersion
 // "sbt-github-actions" plugin settings

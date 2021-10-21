@@ -17,13 +17,14 @@ import es.weso.rdfshape.server.utils.error.exceptions.SSLContextCreationExceptio
 import es.weso.rdfshape.server.utils.error.{ExitCodes, SysUtils}
 import es.weso.rdfshape.server.utils.secure.SSLHelper
 import fs2.Stream
+import org.http4s.blaze.client.BlazeClientBuilder
+import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
-import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.{CORS, CORSConfig, Logger}
 import org.http4s.{HttpApp, HttpRoutes}
 
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
@@ -166,12 +167,11 @@ object Server {
 
   /** Application's CORS configuration
     */
-  private val corsConfiguration = CORSConfig(
-    anyOrigin = true,
-    anyMethod = true,
-    allowCredentials = true,
-    maxAge = 1.day.toSeconds
-  )
+  private val corsConfiguration = CORSConfig.default
+    .withAnyOrigin(true)
+    .withAnyMethod(true)
+    .withAllowCredentials(true)
+    .withMaxAge(new FiniteDuration(1, TimeUnit.DAYS))
 
   // Act as a server factory
 

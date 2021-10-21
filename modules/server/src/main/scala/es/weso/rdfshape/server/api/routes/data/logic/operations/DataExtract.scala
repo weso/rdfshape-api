@@ -1,185 +1,168 @@
-package es.weso.rdfshape.server.api.routes.data.logic
+package es.weso.rdfshape.server.api.routes.data.logic.operations
 
+import cats.data.EitherT
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.RDFReasoner
+import es.weso.rdf.InferenceEngine
 import es.weso.rdf.nodes.{IRI, Lang}
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
-  defaultSchemaEngine,
-  defaultSchemaFormat,
-  defaultShapeLabel
-}
-import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
-import es.weso.rdfshape.server.utils.json.JsonUtils._
+import es.weso.rdfshape.server.api.definitions.ApiDefaults._
+import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
+import es.weso.rdfshape.server.api.routes.data.logic.operations.DataExtract.successMessage
+import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import es.weso.schema.Schema
 import es.weso.schemaInfer.{InferOptions, PossiblePrefixes, SchemaInfer}
 import es.weso.shapemaps.{NodeSelector, ResultShapeMap}
-import es.weso.utils.IOUtils.{ESIO, either2es, io2es, run_es}
-import io.circe.Json
+import es.weso.utils.IOUtils.{either2es, io2es}
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
 
-/** Data class representing the output of an extraction operation (input RDF data => output schema)
+/** Data class representing the output of a data-extraction operation (input RDF data => output schema)
   *
-  * @param msg               Output informational message after conversion. Used in case of error.
-  * @param optData           RDF input data from which ShEx may be extracted
-  * @param optDataFormat     RDF input data format
-  * @param optSchemaFormat   Target schema format
-  * @param optSchemaEngine   Target schema engine
-  * @param optSchema         Resulting schema
-  * @param optResultShapeMap Resulting shapemap
+  * @param inputData          RDF input data from which ShEx may be extracted
+  * @param targetSchemaFormat Target schema format
+  * @param targetSchemaEngine Target schema engine
+  * @param schema             Resulting schema
+  * @param shapeMap           Resulting shapemap
   */
 final case class DataExtract private (
-    msg: String,
-    optData: Option[String],
-    optDataFormat: Option[DataFormat],
-    optSchemaFormat: Option[String],
-    optSchemaEngine: Option[String],
-    optSchema: Option[Schema],
-    optResultShapeMap: Option[ResultShapeMap]
-) {
+    override val inputData: Data,
+    targetSchemaFormat: SchemaFormat,
+    targetSchemaEngine: Schema = defaultSchemaEngine,
+    schema: Schema,
+    shapeMap: ResultShapeMap
+) extends DataOperation(successMessage, inputData)
+
+/** Static utilities to extract schemas from RDF data
+  */
+private[api] object DataExtract extends LazyLogging {
+
+  private val successMessage = "Extraction successful"
+
+  /** Common infer options to all extraction operations
+    */
+  private val inferOptions: InferOptions = InferOptions(
+    inferTypePlainNode = true,
+    addLabelLang = Some(Lang("en")),
+    possiblePrefixMap = PossiblePrefixes.wikidataPrefixMap,
+    maxFollowOn = 1,
+    followOnLs = List(),
+    followOnThreshold = Some(1),
+    sortFunction = InferOptions.orderByIRI
+  )
 
   /** Convert an extraction result to its JSON representation
     *
     * @return JSON representation of the extraction result
     */
-  def toJson: IO[Json] = optSchema match {
-    case None => IO(Json.fromFields(List(("msg", Json.fromString(msg)))))
-    case Some(schema) =>
-      val engine       = optSchemaEngine.getOrElse(defaultSchemaEngine)
-      val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat.name)
-      for {
-        schemaStr <- schema.serialize(schemaFormat)
-      } yield Json.fromFields(
-        List(
-          ("message", Json.fromString(msg)),
-          ("inferredShape", Json.fromString(schemaStr)),
-          ("schemaFormat", Json.fromString(schemaFormat)),
-          ("schemaEngine", Json.fromString(engine))
-        ) ++
-          maybeField("data", optData, Json.fromString) ++
-          maybeField(
-            "dataFormat",
-            optDataFormat,
-            (df: DataFormat) => Json.fromString(df.name)
-          ) ++
-          maybeField(
-            "resultShapeMap",
-            optResultShapeMap,
-            (r: ResultShapeMap) => Json.fromString(r.toString)
-          )
-      )
-  }
-}
 
-/** Static utilities to extract schemas from RDF data
-  */
-object DataExtract extends LazyLogging {
+  implicit val encodeResult: Encoder[DataExtract] =
+    (dataExtract: DataExtract) => {
+
+      val resultJson: Json = Json.fromFields(
+        List(
+          (
+            "schema",
+            Json.fromString(
+              dataExtract.schema
+                .serialize(dataExtract.targetSchemaFormat.name)
+                .unsafeRunSync()
+            )
+          ),
+          ("shapeMap", Json.fromString(dataExtract.shapeMap.toString))
+        )
+      )
+
+      Json.fromFields(
+        List(
+          ("message", Json.fromString(dataExtract.successMessage)),
+          ("data", dataExtract.inputData.asJson),
+          ("result", resultJson),
+          ("targetSchemaFormat", dataExtract.targetSchemaFormat.asJson),
+          (
+            "targetSchemaEngine",
+            Json.fromString(dataExtract.targetSchemaEngine.name)
+          )
+        )
+      )
+    }
 
   /** Extract Shex from a given RDF input
     *
-    * @param rdf             Input RDF
-    * @param optData         Input data (optional)
-    * @param optDataFormat   Input data format (optional)
-    * @param optNodeSelector Node selector (optional)
-    * @param optInference    Conversion inference (optional)
-    * @param optEngine       Conversion engine (optional)
-    * @param optSchemaFormat Target schema format (optional)
-    * @param optLabelName    Label name (optional)
-    * @param relativeBase    Relative base
+    * @param inputData          Input data for the extraction
+    * @param nodeSelector       Node selector for the schema extraction
+    * @param inferenceEngine    Inference engine
+    * @param targetSchemaEngine Target conversion engine
+    * @param targetSchemaFormat Target schema format
+    * @param optLabelName       Label name (optional), will default to [[defaultShapeLabel]]
+    * @param relativeBase       Relative base
     * @return
     */
   def dataExtract(
-      rdf: RDFReasoner,
-      optData: Option[String],
-      optDataFormat: Option[DataFormat],
-      optNodeSelector: Option[String],
-      optInference: Option[String],
-      optEngine: Option[String],
-      optSchemaFormat: Option[SchemaFormat],
+      inputData: Data,
+      nodeSelector: String,
+      inferenceEngine: InferenceEngine,
+      targetSchemaEngine: Schema,
+      targetSchemaFormat: SchemaFormat,
       optLabelName: Option[String],
       relativeBase: Option[IRI]
   ): IO[DataExtract] = {
-    val base         = relativeBase.map(_.str)
-    val engine       = optEngine.getOrElse(defaultSchemaEngine)
-    val schemaFormat = optSchemaFormat.getOrElse(defaultSchemaFormat)
-    optNodeSelector match {
-      case None =>
-        IO.pure(
-          DataExtract.fromMsg("DataExtract: Node selector not specified")
-        )
-      case Some(nodeSelector) =>
-        val es: ESIO[(Schema, ResultShapeMap)] = for {
-          pm       <- io2es(rdf.getPrefixMap)
-          selector <- either2es(NodeSelector.fromString(nodeSelector, base, pm))
-          eitherResult <- {
-            logger.debug(s"Node selector: $selector")
 
-            val inferOptions: InferOptions = InferOptions(
-              inferTypePlainNode = true,
-              addLabelLang = Some(Lang("en")),
-              possiblePrefixMap = PossiblePrefixes.wikidataPrefixMap,
-              maxFollowOn = 1,
-              followOnLs = List(),
-              followOnThreshold = Some(1),
-              sortFunction = InferOptions.orderByIRI
-            )
-            io2es(
+    val base = relativeBase.map(_.str)
+
+    for {
+      rdf <- inputData.toRdf() // Get rdf resource
+      eitherResult <- rdf.use(rdfReader => {
+        val results: EitherT[IO, String, (Schema, ResultShapeMap)] = for {
+          pm <- io2es(rdfReader.getPrefixMap)
+          ns <- either2es(
+            NodeSelector.fromString(nodeSelector, base, pm)
+          )
+
+          resultPair <-
+            EitherT(
               SchemaInfer.runInferSchema(
-                rdf,
-                selector,
-                engine,
+                rdfReader,
+                ns,
+                targetSchemaEngine.name,
                 optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel),
                 inferOptions
               )
             )
-          }
-          pair <- either2es(eitherResult)
-          str  <- io2es(pair._1.serialize("ShExC"))
-          _    <- io2es(IO(logger.debug(s"Extracted; $str")))
-        } yield {
-          pair
-        }
-        for {
-          either <- run_es(es)
-        } yield either.fold(
-          err => DataExtract.fromMsg(err),
-          pair => {
-            val (schema, resultShapeMap) = pair
-            DataExtract.fromExtraction(
-              optData,
-              optDataFormat,
-              schemaFormat.name,
-              engine,
-              schema,
-              resultShapeMap
+
+          _ <- io2es(IO(logger.debug(s"Extracted schema")))
+        } yield resultPair
+
+        results.value
+      })
+
+//      finalResult = eitherResult match {
+//        case Left(err) => IO.raiseError(new RuntimeException(err))
+//        case Right((resultSchema, resultShapemap)) =>
+//          DataExtract(
+//            inputData = inputData,
+//            targetSchemaFormat = targetSchemaFormat,
+//            targetSchemaEngine = targetSchemaEngine,
+//            schema = resultSchema,
+//            shapeMap = resultShapemap
+//          )
+//      }
+
+      finalResult <- eitherResult.fold(
+        err => IO.raiseError(new RuntimeException(err)),
+        pair => {
+          val (resultSchema, resultShapemap) = pair
+          IO {
+            DataExtract(
+              inputData = inputData,
+              targetSchemaFormat = targetSchemaFormat,
+              targetSchemaEngine = targetSchemaEngine,
+              schema = resultSchema,
+              shapeMap = resultShapemap
             )
           }
-        )
-    }
+        }
+      )
+    } yield finalResult
   }
-
-  /** @param msg Error message contained in the result
-    * @return A DataExtractResult consisting of a single error message and no data
-    */
-  def fromMsg(msg: String): DataExtract =
-    DataExtract(msg, None, None, None, None, None, None)
-
-  /** @return A DataExtractResult, given all the parameters needed to build it (input, formats and results)
-    */
-  def fromExtraction(
-      optData: Option[String],
-      optDataFormat: Option[DataFormat],
-      schemaFormat: String,
-      schemaEngine: String,
-      schema: Schema,
-      resultShapeMap: ResultShapeMap
-  ): DataExtract =
-    DataExtract(
-      "Shape extracted",
-      optData,
-      optDataFormat,
-      optSchemaFormat = Some(schemaFormat),
-      optSchemaEngine = Some(schemaEngine),
-      optSchema = Some(schema),
-      optResultShapeMap = Some(resultShapeMap)
-    )
 }

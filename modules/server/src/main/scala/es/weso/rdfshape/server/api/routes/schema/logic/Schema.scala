@@ -4,7 +4,7 @@ import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngineName
 import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations.getBase
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
@@ -53,7 +53,7 @@ sealed case class Schema(
                 schema <- Schemas.fromString(
                   str,
                   schemaFormat.name,
-                  schemaEngine.getOrElse(defaultSchemaEngine),
+                  schemaEngine.getOrElse(defaultSchemaEngineName),
                   getBase
                 )
                 _ <- IO {
@@ -78,7 +78,7 @@ sealed case class Schema(
               val schemaFormatStr =
                 schemaFormat.name
               val schemaEngineStr =
-                schemaEngine.getOrElse(defaultSchemaEngine)
+                schemaEngine.getOrElse(defaultSchemaEngineName)
               Schemas
                 .fromString(
                   schemaStr,
@@ -102,7 +102,7 @@ sealed case class Schema(
               .fromString(
                 schemaStr,
                 schemaFormat.name,
-                schemaEngine.getOrElse(defaultSchemaEngine),
+                schemaEngine.getOrElse(defaultSchemaEngineName),
                 getBase
               )
               .attempt
@@ -125,7 +125,7 @@ sealed case class Schema(
               logger.debug(s"nameSchema: $nameSchema")
             }
             foundSchema <- Schemas.lookupSchema(
-              schemaEngine.getOrElse(defaultSchemaEngine)
+              schemaEngine.getOrElse(defaultSchemaEngineName)
             )
             _ <- IO {
               logger.debug(s"foundSchema: ${foundSchema.name}")
@@ -251,19 +251,4 @@ object Schema extends LazyLogging {
       activeSchemaSource = None
     )
 
-}
-
-/** Enumeration of the different possible Schema sources sent by the client.
-  * The source sent indicates the API if the schema was sent in raw text, as a URL
-  * to be fetched or as a text file containing the schema.
-  * In case the client submits the schema in several formats, the selected source will indicate the preferred one.
-  */
-private[logic] object SchemaSource extends Enumeration {
-  type SchemaSource = String
-
-  val TEXT = "#schemaTextArea"
-  val URL  = "#schemaUrl"
-  val FILE = "#schemaFile"
-
-  val defaultActiveSchemaSource: SchemaSource = TEXT
 }

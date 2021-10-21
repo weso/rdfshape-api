@@ -5,27 +5,24 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
   availableInferenceEngines,
-  defaultDataFormat,
-  defaultInference
+  defaultInferenceEngineName
 }
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
-import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.data.logic.DataConversion
-import es.weso.rdfshape.server.api.routes.data.logic.DataExtract.dataExtract
-import es.weso.rdfshape.server.api.routes.data.logic.DataInfo.{
-  dataInfoFromRdf,
-  dataInfoFromString
+import es.weso.rdfshape.server.api.format.dataFormats.{
+  DataFormat,
+  GraphicFormat,
+  RDFFormat
 }
-import es.weso.rdfshape.server.api.routes.data.logic.DataOperations.dataFormatOrDefault
-import es.weso.rdfshape.server.api.routes.data.logic.data.SimpleData
-import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
-import es.weso.rdfshape.server.api.utils.OptEitherF._
+import es.weso.rdfshape.server.api.routes.ApiService
+import es.weso.rdfshape.server.api.routes.data.logic.operations.{
+  DataConversion,
+  DataInfo
+}
+import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
-import es.weso.schema._
-import es.weso.utils.IOUtils._
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
@@ -36,6 +33,7 @@ import org.http4s.multipart.Multipart
   *
   * @param client HTTP4S client object
   */
+//noinspection DuplicatedCode
 class DataService(client: Client[IO])
     extends Http4sDsl[IO]
     with ApiService
@@ -47,17 +45,24 @@ class DataService(client: Client[IO])
     */
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    /** Returns a JSON array with the accepted input RDF data formats
+    /** Returns a JSON array with the accepted input or output RDF data formats
       */
     case GET -> Root / `api` / `verb` / "formats" / "input" =>
-      val formats = DataFormat.availableFormats.map(_.name)
-      val json    = Json.fromValues(formats.map(Json.fromString))
+      val formatNames = RDFFormat.availableFormats.map(_.name)
+      val json        = Json.fromValues(formatNames.map(Json.fromString))
       Ok(json)
 
     /** Returns a JSON array with the available output RDF data formats
       */
     case GET -> Root / `api` / `verb` / "formats" / "output" =>
-      val formats = DataFormats.availableFormats.map(_.name)
+      val formatNames = RDFFormat.availableFormats.map(_.name)
+      val json        = Json.fromValues(formatNames.map(Json.fromString))
+      Ok(json)
+
+    /** Returns a JSON array with the available visualization formats
+      */
+    case GET -> Root / `api` / `verb` / "formats" / "visual" =>
+      val formats = GraphicFormat.availableFormats.map(_.name)
       val json    = Json.fromValues(formats.map(Json.fromString))
       Ok(json)
 
@@ -77,19 +82,8 @@ class DataService(client: Client[IO])
     /** Returns the default inference engine used as a raw string
       */
     case GET -> Root / `api` / `verb` / "inferenceEngines" / "default" =>
-      val defaultInferenceEngine = defaultInference
+      val defaultInferenceEngine = defaultInferenceEngineName
       Ok(Json.fromString(defaultInferenceEngine))
-
-    /** Returns a JSON array with the available visualization formats
-      */
-    case GET -> Root / `api` / `verb` / "visualize" / "formats" =>
-      val formats = DataConversion.availableGraphFormatNames ++
-        List(
-          "DOT", // DOT is not a visual format but can be used to debug
-          "JSON" // JSON is the format that can be used by Cytoscape
-        )
-      val json = Json.fromValues(formats.map(Json.fromString))
-      Ok(json)
 
     /** Obtain information about an RDF source.
       * Receives a JSON object with the input RDF information:
@@ -98,43 +92,41 @@ class DataService(client: Client[IO])
       *  - dataFile [File Object]: File containing RDF data
       *  - dataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
-      *  - activeDataTab [String]: Identifies the source of the data (raw, URL, file...)
-      *    Returns a JSON object with the RDF data information:
-      *    - message [String]: Informational message
-      *    - data [String]: RDF data sent back (originally sent by the client)
-      *    - dataFormat [String]: Data format of the data
-      *    - numberOfStatements [String]: Data format of the data
-      *    - prefixMap [Object]: Dictionary with the prefix map of the data
-      *    - predicates [Array]: Array of the predicates present in the data
+      *  - activeDataSource [String]: Identifies the source of the data (raw, URL, file...)
+      *    Returns a JSON object with the operation results. See [[DataInfo.encodeResult]]
       */
     case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
         for {
-          dataTuple <- SimpleData.getData(partsMap, relativeBase)
-          (resourceRdf, simpleData) = dataTuple
-          dataFormat                = dataFormatOrDefault(simpleData.optDataFormat.map(_.name))
-          response <- simpleData.data match {
-            case Some(data) =>
+          // Get the data from the partsMap
+          eitherData <- Data.mkData(partsMap)
+          response <- eitherData.fold(
+            // If there was an error, return it
+            err => errorResponseJson(err, InternalServerError),
+            // Else, try and compute the data info
+            data =>
               for {
-                result <- dataInfoFromString(data, dataFormat)
-                response <- result match {
-                  case Left(err)  => errorResponseJson(err, InternalServerError)
-                  case Right(res) => Ok(res.toJson)
-                }
+                // Check for exceptions when getting the data info
+                maybeResult <- DataInfo.dataInfo(data).attempt
+                response <- maybeResult.fold(
+                  // Error: return it
+                  err =>
+                    // Legacy code may return exceptions with "null" messages
+                    err.getMessage match {
+                      case errorMessage: String =>
+                        errorResponseJson(errorMessage, InternalServerError)
+                      case _ => // null exception message, return a general error message
+                        errorResponseJson(
+                          DataServiceError.couldNotParseData,
+                          InternalServerError
+                        )
+                    },
+                  // Success: build successful response
+                  dataInfo => Ok(dataInfo.asJson)
+                )
               } yield response
-            case None =>
-              for {
-                maybeData <-
-                  resourceRdf.use(rdf =>
-                    dataInfoFromRdf(rdf, None, simpleData.optDataFormat)
-                  )
-                response <- maybeData match {
-                  case Left(err)  => errorResponseJson(err, InternalServerError)
-                  case Right(res) => Ok(res.toJson)
-                }
-              } yield response
-          }
+          )
         } yield response
       }
 
@@ -146,45 +138,42 @@ class DataService(client: Client[IO])
       *  - dataFormat [String]: Format of the RDF data
       *  - targetDataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
-      *  - activeDataTab [String]: Identifies the source of the data (raw, URL, file...)
-      *    Returns a JSON object with the RDF data information:
+      *  - activeDataSource [String]: Identifies the source of the data (raw, URL, file...)
+      *    Returns a JSON object with the operation results. See [[DataConversion.encodeResult]]:
       *    - message [String]: Informational message
       *    - data [String]: RDF data sent back (originally sent by the client)
-      *    - result [String]: RDF resulting from the conversion
-      *    - dataFormat [String]: Data format of the input data
+      *    - inputDataFormat [String]: Data format of the input data
       *    - targetDataFormat [String]: Data format of the output data
-      *    - numberOfStatements [String]: Data format of the data
-      *    - prefixMap [Object]: Dictionary with the prefix map of the data
-      *    - predicates [Array]: Array of the predicates present in the data
+      *    - result[Object]: JSON representation of the resulting data. See [[Data.encodeData]]
       */
-    case req @ POST -> Root / `api` / `verb` / "convert" =>
-      req.decode[Multipart[IO]] { m =>
-        val partsMap = PartsMap(m.parts)
-        for {
-          dataParam <- SimpleData.getData(partsMap, relativeBase)
-          (resourceRdf, dp) = dataParam
-          targetFormat      = dp.targetDataFormat.getOrElse(defaultDataFormat).name
-          dataFormat        = dp.optDataFormat.getOrElse(defaultDataFormat)
-
-          result <- io2f(
-            resourceRdf.use(rdf => {
-              logger.debug(s"Attempting data conversion")
-              DataConversion
-                .rdfConvert(rdf, dp.data, dataFormat, targetFormat)
-
-            })
-          ).attempt
-            .map(
-              _.fold(exc => Left(exc.getMessage), dc => Right(dc))
-            )
-
-          response <- result match {
-            case Left(err)     => errorResponseJson(err, InternalServerError)
-            case Right(result) => Ok(result.toJson)
-          }
-
-        } yield response
-      }
+    //    case req @ POST -> Root / `api` / `verb` / "convert" =>
+    //      req.decode[Multipart[IO]] { m =>
+    //        val partsMap = PartsMap(m.parts)
+    //        for {
+    //          dataParam <- DataSingle.getData(partsMap, relativeBase)
+    //          (resourceRdf, dp) = dataParam
+    /* targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name */
+    /* dataFormat = dp.optDataFormat.getOrElse(defaultDataFormat) */
+    //
+    //          result <- io2f(
+    //            resourceRdf.use(rdf => {
+    //              logger.debug(s"Attempting data conversion")
+    //              DataConversion
+    //                .dataConvert(rdf, dp.data, dataFormat, targetFormat)
+    //
+    //            })
+    //          ).attempt
+    //            .map(
+    //              _.fold(exc => Left(exc.getMessage), dc => Right(dc))
+    //            )
+    //
+    //          response <- result match {
+    /* case Left(err) => errorResponseJson(err, InternalServerError) */
+    //            case Right(result) => Ok(result.toJson)
+    //          }
+    //
+    //        } yield response
+    //      }
 
     /** Perform a SPARQL query on RDF data.
       * Receives a JSON object with the input RDF and query information:
@@ -196,7 +185,7 @@ class DataService(client: Client[IO])
       *  - query [String]: Raw SPARQL query
       *  - queryUrl [String]: Url containing the SPARQL query
       *  - queryFile [String]: File containing the SPARQL query
-      *  - activeDataTab [String]: Identifies the source of the data (raw, URL, file...)
+      *  - activeDataSource [String]: Identifies the source of the data (raw, URL, file...)
       *  - activeQueryTab [String]: Identifies the source of the query (raw, URL, file...)
       *    Returns a JSON object with the RDF data information:
       *    - message [String]: Informational message
@@ -208,38 +197,38 @@ class DataService(client: Client[IO])
       *    - prefixMap [Object]: Dictionary with the prefix map of the data
       *    - predicates [Array]: Array of the predicates present in the data
       */
-    case req @ POST -> Root / `api` / `verb` / "query" =>
-      req.decode[Multipart[IO]] { m =>
-        val partsMap = PartsMap(m.parts)
-        logger.debug(s"Data query params map: $partsMap")
-        for {
-          /* TODO: an error is thrown on bad query URLs (IO.raise...), but it is
-           * not controlled */
-          dataParam <- SimpleData.getData(partsMap, relativeBase)
-
-          (resourceRdf, dp) = dataParam
-          maybeQuery <- SparqlQuery.getSparqlQuery(partsMap)
-          resp <- maybeQuery match {
-            case Left(err) =>
-              // Query could not be even parsed from user data
-              errorResponseJson(s"Error obtaining query data: $err", BadRequest)
-            case Right(query) =>
-              // Query was parsed, but may be invalid still
-              val optQueryStr = query.queryRaw
-              logger.debug(s"Data query with querystring: $optQueryStr")
-              for {
-                result <- io2f(
-                  resourceRdf.use(rdf => rdf.queryAsJson(optQueryStr))
-                ).attempt
-                  .map(_.fold(exc => Left(exc.getMessage), dc => Right(dc)))
-                response <- result match {
-                  case Left(err)   => errorResponseJson(err, InternalServerError)
-                  case Right(json) => Ok(json)
-                }
-              } yield response
-          }
-        } yield resp
-      }
+    //    case req @ POST -> Root / `api` / `verb` / "query" =>
+    //      req.decode[Multipart[IO]] { m =>
+    //        val partsMap = PartsMap(m.parts)
+    //        logger.debug(s"Data query params map: $partsMap")
+    //        for {
+    /* /* TODO: an error is thrown on bad query URLs (IO.raise...), but it is */
+    //           * not controlled */
+    //          dataParam <- DataSingle.getData(partsMap, relativeBase)
+    //
+    //          (resourceRdf, dp) = dataParam
+    //          maybeQuery <- SparqlQuery.getSparqlQuery(partsMap)
+    //          resp <- maybeQuery match {
+    //            case Left(err) =>
+    //              // Query could not be even parsed from user data
+    /* errorResponseJson(s"Error obtaining query data: $err", BadRequest) */
+    //            case Right(query) =>
+    //              // Query was parsed, but may be invalid still
+    //              val optQueryStr = query.queryRaw
+    //              logger.debug(s"Data query with querystring: $optQueryStr")
+    //              for {
+    //                result <- io2f(
+    //                  resourceRdf.use(rdf => rdf.queryAsJson(optQueryStr))
+    //                ).attempt
+    /* .map(_.fold(exc => Left(exc.getMessage), dc => Right(dc))) */
+    //                response <- result match {
+    /* case Left(err) => errorResponseJson(err, InternalServerError) */
+    //                  case Right(json) => Ok(json)
+    //                }
+    //              } yield response
+    //          }
+    //        } yield resp
+    //      }
 
     /** Attempt to extract a schema from an RDF source.
       * Receives a JSON object with the input RDF information:
@@ -248,7 +237,7 @@ class DataService(client: Client[IO])
       *  - dataFile [File Object]: File containing RDF data
       *  - dataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
-      *  - activeDataTab [String]: Identifies the source of the data (raw, URL, file...)
+      *  - activeDataSource [String]: Identifies the source of the data (raw, URL, file...)
       *    Returns a JSON object with the extraction information:
       *    - message [String]: Informational message
       *    - data [String]: Input RDF data
@@ -258,53 +247,54 @@ class DataService(client: Client[IO])
       *    - schemaEngine [String]: Engine of the extracted schema
       *    - resultShapeMap [String]: Shapemap of the extracted schema
       */
-    case req @ POST -> Root / `api` / `verb` / "extract" =>
-      req.decode[Multipart[IO]] { m =>
-        val partsMap = PartsMap(m.parts)
-        for {
-          maybeData          <- SimpleData.getData(partsMap, relativeBase).attempt
-          schemaEngine       <- partsMap.optPartValue("schemaEngine")
-          optSchemaFormatStr <- partsMap.optPartValue("schemaFormat")
-          inference          <- partsMap.optPartValue("inference")
-          label              <- partsMap.optPartValue("labelName")
-          optBaseStr         <- partsMap.optPartValue("base")
-          nodeSelector       <- partsMap.optPartValue("nodeSelector")
-          schemaFormat <- optEither2f(
-            optSchemaFormatStr,
-            SchemaFormat.fromString
-          )
-          response <- maybeData match {
-            // No data received
-            case Left(err) =>
-              errorResponseJson(err.getMessage, BadRequest)
-            // Data received, try to extract
-            case Right((resourceRdf, dp)) =>
-              for {
-                result <- io2f(
-                  resourceRdf.use(rdf =>
-                    dataExtract(
-                      rdf,
-                      dp.data,
-                      dp.optDataFormat,
-                      nodeSelector,
-                      inference,
-                      schemaEngine,
-                      schemaFormat,
-                      label,
-                      None
-                    )
-                  )
-                ).attempt
-                  .map(_.fold(exc => Left(exc.getMessage), res => Right(res)))
-                response <- result match {
-                  case Left(err)     => errorResponseJson(err, InternalServerError)
-                  case Right(result) => Ok(result.toJson)
-                }
-
-              } yield response
-          }
-        } yield response
-      }
+    //    case req @ POST -> Root / `api` / `verb` / "extract" =>
+    //      req.decode[Multipart[IO]] { m =>
+    //        val partsMap = PartsMap(m.parts)
+    //        for {
+    /* maybeData <- DataSingle.getData(partsMap, relativeBase).attempt */
+    //          schemaEngine       <- partsMap.optPartValue("schemaEngine")
+    //          optSchemaFormatStr <- partsMap.optPartValue("schemaFormat")
+    //          inference          <- partsMap.optPartValue("inference")
+    //          label              <- partsMap.optPartValue("labelName")
+    //          optBaseStr         <- partsMap.optPartValue("base")
+    //          nodeSelector       <- partsMap.optPartValue("nodeSelector")
+    //          schemaFormat <- optEither2f(
+    //            optSchemaFormatStr,
+    //            SchemaFormat.fromString
+    //          )
+    //          response <- maybeData match {
+    //            // No data received
+    //            case Left(err) =>
+    //              errorResponseJson(err.getMessage, BadRequest)
+    //            // Data received, try to extract
+    //            case Right((resourceRdf, dp)) =>
+    //              for {
+    //                result <- io2f(
+    //                  // Raise IO error if no node selector,
+    //                  resourceRdf.use(rdf =>
+    //                    dataExtract(
+    //                      rdf,
+    //                      dp.data,
+    //                      dp.optDataFormat,
+    //                      nodeSelector,
+    //                      inference,
+    //                      schemaEngine,
+    //                      schemaFormat,
+    //                      label,
+    //                      None
+    //                    )
+    //                  )
+    //                ).attempt
+    /* .map(_.fold(exc => Left(exc.getMessage), res => Right(res))) */
+    //                response <- result match {
+    /* case Left(err) => errorResponseJson(err, InternalServerError) */
+    //                  case Right(result) => Ok(result.toJson)
+    //                }
+    //
+    //              } yield response
+    //          }
+    //        } yield response
+    //      }
 
   }
   private val relativeBase = ApiDefaults.relativeBase
@@ -320,4 +310,10 @@ object DataService {
     */
   def apply(client: Client[IO]): DataService =
     new DataService(client)
+}
+
+private object DataServiceError extends Enumeration {
+  type DataServiceError = String
+  val couldNotParseData: DataServiceError =
+    "Unknown error parsing the data provided. Check the input and the selected format."
 }

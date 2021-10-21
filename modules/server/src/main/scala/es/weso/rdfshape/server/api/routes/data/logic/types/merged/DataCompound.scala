@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.data.logic.data.merged
+package es.weso.rdfshape.server.api.routes.data.logic.types.merged
 
 import cats.effect._
 import cats.implicits._
@@ -6,8 +6,15 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.routes.data.logic.data.DataSource.DataSource
-import es.weso.rdfshape.server.api.routes.data.logic.data._
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.types.{
+  Data,
+  DataCompanion,
+  DataEndpoint,
+  DataSingle
+}
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.CompoundDataParameter
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import io.circe._
@@ -16,11 +23,26 @@ import io.circe.syntax._
 
 /** Data class representing the merge of several RDF data into a single compound
   *
-  * @param elements List of the individual({@linkplain es.weso.rdfshape.server.api.routes.data.logic.data.SimpleData SimpleData}) conforming a CompoundData instance
+  * @param elements List of the individual({@linkplain DataSingle SimpleData}) conforming a CompoundData instance
   */
-case class CompoundData(elements: List[Data]) extends Data with LazyLogging {
+case class DataCompound(elements: List[Data]) extends Data with LazyLogging {
 
+  /** Return the compound of all the inner element's data appended to each other.
+    *
+    * @note If one element's data cannot be computed, returns none.
+    */
+  override lazy val rawData: Option[String] = {
+    val definedElements = elements.map(_.rawData).filter(_.isDefined).map(_.get)
+
+    // All elements' raw data was computed
+    if(elements.length == definedElements.length)
+      Some(definedElements.mkString("\n"))
+    else None
+
+  }
   override val dataSource: DataSource = DataSource.COMPOUND
+  override val format: Option[DataFormat] =
+    None // Each element may have its own format
 
   /** @return RDF logical model of the data contained in the compound
     */
@@ -36,6 +58,10 @@ case class CompoundData(elements: List[Data]) extends Data with LazyLogging {
     value
   }
 
+  override def toString: String = {
+    elements.flatMap(_.toString).mkString("\n")
+  }
+
   /** Recursively process the data in the compound to extract all individual RDF Jena models to a single list
     *
     * @return List of RDF Jena models in each of the elements of the compound
@@ -43,33 +69,32 @@ case class CompoundData(elements: List[Data]) extends Data with LazyLogging {
   private def getJenaModels: List[IO[Resource[IO, RDFAsJenaModel]]] = {
     elements.flatMap {
       // Single data: straight extraction
-      case sd: SimpleData   => List(sd.toRdf())
-      case ed: EndpointData => List(ed.toRdf())
-      case cd: CompoundData =>
+      case sd: DataSingle   => List(sd.toRdf())
+      case ed: DataEndpoint => List(ed.toRdf())
+      case cd: DataCompound =>
         cd.getJenaModels // Compound data: recursive extraction
     }
   }
-
 }
 
-private[api] object CompoundData
-    extends DataCompanion[CompoundData]
+private[api] object DataCompound
+    extends DataCompanion[DataCompound]
     with LazyLogging {
 
-  override lazy val emptyData: CompoundData = CompoundData(List())
+  override lazy val emptyData: DataCompound = DataCompound(List())
 
-  override def mkData(partsMap: PartsMap): IO[Either[String, CompoundData]] =
+  override def mkData(partsMap: PartsMap): IO[Either[String, DataCompound]] =
     for {
       // Parse params
       compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
 
       // Try to create data
-      maybeData: Either[String, CompoundData] =
+      maybeData: Either[String, DataCompound] =
         if(compoundData.isDefined) {
           logger.debug(
             s"RDF Data received - Compound Data: ${compoundData.get}"
           )
-          CompoundData
+          DataCompound
             .fromJsonString(compoundData.get)
             .leftMap(err => s"Could not read compound data: $err")
         } else Left("No compound data provided")
@@ -77,21 +102,21 @@ private[api] object CompoundData
 
   /** Encoder used to transform CompoundData instances to JSON values
     */
-  override implicit val encodeData: Encoder[CompoundData] =
-    (a: CompoundData) => Json.fromValues(a.elements.map(_.asJson))
+  override implicit val encodeData: Encoder[DataCompound] =
+    (data: DataCompound) => Json.fromValues(data.elements.map(_.asJson))
 
   /** Decoder used to extract CompoundData instances from JSON values
     */
-  override implicit val decodeData: Decoder[CompoundData] =
+  override implicit val decodeData: Decoder[DataCompound] =
     (cursor: HCursor) => {
       cursor.values match {
         case None =>
           DecodingFailure("Empty list for compound data", List())
-            .asLeft[CompoundData]
+            .asLeft[DataCompound]
         case Some(vs) =>
           val xs: Decoder.Result[List[Data]] =
             vs.toList.map(_.as[Data]).sequence
-          xs.map(CompoundData(_))
+          xs.map(DataCompound(_))
       }
     }
 
@@ -101,22 +126,14 @@ private[api] object CompoundData
     * @return Either a new CompoundData instance or an error message
     * @note Internally resorts to the decoding method in this class
     */
-  def fromJsonString(jsonStr: String): Either[String, CompoundData] = for {
+  def fromJsonString(jsonStr: String): Either[String, DataCompound] = for {
     json <- parse(jsonStr).leftMap(parseError =>
       s"CompoundData.fromString: error parsing $jsonStr as JSON: $parseError"
     )
     cd <- json
-      .as[CompoundData]
+      .as[DataCompound]
       .leftMap(decodeError =>
         s"Error decoding json to compoundData: $decodeError\nJSON obtained: \n${json.spaces2}"
       )
   } yield cd
-
-  // 1. Compound data
-  //  if(compoundData.isDefined) {
-  //    logger.debug(s"RDF Data received - Compound Data: ${compoundData.get}")
-  //    CompoundData
-  //      .fromJsonString(compoundData.get)
-  //      .leftMap(err => s"Could not read compound data: $err")
-  //  }
 }

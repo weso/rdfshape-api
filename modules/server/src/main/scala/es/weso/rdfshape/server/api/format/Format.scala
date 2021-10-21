@@ -19,7 +19,7 @@ trait Format {
     */
   val mimeType: MediaType
 
-  override def toString: String = s"Format $name"
+  override def toString: String = name
 
 }
 
@@ -62,7 +62,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
   implicit val decodeFormat: Decoder[F] = (cursor: HCursor) =>
     for {
       formatStr <- cursor.downField("name").as[String]
-      format: F = fromString(formatStr).toOption.getOrElse(defaultFormat)
+      format = fromString(formatStr).toOption.getOrElse(defaultFormat)
     } yield format
 
   /** Try to build a Format object from a request's parameters

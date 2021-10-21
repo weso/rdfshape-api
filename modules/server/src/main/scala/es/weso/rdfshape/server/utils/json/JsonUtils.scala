@@ -1,6 +1,8 @@
 package es.weso.rdfshape.server.utils.json
 
 import cats.effect.IO
+import es.weso.rdf.PrefixMap
+import es.weso.rdf.nodes.IRI
 import io.circe.Json
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
@@ -30,8 +32,8 @@ object JsonUtils extends Http4sDsl[IO] {
 
   /** Converts some object to JSON, given a converter function.
     *
-    * @param data      Data to be converted to JSON
     * @param name      Name given to the data
+    * @param data      Data to be converted to JSON
     * @param converter Converter function from A to Json
     * @tparam A Type of the data to be converted to JSON
     * @return A list with containing a single tuple: the name given to the data and the JSON representation of "A" itself.
@@ -94,5 +96,28 @@ object JsonUtils extends Http4sDsl[IO] {
 
   private def mkJson(msg: String): Json =
     Json.fromFields(List(("error", Json.fromString(msg))))
+
+  /** Convert a given prefix map to JSON format for API operations
+    *
+    * @param prefixMap Input prefix map
+    * @return JSON representation of the prefix map
+    */
+  def prefixMap2Json(prefixMap: PrefixMap): Json = {
+    Json.fromFields(prefixMap.pm.map { case (prefix, iri) =>
+      (prefix.str, Json.fromString(iri.getLexicalForm))
+    })
+  }
+
+  /** @param iri      IRI to be converted
+    * @param prefixMap Optionally, the prefix map with the IRI to be converted
+    * @return JSON representation of the IRI
+    */
+  def iri2Json(iri: IRI, prefixMap: Option[PrefixMap]): Json = {
+    prefixMap match {
+      case Some(pm) => Json.fromString(pm.qualifyIRI(iri))
+      case None     => Json.fromString(iri.toString)
+    }
+
+  }
 
 }

@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.data.logic.data.merged
+package es.weso.rdfshape.server.api.routes.data.logic.types.merged
 
 import _root_.es.weso.rdf._
 import _root_.es.weso.rdf.jena.RDFAsJenaModel
@@ -138,10 +138,10 @@ case class MergedModels(
   override def isIsomorphicWith(other: RDFReader): RDFRead[Boolean] =
     getModel.flatMap(_.isIsomorphicWith(other))
 
+  def getModel: IO[RDFAsJenaModel] = mergedModel.get
+
   override def asRDFBuilder: RDFRead[RDFBuilder] =
     getModel.flatMap(_.asRDFBuilder)
-
-  def getModel: IO[RDFAsJenaModel] = mergedModel.get
 
   override def rdfReaderName: String = s"MergedModels"
 

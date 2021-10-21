@@ -1,15 +1,13 @@
 package es.weso.rdfshape.server.api.routes.schema.logic
 
 import cats.effect.IO
-import cats.syntax.either._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, RDFBuilder, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.UmlDefinitions.umlOptions
-import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, SchemaFormat}
-import es.weso.rdfshape.server.api.routes.data.logic.data.SimpleData
+import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.schema.{Result, Schema, ShaclexSchema, ValidationTrigger}
 import es.weso.shacl.converter.Shacl2ShEx
 import es.weso.shapemaps.ShapeMap
@@ -135,47 +133,48 @@ private[api] object SchemaOperations extends LazyLogging {
     * @param builder         RDF builder
     * @return
     */
-  private[api] def schemaValidateStr(
-      data: String,
-      optDataFormat: Option[DataFormat],
-      optSchema: Option[String],
-      optSchemaFormat: Option[SchemaFormat],
-      optSchemaEngine: Option[String],
-      tp: TriggerMode,
-      optInference: Option[String],
-      relativeBase: Option[IRI],
-      builder: RDFBuilder
-  ): IO[(Result, Option[ValidationTrigger], Long)] = {
-    val dp = SimpleData.empty.copy(
-      data = Some(data),
-      optDataFormat = optDataFormat,
-      inference = optInference
-    )
-    val sp = Schema.empty.copy(
-      schema = optSchema,
-      schemaFormat = optSchemaFormat.getOrElse(SchemaFormat.defaultFormat),
-      schemaEngine = optSchemaEngine
-    )
-
-    val result: IO[(Result, Option[ValidationTrigger], Long)] = for {
-      pair <- dp.getData(relativeBase)
-      (_, resourceRdf) = pair
-      result <- resourceRdf.use(rdf =>
-        for {
-          pairSchema <- sp.getSchema(Some(rdf))
-          (_, eitherSchema) = pairSchema
-          schema <- IO.fromEither(
-            eitherSchema.leftMap(s =>
-              new RuntimeException(s"Error obtaining schema: $s")
-            )
-          )
-          res <- schemaValidate(rdf, schema, tp, relativeBase, builder)
-        } yield res
-      )
-    } yield result
-
-    result.attempt.flatMap(_.fold(e => schemaErr(e.getMessage), IO.pure))
-  }
+  // TODO: redo
+//  private[api] def schemaValidateStr(
+//      data: String,
+//      optDataFormat: Option[DataFormat],
+//      optSchema: Option[String],
+//      optSchemaFormat: Option[SchemaFormat],
+//      optSchemaEngine: Option[String],
+//      tp: TriggerMode,
+//      optInference: Option[String],
+//      relativeBase: Option[IRI],
+//      builder: RDFBuilder
+//  ): IO[(Result, Option[ValidationTrigger], Long)] = {
+//    val dp = DataSingle.empty.copy(
+//      data = Some(data),
+//      optDataFormat = optDataFormat,
+//      inference = optInference
+//    )
+//    val sp = Schema.empty.copy(
+//      schema = optSchema,
+//      schemaFormat = optSchemaFormat.getOrElse(SchemaFormat.defaultFormat),
+//      schemaEngine = optSchemaEngine
+//    )
+//
+//    val result: IO[(Result, Option[ValidationTrigger], Long)] = for {
+//      pair <- dp.getData(relativeBase)
+//      (_, resourceRdf) = pair
+//      result <- resourceRdf.use(rdf =>
+//        for {
+//          pairSchema <- sp.getSchema(Some(rdf))
+//          (_, eitherSchema) = pairSchema
+//          schema <- IO.fromEither(
+//            eitherSchema.leftMap(s =>
+//              new RuntimeException(s"Error obtaining schema: $s")
+//            )
+//          )
+//          res <- schemaValidate(rdf, schema, tp, relativeBase, builder)
+//        } yield res
+//      )
+//    } yield result
+//
+//    result.attempt.flatMap(_.fold(e => schemaErr(e.getMessage), IO.pure))
+//  }
 
   /** For a given data and schema, attempt to validate it with WESO libraries
     *

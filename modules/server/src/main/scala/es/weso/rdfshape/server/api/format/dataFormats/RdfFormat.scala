@@ -30,7 +30,7 @@ object RDFFormat extends FormatCompanion[RDFFormat] {
   */
 case object Turtle
     extends RDFFormat(
-      formatName = "turtle",
+      formatName = "Turtle",
       formatMimeType = new MediaType("text", "turtle")
     )
 
@@ -38,7 +38,7 @@ case object Turtle
   */
 case object NTriples
     extends RDFFormat(
-      formatName = "n-triples",
+      formatName = "N-Triples",
       formatMimeType = new MediaType("application", "n-triples")
     )
 
@@ -46,7 +46,7 @@ case object NTriples
   */
 case object Trig
     extends RDFFormat(
-      formatName = "trig",
+      formatName = "TriG",
       formatMimeType = new MediaType("application", "trig")
     )
 
@@ -54,7 +54,7 @@ case object Trig
   */
 case object JsonLd
     extends RDFFormat(
-      formatName = "json-ld",
+      formatName = "JSON-LD",
       formatMimeType = new MediaType("application", "ld+json")
     )
 
@@ -62,7 +62,7 @@ case object JsonLd
   */
 case object RdfXml
     extends RDFFormat(
-      formatName = "rdf/xml",
+      formatName = "RDF/XML",
       formatMimeType = new MediaType("application", "rdf+xml")
     )
 
@@ -70,6 +70,6 @@ case object RdfXml
   */
 case object RdfJson
     extends RDFFormat(
-      formatName = "rdf/json",
+      formatName = "RDF/JSON",
       formatMimeType = MediaType.application.json
     )

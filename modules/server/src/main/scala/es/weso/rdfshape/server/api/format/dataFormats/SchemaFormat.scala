@@ -34,6 +34,6 @@ object SchemaFormat extends FormatCompanion[SchemaFormat] {
   */
 case object ShExC
     extends SchemaFormat(
-      formatName = "shexc",
+      formatName = "ShExC",
       formatMimeType = new MediaType("text", "shex")
     )

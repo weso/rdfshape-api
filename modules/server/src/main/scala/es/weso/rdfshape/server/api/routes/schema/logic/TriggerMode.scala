@@ -73,7 +73,7 @@ private[api] object TriggerMode extends LazyLogging {
     * @param shapeMap    Optionally, the inner shapemap associated to the TriggerMode
     * @return A new TriggerMode based on the given parameters
     */
-  def mkTriggerMode(
+  private def mkTriggerMode(
       triggerMode: Option[String],
       shapeMap: ShapeMap
   ): Either[String, TriggerMode] = {

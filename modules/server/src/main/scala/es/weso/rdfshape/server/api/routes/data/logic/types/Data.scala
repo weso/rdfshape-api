@@ -1,16 +1,18 @@
-package es.weso.rdfshape.server.api.routes.data.logic.data
+package es.weso.rdfshape.server.api.routes.data.logic.types
 
 import cats.effect.{IO, Resource}
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReasoner
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.routes.data.logic.data.DataSource.DataSource
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.types.merged.DataCompound
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   CompoundDataParameter,
   EndpointParameter
 }
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.circe.{Decoder, Encoder, HCursor}
 
 /** Common trait to all data, whichever its nature (single, compound, endpoint...)
   */
@@ -19,6 +21,12 @@ trait Data {
   /** Source where the data comes from
     */
   val dataSource: DataSource
+
+  val format: Option[DataFormat]
+
+  /** Raw RDF content represented as a String
+    */
+  val rawData: Option[String]
 
   /** Given an RDF source of data, try to parse it and get the RDF model representation
     *
@@ -31,16 +39,29 @@ object Data extends DataCompanion[Data] {
 
   /** Dummy implementation meant to be overridden
     */
-  override val emptyData: Data = SimpleData.emptyData
+  override val emptyData: Data = DataSingle.emptyData
+
+  /** Dummy implementation meant to be overridden.
+    * If called on a general [[Data]] instance, pattern match among the available data types to
+    * use the correct implementation
+    */
+  implicit val encodeData: Encoder[Data] = {
+    case ds: DataSingle   => DataSingle.encodeData(ds)
+    case de: DataEndpoint => DataEndpoint.encodeData(de)
+    case dc: DataCompound => DataCompound.encodeData(dc)
+  }
 
   /** Dummy implementation meant to be overridden
+    * If called on a general [[Data]] instance, pattern match among the available data types to
+    * use the correct implementation
     */
-  override implicit val encodeData: Encoder[Data] = _ => Json.fromString("")
-
-  /** Dummy implementation meant to be overridden
-    */
-  override implicit val decodeData: Decoder[Data] = (_: HCursor) =>
-    Right(emptyData)
+  implicit val decodeData: Decoder[Data] = (cursor: HCursor) => {
+    this.getClass match {
+      case ds if ds == classOf[DataSingle]   => DataSingle.decodeData(cursor)
+      case de if de == classOf[DataEndpoint] => DataEndpoint.decodeData(cursor)
+      case dc if dc == classOf[DataCompound] => DataCompound.decodeData(cursor)
+    }
+  }
 
   /** General implementation delegating on subclasses
     */
@@ -51,11 +72,11 @@ object Data extends DataCompanion[Data] {
     maybeData <- {
       // Create one of: Simple Data, Compound Data or Endpoint Data
       // 1. Compound data
-      if(compoundData.isDefined) CompoundData.mkData(partsMap)
+      if(compoundData.isDefined) DataCompound.mkData(partsMap)
       // 2. Endpoint data
-      else if(paramEndpoint.isDefined) EndpointData.mkData(partsMap)
+      else if(paramEndpoint.isDefined) DataEndpoint.mkData(partsMap)
       // 3. Simple data or unknown
-      else SimpleData.mkData(partsMap)
+      else DataSingle.mkData(partsMap)
     }
 
   } yield maybeData

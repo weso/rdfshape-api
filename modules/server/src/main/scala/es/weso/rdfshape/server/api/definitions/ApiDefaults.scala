@@ -1,12 +1,19 @@
 package es.weso.rdfshape.server.api.definitions
 
 import es.weso.rdf.nodes.IRI
+import es.weso.rdf.{InferenceEngine, NONE}
 import es.weso.rdfshape.server.api.format.dataFormats.{
   DataFormat,
   SchemaFormat,
   ShapeMapFormat
 }
-import es.weso.schema.{Schemas, ShapeMapTrigger}
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource.SchemaSource
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.ShapeMapSource
+import es.weso.schema.{Schema, Schemas, ShapeMapTrigger}
 import es.weso.shapemaps.ShapeMap
 
 /** Application-wide defaults
@@ -16,8 +23,10 @@ case object ApiDefaults {
   val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
   val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
   val defaultSchemaFormat: SchemaFormat          = SchemaFormat.defaultFormat
+  val defaultSchemaFormatName: String            = defaultSchemaFormat.name
   val availableSchemaEngines: List[String]       = Schemas.availableSchemaNames
-  val defaultSchemaEngine: String                = Schemas.defaultSchemaName
+  val defaultSchemaEngine: Schema                = Schemas.defaultSchema
+  val defaultSchemaEngineName: String            = defaultSchemaEngine.name
   val availableTriggerModes: List[String]        = Schemas.availableTriggerModes
   val defaultTriggerMode: String                 = ShapeMapTrigger(ShapeMap.empty).name
   val availableInferenceEngines = List(
@@ -25,10 +34,14 @@ case object ApiDefaults {
     "RDFS",
     "OWL"
   ) // TODO: Obtain from RDFAsJenaModel.empty.map(_.availableInferenceEngines).unsafeRunSync
-  val defaultSchemaEmbedded                  = false
-  val defaultInference: String               = availableInferenceEngines.head
-  val defaultActiveDataTab                   = "#dataTextArea"
-  val defaultActiveSchemaTab                 = "#schemaTextArea"
+  val defaultSchemaEmbedded                   = false
+  val defaultInferenceEngine: InferenceEngine = NONE
+  val defaultInferenceEngineName: String      = defaultInferenceEngine.name
+  val defaultActiveDataSource: DataSource     = DataSource.defaultActiveDataSource
+  val defaultActiveSchemaSource: SchemaSource =
+    SchemaSource.defaultActiveSchemaSource
+  val defaultActiveShapeMapSource: ShapeMapSource =
+    ShapeMapSource.defaultActiveShapeMapSource
   val defaultShapeMapFormat: ShapeMapFormat  = ShapeMapFormat.defaultFormat
   val availableShapeMapFormats: List[String] = ShapeMap.formats
   val defaultActiveShapeMapTab               = "#shapeMapTextArea"

@@ -37,30 +37,14 @@ object DataFormat extends FormatCompanion[DataFormat] {
   */
 case object Json
     extends DataFormat(
-      formatName = "json",
+      formatName = "JSON",
       formatMimeType = new MediaType("application", "json")
     )
 
-/** Represents the mime-type "text/vnd.graphviz"
+/** Represents the mime-type "text/vnd.graphviz", used by graphviz
   */
 case object Dot
     extends DataFormat(
-      formatName = "dot",
+      formatName = "DOT",
       formatMimeType = new MediaType("text", "vnd.graphviz")
-    )
-
-/** Represents the mime-type "image/svg+xml"
-  */
-case object Svg
-    extends DataFormat(
-      formatName = "svg",
-      formatMimeType = MediaType.image.`svg+xml`
-    )
-
-/** Represents the mime-type "image/png"
-  */
-case object Png
-    extends DataFormat(
-      formatName = "png",
-      formatMimeType = MediaType.image.png
     )

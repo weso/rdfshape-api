@@ -1,23 +1,19 @@
 package es.weso.rdfshape.server.api.routes.schema.service
 
 import cats.effect._
-import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngine
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultSchemaEngineName
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.data.logic.data.SimpleData
+import es.weso.rdfshape.server.api.routes.schema.logic.Schema
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaOperations._
-import es.weso.rdfshape.server.api.routes.schema.logic.{Schema, TriggerMode}
 import es.weso.rdfshape.server.api.utils.OptEitherF._
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import es.weso.schema._
-import es.weso.utils.IOUtils.io2f
 import io.circe.Json
 import org.http4s._
 import org.http4s.circe._
@@ -175,7 +171,7 @@ class SchemaService(client: Client[IO])
               schema,
               sp.schema,
               sp.schemaFormat,
-              sp.schemaEngine.getOrElse(defaultSchemaEngine),
+              sp.schemaEngine.getOrElse(defaultSchemaEngineName),
               targetSchemaFormat,
               sp.targetSchemaEngine
             )
@@ -279,56 +275,57 @@ class SchemaService(client: Client[IO])
       *        - appInfo [Object]: Additional information on why the node conforms or not
       *    - errors [Array]: Array of errors in the validation
       */
-    case req @ POST -> Root / `api` / `verb` / "validate" =>
-      req.decode[Multipart[IO]] { m =>
-        {
-          val partsMap = PartsMap(m.parts)
-          val r = for {
-            dataPair <- SimpleData.getData(partsMap, relativeBase)
-            (resourceRdf, dp) = dataPair
-            res <- for {
-              emptyRes <- RDFAsJenaModel.empty
-              vv <- (resourceRdf, emptyRes).tupled.use { case (rdf, builder) =>
-                for {
-                  schemaPair <- Schema.mkSchema(partsMap, Some(rdf))
-                  (schema, _) = schemaPair
-                  maybeTriggerMode <- TriggerMode.mkTriggerMode(partsMap)
-                  newRdf           <- applyInference(rdf, dp.inference)
-                  ret <- maybeTriggerMode match {
-                    case Left(err) =>
-                      IO.raiseError(
-                        new RuntimeException(
-                          s"Could not obtain validation trigger: $err"
-                        )
-                      )
-                    case Right(triggerMode) =>
-                      for {
-                        r <- io2f(
-                          schemaValidate(
-                            newRdf,
-                            schema,
-                            triggerMode,
-                            relativeBase,
-                            builder
-                          )
-                        )
-                        json <- io2f(schemaResult2json(r._1))
-                      } yield json
-                  }
-                } yield ret
-              }
-            } yield vv
-          } yield res
-
-          for {
-            e <- r.attempt
-            res <- e.fold(
-              exc => errorResponseJson(exc.getMessage, BadRequest),
-              json => Ok(json)
-            )
-          } yield res
-        }
-      }
+    /* TODO: redo */
+    //    case req @ POST -> Root / `api` / `verb` / "validate" =>
+    //      req.decode[Multipart[IO]] { m =>
+    //        {
+    //          val partsMap = PartsMap(m.parts)
+    //          val r = for {
+    //            dataPair <- DataSingle.getData(partsMap, relativeBase)
+    //            (resourceRdf, dp) = dataPair
+    //            res <- for {
+    //              emptyRes <- RDFAsJenaModel.empty
+    /* vv <- (resourceRdf, emptyRes).tupled.use { case (rdf, builder) => */
+    //                for {
+    //                  schemaPair <- Schema.mkSchema(partsMap, Some(rdf))
+    //                  (schema, _) = schemaPair
+    //                  maybeTriggerMode <- TriggerMode.mkTriggerMode(partsMap)
+    //                  newRdf           <- applyInference(rdf, dp.inference)
+    //                  ret <- maybeTriggerMode match {
+    //                    case Left(err) =>
+    //                      IO.raiseError(
+    //                        new RuntimeException(
+    //                          s"Could not obtain validation trigger: $err"
+    //                        )
+    //                      )
+    //                    case Right(triggerMode) =>
+    //                      for {
+    //                        r <- io2f(
+    //                          schemaValidate(
+    //                            newRdf,
+    //                            schema,
+    //                            triggerMode,
+    //                            relativeBase,
+    //                            builder
+    //                          )
+    //                        )
+    //                        json <- io2f(schemaResult2json(r._1))
+    //                      } yield json
+    //                  }
+    //                } yield ret
+    //              }
+    //            } yield vv
+    //          } yield res
+    //
+    //          for {
+    //            e <- r.attempt
+    //            res <- e.fold(
+    //              exc => errorResponseJson(exc.getMessage, BadRequest),
+    //              json => Ok(json)
+    //            )
+    //          } yield res
+    //        }
+    //      }
   }
   private val relativeBase = ApiDefaults.relativeBase
 

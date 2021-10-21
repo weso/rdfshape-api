@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.data.logic.data
+package es.weso.rdfshape.server.api.routes.data.logic.types
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
@@ -7,7 +7,8 @@ import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, NONE, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
-import es.weso.rdfshape.server.api.routes.data.logic.data.DataSource.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.html2rdf.HTML2RDF
@@ -20,23 +21,21 @@ import io.circe.syntax.EncoderOps
   *
   * @note Invalid initial data is accepted, but may cause errors when operating with it.
   * @param dataRaw          RDF data raw text
-  * @param optEndpoint      TODO: remove eventually. Optionally, a data endpoint
   * @param dataFormat       Data format
   * @param inference        Data inference
-  * @param targetDataFormat Data target format (only for conversion operations)
   * @param activeDataSource Active source, used to know which source the data comes from
   */
-sealed case class SimpleData(
+sealed case class DataSingle(
     dataRaw: String,
-    optEndpoint: Option[String],
     dataFormat: DataFormat,
     inference: InferenceEngine,
-    targetDataFormat: Option[DataFormat],
     activeDataSource: DataSource
 ) extends Data
     with LazyLogging {
 
-  override val dataSource: DataSource = activeDataSource
+  override lazy val rawData: Option[String] = Some(dataRaw)
+  override val dataSource: DataSource       = activeDataSource
+  override val format: Option[DataFormat]   = Some(dataFormat)
 
   /** Given an RDF source of data, try to get the RDF model representation
     *
@@ -54,6 +53,36 @@ sealed case class SimpleData(
         rdf <- rdfFromString(dataRaw, dataFormat, relativeBase.map(_.str))
         result = rdf.evalMap(rdf => rdf.applyInference(inference))
       } yield result
+  }
+
+  /** Get RDF data from data parameters
+    *
+    * @return The resource capable of reading the RDF data
+    */
+  def getRdfResource(
+      relativeBase: Option[IRI]
+  ): IO[Resource[IO, RDFReasoner]] = {
+    val base = relativeBase.map(_.str)
+
+    val x: IO[Resource[IO, RDFReasoner]] =
+      activeDataSource match {
+
+        case DataSource.TEXT | DataSource.URL | DataSource.FILE =>
+          logger.debug(s"Input - $activeDataSource: $dataRaw")
+          if(dataRaw.isBlank)
+            RDFAsJenaModel.empty.flatMap(e => IO(e))
+          else
+            for {
+              rdf <- rdfFromString(dataRaw, dataFormat, base)
+              result = rdf.evalMap(rdf => rdf.applyInference(inference))
+            } yield result
+
+        case other =>
+          val msg = s"Unknown value for data source: $other"
+          logger.error(msg)
+          err(msg)
+      }
+    x
   }
 
   /** @param data  RDF data as a raw string
@@ -93,62 +122,20 @@ sealed case class SimpleData(
         )
   }
 
-  //  def toRdfJena: IO[Resource[IO, RDFAsJenaModel]] = {
-  //    for {
-  //      rdf <- RDFAsJenaModel.fromString(
-  //        dataRaw,
-  //        dataFormat.name,
-  //        None,
-  /* useBNodeLabels = if(activeDataSource != DataSource.URL) false else true */
-  //      )
-  //    } yield rdf
-  //  }
-
-  /** Get RDF data from data parameters
-    *
-    * @return The resource capable of reading the RDF data
-    */
-  def getRdfResource(
-      relativeBase: Option[IRI]
-  ): IO[Resource[IO, RDFReasoner]] = {
-    val base = relativeBase.map(_.str)
-
-    val x: IO[Resource[IO, RDFReasoner]] =
-      activeDataSource match {
-
-        case DataSource.TEXT | DataSource.URL | DataSource.FILE =>
-          logger.debug(s"Input - $activeDataSource: $dataRaw")
-          if(dataRaw.isBlank)
-            RDFAsJenaModel.empty.flatMap(e => IO(e))
-          else
-            for {
-              rdf <- rdfFromString(dataRaw, dataFormat, base)
-              result = rdf.evalMap(rdf => rdf.applyInference(inference))
-            } yield result
-
-        case other =>
-          val msg = s"Unknown value for data source: $other"
-          logger.error(msg)
-          err(msg)
-      }
-    x
-  }
-
+  override def toString: String = dataRaw
 }
 
-private[api] object SimpleData
-    extends DataCompanion[SimpleData]
+private[api] object DataSingle
+    extends DataCompanion[DataSingle]
     with LazyLogging {
 
   /** Empty data representation, with no inner data and all defaults to none
     */
-  override lazy val emptyData: SimpleData =
-    SimpleData(
+  override lazy val emptyData: DataSingle =
+    DataSingle(
       dataRaw = emptyDataValue,
-      optEndpoint = None,
       dataFormat = DataFormat.defaultFormat,
       inference = NONE,
-      targetDataFormat = None,
       activeDataSource = DataSource.defaultActiveDataSource
     )
 
@@ -175,53 +162,16 @@ private[api] object SimpleData
           .getOrElse(NONE)
       } yield inference
 
-  override implicit val encodeData: Encoder[SimpleData] = (data: SimpleData) =>
-    {
+  override implicit val encodeData: Encoder[DataSingle] =
+    (data: DataSingle) =>
       Json.obj(
         ("data", Json.fromString(data.dataRaw)),
         ("source", Json.fromString(data.activeDataSource)),
         ("format", data.dataFormat.asJson),
-        ("targetFormat", data.targetDataFormat.asJson),
         ("inference", data.inference.asJson)
       )
 
-    }
-  override implicit val decodeData: Decoder[SimpleData] =
-    (cursor: HCursor) => {
-      for {
-        data <- cursor.downField("data").as[String]
-
-        dataFormat <- cursor
-          .downField("format")
-          .as[DataFormat]
-          .orElse(Right(ApiDefaults.defaultDataFormat))
-
-        targetDataFormat <- cursor
-          .downField("targetFormat")
-          .as[Option[DataFormat]]
-
-        dataInference <-
-          cursor
-            .downField("inference")
-            .as[Option[InferenceEngine]]
-
-        dataSource <- cursor
-          .downField("source")
-          .as[DataSource]
-          .orElse(Right(DataSource.defaultActiveDataSource))
-
-        base = SimpleData.emptyData.copy(
-          dataRaw = data,
-          dataFormat = dataFormat,
-          targetDataFormat = targetDataFormat,
-          activeDataSource = dataSource,
-          inference = dataInference.getOrElse(NONE)
-        )
-
-      } yield base
-    }
-
-  override def mkData(partsMap: PartsMap): IO[Either[String, SimpleData]] =
+  override def mkData(partsMap: PartsMap): IO[Either[String, DataSingle]] =
     for {
       dataStr  <- partsMap.optPartValue(DataParameter.name)
       dataUrl  <- partsMap.optPartValue(DataUrlParameter.name)
@@ -231,10 +181,7 @@ private[api] object SimpleData
         partsMap
       )
       paramInference <- partsMap.optPartValue(InferenceParameter.name)
-      targetDataFormat <- DataFormat.fromRequestParams(
-        TargetDataFormatParameter.name,
-        partsMap
-      )
+
       paramDataSource <- partsMap.optPartValue(ActiveDataSourceParameter.name)
 
       // Confirm final format and inference
@@ -246,14 +193,13 @@ private[api] object SimpleData
       _          = logger.debug(s"RDF Data received - Source: $dataSource")
 
       // Base for the result
-      base = SimpleData.emptyData.copy(
+      base = DataSingle.emptyData.copy(
         dataFormat = format,
-        inference = inference,
-        targetDataFormat = targetDataFormat
+        inference = inference
       )
 
       // Create the data
-      maybeData: Either[String, SimpleData] = dataSource match {
+      maybeData: Either[String, DataSingle] = dataSource match {
         case DataSource.TEXT =>
           dataStr match {
             case None => Left("No value for the data string")
@@ -298,6 +244,36 @@ private[api] object SimpleData
       }
     } yield maybeData
 
+  override implicit val decodeData: Decoder[DataSingle] =
+    (cursor: HCursor) => {
+      for {
+        data <- cursor.downField("data").as[String]
+
+        dataFormat <- cursor
+          .downField("format")
+          .as[DataFormat]
+          .orElse(Right(ApiDefaults.defaultDataFormat))
+
+        dataInference <-
+          cursor
+            .downField("inference")
+            .as[Option[InferenceEngine]]
+
+        dataSource <- cursor
+          .downField("source")
+          .as[DataSource]
+          .orElse(Right(DataSource.defaultActiveDataSource))
+
+        base = DataSingle.emptyData.copy(
+          dataRaw = data,
+          dataFormat = dataFormat,
+          activeDataSource = dataSource,
+          inference = dataInference.getOrElse(NONE)
+        )
+
+      } yield base
+    }
+
   /** @param inferenceStr String representing the inference value
     * @return Optionally, the inference contained in a given data string
     */
@@ -306,5 +282,4 @@ private[api] object SimpleData
   ): Option[InferenceEngine] = {
     inferenceStr.flatMap(InferenceEngine.fromString(_).toOption)
   }
-
 }

@@ -29,6 +29,6 @@ object ShapeMapFormat extends FormatCompanion[ShapeMapFormat] {
   */
 case object Compact
     extends ShapeMapFormat(
-      formatName = "compact",
+      formatName = "Compact",
       formatMimeType = new MediaType("text", "shex")
     )
