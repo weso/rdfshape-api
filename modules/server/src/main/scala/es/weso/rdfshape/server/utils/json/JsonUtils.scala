@@ -75,7 +75,7 @@ object JsonUtils extends Http4sDsl[IO] {
     * @return The response object, ready to be dispatched elsewhere
     */
   def errorResponseJson(msg: String, status: Status = Ok): IO[Response[IO]] = {
-    val responseMessage = mkJson(msg)
+    val responseMessage = mkJsonError(msg)
     mapStatusCodes(status) match {
       case Status.Created             => Created(responseMessage)
       case Status.Accepted            => Accepted(responseMessage)
@@ -94,7 +94,7 @@ object JsonUtils extends Http4sDsl[IO] {
     }
   }
 
-  private def mkJson(msg: String): Json =
+  private def mkJsonError(msg: String): Json =
     Json.fromFields(List(("error", Json.fromString(msg))))
 
   /** Convert a given prefix map to JSON format for API operations

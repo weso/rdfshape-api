@@ -111,6 +111,8 @@ case class MergedModels(
   def triplesWithPredicateObject(p: IRI, o: RDFNode): RDFStream[RDFTriple] =
     Stream.eval(getModel).flatMap(_.triplesWithPredicateObject(p, o))
 
+  def getModel: IO[RDFAsJenaModel] = mergedModel.get
+
   // TODO: Not optimized...it just appends the inferred model to the end...
   override def applyInference(inference: InferenceEngine): RDFRead[Rdf] = for {
     mergedRdf <- getModel
@@ -137,8 +139,6 @@ case class MergedModels(
 
   override def isIsomorphicWith(other: RDFReader): RDFRead[Boolean] =
     getModel.flatMap(_.isIsomorphicWith(other))
-
-  def getModel: IO[RDFAsJenaModel] = mergedModel.get
 
   override def asRDFBuilder: RDFRead[RDFBuilder] =
     getModel.flatMap(_.asRDFBuilder)

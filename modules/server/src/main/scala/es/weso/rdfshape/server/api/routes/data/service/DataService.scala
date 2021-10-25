@@ -19,6 +19,7 @@ import es.weso.rdfshape.server.api.routes.data.logic.operations.{
   DataInfo
 }
 import es.weso.rdfshape.server.api.routes.data.logic.types.Data
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.TargetDataFormatParameter
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import io.circe.Json
@@ -98,11 +99,12 @@ class DataService(client: Client[IO])
     case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
+
         for {
           // Get the data from the partsMap
           eitherData <- Data.mkData(partsMap)
           response <- eitherData.fold(
-            // If there was an error, return it
+            // If there was an error parsing the data, return it
             err => errorResponseJson(err, InternalServerError),
             // Else, try and compute the data info
             data =>
@@ -139,41 +141,65 @@ class DataService(client: Client[IO])
       *  - targetDataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
       *  - activeDataSource [String]: Identifies the source of the data (raw, URL, file...)
-      *    Returns a JSON object with the operation results. See [[DataConversion.encodeResult]]:
-      *    - message [String]: Informational message
-      *    - data [String]: RDF data sent back (originally sent by the client)
-      *    - inputDataFormat [String]: Data format of the input data
-      *    - targetDataFormat [String]: Data format of the output data
-      *    - result[Object]: JSON representation of the resulting data. See [[Data.encodeData]]
+      *    Returns a JSON object with the operation results. See [[DataConversion.encodeResult]].
       */
-    //    case req @ POST -> Root / `api` / `verb` / "convert" =>
-    //      req.decode[Multipart[IO]] { m =>
-    //        val partsMap = PartsMap(m.parts)
-    //        for {
-    //          dataParam <- DataSingle.getData(partsMap, relativeBase)
-    //          (resourceRdf, dp) = dataParam
-    /* targetFormat = dp.targetDataFormat.getOrElse(defaultDataFormat).name */
-    /* dataFormat = dp.optDataFormat.getOrElse(defaultDataFormat) */
-    //
-    //          result <- io2f(
-    //            resourceRdf.use(rdf => {
-    //              logger.debug(s"Attempting data conversion")
-    //              DataConversion
-    //                .dataConvert(rdf, dp.data, dataFormat, targetFormat)
-    //
-    //            })
-    //          ).attempt
-    //            .map(
-    //              _.fold(exc => Left(exc.getMessage), dc => Right(dc))
-    //            )
-    //
-    //          response <- result match {
-    /* case Left(err) => errorResponseJson(err, InternalServerError) */
-    //            case Right(result) => Ok(result.toJson)
-    //          }
-    //
-    //        } yield response
-    //      }
+    case req @ POST -> Root / `api` / `verb` / "convert" =>
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+
+        for {
+          // Get the data from the partsMap
+          eitherData <- Data.mkData(partsMap)
+          // Get the target data format
+          optTargetFormatStr <- partsMap.optPartValue(
+            TargetDataFormatParameter.name
+          )
+          optTargetFormat = for {
+            targetFormatStr <- optTargetFormatStr
+            targetFormat    <- DataFormat.fromString(targetFormatStr).toOption
+          } yield targetFormat
+
+          // Abort if no valid target format, else continue
+          response <- optTargetFormat match {
+            case None =>
+              errorResponseJson(
+                "Empty or invalid target format for conversion",
+                BadRequest
+              )
+            case Some(targetFormat) =>
+              eitherData.fold(
+                // If there was an error parsing the data, return it
+                err => errorResponseJson(err, InternalServerError),
+                // Else, try and compute the data conversion
+                data =>
+                  for {
+                    // Check for exceptions when converting the data
+                    maybeResult <- DataConversion
+                      .dataConvert(data, targetFormat)
+                      .attempt
+                    response <- maybeResult.fold(
+                      // Error: return it
+                      err =>
+                        /* Legacy code may return exceptions with "null"
+                         * messages */
+                        err.getMessage match {
+                          case errorMessage: String =>
+                            errorResponseJson(errorMessage, InternalServerError)
+                          case _ => // null exception message, return a general error message
+                            err.printStackTrace()
+                            errorResponseJson(
+                              DataServiceError.couldNotParseData,
+                              InternalServerError
+                            )
+                        },
+                      // Success: build successful response
+                      dataConversion => Ok(dataConversion.asJson)
+                    )
+                  } yield response
+              )
+          }
+        } yield response
+      }
 
     /** Perform a SPARQL query on RDF data.
       * Receives a JSON object with the input RDF and query information:

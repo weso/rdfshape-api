@@ -21,6 +21,13 @@ trait Format {
 
   override def toString: String = name
 
+  override def equals(otherFormat: Any): Boolean = {
+    otherFormat match {
+      case other: Format => name == other.name && mimeType == other.mimeType
+      case _             => false
+    }
+  }
+
 }
 
 object Format extends FormatCompanion[Format] {
@@ -47,6 +54,8 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     */
   val availableFormats: List[F]
 
+  /** Format encoder. Forms a JSON object with the formats name and mimetype
+    */
   implicit val encodeFormat: Encoder[F] = (format: F) => {
     Json.obj(
       ("name", Json.fromString(format.name)),
@@ -59,9 +68,14 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     )
   }
 
+  /** Format decoder. Forms a Format instance from a given String, if the format name is valid.
+    *
+    * @note The decoder is simplified because the client normally sends the format name only, like:
+    *       "format": "turtle"
+    */
   implicit val decodeFormat: Decoder[F] = (cursor: HCursor) =>
     for {
-      formatStr <- cursor.downField("name").as[String]
+      formatStr <- cursor.value.as[String]
       format = fromString(formatStr).toOption.getOrElse(defaultFormat)
     } yield format
 

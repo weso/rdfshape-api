@@ -4,6 +4,7 @@ import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, NONE}
 import es.weso.rdfshape.server.api.format.dataFormats.{
   DataFormat,
+  RDFFormat,
   SchemaFormat,
   ShapeMapFormat
 }
@@ -21,6 +22,7 @@ import es.weso.shapemaps.ShapeMap
 case object ApiDefaults {
   val availableDataFormats: List[DataFormat]     = DataFormat.availableFormats
   val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
+  val defaultRdfFormat: RDFFormat                = RDFFormat.defaultFormat
   val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
   val defaultSchemaFormat: SchemaFormat          = SchemaFormat.defaultFormat
   val defaultSchemaFormatName: String            = defaultSchemaFormat.name

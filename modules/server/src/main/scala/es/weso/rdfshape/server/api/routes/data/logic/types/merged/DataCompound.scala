@@ -41,8 +41,10 @@ case class DataCompound(elements: List[Data]) extends Data with LazyLogging {
 
   }
   override val dataSource: DataSource = DataSource.COMPOUND
-  override val format: Option[DataFormat] =
-    None // Each element may have its own format
+  override val format: Option[DataFormat] = {
+    if(elements.forall(_.format == elements.head.format)) elements.head.format
+    else None
+  } // None if each element has its own format. If all elements have the same format, use that  format
 
   /** @return RDF logical model of the data contained in the compound
     */
@@ -52,9 +54,10 @@ case class DataCompound(elements: List[Data]) extends Data with LazyLogging {
     val jenaModels = getJenaModels.sequence
 
     // Whole compound value resulting from merging the individual elements
-    val value = jenaModels.flatMap(lsRs =>
+    val value: IO[Resource[IO, RDFReasoner]] = jenaModels.flatMap(lsRs =>
       IO(lsRs.sequence.evalMap(ls => MergedModels.fromList(ls)))
     )
+
     value
   }
 
@@ -66,6 +69,7 @@ case class DataCompound(elements: List[Data]) extends Data with LazyLogging {
     *
     * @return List of RDF Jena models in each of the elements of the compound
     */
+  // TODO: The moment you use one of these resources, things crash
   private def getJenaModels: List[IO[Resource[IO, RDFAsJenaModel]]] = {
     elements.flatMap {
       // Single data: straight extraction
@@ -96,7 +100,7 @@ private[api] object DataCompound
           )
           DataCompound
             .fromJsonString(compoundData.get)
-            .leftMap(err => s"Could not read compound data: $err")
+            .leftMap(err => s"Could not read compound data.\n $err")
         } else Left("No compound data provided")
     } yield maybeData
 
@@ -116,6 +120,7 @@ private[api] object DataCompound
         case Some(vs) =>
           val xs: Decoder.Result[List[Data]] =
             vs.toList.map(_.as[Data]).sequence
+
           xs.map(DataCompound(_))
       }
     }
@@ -130,10 +135,10 @@ private[api] object DataCompound
     json <- parse(jsonStr).leftMap(parseError =>
       s"CompoundData.fromString: error parsing $jsonStr as JSON: $parseError"
     )
-    cd <- json
+    compoundData <- json
       .as[DataCompound]
       .leftMap(decodeError =>
         s"Error decoding json to compoundData: $decodeError\nJSON obtained: \n${json.spaces2}"
       )
-  } yield cd
+  } yield compoundData
 }

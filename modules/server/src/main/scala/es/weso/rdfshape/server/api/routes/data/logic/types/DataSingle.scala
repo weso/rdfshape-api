@@ -6,9 +6,10 @@ import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, NONE, RDFReasoner}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
-import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
+import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, RDFFormat}
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.aux.InferenceCodecs._
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.html2rdf.HTML2RDF
@@ -52,6 +53,7 @@ sealed case class DataSingle(
       for {
         rdf <- rdfFromString(dataRaw, dataFormat, relativeBase.map(_.str))
         result = rdf.evalMap(rdf => rdf.applyInference(inference))
+
       } yield result
   }
 
@@ -143,25 +145,6 @@ private[api] object DataSingle
     */
   val emptyDataValue = ""
 
-  /** Auxiliar encoder for data inference
-    */
-  private implicit val encodeInference: Encoder[InferenceEngine] =
-    (inference: InferenceEngine) => {
-      Json.obj(("name", Json.fromString(inference.name)))
-    }
-
-  /** Auxiliar decoder for data inference
-    */
-  private implicit val decodeInference: Decoder[InferenceEngine] =
-    (cursor: HCursor) =>
-      for {
-        inferenceName <- cursor.downField("name").as[String]
-        inference = InferenceEngine
-          .fromString(inferenceName)
-          .toOption
-          .getOrElse(NONE)
-      } yield inference
-
   override implicit val encodeData: Encoder[DataSingle] =
     (data: DataSingle) =>
       Json.obj(
@@ -250,8 +233,8 @@ private[api] object DataSingle
         data <- cursor.downField("data").as[String]
 
         dataFormat <- cursor
-          .downField("format")
-          .as[DataFormat]
+          .downField("dataFormat")
+          .as[RDFFormat]
           .orElse(Right(ApiDefaults.defaultDataFormat))
 
         dataInference <-

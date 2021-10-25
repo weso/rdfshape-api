@@ -54,12 +54,14 @@ object Data extends DataCompanion[Data] {
   /** Dummy implementation meant to be overridden
     * If called on a general [[Data]] instance, pattern match among the available data types to
     * use the correct implementation
+    *
+    * @note Defaults to [[DataSingle]]'s implementation of decoding data
     */
   implicit val decodeData: Decoder[Data] = (cursor: HCursor) => {
     this.getClass match {
-      case ds if ds == classOf[DataSingle]   => DataSingle.decodeData(cursor)
       case de if de == classOf[DataEndpoint] => DataEndpoint.decodeData(cursor)
       case dc if dc == classOf[DataCompound] => DataCompound.decodeData(cursor)
+      case _                                 => DataSingle.decodeData(cursor)
     }
   }
 

@@ -5,12 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
 import es.weso.rdf.{InferenceEngine, NONE}
-import es.weso.rdfshape.server.api.format.dataFormats.{
-  DataFormat,
-  Dot,
-  Png,
-  Svg
-}
+import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, Png, Svg}
 import es.weso.rdfshape.server.api.routes.data.logic.operations.DataConversion.successMessage
 import es.weso.rdfshape.server.api.routes.data.logic.types.{Data, DataSingle}
 import es.weso.utils.IOUtils.either2io
@@ -28,9 +23,9 @@ import scala.util.Try
 
 /** Data class representing the output of a data-conversion operation
   *
-  * @param inputData   Data before conversion
-  * @param targetFormat   Target data format
-  * @param result Data after conversion
+  * @param inputData    Data before conversion
+  * @param targetFormat Target data format
+  * @param result       Data after conversion
   */
 final case class DataConversion private (
     override val inputData: Data,
@@ -44,7 +39,7 @@ private[api] object DataConversion extends LazyLogging {
 
   /** List of graph format names
     */
-  lazy val availableGraphFormatNames: immutable.Seq[String] =
+  private lazy val availableGraphFormatNames: immutable.Seq[String] =
     availableGraphFormats.map(_.name)
 
   /** List of available RDF format names (uppercase)
@@ -85,80 +80,89 @@ private[api] object DataConversion extends LazyLogging {
     * @param targetFormat Target
     * @return A new Data instance
     */
+  /* TODO: weird NullPointerException on data merges when using the "rdf"
+   * resource */
+
   def dataConvert(
       inputData: Data,
       targetFormat: DataFormat
   ): IO[DataConversion] = {
     logger.info(s"Conversion target format: $targetFormat")
-
     for {
-      rdf    <- inputData.toRdf()
-      sgraph <- rdf.use(rdfReasoner => RDF2SGraph.rdf2sgraph(rdfReasoner))
+      // Get a handle to the RDF resource
+      rdf <- inputData.toRdf()
+      _   <- IO.println("STATS")
+      _   <- IO.println(inputData.getClass)
+      _   <- IO.println(inputData.format)
+      // Compute the inference to be used
       targetInference = inputData match {
         case ds: DataSingle => ds.inference
         case _              => NONE
       }
 
-      convertedData <- targetFormat.name.toUpperCase match {
-        // JSON: convert to JSON String and return a DataSingle with it
-        case "JSON" =>
-          IO {
-            DataSingle(
-              dataRaw = sgraph.toJson.spaces2,
-              dataFormat = targetFormat,
-              inference = targetInference,
-              activeDataSource = inputData.dataSource
-            )
-          }
+      // Perform the conversion while using the RDF resource
+      conversionResult <- rdf.use(rdfReasoner => {
+        for {
+          sgraph <- RDF2SGraph.rdf2sgraph(rdfReasoner)
+          convertedData <- targetFormat.name.toUpperCase match {
+            // JSON: convert to JSON String and return a DataSingle with it
+            case "JSON" =>
+              IO {
+                DataSingle(
+                  dataRaw = sgraph.toJson.spaces2,
+                  dataFormat = targetFormat,
+                  inference = targetInference,
+                  activeDataSource = inputData.dataSource
+                )
+              }
 
-        case "DOT" =>
-          IO {
-            DataSingle(
-              dataRaw = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs),
-              dataFormat = targetFormat,
-              inference = targetInference,
-              activeDataSource = inputData.dataSource
-            )
+            case "DOT" =>
+              IO {
+                DataSingle(
+                  dataRaw = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs),
+                  dataFormat = targetFormat,
+                  inference = targetInference,
+                  activeDataSource = inputData.dataSource
+                )
+              }
+            case tFormat if rdfDataFormatNames.contains(tFormat) =>
+              for {
+                data <- rdfReasoner.serialize(tFormat)
+              } yield DataSingle(
+                dataRaw = data,
+                dataFormat = targetFormat,
+                inference = targetInference,
+                activeDataSource = inputData.dataSource
+              )
+            case tFormat if availableGraphFormatNames.contains(tFormat) =>
+              for {
+                eitherFormat <- either2io(getTargetFormat(tFormat))
+                dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
+                data <- eitherFormat.fold(
+                  err => IO.raiseError(new RuntimeException(err)),
+                  _ => IO(dotStr)
+                )
+              } yield DataSingle(
+                dataRaw = data,
+                dataFormat = targetFormat,
+                inference = targetInference,
+                activeDataSource = inputData.dataSource
+              )
+            case t =>
+              IO.raiseError(new RuntimeException(s"Unsupported format: $t"))
           }
-        case tFormat if rdfDataFormatNames.contains(tFormat) =>
-          for {
-            data <- rdf.use(_.serialize(tFormat))
-          } yield DataSingle(
-            dataRaw = data,
-            dataFormat = targetFormat,
-            inference = targetInference,
-            activeDataSource = inputData.dataSource
-          )
-        case tFormat if availableGraphFormatNames.contains(tFormat) =>
-          for {
-            eitherFormat <- either2io(getTargetFormat(tFormat))
-            dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-            inputDataDot = DataSingle(
-              dataRaw = dotStr,
-              dataFormat = Dot,
-              inference = targetInference,
-              activeDataSource = inputData.dataSource
-            )
-            _ <- eitherFormat.fold(
-              err => IO.raiseError(new RuntimeException(err)),
-              format => dotConvert(inputDataDot, format, targetInference)
-            )
-            data <- eitherFormat.fold(
-              err => IO.raiseError(new RuntimeException(err)),
-              _ => IO(dotStr)
-            )
-          } yield DataSingle(
-            dataRaw = data,
-            dataFormat = targetFormat,
-            inference = targetInference,
-            activeDataSource = inputData.dataSource
-          )
-        case t =>
-          IO.raiseError(new RuntimeException(s"Unsupported format: $t"))
-      }
-    } yield DataConversion(inputData, targetFormat, convertedData)
-
+        } yield DataConversion(inputData, targetFormat, convertedData)
+      })
+    } yield conversionResult
   }
+
+  private def getTargetFormat(str: String): Either[String, Format] =
+    str.toUpperCase match {
+      case "SVG" => Right(Format.SVG)
+      case "PNG" => Right(Format.PNG)
+      case "PS"  => Right(Format.PS)
+      case _     => Left(s"Unsupported format $str")
+    }
 
   /** Perform a conversion from DOT data to another format
     *
@@ -166,7 +170,7 @@ private[api] object DataConversion extends LazyLogging {
     * @param targetFormat Target format (graphviz)
     * @return Data after conversion
     */
-  def dotConvert(
+  private def dotConvert(
       inputData: Data,
       targetFormat: Format,
       inference: InferenceEngine = NONE
@@ -229,14 +233,6 @@ private[api] object DataConversion extends LazyLogging {
       )
     }
   }
-
-  private def getTargetFormat(str: String): Either[String, Format] =
-    str.toUpperCase match {
-      case "SVG" => Right(Format.SVG)
-      case "PNG" => Right(Format.PNG)
-      case "PS"  => Right(Format.PS)
-      case _     => Left(s"Unsupported format $str")
-    }
 
   private case class GraphFormat(name: String, mime: String, fmt: Format)
 }
