@@ -8,9 +8,9 @@ package es.weso.rdfshape.server.api.routes.schema.logic
 private[api] object SchemaSource extends Enumeration {
   type SchemaSource = String
 
-  val TEXT = "#schemaTextArea"
-  val URL  = "#schemaUrl"
-  val FILE = "#schemaFile"
+  val TEXT = "byText"
+  val URL  = "byUrl"
+  val FILE = "byFile"
 
-  val defaultActiveSchemaSource: SchemaSource = TEXT
+  val defaultSchemaSource: SchemaSource = TEXT
 }

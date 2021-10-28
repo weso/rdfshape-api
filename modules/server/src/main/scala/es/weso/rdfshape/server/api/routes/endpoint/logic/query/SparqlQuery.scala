@@ -4,55 +4,85 @@ import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuerySource.{
   SparqlQuerySource,
-  defaultActiveQuerySource
+  defaultQuerySource
 }
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
-  ActiveQuerySourceParameter,
-  QueryFileParameter,
   QueryParameter,
-  QueryUrlParameter
+  QuerySourceParameter
 }
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
 
 /** Data class representing a SPARQL query and its current source
   *
-  * @param queryRaw          Query raw text
-  * @param activeQuerySource Active source, used to know which source the query comes from
+  * @param queryPre    Query contents, as received before being processed depending on the [[querySource]]
+  * @param querySource Active source, used to know which source the query comes from
   */
 sealed case class SparqlQuery private (
-    queryRaw: String,
-    activeQuerySource: SparqlQuerySource
-)
+    private val queryPre: Option[String],
+    querySource: SparqlQuerySource
+) extends LazyLogging {
+
+  /** Given the (user input) for the query and its source, fetch the Query contents using the input in the way the source needs it
+    * (e.g.: for URLs, fetch the input with a web request; for files, decode the input; for raw data, do nothing)
+    *
+    * @return Either an error building the query text or a String containing the final text of the SPARQL query
+    */
+  lazy val rawQuery: Either[String, String] =
+    queryPre match {
+      case None => Left("Could not build the query from empty data")
+
+      case Some(userQuery) =>
+        querySource match {
+          case SparqlQuerySource.TEXT | SparqlQuerySource.FILE =>
+            Right(userQuery)
+          case SparqlQuerySource.URL =>
+            getUrlContents(userQuery)
+
+          case other =>
+            val msg = s"Unknown query source: $other"
+            logger.warn(msg)
+            Left(msg)
+        }
+    }
+}
 
 private[api] object SparqlQuery extends LazyLogging {
 
+  implicit val encodeSparqlQuery: Encoder[SparqlQuery] =
+    (query: SparqlQuery) =>
+      Json.obj(
+        ("query", query.rawQuery.toOption.asJson),
+        ("source", query.querySource.asJson)
+      )
+
   /** Placeholder value used for the sparql query whenever an empty query is issued/needed.
     */
-  private val emptyQueryValue = ""
+  private val emptyQuery = SparqlQuery(
+    queryPre = None,
+    querySource = defaultQuerySource
+  )
 
   /** Given a request's parameters, try to extract a SPARQL query from them
     *
     * @param partsMap Request's parameters
     * @return Either the SPARQL query or an error message
     */
-  def getSparqlQuery(
+  def mkSparqlQuery(
       partsMap: PartsMap
   ): IO[Either[String, SparqlQuery]] =
     for {
-      queryStr       <- partsMap.optPartValue(QueryParameter.name)
-      queryUrl       <- partsMap.optPartValue(QueryUrlParameter.name)
-      queryFile      <- partsMap.optPartValue(QueryFileParameter.name)
-      activeQueryTab <- partsMap.optPartValue(ActiveQuerySourceParameter.name)
+      paramQuery     <- partsMap.optPartValue(QueryParameter.name)
+      activeQueryTab <- partsMap.optPartValue(QuerySourceParameter.name)
 
       _ = logger.debug(
         s"Getting SPARQL from params. Query tab: $activeQueryTab"
       )
 
-      maybeQuery: Either[String, SparqlQuery] = mkSparqlQuery(
-        queryStr,
-        queryUrl,
-        queryFile,
+      maybeQuery <- mkSparqlQuery(
+        paramQuery,
         activeQueryTab
       )
 
@@ -60,55 +90,25 @@ private[api] object SparqlQuery extends LazyLogging {
 
   /** Create a SparqlQuery instance, given its source and data
     *
-    * @param queryStr          Optionally, the raw contents of the query
-    * @param queryUrl          Optionally, the URL with the contents of the query
-    * @param queryFile         Optionally, the file with the contents of the query
+    * @param queryStr          Optionally, the contents of the query not processed by their source
     * @param activeQuerySource Optionally, the indicator of the query source (raw, url or file)
     * @return
     */
-  def mkSparqlQuery(
+  private def mkSparqlQuery(
       queryStr: Option[String],
-      queryUrl: Option[String],
-      queryFile: Option[String],
       activeQuerySource: Option[SparqlQuerySource]
-  ): Either[String, SparqlQuery] = {
-
-    // Create the query depending on the client's selected method
-    val maybeQuery: Either[String, SparqlQuery] = activeQuerySource.getOrElse(
-      defaultActiveQuerySource
-    ) match {
-      case SparqlQuerySource.TEXT =>
-        queryStr match {
-          case None => Left("No value for the query string")
-          case Some(queryRaw) =>
-            Right(SparqlQuery(queryRaw, SparqlQuerySource.TEXT))
-        }
-      case SparqlQuerySource.URL =>
-        queryUrl match {
-          case None => Left(s"No value for the query URL")
-          case Some(queryUrl) =>
-            getUrlContents(queryUrl) match {
-              case Right(queryRaw) =>
-                Right(SparqlQuery(queryRaw, SparqlQuerySource.URL))
-              case Left(err) => Left(err)
-            }
-
-        }
-      case SparqlQuerySource.FILE =>
-        queryFile match {
-          case None => Left(s"No value for the query file")
-          case Some(queryRaw) =>
-            Right(SparqlQuery(queryRaw, SparqlQuerySource.FILE))
-        }
-
-      case other =>
-        val msg = s"Unknown value for activeQueryTab: $other"
-        logger.warn(msg)
-        Left(msg)
-
-    }
-
-    maybeQuery
-  }
+  ): IO[Either[String, SparqlQuery]] =
+    for {
+      query <- IO {
+        emptyQuery.copy(
+          queryPre = queryStr,
+          querySource = activeQuerySource.getOrElse(defaultQuerySource)
+        )
+      }
+    } yield query.rawQuery.fold(
+      // If the query text built is blank, an error occurred
+      err => Left(err),
+      _ => Right(query)
+    )
 
 }

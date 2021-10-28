@@ -12,8 +12,6 @@ object IncomingRequestParameters {
   // String constants representing each parameter name expected by the server
   lazy val data             = "data"
   lazy val compoundData     = "compoundData"
-  lazy val dataUrl          = "dataUrl"
-  lazy val dataFile         = "dataFile"
   lazy val dataFormat       = "dataFormat"
   lazy val targetDataFormat = "targetDataFormat"
 
@@ -32,23 +30,19 @@ object IncomingRequestParameters {
   lazy val node         = "node"
   lazy val nodeSelector = "nodeSelector"
 
-  lazy val shapeMap             = "shapeMap"
+  lazy val shapemap             = "shapemap"
   lazy val shape_map            = "shape-map"
-  lazy val shapeMapUrl          = "shapeMapUrl"
-  lazy val shapeMapFile         = "shapeMapFile"
-  lazy val shapeMapFormat       = "shapeMapFormat"
-  lazy val targetShapeMapFormat = "targetShapeMapFormat"
+  lazy val shapemapFormat       = "shapemapFormat"
+  lazy val targetShapemapFormat = "targetShapemapFormat"
 
-  lazy val query     = "query"
-  lazy val queryUrl  = "queryUrl"
-  lazy val queryFile = "queryFile"
+  lazy val query = "query"
 
   lazy val endpoint = "endpoint"
 
-  lazy val activeDataSource     = "activeDataSource"
-  lazy val activeSchemaSource   = "activeSchemaSource"
-  lazy val activeShapeMapSource = "activeShapeMapSource"
-  lazy val activeQuerySource    = "activeQuerySource"
+  lazy val dataSource     = "dataSource"
+  lazy val schemaSource   = "schemaSource"
+  lazy val shapemapSource = "shapemapSource"
+  lazy val querySource    = "querySource"
 
   lazy val wdEntity = "wdEntity"
   lazy val wdSchema = "wdSchema"
@@ -65,31 +59,20 @@ object IncomingRequestParameters {
   lazy val continue    = "continue"
   lazy val withDot     = "withDot"
 
-  /** Parameter expected to contain raw RDF data (URL encoded)
+  /** Parameter expected to contain RDF data contents (URL encoded)
+    *
+    * @note These contents may be raw data, a URL with the data or a File with the data.
+    *       The source of the data is therefore specified by [[DataSourceParameter]]
     */
   object DataParameter extends OptionalQueryParamDecoderMatcher[String](data) {
     val name: String = data
   }
 
-  /** Parameter expected to contain a compound of raw RDF data (URL encoded), formed by 2 or more RDF sources
+  /** Parameter expected to contain a compound of RDF data (URL encoded), formed by 2 or more RDF sources
     */
   object CompoundDataParameter
       extends OptionalQueryParamDecoderMatcher[String](compoundData) {
     val name: String = compoundData
-  }
-
-  /** Parameter expected to contain a URL where RDF data is located
-    */
-  object DataUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](dataUrl) {
-    val name: String = dataUrl
-  }
-
-  /** Parameter expected to contain a file where RDF data is located
-    */
-  object DataFileParameter
-      extends OptionalQueryParamDecoderMatcher[String](dataFile) {
-    val name: String = dataFile
   }
 
   /** Parameter expected to contain an RDF format name, referencing the user's data format
@@ -196,67 +179,45 @@ object IncomingRequestParameters {
     val name: String = nodeSelector
   }
 
-  /** Parameter expected to contain raw shapemap data (URL encoded)
+  /** Parameter expected to contain Shapemap contents (URL encoded)
+    *
+    * @note These contents may be raw data, a URL with the data or a File with the data.
+    *       The source of the data is therefore specified by [[ShapemapSourceParameter]]
     */
-  object ShapeMapTextParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMap) {
-    val name: String = shapeMap
+  object ShapeMapParameter
+      extends OptionalQueryParamDecoderMatcher[String](shapemap) {
+    val name: String = shapemap
   }
 
-  /** Parameter expected to contain raw shapemap data (URL encoded)
+  /** Alternative parameter with the same uses as [[ShapeMapParameter]]
     */
   object ShapeMapParameterAlt
       extends OptionalQueryParamDecoderMatcher[String](shape_map) {
     val name: String = shape_map
   }
 
-  /** Parameter expected to contain a URL where a shapemap is located
-    */
-  object ShapeMapUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapUrl) {
-    val name: String = shapeMapUrl
-  }
-
-  /** Parameter expected to contain a file where a shapemap is located
-    */
-  object ShapeMapFileParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapFile) {
-    val name: String = shapeMapFile
-  }
-
   /** Parameter expected to contain a shapemap format name, referencing the user's shapemap format
     */
   object ShapeMapFormatParameter
-      extends OptionalQueryParamDecoderMatcher[String](shapeMapFormat) {
-    val name: String = shapeMapFormat
+      extends OptionalQueryParamDecoderMatcher[String](shapemapFormat) {
+    val name: String = shapemapFormat
   }
 
   /** Parameter expected to contain a shapemap format name, referencing the target format of a conversion
     */
   object TargetShapeMapFormatParameter
-      extends OptionalQueryParamDecoderMatcher[String](targetShapeMapFormat) {
-    val name: String = targetShapeMapFormat
+      extends OptionalQueryParamDecoderMatcher[String](targetShapemapFormat) {
+    val name: String = targetShapemapFormat
   }
 
-  /** Parameter expected to contain a raw SPARQL query (URL encoded)
+  /** Parameter expected to contain SPARQL query data contents (URL encoded)
+    *
+    * @note These contents may be raw data, a URL with the query or a File with the query.
+    *       The source of the query is therefore specified by [[QuerySourceParameter]]
     */
   object QueryParameter
       extends OptionalQueryParamDecoderMatcher[String](query) {
     val name: String = query
-  }
-
-  /** Parameter expected to contain a URL where a SPARQL query is located
-    */
-  object QueryUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](queryUrl) {
-    val name: String = queryUrl
-  }
-
-  /** Parameter expected to contain a file where a SPARQL query is located
-    */
-  object QueryFileParameter
-      extends OptionalQueryParamDecoderMatcher[String](queryFile) {
-    val name: String = queryFile
   }
 
   /** Parameter expected to contain a raw endpoint location
@@ -269,33 +230,33 @@ object IncomingRequestParameters {
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in data-related operations
     */
-  object ActiveDataSourceParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeDataSource) {
-    val name: String = activeDataSource
+  object DataSourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](dataSource) {
+    val name: String = dataSource
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in schema-related operations
     */
-  object ActiveSchemaSourceParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeSchemaSource) {
-    val name: String = activeSchemaSource
+  object SchemaSourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](schemaSource) {
+    val name: String = schemaSource
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in shapemap-related operations
     */
-  object ActiveShapeSourceTabParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeShapeMapSource) {
-    val name: String = activeShapeMapSource
+  object ShapemapSourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](shapemapSource) {
+    val name: String = shapemapSource
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in query-related operations
     */
-  object ActiveQuerySourceParameter
-      extends OptionalQueryParamDecoderMatcher[String](activeQuerySource) {
-    val name: String = activeQuerySource
+  object QuerySourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](querySource) {
+    val name: String = querySource
   }
 
   /** Parameter expected to contain a valid identifier/name/label of a wikidata entity

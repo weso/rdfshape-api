@@ -4,11 +4,14 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.InferenceEngine
 import es.weso.rdf.nodes.{IRI, Lang}
+import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.ApiDefaults._
 import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
-import es.weso.rdfshape.server.api.routes.data.logic.operations.DataExtract.successMessage
+import es.weso.rdfshape.server.api.routes.data.logic.operations.DataExtract.{
+  DataExtractResult,
+  successMessage
+}
 import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import es.weso.schema.Schema
 import es.weso.schemaInfer.{InferOptions, PossiblePrefixes, SchemaInfer}
@@ -17,20 +20,18 @@ import es.weso.utils.IOUtils.{either2es, io2es}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
-/** Data class representing the output of a data-extraction operation (input RDF data => output schema)
+/** Data class representing the output of a schema-extraction operation (input RDF data => output schema)
   *
   * @param inputData          RDF input data from which ShEx may be extracted
-  * @param targetSchemaFormat Target schema format
-  * @param targetSchemaEngine Target schema engine
-  * @param schema             Resulting schema
-  * @param shapeMap           Resulting shapemap
+  * @param schemaFormat Target schema format
+  * @param schemaEngine Target schema engine
+  * @param result    Object of type [[DataExtractResult]] containing the results of the data extraction
   */
 final case class DataExtract private (
     override val inputData: Data,
-    targetSchemaFormat: SchemaFormat,
-    targetSchemaEngine: Schema = defaultSchemaEngine,
-    schema: Schema,
-    shapeMap: ResultShapeMap
+    schemaFormat: SchemaFormat = ApiDefaults.defaultSchemaFormat,
+    schemaEngine: Schema = ApiDefaults.defaultSchemaEngine,
+    result: DataExtractResult
 ) extends DataOperation(successMessage, inputData)
 
 /** Static utilities to extract schemas from RDF data
@@ -51,64 +52,30 @@ private[api] object DataExtract extends LazyLogging {
     sortFunction = InferOptions.orderByIRI
   )
 
-  /** Convert an extraction result to its JSON representation
-    *
-    * @return JSON representation of the extraction result
-    */
-
-  implicit val encodeResult: Encoder[DataExtract] =
-    (dataExtract: DataExtract) => {
-
-      val resultJson: Json = Json.fromFields(
-        List(
-          (
-            "schema",
-            Json.fromString(
-              dataExtract.schema
-                .serialize(dataExtract.targetSchemaFormat.name)
-                .unsafeRunSync()
-            )
-          ),
-          ("shapeMap", Json.fromString(dataExtract.shapeMap.toString))
-        )
-      )
-
-      Json.fromFields(
-        List(
-          ("message", Json.fromString(dataExtract.successMessage)),
-          ("data", dataExtract.inputData.asJson),
-          ("result", resultJson),
-          ("targetSchemaFormat", dataExtract.targetSchemaFormat.asJson),
-          (
-            "targetSchemaEngine",
-            Json.fromString(dataExtract.targetSchemaEngine.name)
-          )
-        )
-      )
-    }
-
   /** Extract Shex from a given RDF input
     *
     * @param inputData          Input data for the extraction
     * @param nodeSelector       Node selector for the schema extraction
-    * @param inferenceEngine    Inference engine
-    * @param targetSchemaEngine Target conversion engine
-    * @param targetSchemaFormat Target schema format
-    * @param optLabelName       Label name (optional), will default to [[defaultShapeLabel]]
+    * @param optTargetSchemaEngine Optionally, the target conversion engine. Defaults to [[ApiDefaults.defaultSchemaEngine]].
+    * @param optTargetSchemaFormat Optionally, the target schema format. Defaults to [[ApiDefaults.defaultSchemaFormat]].
+    * @param optLabel       Label IRI (optional). Defaults to [[ApiDefaults.defaultShapeLabel]]
     * @param relativeBase       Relative base
     * @return
     */
   def dataExtract(
       inputData: Data,
       nodeSelector: String,
-      inferenceEngine: InferenceEngine,
-      targetSchemaEngine: Schema,
-      targetSchemaFormat: SchemaFormat,
-      optLabelName: Option[String],
+      optTargetSchemaEngine: Option[Schema],
+      optTargetSchemaFormat: Option[SchemaFormat],
+      optLabel: Option[IRI],
       relativeBase: Option[IRI]
   ): IO[DataExtract] = {
 
     val base = relativeBase.map(_.str)
+    val targetSchemaEngine =
+      optTargetSchemaEngine.getOrElse(ApiDefaults.defaultSchemaEngine)
+    val targetSchemaFormat =
+      optTargetSchemaFormat.getOrElse(ApiDefaults.defaultSchemaFormat)
 
     for {
       rdf <- inputData.toRdf() // Get rdf resource
@@ -125,7 +92,7 @@ private[api] object DataExtract extends LazyLogging {
                 rdfReader,
                 ns,
                 targetSchemaEngine.name,
-                optLabelName.map(IRI(_)).getOrElse(defaultShapeLabel),
+                optLabel.getOrElse(defaultShapeLabel),
                 inferOptions
               )
             )
@@ -136,18 +103,6 @@ private[api] object DataExtract extends LazyLogging {
         results.value
       })
 
-//      finalResult = eitherResult match {
-//        case Left(err) => IO.raiseError(new RuntimeException(err))
-//        case Right((resultSchema, resultShapemap)) =>
-//          DataExtract(
-//            inputData = inputData,
-//            targetSchemaFormat = targetSchemaFormat,
-//            targetSchemaEngine = targetSchemaEngine,
-//            schema = resultSchema,
-//            shapeMap = resultShapemap
-//          )
-//      }
-
       finalResult <- eitherResult.fold(
         err => IO.raiseError(new RuntimeException(err)),
         pair => {
@@ -155,14 +110,61 @@ private[api] object DataExtract extends LazyLogging {
           IO {
             DataExtract(
               inputData = inputData,
-              targetSchemaFormat = targetSchemaFormat,
-              targetSchemaEngine = targetSchemaEngine,
-              schema = resultSchema,
-              shapeMap = resultShapemap
+              schemaFormat = targetSchemaFormat,
+              schemaEngine = targetSchemaEngine,
+              result = DataExtractResult(
+                targetSchemaFormat = targetSchemaFormat,
+                schema = resultSchema,
+                shapeMap = resultShapemap
+              )
             )
           }
         }
       )
     } yield finalResult
   }
+
+  /** Encoder for [[DataExtractResult]]
+    */
+  private implicit val encodeDataExtractResult: Encoder[DataExtractResult] =
+    (dataExtract: DataExtractResult) =>
+      Json.fromFields(
+        List(
+          (
+            "schema",
+            Json.fromString(
+              dataExtract.schema
+                .serialize(dataExtract.targetSchemaFormat.name)
+                .unsafeRunSync()
+            )
+          ),
+          ("shapeMap", Json.fromString(dataExtract.shapeMap.toString))
+        )
+      )
+
+  /** Convert a [[DataExtract]] to its JSON representation
+    *
+    * @return JSON representation of the extraction result
+    */
+
+  implicit val encodeDataExtractOperation: Encoder[DataExtract] =
+    (dataExtract: DataExtract) => {
+      Json.fromFields(
+        List(
+          ("message", Json.fromString(dataExtract.successMessage)),
+          ("data", dataExtract.inputData.asJson),
+          ("schemaFormat", dataExtract.schemaFormat.asJson),
+          ("schemaEngine", Json.fromString(dataExtract.schemaEngine.name)),
+          ("result", dataExtract.result.asJson)
+        )
+      )
+    }
+
+  /** Case class representing the results to be returned when performing a data-info operation
+    */
+  final case class DataExtractResult private (
+      targetSchemaFormat: SchemaFormat,
+      schema: Schema,
+      shapeMap: ResultShapeMap
+  )
 }

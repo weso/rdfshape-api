@@ -18,15 +18,15 @@ import io.circe.{Decoder, Encoder, HCursor}
   */
 trait Data {
 
+  /** Raw RDF content represented as a String (Right)
+    * An error occurred when trying to parse the data (Left)
+    */
+  lazy val rawData: Either[String, String] = Left("")
+
   /** Source where the data comes from
     */
   val dataSource: DataSource
-
-  val format: Option[DataFormat]
-
-  /** Raw RDF content represented as a String
-    */
-  val rawData: Option[String]
+  val format: Option[DataFormat] = None
 
   /** Given an RDF source of data, try to parse it and get the RDF model representation
     *

@@ -197,7 +197,7 @@ private[api] object SchemaOperations extends LazyLogging {
     val triggerModeStr = triggerMode.triggerModeStr
     for {
       prefixMap <- rdf.getPrefixMap
-      shapeMapRaw = triggerMode.shapeMap.shapeMapRaw
+      shapeMapRaw = triggerMode.shapeMap.rawShapeMap.getOrElse("")
       pair <-
         ValidationTrigger.findTrigger(
           triggerModeStr,

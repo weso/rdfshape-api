@@ -13,7 +13,7 @@ import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
 import es.weso.rdfshape.server.api.routes.endpoint.logic.EndpointStatus._
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing.getOutgoing
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
-import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery.getSparqlQuery
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery.mkSparqlQuery
 import es.weso.rdfshape.server.api.routes.endpoint.logic.{Endpoint, Outgoing}
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   EndpointParameter,
@@ -47,9 +47,8 @@ class EndpointService(client: Client[IO])
 
     /** Perform a SPARQL query targeted to a specific endpoint.
       * Receives a JSON object with the input endpoint query:
-      *  - query [String]: Input query
-      *  - endpoint [String]: Target endpoint
-      *  - activeQueryTab [String]: Identifies the source of the query (raw, URL, file...)
+      *  - query [String]: User input for the query
+      *  - querySource [String]: Identifies the source of the query (raw, URL, file...)
       *    Returns a JSON object with the query results:
       *    - head [Object]: Query metadata
       *      - vars: [Array]: Query variables
@@ -68,15 +67,19 @@ class EndpointService(client: Client[IO])
               String,
               SparqlQuery
             ]](
-              getSparqlQuery(partsMap)
+              mkSparqlQuery(partsMap)
             )
-          query <- EitherT.fromEither[IO](either)
-          queryString = query.queryRaw
+          eitherQuery <- EitherT.fromEither[IO](either)
+
           json <- {
-            logger.debug(
-              s"Query to endpoint $endpoint: $queryString"
+
+            eitherQuery.rawQuery.fold(
+              err => EitherT.left(IO.pure(err)),
+              raw => {
+                logger.debug(s"Query to endpoint $endpoint: $raw")
+                io2es(endpoint.queryAsJson(raw))
+              }
             )
-            io2es(endpoint.queryAsJson(queryString))
           }
         } yield json
 

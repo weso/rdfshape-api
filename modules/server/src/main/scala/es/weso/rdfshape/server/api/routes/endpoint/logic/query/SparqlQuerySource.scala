@@ -8,9 +8,9 @@ package es.weso.rdfshape.server.api.routes.endpoint.logic.query
 private[logic] object SparqlQuerySource extends Enumeration {
   type SparqlQuerySource = String
 
-  val TEXT = "#queryTextArea"
-  val URL  = "#queryUrl"
-  val FILE = "#queryFile"
+  val TEXT = "byText"
+  val URL  = "byUrl"
+  val FILE = "byFile"
 
-  val defaultActiveQuerySource: SparqlQuerySource = TEXT
+  val defaultQuerySource: SparqlQuerySource = TEXT
 }

@@ -38,24 +38,20 @@ private[api] object TriggerMode extends LazyLogging {
   ): IO[Either[String, TriggerMode]] = {
     for {
       // Get data sent in que query
-      triggerMode  <- partsMap.optPartValue(TriggerModeParameter.name)
-      shapeMapStr  <- partsMap.optPartValue(ShapeMapTextParameter.name)
-      shapeMapUrl  <- partsMap.optPartValue(ShapeMapUrlParameter.name)
-      shapeMapFile <- partsMap.optPartValue(ShapeMapFileParameter.name)
+      triggerMode   <- partsMap.optPartValue(TriggerModeParameter.name)
+      paramShapemap <- partsMap.optPartValue(ShapeMapParameter.name)
 
       shapeMapFormat <- ShapeMapFormat.fromRequestParams(
         ShapeMapFormatParameter.name,
         partsMap
       )
       activeShapeMapTab <- partsMap.optPartValue(
-        ActiveShapeSourceTabParameter.name
+        ShapemapSourceParameter.name
       )
 
       // Get companion shapemap
-      maybeShapeMap = ShapeMap.mkShapeMap(
-        shapeMapStr,
-        shapeMapUrl,
-        shapeMapFile,
+      maybeShapeMap <- ShapeMap.mkShapeMap(
+        paramShapemap,
         shapeMapFormat,
         None,
         activeShapeMapTab

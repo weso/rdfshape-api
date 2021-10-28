@@ -31,15 +31,15 @@ case class DataCompound(elements: List[Data]) extends Data with LazyLogging {
     *
     * @note If one element's data cannot be computed, returns none.
     */
-  override lazy val rawData: Option[String] = {
-    val definedElements = elements.map(_.rawData).filter(_.isDefined).map(_.get)
-
-    // All elements' raw data was computed
+  override lazy val rawData: Either[String, String] = {
+    val definedElements =
+      elements.map(_.rawData).filter(_.isRight).map(_.toOption.get)
+    // If all elements' raw data was computed...
     if(elements.length == definedElements.length)
-      Some(definedElements.mkString("\n"))
-    else None
-
+      Right(definedElements.mkString("\n"))
+    else Left("Could not parse compound data")
   }
+
   override val dataSource: DataSource = DataSource.COMPOUND
   override val format: Option[DataFormat] = {
     if(elements.forall(_.format == elements.head.format)) elements.head.format
@@ -87,11 +87,10 @@ private[api] object DataCompound
 
   override lazy val emptyData: DataCompound = DataCompound(List())
 
-  override def mkData(partsMap: PartsMap): IO[Either[String, DataCompound]] =
+  override def mkData(partsMap: PartsMap): IO[Either[String, DataCompound]] = {
     for {
       // Parse params
       compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
-
       // Try to create data
       maybeData: Either[String, DataCompound] =
         if(compoundData.isDefined) {
@@ -102,7 +101,15 @@ private[api] object DataCompound
             .fromJsonString(compoundData.get)
             .leftMap(err => s"Could not read compound data.\n $err")
         } else Left("No compound data provided")
-    } yield maybeData
+    } yield maybeData.flatMap(dataCompound =>
+      /* Check if the created data is empty, then an error occurred when merging
+       * the elements */
+      dataCompound.rawData.fold(
+        err => Left(err),
+        _ => Right(dataCompound)
+      )
+    )
+  }
 
   /** Encoder used to transform CompoundData instances to JSON values
     */

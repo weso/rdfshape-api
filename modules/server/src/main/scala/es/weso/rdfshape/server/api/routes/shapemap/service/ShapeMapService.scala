@@ -6,7 +6,7 @@ import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
-import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap.getShapeMap
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap.mkShapeMap
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import io.circe._
@@ -27,7 +27,7 @@ class ShapeMapService(client: Client[IO])
     with ApiService
     with LazyLogging {
 
-  override val verb: String = "shapeMap"
+  override val verb: String = "shapemap"
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
@@ -58,7 +58,7 @@ class ShapeMapService(client: Client[IO])
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
 
-        val maybeShapeMap: IO[Either[String, ShapeMap]] = getShapeMap(partsMap)
+        val maybeShapeMap: IO[Either[String, ShapeMap]] = mkShapeMap(partsMap)
         maybeShapeMap.attempt.flatMap(
           _.fold(
             // General exception

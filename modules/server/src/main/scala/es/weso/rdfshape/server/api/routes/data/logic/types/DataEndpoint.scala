@@ -30,9 +30,9 @@ case class DataEndpoint(
 ) extends Data
     with LazyLogging {
 
-  override lazy val rawData: Option[String] = getUrlContents(
+  override lazy val rawData: Either[String, String] = getUrlContents(
     endpoint.uri.toString
-  ).toOption
+  )
   override val dataSource: DataSource     = DataSource.ENDPOINT
   override val format: Option[DataFormat] = Some(dataFormat)
 
@@ -77,7 +77,7 @@ private[api] object DataEndpoint extends DataCompanion[DataEndpoint] {
       format   = paramFormat.getOrElse(ApiDefaults.defaultDataFormat)
 
       // Try to create data
-      maybeData: Either[String, DataEndpoint] = // 2. Endpoint data
+      maybeData: Either[String, DataEndpoint] =
         if(endpoint.isDefined) {
           logger.debug(s"RDF Data received - Endpoint Data: ${endpoint.get}")
           IRI
@@ -88,7 +88,15 @@ private[api] object DataEndpoint extends DataCompanion[DataEndpoint] {
             )
 
         } else Left("No endpoint provided")
-    } yield maybeData
+
+    } yield maybeData.flatMap(dataEndpoint =>
+      /* Check if the created data is empty, then an error occurred when
+       * fetching the endpoint on creation */
+      dataEndpoint.rawData.fold(
+        err => Left(err),
+        _ => Right(dataEndpoint)
+      )
+    )
 
   override implicit val decodeData: Decoder[DataEndpoint] = (cursor: HCursor) =>
     {

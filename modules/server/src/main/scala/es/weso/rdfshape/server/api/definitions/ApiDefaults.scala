@@ -39,11 +39,11 @@ case object ApiDefaults {
   val defaultSchemaEmbedded                   = false
   val defaultInferenceEngine: InferenceEngine = NONE
   val defaultInferenceEngineName: String      = defaultInferenceEngine.name
-  val defaultActiveDataSource: DataSource     = DataSource.defaultActiveDataSource
+  val defaultActiveDataSource: DataSource     = DataSource.defaultDataSource
   val defaultActiveSchemaSource: SchemaSource =
-    SchemaSource.defaultActiveSchemaSource
+    SchemaSource.defaultSchemaSource
   val defaultActiveShapeMapSource: ShapeMapSource =
-    ShapeMapSource.defaultActiveShapeMapSource
+    ShapeMapSource.defaultShapeMapSource
   val defaultShapeMapFormat: ShapeMapFormat  = ShapeMapFormat.defaultFormat
   val availableShapeMapFormats: List[String] = ShapeMap.formats
   val defaultActiveShapeMapTab               = "#shapeMapTextArea"

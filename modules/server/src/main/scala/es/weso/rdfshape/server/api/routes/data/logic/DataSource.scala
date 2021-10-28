@@ -8,11 +8,11 @@ package es.weso.rdfshape.server.api.routes.data.logic
 private[api] object DataSource extends Enumeration {
   type DataSource = String
 
-  val TEXT     = "#dataTextArea"
-  val URL      = "#dataUrl"
-  val FILE     = "#dataFile"
-  val COMPOUND = "#compoundData"
-  val ENDPOINT = "#dataEndpoint"
+  val TEXT     = "byText"
+  val URL      = "byUrl"
+  val FILE     = "byFile"
+  val COMPOUND = "compoundData"
+  val ENDPOINT = "dataEndpoint"
 
-  val defaultActiveDataSource: DataSource = TEXT
+  val defaultDataSource: DataSource = TEXT
 }

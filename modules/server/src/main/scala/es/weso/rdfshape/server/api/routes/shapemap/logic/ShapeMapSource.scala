@@ -8,9 +8,9 @@ package es.weso.rdfshape.server.api.routes.shapemap.logic
 private[api] object ShapeMapSource extends Enumeration {
   type ShapeMapSource = String
 
-  val TEXT = "#shapeMapTextArea"
-  val URL  = "#shapeMapUrl"
-  val FILE = "#shapeMapFile"
+  val TEXT = "byText"
+  val URL  = "byUrl"
+  val FILE = "byFile"
 
-  val defaultActiveShapeMapSource: ShapeMapSource = TEXT
+  val defaultShapeMapSource: ShapeMapSource = TEXT
 }

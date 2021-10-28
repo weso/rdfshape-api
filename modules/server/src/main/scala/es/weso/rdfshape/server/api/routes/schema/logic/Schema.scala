@@ -224,7 +224,7 @@ object Schema extends LazyLogging {
       TargetSchemaFormatParameter.name
     )
     activeSchemaSource <- partsMap.optPartValue(
-      ActiveSchemaSourceParameter.name
+      SchemaSourceParameter.name
     )
   } yield {
     Schema(
