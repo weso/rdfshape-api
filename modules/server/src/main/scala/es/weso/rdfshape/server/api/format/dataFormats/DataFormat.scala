@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api.format.dataFormats
 
 import es.weso.rdfshape.server.api.format._
+import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
 import org.http4s.MediaType
 
 /** Extension of the Format interface to represent RDF data formats
@@ -14,22 +15,13 @@ class DataFormat(formatName: String, formatMimeType: MediaType) extends Format {
   */
 object DataFormat extends FormatCompanion[DataFormat] {
 
-  override lazy val availableFormats: List[DataFormat] = List(
-    Json,
-    Dot,
-    Svg,
-    Png,
-    Turtle,
-    NTriples,
-    Trig,
-    JsonLd,
-    RdfXml,
-    RdfJson,
-    HtmlMicrodata,
-    HtmlRdfa11,
-    ShExC,
-    Compact
-  )
+  override lazy val availableFormats: List[DataFormat] =
+    (RDFFormat.availableFormats ++
+      SchemaFormat.availableFormats ++
+      HtmlFormat.availableFormats ++
+      GraphicFormat.availableFormats ++
+      ShapeMapFormat.availableFormats ++
+      List(Json, Dot)).distinct
   override val defaultFormat: DataFormat = Json
 }
 

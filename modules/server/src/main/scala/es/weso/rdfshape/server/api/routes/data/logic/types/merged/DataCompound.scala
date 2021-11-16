@@ -101,14 +101,9 @@ private[api] object DataCompound
             .fromJsonString(compoundData.get)
             .leftMap(err => s"Could not read compound data.\n $err")
         } else Left("No compound data provided")
-    } yield maybeData.flatMap(dataCompound =>
       /* Check if the created data is empty, then an error occurred when merging
        * the elements */
-      dataCompound.rawData.fold(
-        err => Left(err),
-        _ => Right(dataCompound)
-      )
-    )
+    } yield maybeData.flatMap(_.rawData.flatMap(_ => maybeData))
   }
 
   /** Encoder used to transform CompoundData instances to JSON values

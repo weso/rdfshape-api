@@ -16,8 +16,6 @@ object IncomingRequestParameters {
   lazy val targetDataFormat = "targetDataFormat"
 
   lazy val schema             = "schema"
-  lazy val schemaUrl          = "schemaUrl"
-  lazy val schemaFile         = "schemaFile"
   lazy val schemaFormat       = "schemaFormat"
   lazy val schemaEngine       = "schemaEngine"
   lazy val targetSchemaFormat = "targetSchemaFormat"
@@ -30,10 +28,9 @@ object IncomingRequestParameters {
   lazy val node         = "node"
   lazy val nodeSelector = "nodeSelector"
 
-  lazy val shapemap             = "shapemap"
-  lazy val shape_map            = "shape-map"
-  lazy val shapemapFormat       = "shapemapFormat"
-  lazy val targetShapemapFormat = "targetShapemapFormat"
+  lazy val shapemap       = "shapemap"
+  lazy val shape_map      = "shape-map"
+  lazy val shapemapFormat = "shapemapFormat"
 
   lazy val query = "query"
 
@@ -89,25 +86,14 @@ object IncomingRequestParameters {
     val name: String = targetDataFormat
   }
 
-  /** Parameter expected to contain raw schema data (URL encoded)
+  /** Parameter expected to contain schema contents (URL encoded)
+    *
+    * @note These contents may be raw data, a URL with the schema or a File with the schema.
+    *       The source of the schema is therefore specified by [[SchemaSourceParameter]]
     */
   object SchemaParameter
       extends OptionalQueryParamDecoderMatcher[String](schema) {
     val name: String = schema
-  }
-
-  /** Parameter expected to contain a URL where a validation schema is located
-    */
-  object SchemaUrlParameter
-      extends OptionalQueryParamDecoderMatcher[String](schemaUrl) {
-    val name: String = schemaUrl
-  }
-
-  /** Parameter expected to contain the contents a file where a validation schema is located
-    */
-  object SchemaFileParameter
-      extends OptionalQueryParamDecoderMatcher[String](schemaFile) {
-    val name: String = schemaFile
   }
 
   /** Parameter expected to contain an schema format name, referencing the user's schema format
@@ -201,13 +187,6 @@ object IncomingRequestParameters {
   object ShapeMapFormatParameter
       extends OptionalQueryParamDecoderMatcher[String](shapemapFormat) {
     val name: String = shapemapFormat
-  }
-
-  /** Parameter expected to contain a shapemap format name, referencing the target format of a conversion
-    */
-  object TargetShapeMapFormatParameter
-      extends OptionalQueryParamDecoderMatcher[String](targetShapemapFormat) {
-    val name: String = targetShapemapFormat
   }
 
   /** Parameter expected to contain SPARQL query data contents (URL encoded)

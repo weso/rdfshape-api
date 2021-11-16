@@ -62,7 +62,6 @@ private[api] object DataConvert extends LazyLogging {
           ("message", Json.fromString(dataConversion.successMessage)),
           ("data", dataConversion.inputData.asJson),
           ("result", dataConversion.result.asJson),
-          ("inputDataFormat", dataConversion.inputData.format.asJson),
           ("targetDataFormat", dataConversion.result.format.asJson)
         )
       )
@@ -71,14 +70,14 @@ private[api] object DataConvert extends LazyLogging {
   /** Perform the actual conversion operation between RDF text formats
     *
     * @param inputData    Input conversion data
-    * @param targetFormat Target
-    * @return A new Data instance
+    * @param targetFormat Target format
+    * @return A new [[Data]] instance
     */
   def dataConvert(
       inputData: Data,
       targetFormat: DataFormat
   ): IO[DataConvert] = {
-    logger.info(s"Conversion target format: $targetFormat")
+    logger.info(s"Data conversion target format: ${targetFormat.name}")
     for {
       // Get a handle to the RDF resource
       rdf <- inputData.toRdf()

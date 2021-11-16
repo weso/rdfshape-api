@@ -18,14 +18,17 @@ import io.circe.{Decoder, Encoder, HCursor}
   */
 trait Data {
 
-  /** Raw RDF content represented as a String (Right)
-    * An error occurred when trying to parse the data (Left)
+  /** Either the raw RDF content represented as a String,
+    * or the error occurred when trying to parse the data
     */
   lazy val rawData: Either[String, String] = Left("")
 
   /** Source where the data comes from
     */
   val dataSource: DataSource
+
+  /** Format of the data
+    */
   val format: Option[DataFormat] = None
 
   /** Given an RDF source of data, try to parse it and get the RDF model representation
@@ -38,6 +41,8 @@ trait Data {
 object Data extends DataCompanion[Data] {
 
   /** Dummy implementation meant to be overridden
+    *
+    * @note Resort by default to [[DataSingle]]'s empty representation
     */
   override val emptyData: Data = DataSingle.emptyData
 
@@ -54,25 +59,24 @@ object Data extends DataCompanion[Data] {
   /** Dummy implementation meant to be overridden
     * If called on a general [[Data]] instance, pattern match among the available data types to
     * use the correct implementation
-    *
-    * @note Defaults to [[DataSingle]]'s implementation of decoding data
     */
   implicit val decodeData: Decoder[Data] = (cursor: HCursor) => {
     this.getClass match {
+      case ds if ds == classOf[DataSingle]   => DataSingle.decodeData(cursor)
       case de if de == classOf[DataEndpoint] => DataEndpoint.decodeData(cursor)
       case dc if dc == classOf[DataCompound] => DataCompound.decodeData(cursor)
-      case _                                 => DataSingle.decodeData(cursor)
     }
   }
 
   /** General implementation delegating on subclasses
     */
   override def mkData(partsMap: PartsMap): IO[Either[String, Data]] = for {
+    // 1. Make some checks on the parameters to distinguish between Data types
     compoundData  <- partsMap.optPartValue(CompoundDataParameter.name)
     paramEndpoint <- partsMap.optPartValue(EndpointParameter.name)
 
+    // 2. Delegate on the correct sub-class for creating the Data
     maybeData <- {
-      // Create one of: Simple Data, Compound Data or Endpoint Data
       // 1. Compound data
       if(compoundData.isDefined) DataCompound.mkData(partsMap)
       // 2. Endpoint data
@@ -84,28 +88,28 @@ object Data extends DataCompanion[Data] {
   } yield maybeData
 }
 
-/** Static utilities to be used with Data representations
+/** Static utilities to be used with [[Data]] representations
   *
-  * @tparam D Specific data representation to be handled
+  * @tparam D Specific [[Data]] representation to be handled
   */
-trait DataCompanion[D <: Data] extends LazyLogging {
+private[data] trait DataCompanion[D <: Data] extends LazyLogging {
 
-  /** Empty instance of the data representation in use
+  /** Empty instance of the [[Data]] representation in use
     */
   val emptyData: D
 
-  /** Encoder used to transform Data instances to JSON values
+  /** Encoder used to transform [[Data]] instances to JSON values
     */
   implicit val encodeData: Encoder[D]
 
-  /** Decoder used to extract Data instances from JSON values
+  /** Decoder used to extract [[Data]] instances from JSON values
     */
   implicit val decodeData: Decoder[D]
 
-  /** Given a request's parameters, try to extract an instance of Data (type D) from them
+  /** Given a request's parameters, try to extract an instance of [[Data]] (type [[D]]) from them
     *
     * @param partsMap Request's parameters
-    * @return Either the Data instance or an error message
+    * @return Either the [[Data]] instance or an error message
     */
   def mkData(partsMap: PartsMap): IO[Either[String, D]]
 }

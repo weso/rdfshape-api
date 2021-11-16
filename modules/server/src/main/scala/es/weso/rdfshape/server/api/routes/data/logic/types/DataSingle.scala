@@ -17,23 +17,23 @@ import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import io.circe._
 import io.circe.syntax.EncoderOps
 
-/** Data class representing a single RDF data instance with its current format and source
+/** Data class representing a single RDF data instance with its inner content, format and source
   *
   * @note Invalid initial data is accepted, but may cause errors when operating with it.
   * @param dataPre    RDF data, as it is received before being processed depending on the [[dataSource]]
   * @param dataFormat Data format
   * @param inference  Data inference
-  * @param dataSource Active source, used to know how to process the raw data
+  * @param dataSource Origin source, used to know how to process the raw data
   */
 sealed case class DataSingle(
     private val dataPre: Option[String],
-    dataFormat: DataFormat,
+    private val dataFormat: DataFormat,
     inference: InferenceEngine,
     override val dataSource: DataSource
 ) extends Data
     with LazyLogging {
 
-  /** Given the (user input) for the data and its source, fetch the Data contents using the input in the way the source needs it
+  /** Given the user input [[dataPre]] for the data and its source, fetch the Data contents using the input in the way the source needs it
     * (e.g.: for URLs, fetch the input with a web request; for files, decode the input; for raw data, do nothing)
     *
     * @return Either an error creating the raw data or a String containing the final text
@@ -43,7 +43,7 @@ sealed case class DataSingle(
       case None => Left("Could not build the RDF from empty data")
       case Some(userData) =>
         dataSource match {
-          case DataSource.TEXT | // Raw test input by user
+          case DataSource.TEXT | // Raw text input by user
               DataSource.FILE |  // File input already decoded to string
               DataSource.COMPOUND => // Compound data already processed by server
             Right(userData)
@@ -58,7 +58,8 @@ sealed case class DataSingle(
         }
     }
 
-  override val format: Option[DataFormat] = Some(dataFormat)
+  // Override and make publicly available the trait properties
+  override val format: Option[DataFormat] = Option(dataFormat)
 
   /** Given an RDF source of data, try to get the RDF model representation
     *
@@ -125,27 +126,23 @@ private[api] object DataSingle
     extends DataCompanion[DataSingle]
     with LazyLogging {
 
-  /** Empty data representation, with no inner data and all defaults to none
+  /** Empty data representation, with no inner data and all defaults or None
     */
   override lazy val emptyData: DataSingle =
     DataSingle(
-      dataPre = emptyDataValue,
-      dataFormat = DataFormat.defaultFormat,
+      dataPre = None,
+      dataFormat = ApiDefaults.defaultDataFormat,
       inference = NONE,
-      dataSource = DataSource.defaultDataSource
+      dataSource = ApiDefaults.defaultDataSource
     )
-
-  /** Placeholder value used for the raw data whenever an empty data is issued/needed.
-    */
-  val emptyDataValue: Option[String] = None
 
   override implicit val encodeData: Encoder[DataSingle] =
     (data: DataSingle) =>
       Json.obj(
         ("data", data.rawData.toOption.asJson),
-        ("source", data.dataSource.asJson),
         ("format", data.dataFormat.asJson),
-        ("inference", data.inference.asJson)
+        ("inference", data.inference.asJson),
+        ("source", data.dataSource.asJson)
       )
 
   override def mkData(partsMap: PartsMap): IO[Either[String, DataSingle]] =
@@ -168,22 +165,15 @@ private[api] object DataSingle
       dataSource = paramDataSource.getOrElse(DataSource.defaultDataSource)
       _          = logger.debug(s"RDF Data received - Source: $dataSource")
 
-      // Base for the result
-      base = DataSingle.emptyData.copy(
-        dataFormat = format,
-        inference = inference
-      )
-
       // Create the data instance
-      data = base.copy(
+      data = DataSingle(
         dataPre = paramData,
+        dataFormat = format,
+        inference = inference,
         dataSource = dataSource
       )
 
-    } yield data.rawData.fold(
-      err => Left(err),
-      _ => Right(data)
-    )
+    } yield data.rawData.map(_ => data)
 
   /** @param inferenceStr String representing the inference value
     * @return Optionally, the inference contained in a given data string
@@ -195,32 +185,30 @@ private[api] object DataSingle
   }
 
   override implicit val decodeData: Decoder[DataSingle] =
-    (cursor: HCursor) => {
+    (cursor: HCursor) =>
       for {
         data <- cursor.downField("data").as[Option[String]]
 
         dataFormat <- cursor
           .downField("dataFormat")
           .as[RDFFormat]
-          .orElse(Right(ApiDefaults.defaultRdfFormat))
 
         dataInference <-
           cursor
             .downField("inference")
-            .as[Option[InferenceEngine]]
+            .as[InferenceEngine]
 
         dataSource <- cursor
           .downField("dataSource")
           .as[DataSource]
           .orElse(Right(DataSource.defaultDataSource))
 
-        base = DataSingle.emptyData.copy(
+        decoded = DataSingle.emptyData.copy(
           dataPre = data,
           dataFormat = dataFormat,
           dataSource = dataSource,
-          inference = dataInference.getOrElse(NONE)
+          inference = dataInference
         )
 
-      } yield base
-    }
+      } yield decoded
 }

@@ -18,6 +18,7 @@ object RDFFormat extends FormatCompanion[RDFFormat] {
     List(
       Turtle,
       NTriples,
+      NQuads,
       Trig,
       JsonLd,
       RdfXml,
@@ -40,6 +41,14 @@ case object NTriples
     extends RDFFormat(
       formatName = "N-Triples",
       formatMimeType = new MediaType("application", "n-triples")
+    )
+
+/** Represents the mime-type "application/n-quads"
+  */
+case object NQuads
+    extends RDFFormat(
+      formatName = "N-Quads",
+      formatMimeType = new MediaType("application", "n-quads")
     )
 
 /** Represents the mime-type "application/trig"

@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.nodes.{IRI, Lang}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.ApiDefaults._
-import es.weso.rdfshape.server.api.format.dataFormats.SchemaFormat
+import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.data.logic.operations.DataExtract.{
   DataExtractResult,
   successMessage

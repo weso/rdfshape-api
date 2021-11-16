@@ -8,6 +8,7 @@ private[service] class WikibaseServiceUtils {}
 
 /** Static utilities used by the Wikibase service
   */
+//noinspection HttpUrlsUsage,SpellCheckingInspection
 object WikibaseServiceUtils {
 
   /** For a given entity, create the JSON structure accepted by the Shexer API

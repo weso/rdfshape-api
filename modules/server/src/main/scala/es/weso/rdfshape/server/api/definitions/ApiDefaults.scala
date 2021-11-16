@@ -2,10 +2,13 @@ package es.weso.rdfshape.server.api.definitions
 
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, NONE}
+import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.{
+  SchemaFormat,
+  ShaclFormat
+}
 import es.weso.rdfshape.server.api.format.dataFormats.{
   DataFormat,
   RDFFormat,
-  SchemaFormat,
   ShapeMapFormat
 }
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
@@ -24,7 +27,7 @@ case object ApiDefaults {
   val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
   val defaultRdfFormat: RDFFormat                = RDFFormat.defaultFormat
   val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
-  val defaultSchemaFormat: SchemaFormat          = SchemaFormat.defaultFormat
+  val defaultSchemaFormat: SchemaFormat          = ShaclFormat.defaultFormat
   val defaultSchemaFormatName: String            = defaultSchemaFormat.name
   val availableSchemaEngines: List[String]       = Schemas.availableSchemaNames
   val defaultSchemaEngine: Schema                = Schemas.defaultSchema
@@ -39,10 +42,10 @@ case object ApiDefaults {
   val defaultSchemaEmbedded                   = false
   val defaultInferenceEngine: InferenceEngine = NONE
   val defaultInferenceEngineName: String      = defaultInferenceEngine.name
-  val defaultActiveDataSource: DataSource     = DataSource.defaultDataSource
-  val defaultActiveSchemaSource: SchemaSource =
+  val defaultDataSource: DataSource           = DataSource.defaultDataSource
+  val defaultSchemaSource: SchemaSource =
     SchemaSource.defaultSchemaSource
-  val defaultActiveShapeMapSource: ShapeMapSource =
+  val defaultShapeMapSource: ShapeMapSource =
     ShapeMapSource.defaultShapeMapSource
   val defaultShapeMapFormat: ShapeMapFormat  = ShapeMapFormat.defaultFormat
   val availableShapeMapFormats: List[String] = ShapeMap.formats

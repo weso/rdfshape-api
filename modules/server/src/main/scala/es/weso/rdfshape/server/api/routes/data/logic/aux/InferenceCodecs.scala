@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api.routes.data.logic.aux
 
-import es.weso.rdf.{InferenceEngine, NONE}
+import es.weso.rdf.InferenceEngine
+import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import io.circe.{Decoder, Encoder, HCursor, Json}
 
@@ -23,7 +24,7 @@ private[data] object InferenceCodecs {
         inference = InferenceEngine
           .fromString(inferenceName)
           .toOption
-          .getOrElse(NONE)
+          .getOrElse(ApiDefaults.defaultInferenceEngine)
       } yield inference
 
 }

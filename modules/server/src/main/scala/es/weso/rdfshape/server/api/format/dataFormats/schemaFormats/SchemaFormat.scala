@@ -1,5 +1,6 @@
-package es.weso.rdfshape.server.api.format.dataFormats
+package es.weso.rdfshape.server.api.format.dataFormats.schemaFormats
 
+import es.weso.rdfshape.server.api.format.dataFormats._
 import es.weso.rdfshape.server.api.format.{Format, FormatCompanion}
 import org.http4s.MediaType
 
@@ -17,23 +18,9 @@ class SchemaFormat(formatName: String, formatMimeType: MediaType)
   */
 object SchemaFormat extends FormatCompanion[SchemaFormat] {
 
-  override lazy val availableFormats: List[SchemaFormat] =
-    List(
-      new SchemaFormat(Turtle),
-      new SchemaFormat(JsonLd),
-      new SchemaFormat(NTriples),
-      new SchemaFormat(RdfXml),
-      new SchemaFormat(RdfJson),
-      new SchemaFormat(Trig),
-      ShExC
-    )
+  override lazy val availableFormats: List[SchemaFormat] = {
+    (ShExFormat.availableFormats ++
+      ShaclFormat.availableFormats).distinct
+  }
   override val defaultFormat: SchemaFormat = ShExC
 }
-
-/** Represents the mime-type "text/shex"
-  */
-case object ShExC
-    extends SchemaFormat(
-      formatName = "ShExC",
-      formatMimeType = new MediaType("text", "shex")
-    )

@@ -9,6 +9,7 @@ import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
 }
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats._
+import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.ShExC
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.operations.{
@@ -50,7 +51,8 @@ class DataService(client: Client[IO])
     /** Returns a JSON array with the accepted input or output RDF data formats
       */
     case GET -> Root / `api` / `verb` / "formats" / "input" =>
-      val formatNames = RDFFormat.availableFormats.map(_.name)
+      val formats     = RDFFormat.availableFormats ++ HtmlFormat.availableFormats
+      val formatNames = formats.map(_.name)
       val json        = Json.fromValues(formatNames.map(Json.fromString))
       Ok(json)
 
@@ -117,26 +119,21 @@ class DataService(client: Client[IO])
             err => errorResponseJson(err, InternalServerError),
             // Else, try and compute the data info
             data =>
-              for {
-                // Check for exceptions when getting the data info
-                maybeResult <- DataInfo.dataInfo(data).attempt
-                response <- maybeResult.fold(
-                  // Error: return it
-                  err =>
-                    // Legacy code may return exceptions with "null" messages
-                    err.getMessage match {
-                      case errorMessage: String =>
-                        errorResponseJson(errorMessage, InternalServerError)
-                      case _ => // null exception message, return a general error message
-                        errorResponseJson(
-                          DataServiceError.couldNotParseData,
-                          InternalServerError
-                        )
-                    },
-                  // Success: build successful response
-                  dataInfo => Ok(dataInfo.asJson)
+              DataInfo
+                .dataInfo(data)
+                .flatMap(info => Ok(info.asJson))
+                .handleErrorWith(err =>
+                  // Legacy code may return exceptions with "null" messages
+                  err.getMessage match {
+                    case errorMessage: String =>
+                      errorResponseJson(errorMessage, InternalServerError)
+                    case _ => // null exception message, return a general error message
+                      errorResponseJson(
+                        DataServiceError.couldNotParseData,
+                        InternalServerError
+                      )
+                  }
                 )
-              } yield response
           )
         } yield response
       }
@@ -160,9 +157,13 @@ class DataService(client: Client[IO])
           optTargetFormatStr <- partsMap.optPartValue(
             TargetDataFormatParameter.name
           )
+
           optTargetFormat = for {
             targetFormatStr <- optTargetFormatStr
-            targetFormat    <- DataFormat.fromString(targetFormatStr).toOption
+            // Standard data format or graphical format
+            targetFormat <- DataFormat
+              .fromString(targetFormatStr)
+              .toOption
           } yield targetFormat
 
           // Abort if no valid target format, else continue
@@ -178,30 +179,22 @@ class DataService(client: Client[IO])
                 err => errorResponseJson(err, InternalServerError),
                 // Else, try and compute the data conversion
                 data =>
-                  for {
-                    // Check for exceptions when converting the data
-                    maybeResult <- DataConvert
-                      .dataConvert(data, targetFormat)
-                      .attempt
-                    response <- maybeResult.fold(
-                      // Error: return it
-                      err =>
-                        /* Legacy code may return exceptions with "null"
-                         * messages */
-                        err.getMessage match {
-                          case errorMessage: String =>
-                            errorResponseJson(errorMessage, InternalServerError)
-                          case _ => // null exception message, return a general error message
-                            err.printStackTrace()
-                            errorResponseJson(
-                              DataServiceError.couldNotParseData,
-                              InternalServerError
-                            )
-                        },
-                      // Success: build successful response
-                      dataConversion => Ok(dataConversion.asJson)
+                  // Check for exceptions when converting the data
+                  DataConvert
+                    .dataConvert(data, targetFormat)
+                    .flatMap(conversion => Ok(conversion.asJson))
+                    .handleErrorWith(err =>
+                      err.getMessage match {
+                        case errorMessage: String =>
+                          errorResponseJson(errorMessage, InternalServerError)
+                        case _ => // null exception message, return a general error message
+                          err.printStackTrace()
+                          errorResponseJson(
+                            DataServiceError.couldNotParseData,
+                            InternalServerError
+                          )
+                      }
                     )
-                  } yield response
               )
           }
         } yield response
@@ -244,16 +237,12 @@ class DataService(client: Client[IO])
             {
               // Destructure tuple
               case (data, query) =>
-                for {
-                  maybeDataQuery <- DataQuery
-                    .dataQuery(data, query)
-                    .attempt
-                  response <- maybeDataQuery.fold(
-                    err =>
-                      errorResponseJson(err.getMessage, InternalServerError),
-                    dataQuery => Ok(dataQuery.asJson)
+                DataQuery
+                  .dataQuery(data, query)
+                  .flatMap(result => Ok(result.asJson))
+                  .handleErrorWith(err =>
+                    errorResponseJson(err.getMessage, InternalServerError)
                   )
-                } yield response
 
               // Generic error. Code should not reach here.
               case _ =>
@@ -306,25 +295,19 @@ class DataService(client: Client[IO])
                     BadRequest
                   )
                 case Some(nodeSelector) =>
-                  for {
-                    maybeResult <- DataExtract
-                      .dataExtract(
-                        data,
-                        nodeSelector,
-                        Option(ShExSchema.empty),
-                        Option(ShExC),
-                        optLabel,
-                        relativeBase = None
-                      )
-                      .attempt // Check for exceptions when extracting
-                    response <- maybeResult.fold(
-                      // Error in extraction: return the error
-                      err =>
-                        errorResponseJson(err.getMessage, InternalServerError),
-                      // Success: build successful response
-                      dataExtraction => Ok(dataExtraction.asJson)
+                  DataExtract
+                    .dataExtract(
+                      data,
+                      nodeSelector,
+                      Option(ShExSchema.empty),
+                      Option(ShExC),
+                      optLabel,
+                      relativeBase = None
                     )
-                  } yield response
+                    .flatMap(result => Ok(result.asJson))
+                    .handleErrorWith(err =>
+                      errorResponseJson(err.getMessage, InternalServerError)
+                    )
               }
           )
 

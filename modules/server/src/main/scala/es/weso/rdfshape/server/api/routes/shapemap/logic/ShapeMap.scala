@@ -10,25 +10,22 @@ import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.{
 }
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.rdfshape.server.utils.error.exceptions.JsonConversionException
-import es.weso.rdfshape.server.utils.json.JsonUtils.maybeField
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import es.weso.shapemaps.{ShapeMap => ShapeMapW}
-import io.circe.Json
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Encoder, HCursor, Json}
 
 /** Data class representing a ShapeMap and its current source.
   *
   * @note Invalid initial data is accepted, but may cause exceptions when operating with it (like converting to JSON).
-  * @param shapeMapPre          Shapemap contents, as received before being processed depending on the [[shapeMapSource]]
-  * @param shapeMapFormat       Shapemap format
-  * @param targetShapeMapFormat Optionally, the shapemap target format (only for conversion operations)
-  * @param shapeMapSource       Active source, used to know which source the shapemap comes from
+  * @param shapeMapPre          Shapemap contents, as received before being processed depending on the [[source]]
+  * @param format       Shapemap format
+  * @param source       Active source, used to know which source the shapemap comes from
   */
 sealed case class ShapeMap private (
     private val shapeMapPre: Option[String],
-    shapeMapFormat: ShapeMapFormat,
-    targetShapeMapFormat: Option[ShapeMapFormat],
-    shapeMapSource: String
+    format: ShapeMapFormat,
+    source: ShapeMapSource
 ) extends LazyLogging {
 
   /** Given the (user input) for the shapeMap and its source, fetch the shapeMap contents using the input in the way the source needs it
@@ -36,7 +33,7 @@ sealed case class ShapeMap private (
     *
     * @return Optionally, a String containing the final text of the shapeMap query
     */
-  lazy val rawShapeMap: Option[String] = shapeMapSource match {
+  lazy val rawShapeMap: Option[String] = source match {
     case ShapeMapSource.TEXT | ShapeMapSource.FILE =>
       shapeMapPre
     case ShapeMapSource.URL =>
@@ -55,38 +52,12 @@ sealed case class ShapeMap private (
     rawShapeMap match {
       case Some(shapeMapStr) =>
         ShapeMapW
-          .fromString(shapeMapStr, shapeMapFormat.name) match {
+          .fromString(shapeMapStr, format.name) match {
           case Left(errorList) => Left(errorList.toList.mkString("\n"))
           case Right(shapeMap) => Right(shapeMap)
         }
       case None => Left("Cannot extract the ShapeMap from an empty instance")
     }
-  }
-
-  /** JSON representation of this shapemap to be used in API responses
-    *
-    * @return JSON information of the shapemap (raw content, format, JSON structure) or an
-    */
-  @throws(classOf[JsonConversionException])
-  lazy val shapeMapJson: Json = {
-    innerShapeMap match {
-      case Left(err) => throw JsonConversionException(err)
-      case Right(dataShapeMap) =>
-        Json.fromFields(
-          maybeField("shapeMap", rawShapeMap, Json.fromString) ++
-            maybeField(
-              "shapeMapFormat",
-              Some(shapeMapFormat),
-              (format: ShapeMapFormat) => Json.fromString(format.name)
-            ) ++
-            maybeField(
-              "shapeMapJson",
-              Some(dataShapeMap.toJson),
-              identity[Json]
-            )
-        )
-    }
-
   }
 }
 
@@ -94,13 +65,50 @@ private[api] object ShapeMap extends LazyLogging {
 
   /** Placeholder value used for the shapemap whenever an empty shapemap is issued/needed.
     */
-  private val emptyShapeMap =
+  val emptyShapeMap: ShapeMap =
     ShapeMap(
       shapeMapPre = None,
-      shapeMapFormat = ApiDefaults.defaultShapeMapFormat,
-      targetShapeMapFormat = None,
-      shapeMapSource = ShapeMapSource.defaultShapeMapSource
+      format = ApiDefaults.defaultShapeMapFormat,
+      source = ShapeMapSource.defaultShapeMapSource
     )
+
+  /** JSON representation of this shapemap to be used in API responses
+    *
+    * @return JSON information of the shapemap (raw content, format, JSON structure)
+    */
+  implicit val encodeShapeMap: Encoder[ShapeMap] =
+    (shapeMap: ShapeMap) =>
+      Json.obj(
+        ("shapeMap", shapeMap.rawShapeMap.asJson),
+        ("format", shapeMap.format.asJson),
+        ("inner", shapeMap.innerShapeMap.toOption.map(_.toJson).asJson)
+      )
+
+  /** Decode JSON into [[ShapeMap]] instances
+    *
+    * @return [[ShapeMap]] instance created from JSON data
+    */
+  implicit val decodeShapeMap: Decoder[ShapeMap] =
+    (cursor: HCursor) =>
+      for {
+        shapeMap <- cursor.downField("shapeMap").as[Option[String]]
+
+        shapeMapFormat <- cursor
+          .downField("shapeMapFormat")
+          .as[ShapeMapFormat]
+
+        shapeMapSource <- cursor
+          .downField("shapeMapSource")
+          .as[ShapeMapSource]
+          .orElse(Right(ShapeMapSource.defaultShapeMapSource))
+
+        decoded = ShapeMap.emptyShapeMap.copy(
+          shapeMapPre = shapeMap,
+          format = shapeMapFormat,
+          source = shapeMapSource
+        )
+
+      } yield decoded
 
   /** Given a request's parameters, try to extract a shapemap from them
     *
@@ -112,62 +120,27 @@ private[api] object ShapeMap extends LazyLogging {
   ): IO[Either[String, ShapeMap]] = {
     for {
       // Get data sent in que query
-      paramShapemap <- partsMap.optPartValue(ShapeMapParameter.name)
-      shapeMapFormat <- ShapeMapFormat.fromRequestParams(
+      paramShapeMap <- partsMap.optPartValue(ShapeMapParameter.name)
+      paramFormat <- ShapeMapFormat.fromRequestParams(
         ShapeMapFormatParameter.name,
         partsMap
       )
-      targetShapeMapFormat <- ShapeMapFormat.fromRequestParams(
-        TargetShapeMapFormatParameter.name,
-        partsMap
-      )
-      activeShapeMapSource <- partsMap.optPartValue(
+
+      paramSource <- partsMap.optPartValue(
         ShapemapSourceParameter.name
       )
 
       _ = logger.debug(
-        s"Getting ShapeMap from params. ShapeMap tab: $activeShapeMapSource"
+        s"Getting ShapeMap from params. ShapeMap tab: $paramSource"
       )
 
-      // Create the shapemap depending on the client's selected method
-      maybeShapeMap <- mkShapeMap(
-        paramShapemap,
-        shapeMapFormat,
-        targetShapeMapFormat,
-        activeShapeMapSource
+      // Create the shapemap instance
+      shapeMap = ShapeMap(
+        shapeMapPre = paramShapeMap,
+        format = paramFormat.getOrElse(ApiDefaults.defaultShapeMapFormat),
+        source = paramSource.getOrElse(defaultShapeMapSource)
       )
 
-    } yield maybeShapeMap
+    } yield shapeMap.innerShapeMap.map(_ => shapeMap)
   }
-
-  /** Create a ShapeMap instance, given its source and format
-    *
-    * @param optShapeMapData         Optionally, the contents of the shapemap
-    * @param optShapeMapFormat       Optionally, the format of the shapemap
-    * @param optTargetShapeMapFormat Optionally, the target format of the shapemap (for conversions)
-    * @param optShapeMapSource       Optionally, the indicator of the shapemap source (raw, url or file)
-    * @return A new ShapeMap based on the given parameters
-    */
-  private[api] def mkShapeMap(
-      optShapeMapData: Option[String],
-      optShapeMapFormat: Option[ShapeMapFormat],
-      optTargetShapeMapFormat: Option[ShapeMapFormat],
-      optShapeMapSource: Option[ShapeMapSource]
-  ): IO[Either[String, ShapeMap]] =
-    for {
-      shapeMap <- IO {
-        ShapeMap(
-          shapeMapPre = optShapeMapData,
-          shapeMapFormat =
-            optShapeMapFormat.getOrElse(ApiDefaults.defaultShapeMapFormat),
-          targetShapeMapFormat = optTargetShapeMapFormat,
-          shapeMapSource = optShapeMapSource.getOrElse(defaultShapeMapSource)
-        )
-      }
-
-      result = shapeMap.rawShapeMap match {
-        case Some(_) => Right(shapeMap)
-        case None    => Left("Could not build the shapeMap")
-      }
-    } yield result
 }

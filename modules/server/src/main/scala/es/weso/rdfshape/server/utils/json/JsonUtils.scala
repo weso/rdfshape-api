@@ -100,11 +100,45 @@ object JsonUtils extends Http4sDsl[IO] {
   /** Convert a given prefix map to JSON format for API operations
     *
     * @param prefixMap Input prefix map
-    * @return JSON representation of the prefix map
+    * @return JSON representation of the prefix map (as an object)
+    * @note Example return: {
+    *       "schema": "<http://schema.org/>",
+    *       "xsd: "<http://www.w3.org/2001/XMLSchema#>"
+    *       }
     */
-  def prefixMap2Json(prefixMap: PrefixMap): Json = {
+  def prefixMap2JsonObject(prefixMap: PrefixMap): Json = {
     Json.fromFields(prefixMap.pm.map { case (prefix, iri) =>
       (prefix.str, Json.fromString(iri.getLexicalForm))
+    })
+  }
+
+  /** Convert a given prefix map to JSON format for API operations
+    *
+    * @param prefixMap Input prefix map
+    * @return JSON representation of the prefix map (as an array of items)
+    * @note Example return:
+    *    [
+    *       {
+    *        "prefixName": "schema",
+    *        "prefixIRI": "<http://schema.org/>",
+    *       },
+    *       {
+    *        "prefixName": "xsd",
+    *        "prefixIRI": "<http://www.w3.org/2001/XMLSchema#>",
+    *       }
+    *    ]
+    */
+  def prefixMap2JsonArray(prefixMap: PrefixMap): Json = {
+    Json.fromValues(prefixMap.pm.map { case (prefix, iri) =>
+      Json.fromFields(
+        List(
+          (
+            "prefixName",
+            Json.fromString(if(prefix.str.isBlank) ":" else prefix.str)
+          ),
+          ("prefixIRI", Json.fromString(iri.toString()))
+        )
+      )
     })
   }
 

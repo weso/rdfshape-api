@@ -21,7 +21,7 @@ import io.circe.{Encoder, Json}
 final case class DataInfo private (
     override val inputData: Data,
     result: DataInfoResult
-) extends DataOperation(successMessage, inputData) {}
+) extends DataOperation(successMessage, inputData)
 
 /** Static utilities to obtain information about RDF data
   */
@@ -30,8 +30,8 @@ private[api] object DataInfo {
 
   /** Given an input data, get information about it
     *
-    * @param data Input Data object of any type (Simple, Compound...)
-    * @return A [[DataInfo]] object with the information of the input data
+    * @param data Input Data instance of any type (Simple, Compound...)
+    * @return A [[DataInfo]] instance with the information of the input data
     */
 
   def dataInfo(data: Data): IO[DataInfo] = for {
@@ -49,6 +49,7 @@ private[api] object DataInfo {
   } yield DataInfo(
     inputData = data,
     result = DataInfoResult(
+      data = data,
       numberOfStatements = nStatements,
       prefixMap = prefixMap,
       predicates = predicates.toSet
@@ -56,8 +57,14 @@ private[api] object DataInfo {
   )
 
   /** Case class representing the results to be returned when performing a data-info operation
+    *
+    * @param data               Data operated on
+    * @param numberOfStatements Number of statements in the data
+    * @param prefixMap          Prefix map in the data
+    * @param predicates         Set of predicates in the data
     */
   final case class DataInfoResult private (
+      data: Data,
       numberOfStatements: Int,
       prefixMap: PrefixMap,
       predicates: Set[IRI]
@@ -66,15 +73,18 @@ private[api] object DataInfo {
   /** Encoder for [[DataInfoResult]]
     */
   private implicit val encodeDataInfoResult: Encoder[DataInfoResult] =
-    (dataInfo: DataInfoResult) =>
+    (dataInfoResult: DataInfoResult) =>
       Json.fromFields(
         List(
-          ("numberOfStatements", dataInfo.numberOfStatements.asJson),
-          ("prefixMap", prefixMap2Json(dataInfo.prefixMap)),
+          ("numberOfStatements", dataInfoResult.numberOfStatements.asJson),
+          ("format", dataInfoResult.data.format.asJson),
+          ("prefixMap", prefixMap2JsonArray(dataInfoResult.prefixMap)),
           (
             "predicates",
             Json.fromValues(
-              dataInfo.predicates.map(iri2Json(_, Some(dataInfo.prefixMap)))
+              dataInfoResult.predicates.map(
+                iri2Json(_, Some(dataInfoResult.prefixMap))
+              )
             )
           )
         )
@@ -88,14 +98,7 @@ private[api] object DataInfo {
         List(
           ("message", Json.fromString(dataInfo.successMessage)),
           ("data", dataInfo.inputData.asJson),
-          (
-            "result",
-            dataInfo.result.asJson.deepMerge(
-              Json.fromFields(
-                List(("format", dataInfo.inputData.format.asJson))
-              )
-            )
-          )
+          ("result", dataInfo.result.asJson)
         )
       )
 

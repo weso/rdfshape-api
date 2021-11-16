@@ -10,6 +10,7 @@ import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap.mkShapeMap
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import io.circe._
+import io.circe.syntax.EncoderOps
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
@@ -76,7 +77,7 @@ class ShapeMapService(client: Client[IO])
                   // Try to get JSON representation
                   case Right(_) =>
                     Try {
-                      shapeMap.shapeMapJson
+                      shapeMap.asJson
                     } match {
                       case Failure(exc) =>
                         errorResponseJson(exc.getMessage, InternalServerError)

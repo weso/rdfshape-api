@@ -89,14 +89,7 @@ private[api] object DataEndpoint extends DataCompanion[DataEndpoint] {
 
         } else Left("No endpoint provided")
 
-    } yield maybeData.flatMap(dataEndpoint =>
-      /* Check if the created data is empty, then an error occurred when
-       * fetching the endpoint on creation */
-      dataEndpoint.rawData.fold(
-        err => Left(err),
-        _ => Right(dataEndpoint)
-      )
-    )
+    } yield maybeData.flatMap(_.rawData.flatMap(_ => maybeData))
 
   override implicit val decodeData: Decoder[DataEndpoint] = (cursor: HCursor) =>
     {
