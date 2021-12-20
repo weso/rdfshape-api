@@ -21,7 +21,8 @@ trait Schema {
 
   /** Default URI obtained from current folder
     */
-  lazy val base: Option[IRI] = ApiDefaults.relativeBase
+  lazy val base: Option[IRI] = Some(ApiDefaults.localBase)
+  // ApiDefaults.relativeBase
 
   /** Source where the schema comes from
     */

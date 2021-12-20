@@ -122,7 +122,7 @@ private[api] object DataEndpoint extends DataCompanion[DataEndpoint] {
       case Some(endpoint) =>
         endpoint match {
           case endpointRegex(endpoint) => Some(endpoint)
-          case _                       => None
+          case rawEndpoint             => Some(rawEndpoint)
         }
 
     }

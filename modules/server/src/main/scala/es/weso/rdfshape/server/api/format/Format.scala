@@ -86,7 +86,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     * @return Optionally, a new Format instance of type F with the format
     */
   def fromRequestParams(
-      parameter: String,
+      parameter: String = "format",
       parameterMap: PartsMap
   ): IO[Option[F]] = {
     for {

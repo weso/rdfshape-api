@@ -6,7 +6,7 @@ import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, NONE}
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
-import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, RDFFormat}
+import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, RdfFormat}
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.aux.InferenceCodecs._
@@ -39,8 +39,8 @@ sealed case class DataSingle(
     * @return Either an error creating the raw data or a String containing the final text
     */
   override lazy val rawData: Either[String, String] =
-    dataPre match {
-      case None => Left("Could not build the RDF from empty data")
+    dataPre.map(_.trim) match {
+      case None | Some("") => Left("Could not build the RDF from empty data")
       case Some(userData) =>
         dataSource match {
           case DataSource.TEXT | // Raw text input by user
@@ -153,6 +153,7 @@ private[api] object DataSingle
         DataFormatParameter.name,
         partsMap
       )
+
       paramInference <- partsMap.optPartValue(InferenceParameter.name)
 
       paramDataSource <- partsMap.optPartValue(DataSourceParameter.name)
@@ -191,7 +192,7 @@ private[api] object DataSingle
 
         dataFormat <- cursor
           .downField("dataFormat")
-          .as[RDFFormat]
+          .as[RdfFormat]
 
         dataInference <-
           cursor

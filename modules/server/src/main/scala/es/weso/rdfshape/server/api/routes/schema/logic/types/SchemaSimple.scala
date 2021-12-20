@@ -40,21 +40,22 @@ sealed case class SchemaSimple(
     *
     * @return Either an error creating the raw data or a String containing the final schema text
     */
-  override lazy val rawSchema: Either[String, String] = schemaPre match {
-    case None => Left("Could not build the Schema from empty data")
-    case Some(userSchema) =>
-      schemaSource match {
-        case SchemaSource.TEXT | SchemaSource.FILE => Right(userSchema)
-        case SchemaSource.URL =>
-          getUrlContents(userSchema)
+  override lazy val rawSchema: Either[String, String] =
+    schemaPre.map(_.trim) match {
+      case None | Some("") => Left("Could not build the Schema from empty data")
+      case Some(userSchema) =>
+        schemaSource match {
+          case SchemaSource.TEXT | SchemaSource.FILE => Right(userSchema)
+          case SchemaSource.URL =>
+            getUrlContents(userSchema)
 
-        case other =>
-          val msg = s"Unknown schema source: $other"
-          logger.warn(msg)
-          Left(msg)
+          case other =>
+            val msg = s"Unknown schema source: $other"
+            logger.warn(msg)
+            Left(msg)
 
-      }
-  }
+        }
+    }
   // Override and make publicly available the trait properties
   override val format: Option[SchemaFormat] = Option(schemaFormat)
   override val engine: Option[SchemaW]      = Option(schemaEngine)

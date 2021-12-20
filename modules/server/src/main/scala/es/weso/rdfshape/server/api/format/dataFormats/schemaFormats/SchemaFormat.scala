@@ -5,6 +5,7 @@ import es.weso.rdfshape.server.api.format.{Format, FormatCompanion}
 import org.http4s.MediaType
 
 /** Dummy class to differentiate shapemap formats from the more generic DataFormat
+  *
   * @see {@link DataFormat}
   */
 class SchemaFormat(formatName: String, formatMimeType: MediaType)

@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api.routes.wikibase.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.shapemaps.{Status => _}
 import org.http4s._
@@ -36,7 +37,7 @@ class WikibaseService(client: Client[IO])
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     // TODO: uncomment routes and refactor along with wikishape client
-    case _ => InternalServerError("Pending")
+    case GET -> Root / `api` / `verb` => InternalServerError("Pending")
 
     /** Search for wikidata entities using MediaWiki's API. Search based on entity ID
       * See https://www.wikidata.org/w/api.php?action=help&modules=wbgetentities

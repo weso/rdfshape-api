@@ -5,11 +5,15 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.NONE
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.sgraph.{RDF2SGraph, RDFDotPreferences}
-import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
+import es.weso.rdfshape.server.api.format.dataFormats.{
+  DataFormat,
+  Dot,
+  GraphicFormat,
+  RdfFormat,
+  Json => JsonFormat
+}
 import es.weso.rdfshape.server.api.routes.data.logic.operations.DataConvert.successMessage
 import es.weso.rdfshape.server.api.routes.data.logic.types.{Data, DataSingle}
-import es.weso.utils.IOUtils.either2io
-import guru.nidi.graphviz.engine.Format
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
@@ -31,23 +35,10 @@ final case class DataConvert private (
   */
 private[api] object DataConvert extends LazyLogging {
 
-  /** List of graph format names
-    */
-  private lazy val availableGraphFormatNames: immutable.Seq[String] =
-    availableGraphFormats.map(_.name)
-
   /** List of available RDF format names (uppercase)
     */
   private lazy val rdfDataFormatNames: immutable.Seq[String] =
     RDFAsJenaModel.availableFormats.map(_.toUpperCase)
-
-  /** List of available graph formats
-    */
-  private lazy val availableGraphFormats = List(
-    GraphFormat("SVG", "application/svg", Format.SVG),
-    GraphFormat("PNG", "application/png", Format.PNG),
-    GraphFormat("PS", "application/ps", Format.PS)
-  )
 
   private val successMessage = "Conversion successful"
 
@@ -71,7 +62,7 @@ private[api] object DataConvert extends LazyLogging {
     *
     * @param inputData    Input conversion data
     * @param targetFormat Target format
-    * @return A new [[Data]] instance
+    * @return A new [[DataConvert]] instance with the conversion information
     */
   def dataConvert(
       inputData: Data,
@@ -91,19 +82,40 @@ private[api] object DataConvert extends LazyLogging {
       conversionResult <- rdf.use(rdfReasoner => {
         for {
           sgraph <- RDF2SGraph.rdf2sgraph(rdfReasoner)
-          convertedData <- targetFormat.name.toUpperCase match {
+          convertedData <- targetFormat match {
             // JSON: convert to JSON String and return a DataSingle with it
-            case "JSON" =>
+            case JsonFormat =>
               IO {
                 DataSingle(
                   dataPre = Option(sgraph.toJson.spaces2),
-                  dataFormat = targetFormat,
+                  dataFormat = JsonFormat,
                   inference = targetInference,
                   dataSource = inputData.dataSource
                 )
               }
 
-            case "DOT" =>
+            case Dot =>
+              IO {
+                DataSingle(
+                  dataPre =
+                    Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)),
+                  dataFormat = Dot,
+                  inference = targetInference,
+                  dataSource = inputData.dataSource
+                )
+              }
+            case _ if RdfFormat.availableFormats.contains(targetFormat) =>
+              rdfReasoner
+                .serialize(targetFormat.name)
+                .map(data => {
+                  DataSingle(
+                    dataPre = Option(data),
+                    dataFormat = targetFormat,
+                    inference = targetInference,
+                    dataSource = inputData.dataSource
+                  )
+                })
+            case _ if GraphicFormat.availableFormats.contains(targetFormat) =>
               IO {
                 DataSingle(
                   dataPre =
@@ -113,29 +125,6 @@ private[api] object DataConvert extends LazyLogging {
                   dataSource = inputData.dataSource
                 )
               }
-            case tFormat if rdfDataFormatNames.contains(tFormat) =>
-              for {
-                data <- rdfReasoner.serialize(tFormat)
-              } yield DataSingle(
-                dataPre = Option(data),
-                dataFormat = targetFormat,
-                inference = targetInference,
-                dataSource = inputData.dataSource
-              )
-            case tFormat if availableGraphFormatNames.contains(tFormat) =>
-              for {
-                eitherFormat <- either2io(getTargetFormat(tFormat))
-                dotStr = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)
-                data <- eitherFormat.fold(
-                  err => IO.raiseError(new RuntimeException(err)),
-                  _ => IO(dotStr)
-                )
-              } yield DataSingle(
-                dataPre = Option(data),
-                dataFormat = targetFormat,
-                inference = targetInference,
-                dataSource = inputData.dataSource
-              )
             case t =>
               IO.raiseError(new RuntimeException(s"Unsupported format: $t"))
           }
@@ -143,14 +132,4 @@ private[api] object DataConvert extends LazyLogging {
       })
     } yield conversionResult
   }
-
-  private def getTargetFormat(str: String): Either[String, Format] =
-    str.toUpperCase match {
-      case "SVG" => Right(Format.SVG)
-      case "PNG" => Right(Format.PNG)
-      case "PS"  => Right(Format.PS)
-      case _     => Left(s"Unsupported format $str")
-    }
-
-  private case class GraphFormat(name: String, mime: String, fmt: Format)
 }

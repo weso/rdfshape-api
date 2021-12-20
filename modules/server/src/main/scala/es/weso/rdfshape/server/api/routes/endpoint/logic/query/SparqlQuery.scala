@@ -31,8 +31,8 @@ sealed case class SparqlQuery private (
     * @return Either an error building the query text or a String containing the final text of the SPARQL query
     */
   lazy val rawQuery: Either[String, String] =
-    queryPre match {
-      case None => Left("Could not build the query from empty data")
+    queryPre.map(_.trim) match {
+      case None | Some("") => Left("Could not build the query from empty data")
 
       case Some(userQuery) =>
         querySource match {

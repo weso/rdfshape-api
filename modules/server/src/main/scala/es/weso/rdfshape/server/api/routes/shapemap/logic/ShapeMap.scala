@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api.routes.shapemap.logic
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdf.PrefixMap
 import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.format.dataFormats.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.{
@@ -18,12 +19,16 @@ import io.circe.{Decoder, Encoder, HCursor, Json}
 /** Data class representing a ShapeMap and its current source.
   *
   * @note Invalid initial data is accepted, but may cause exceptions when operating with it (like converting to JSON).
-  * @param shapeMapPre          Shapemap contents, as received before being processed depending on the [[source]]
-  * @param format       Shapemap format
-  * @param source       Active source, used to know which source the shapemap comes from
+  * @param shapeMapPre     Shapemap contents, as received before being processed depending on the [[source]]
+  * @param nodesPrefixMap  Prefix mappings of the data referenced in the shapemap
+  * @param shapesPrefixMap Prefix mappings of the ShEx schema referenced in the shapemap
+  * @param format          Shapemap format
+  * @param source          Active source, used to know which source the shapemap comes from
   */
 sealed case class ShapeMap private (
     private val shapeMapPre: Option[String],
+    private val nodesPrefixMap: PrefixMap = PrefixMap.empty,
+    private val shapesPrefixMap: PrefixMap = PrefixMap.empty,
     format: ShapeMapFormat,
     source: ShapeMapSource
 ) extends LazyLogging {
@@ -49,14 +54,22 @@ sealed case class ShapeMap private (
     * @return A ShapeMap instance used by WESO libraries in validation
     */
   lazy val innerShapeMap: Either[String, ShapeMapW] = {
-    rawShapeMap match {
+    rawShapeMap.map(_.trim) match {
+      case None | Some("") =>
+        Left("Cannot extract the ShapeMap from an empty instance")
       case Some(shapeMapStr) =>
+        println(nodesPrefixMap.pm)
         ShapeMapW
-          .fromString(shapeMapStr, format.name) match {
+          .fromString(
+            shapeMapStr,
+            format.name,
+            base = None,
+            nodesPrefixMap,
+            shapesPrefixMap
+          ) match {
           case Left(errorList) => Left(errorList.toList.mkString("\n"))
           case Right(shapeMap) => Right(shapeMap)
         }
-      case None => Left("Cannot extract the ShapeMap from an empty instance")
     }
   }
 }
@@ -116,11 +129,14 @@ private[api] object ShapeMap extends LazyLogging {
     * @return Either the shapemap or an error message
     */
   def mkShapeMap(
-      partsMap: PartsMap
+      partsMap: PartsMap,
+      nodesPrefixMap: Option[PrefixMap] = None,
+      shapesPrefixMap: Option[PrefixMap] = None
   ): IO[Either[String, ShapeMap]] = {
     for {
       // Get data sent in que query
       paramShapeMap <- partsMap.optPartValue(ShapeMapParameter.name)
+
       paramFormat <- ShapeMapFormat.fromRequestParams(
         ShapeMapFormatParameter.name,
         partsMap
@@ -137,10 +153,11 @@ private[api] object ShapeMap extends LazyLogging {
       // Create the shapemap instance
       shapeMap = ShapeMap(
         shapeMapPre = paramShapeMap,
+        nodesPrefixMap = nodesPrefixMap.getOrElse(PrefixMap.empty),
+        shapesPrefixMap = shapesPrefixMap.getOrElse(PrefixMap.empty),
         format = paramFormat.getOrElse(ApiDefaults.defaultShapeMapFormat),
         source = paramSource.getOrElse(defaultShapeMapSource)
       )
-
     } yield shapeMap.innerShapeMap.map(_ => shapeMap)
   }
 }

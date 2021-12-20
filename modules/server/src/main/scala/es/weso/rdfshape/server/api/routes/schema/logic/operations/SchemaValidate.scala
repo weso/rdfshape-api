@@ -55,7 +55,7 @@ private[api] object SchemaValidate extends LazyLogging {
       trigger match {
         // ShEx validation with Shapemap |
         // SHACL validation with target declarations
-        case TriggerShapeMap(_) | TriggerTargetDeclarations() =>
+        case _: TriggerShapeMap | _: TriggerTargetDeclarations =>
           for {
             innerSchema <- schema.getSchema
             result = innerSchema.flatMap(s => {
@@ -89,6 +89,7 @@ private[api] object SchemaValidate extends LazyLogging {
   )
 
   /** Convert a [[ValidationResult]] to its JSON representation
+    *
     * @note Exceptionally uses unsafeRun
     */
   implicit val encodeValidationResult: Encoder[ValidationResult] =
@@ -103,7 +104,7 @@ private[api] object SchemaValidate extends LazyLogging {
     *         used for API responses
     * @note
     */
-  implicit val encodeSchemaValidation: Encoder[SchemaValidate] =
+  implicit val encodeSchemaValidateOperation: Encoder[SchemaValidate] =
     (schemaValidate: SchemaValidate) => {
 
       // Convert ValidationResult to JSON

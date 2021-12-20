@@ -51,7 +51,7 @@ class DataService(client: Client[IO])
     /** Returns a JSON array with the accepted input or output RDF data formats
       */
     case GET -> Root / `api` / `verb` / "formats" / "input" =>
-      val formats     = RDFFormat.availableFormats ++ HtmlFormat.availableFormats
+      val formats     = RdfFormat.availableFormats ++ HtmlFormat.availableFormats
       val formatNames = formats.map(_.name)
       val json        = Json.fromValues(formatNames.map(Json.fromString))
       Ok(json)
@@ -59,7 +59,7 @@ class DataService(client: Client[IO])
     /** Returns a JSON array with the available output RDF data formats
       */
     case GET -> Root / `api` / `verb` / "formats" / "output" =>
-      val formatNames = RDFFormat.availableFormats.map(_.name)
+      val formatNames = RdfFormat.availableFormats.map(_.name)
       val json        = Json.fromValues(formatNames.map(Json.fromString))
       Ok(json)
 
@@ -102,9 +102,10 @@ class DataService(client: Client[IO])
     /** Obtain information about an RDF source.
       * Receives a JSON object with the input RDF information:
       *  - data [String]: RDF data (raw, URL containing the data or File with the data)
+      *  - dataFormat [String]: Format of the input RDF data
       *  - dataSource [String]: Identifies the source of the data (raw, URL, file...) so that the server knows how to handle it
       *  - dataFormat [String]: Format of the RDF data
-      *  - inference [String]: Inference to be applied
+      *  - inference [String]: Inference to be applied to the data
       *    Returns a JSON object with the operation results. See [[DataInfo.encodeDataInfoOperation]]
       */
     case req @ POST -> Root / `api` / `verb` / "info" =>
@@ -141,10 +142,14 @@ class DataService(client: Client[IO])
     /** Convert an RDF source into another format/syntax.
       * Receives a JSON object with the input RDF information:
       *  - data [String]: RDF data (raw, URL containing the data or File with the data)
+      *  - dataFormat [String]: Format of the input RDF data
       *  - dataSource [String]: Identifies the source of the data (raw, URL, file...) so that the server knows how to handle it
       *  - targetDataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
       *    Returns a JSON object with the operation results. See [[DataConvert.encodeDataConversionOperation]].
+      *    @note The "convert" endpoint is invoked for data visualizations too,
+      *          since these are just conversions to JSON, DOT, etc. later
+      *          interpreted by the web client
       */
     case req @ POST -> Root / `api` / `verb` / "convert" =>
       req.decode[Multipart[IO]] { m =>
@@ -160,7 +165,6 @@ class DataService(client: Client[IO])
 
           optTargetFormat = for {
             targetFormatStr <- optTargetFormatStr
-            // Standard data format or graphical format
             targetFormat <- DataFormat
               .fromString(targetFormatStr)
               .toOption
@@ -203,8 +207,8 @@ class DataService(client: Client[IO])
     /** Perform a SPARQL query on RDF data.
       * Receives a JSON object with the input RDF and query information:
       *  - data [String]: RDF data (raw, URL containing the data or File with the data)
+      *  - dataFormat [String]: Format of the input RDF data
       *  - dataSource [String]: Identifies the source of the data (raw, URL, file...) so that the server knows how to handle it
-      *  - dataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
       *
       *  - query [String]: SPARQL query data (raw, URL containing the data or File with the query)
@@ -258,8 +262,8 @@ class DataService(client: Client[IO])
     /** Attempt to extract a schema from an RDF source.
       * Receives a JSON object with the input RDF information:
       *  - data [String]: RDF data (raw, URL containing the data or File with the data)
+      *  - dataFormat [String]: Format of the input RDF data
       *  - dataSource [String]: Identifies the source of the data (raw, URL, file...) so that the server knows how to handle it
-      *  - dataFormat [String]: Format of the RDF data
       *  - inference [String]: Inference to be applied
       *  - nodeSelector [String]: Node selector to use
       *    Returns a JSON object with the extraction information (see [[DataExtract.encodeDataExtractOperation]]

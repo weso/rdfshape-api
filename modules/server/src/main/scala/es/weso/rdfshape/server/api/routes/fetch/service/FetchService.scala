@@ -6,12 +6,10 @@ import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.UrlParameter
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
+import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
-import scalaj.http.Http
-
-import scala.util.{Failure, Success, Try}
 
 class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
 
@@ -28,20 +26,9 @@ class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
       */
     case GET -> Root / `api` / `verb` :?
         UrlParameter(url) =>
-      Try {
-        Http(url).asString
-      } match {
-        case Success(res) if res.isSuccess => Ok(res.body)
-        case Success(res) =>
-          errorResponseJson(
-            s"Could not fetch URL: status ${res.code}",
-            InternalServerError
-          )
-        case Failure(exc) =>
-          errorResponseJson(
-            s"Could not fetch URL: ${exc.getMessage}",
-            InternalServerError
-          )
+      getUrlContents(url) match {
+        case Left(err)      => errorResponseJson(err, InternalServerError)
+        case Right(content) => Ok(content)
       }
   }
 

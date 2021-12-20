@@ -14,7 +14,7 @@ curl https://api.rdfshape.weso.es/api/schema/validate -G --data-urlencode 'data=
 ## Validate (POST with file input)
 
 ```
-curl -X POST -F 'data=@data.ttl' -F 'schema=@data.shex' -F 'shapeMap=@data.shapeMap' -F 'triggerMode=ShapeMap' -F 'engine=ShEx' https://api.rdfshape.weso.es/api/schema/validate
+curl -X POST -F 'data=@data.ttl' -F 'schema=@data.shex' -F 'shapeMap=@data.shapeMap' -F 'triggerMode=shapeMap' -F 'engine=ShEx' https://api.rdfshape.weso.es/api/schema/validate
 ```
 
 ## Wikidata examples
@@ -37,9 +37,9 @@ the [Cytoscape component](https://github.com/plotly/react-cytoscapejs).
 
 ```
 curl -k -i -X POST -H "Content-type:multipart/form-data" 'https://api.rdfshape.weso.es/api/data/convert' \
-  --form-string 'dataUrl=http://tb.plazi.org/GgServer/rdf/9D767B515A0BFFC3C0F7919FF301FC8D' \
-  --form-string 'dataFormatUrl=rdf/xml' --form-string 'targetDataFormat=JSON' \
+  --form-string 'data=http://tb.plazi.org/GgServer/rdf/9D767B515A0BFFC3C0F7919FF301FC8D' \
+  --form-string 'dataFormat=rdf/xml' --form-string 'dataSource=byUrl' --form-string 'targetDataFormat=JSON' \
 ```
 
 Notice that as we are querying the @API_URL@ service, which requires
-a SSL connection, we use option `-k`.
+an SSL connection, we use option `-k`.

@@ -302,7 +302,7 @@ lazy val loggingVersion      = "3.9.4"
 lazy val groovyVersion       = "3.0.8"
 lazy val munitVersion        = "0.7.27"
 lazy val munitEffectVersion  = "1.0.6"
-lazy val plantumlVersion     = "8059"
+lazy val plantumlVersion     = "1.2021.14"
 lazy val scalajVersion       = "2.4.2"
 lazy val scalatagsVersion    = "0.9.4"
 // WESO dependencies

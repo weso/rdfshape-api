@@ -7,14 +7,14 @@ import org.http4s.MediaType
   *
   * @see {@link DataFormat}
   */
-sealed class RDFFormat(formatName: String, formatMimeType: MediaType)
-    extends DataFormat(formatName, formatMimeType) {}
+sealed class RdfFormat(formatName: String, formatMimeType: MediaType)
+    extends DataFormat(formatName, formatMimeType)
 
 /** Companion object with all RDFFormat static utilities
   */
-object RDFFormat extends FormatCompanion[RDFFormat] {
+object RdfFormat extends FormatCompanion[RdfFormat] {
 
-  override lazy val availableFormats: List[RDFFormat] =
+  override lazy val availableFormats: List[RdfFormat] =
     List(
       Turtle,
       NTriples,
@@ -24,13 +24,13 @@ object RDFFormat extends FormatCompanion[RDFFormat] {
       RdfXml,
       RdfJson
     )
-  override val defaultFormat: RDFFormat = Turtle
+  override val defaultFormat: RdfFormat = Turtle
 }
 
 /** Represents the mime-type "text/turtle"
   */
 case object Turtle
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "Turtle",
       formatMimeType = new MediaType("text", "turtle")
     )
@@ -38,7 +38,7 @@ case object Turtle
 /** Represents the mime-type "application/n-triples"
   */
 case object NTriples
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "N-Triples",
       formatMimeType = new MediaType("application", "n-triples")
     )
@@ -46,7 +46,7 @@ case object NTriples
 /** Represents the mime-type "application/n-quads"
   */
 case object NQuads
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "N-Quads",
       formatMimeType = new MediaType("application", "n-quads")
     )
@@ -54,7 +54,7 @@ case object NQuads
 /** Represents the mime-type "application/trig"
   */
 case object Trig
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "TriG",
       formatMimeType = new MediaType("application", "trig")
     )
@@ -62,7 +62,7 @@ case object Trig
 /** Represents the mime-type "application/ld+json"
   */
 case object JsonLd
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "JSON-LD",
       formatMimeType = new MediaType("application", "ld+json")
     )
@@ -70,7 +70,7 @@ case object JsonLd
 /** Represents the mime-type "application/rdf+xml"
   */
 case object RdfXml
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "RDF/XML",
       formatMimeType = new MediaType("application", "rdf+xml")
     )
@@ -78,7 +78,7 @@ case object RdfXml
 /** Represents the mime-type "application/json"
   */
 case object RdfJson
-    extends RDFFormat(
+    extends RdfFormat(
       formatName = "RDF/JSON",
       formatMimeType = MediaType.application.json
     )

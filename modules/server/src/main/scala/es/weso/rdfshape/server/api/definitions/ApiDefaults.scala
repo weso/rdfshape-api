@@ -8,7 +8,7 @@ import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.{
 }
 import es.weso.rdfshape.server.api.format.dataFormats.{
   DataFormat,
-  RDFFormat,
+  RdfFormat,
   ShapeMapFormat
 }
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
@@ -19,13 +19,14 @@ import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.ShapeMapSource
 import es.weso.schema.{Schema, Schemas, ShapeMapTrigger}
 import es.weso.shapemaps.ShapeMap
+import es.weso.utils.FileUtils
 
 /** Application-wide defaults
   */
 case object ApiDefaults {
   val availableDataFormats: List[DataFormat]     = DataFormat.availableFormats
   val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
-  val defaultRdfFormat: RDFFormat                = RDFFormat.defaultFormat
+  val defaultRdfFormat: RdfFormat                = RdfFormat.defaultFormat
   val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
   val defaultSchemaFormat: SchemaFormat          = ShaclFormat.defaultFormat
   val defaultSchemaFormatName: String            = defaultSchemaFormat.name
@@ -52,5 +53,6 @@ case object ApiDefaults {
   val defaultActiveShapeMapTab               = "#shapeMapTextArea"
   val defaultShapeLabel: IRI                 = IRI("Shape")
   val relativeBase: Some[IRI]                = Some(IRI("internal://base/"))
+  def localBase: IRI                         = IRI(FileUtils.currentFolderURL)
 
 }

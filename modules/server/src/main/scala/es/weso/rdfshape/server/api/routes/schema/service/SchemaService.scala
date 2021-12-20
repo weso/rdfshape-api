@@ -3,18 +3,30 @@ package es.weso.rdfshape.server.api.routes.schema.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
+import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.{
   ShExFormat,
   ShaclFormat
 }
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.schema.logic.operations.SchemaInfo
-import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerModeType
+import es.weso.rdfshape.server.api.routes.data.logic.types.Data
+import es.weso.rdfshape.server.api.routes.schema.logic.aux.SchemaAdapter
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.{
+  SchemaConvert,
+  SchemaInfo,
+  SchemaValidate
+}
+import es.weso.rdfshape.server.api.routes.schema.logic.trigger.{
+  TriggerMode,
+  TriggerModeType,
+  TriggerShapeMap
+}
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
+import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
-import es.weso.schema.{Schemas, ShExSchema}
+import es.weso.schema.{Schemas, ShExSchema, Result => ValidationResult}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.http4s._
@@ -103,9 +115,8 @@ class SchemaService(client: Client[IO])
       *  - schemaSource [String]: Identifies the source of the schema (raw, URL, file...)
       *  - schemaFormat [String]: Format of the schema
       *  - schemaEngine [String]: Engine used to process the schema (ignored for ShEx)
-      * Returns a JSON object with the operation results. See [[SchemaInfo.encodeSchemaInfoOperation]].
+      *    Returns a JSON object with the operation results. See [[SchemaInfo.encodeSchemaInfoOperation]].
       */
-    // TODO: show errors in a friendlier way in the client's UI
     case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
         {
@@ -129,149 +140,153 @@ class SchemaService(client: Client[IO])
 
           } yield response
         }
+      }
 
-      /** Convert a given schema to another accepted format.
-        * Receives a JSON object with the input schema information:
-        *  - schema [String]: Raw schema data
-        *  - schemaUrl [String]: Url containing the schema
-        *  - schemaFile [File Object]: File containing schema
-        *  - schemaFormat [String]: Format of the schema
-        *  - targetSchemaFormat [String]: Desired format after conversion of the schema
-        *  - schemaEngine [String]: Engine used to process the schema
-        *  - activeSchemaTab [String]: Identifies the source of the schema (raw, URL, file...)
-        *    Returns a JSON object with the converted schema information:
-        *    - message [String]: Informational message on success
-        *    - schema [String]: Original input schema
-        *    - schemaFormat [String]: Format of the original schema
-        *    - schemaEngine [String]: Engine of the conversion
-        *    - targetSchemaFormat [String]: Format of the output schema
-        *    - result [String]: Output schema
-        *    - shapeMap [String]: Output shapemap, if any
-        */
-      //    case req @ POST -> Root / `api` / `verb` / "convert" =>
-      //      req.decode[Multipart[IO]] { m =>
-      //        {
-      //          val partsMap = PartsMap(m.parts)
-      //          logger.info(s"POST info partsMap. $partsMap")
-      //          val r: IO[Json] = for {
-      //            schemaPair <- SchemaSimple.mkSchema(partsMap, None)
-      //            (schema, sp) = schemaPair
-      //
-      //            targetSchemaFormat <- optEither2f(
-      //              sp.targetSchemaFormat,
-      //              SchemaFormat.fromString
-      //            )
-      //            converted <- convertSchema(
-      //              schema,
-      //              sp.schemaPre,
-      //              sp.schemaFormat,
-      //              sp.schemaEngine.getOrElse(defaultSchemaEngineName),
-      //              targetSchemaFormat,
-      //              sp.targetSchemaEngine
-      //            )
-      //          } yield {
-      //            converted.toJson
-      //          }
-      //          for {
-      //            e <- r.attempt
-      //            v <- e.fold(
-      //              t => errorResponseJson(t.getMessage, InternalServerError),
-      //              Ok(_)
-      //            )
-      //          } yield v
-      //        }
-      //      }
+    /** Convert a given schema to another accepted format (this includes
+      * graphic formats for visualizations).
+      * * Receives a JSON object with the input schema information:
+      *  - schema [String]: Schema data (raw, URL containing the schema or File with the schema)
+      *  - schemaSource [String]: Identifies the source of the schema (raw, URL, file...)
+      *  - schemaFormat [String]: Format of the schema
+      *  - schemaEngine [String]: Engine used to process the schema (ignored for ShEx)
+      *  - targetSchemaFormat [String]: Desired format after conversion of the schema
+      *    Returns a JSON object with the operation results. See [[SchemaConvert.encodeSchemaConvertOperation]].
+      */
+    case req @ POST -> Root / `api` / `verb` / "convert" =>
+      req.decode[Multipart[IO]] { m =>
+        {
+          val partsMap = PartsMap(m.parts)
+          for {
+            // Get the schema from the partsMap
+            eitherSchema <- Schema.mkSchema(partsMap)
+            // Get the target schema format
+            optTargetFormatStr <- partsMap.optPartValue(
+              TargetSchemaFormatParameter.name
+            )
+            optTargetFormat = for {
+              targetFormatStr <- optTargetFormatStr
+              targetFormat <- DataFormat
+                .fromString(targetFormatStr)
+                .toOption
+            } yield targetFormat
 
-      /** Convert a given schema to a UML visualization using PlantUML.
-        * Receives a JSON object with the input schema information:
-        *  - schema [String]: Raw schema data
-        *  - schemaUrl [String]: Url containing the schema
-        *  - schemaFile [File Object]: File containing schema
-        *  - schemaFormat [String]: Format of the schema
-        *  - schemaEngine [String]: Engine used to process the schema
-        *  - activeSchemaTab [String]: Identifies the source of the schema (raw, URL, file...)
-        *    Returns a JSON object with the converted schema information:
-        *    - schemaType [String]: Type of the schema
-        *    - schemaEngine [String]: Engine of the schema
-        *    - svg [String]: Array of the shapes in the schema
-        *    - plantUml [String]: Array of the shapes in the schema
-        */
-      //    case req @ POST -> Root / `api` / `verb` / "visualize" =>
-      //      req.decode[Multipart[IO]] { m =>
-      //        {
-      //          val partsMap = PartsMap(m.parts)
-      //          val r: IO[Json] = for {
-      //            schemaPair <- SchemaSimple.mkSchema(partsMap, None)
-      //            (schema, _) = schemaPair
-      //            v <- schemaVisualize(schema)
-      //          } yield {
-      //            v
-      //          }
-      //          for {
-      //            e <- r.attempt
-      /* v <- e.fold(t => errorResponseJson(t.getMessage, BadRequest), Ok(_)) */
-      //          } yield v
-      //        }
-      //      }
+            // Get the target engine
+            optTargetEngineStr <- partsMap.optPartValue(
+              TargetSchemaEngineParameter.name
+            )
+            optTargetEngine = for {
+              targetEngineStr <- optTargetEngineStr
+              targetEngine <- SchemaAdapter.schemaEngineFromString(
+                targetEngineStr
+              )
+            } yield targetEngine
 
-      // TODO: test and include in the client
-      //    case req @ POST -> Root / `api` / `verb` / "cytoscape" =>
-      //      req.decode[Multipart[IO]] { m =>
-      //        {
-      //          val partsMap = PartsMap(m.parts)
-      //          logger.info(s"POST info partsMap. $partsMap")
-      //          val r: IO[Json] = for {
-      //            schemaPair <- SchemaSimple.mkSchema(partsMap, None)
-      //            (schema, _) = schemaPair
-      //          } yield {
-      //            schemaCytoscape(schema)
-      //          }
-      //          for {
-      //            e <- r.attempt
-      /* v <- e.fold(t => errorResponseJson(t.getMessage, BadRequest), Ok(_)) */
-      //          } yield v
-      //        }
-      //      }
+            // Abort if no valid target format, else continue
+            response <- optTargetFormat match {
+              case None =>
+                errorResponseJson(
+                  "Empty or invalid target format for conversion",
+                  BadRequest
+                )
+              case Some(targetFormat) =>
+                eitherSchema match {
+                  case Left(err) => errorResponseJson(err, InternalServerError)
+                  case Right(schema) =>
+                    SchemaConvert
+                      .schemaConvert(
+                        schema,
+                        targetFormat,
+                        optTargetEngine
+                      )
+                      .flatMap(result => Ok(result.asJson))
+                      .handleErrorWith(err =>
+                        errorResponseJson(err.getMessage, InternalServerError)
+                      )
+                }
+            }
+          } yield response
+        }
+      }
 
-      // TODO: Enhance API response
-      /** Validates RDF data against a given schema-shapemap.
-        * Receives a JSON object with the input data, schema and shapemap information:
-        *  - data [String]: RDF data
-        *  - dataUrl [String]: Url containing the RDF data
-        *  - dataFile [File Object]: File containing RDF data
-        *  - dataFormat [String]: Format of the RDF data
-        *  - inference [String]: Inference to be applied
-        *  - activeDataTab [String]: Identifies the source of the data (raw, URL, file...)
-        *  - endpoint [String]: Additional endpoint to serve as a source of data
-        *  - schema [String]: Raw schema data
-        *  - schemaUrl [String]: Url containing the schema
-        *  - schemaFile [File Object]: File containing the schema
-        *  - schemaFormat [String]: Format of the schema
-        *  - schemaEngine [String]: Engine used to process the schema
-        *  - activeSchemaTab [String]: Identifies the source of the schema (raw, URL, file...)
-        *  - triggerMode [String]: Validation trigger mode
-        *  - shapeMap [String]: Raw shapemap data
-        *  - shapeMapUrl [String]: Url containing the shapemap
-        *  - shapeMapFile [File Object]: File containing the shapemap
-        *  - shapeMapFormat [String]: Format of the shapemap
-        *  - activeShapeMapTab [String]: Identifies the source of the shapemap (raw, URL, file...)
-        *    Returns a JSON object with the converted schema information:
-        *    - valid [Boolean]: Whether the data is at least partially valid or not
-        *    - message [String]: Informational message
-        *    - validationReport [String]: Additional validation information
-        *    - schema [String]: Original input schema
-        *    - nodesPrefixMap [Object]: Key/value structure with the data prefixes
-        *    - shapesPrefixMap [Object]: Key/value structure with the schema prefixes
-        *    - shapeMap [Array]: Array containing the validation results for each node. Each result has:
-        *        - node [String]: Full name of the affected node
-        *        - shape [String]: Full name of the affected shape
-        *        - status [String]: Whether this node conforms this shape
-        *        - appInfo [Object]: Additional information on why the node conforms or not
-        *    - errors [Array]: Array of errors in the validation
-        */
-      /* TODO: redo */
-      //    case req @ POST -> Root / `api` / `verb` / "validate" =>
-      //      req.decode[Multipart[IO]] { m =>
+    /** Validates RDF data against a given schema-shapemap.
+      * Receives a JSON object with the input data, schema and shapemap information:
+      *
+      *  - data [String]: RDF data (raw, URL containing the data or File with the data)
+      *  - dataSource [String]: Identifies the source of the data (raw, URL, file...) so that the server knows how to handle it
+      *  - dataFormat [String]: Format of the RDF data
+      *  - inference [String]: Inference to be applied to the data
+      *
+      *  - schema [String]: Schema data (raw, URL containing the schema or File with the schema)
+      *  - schemaSource [String]: Identifies the source of the schema (raw, URL, file...)
+      *  - schemaFormat [String]: Format of the schema
+      *  - schemaEngine [String]: Engine used to process the schema (ignored for ShEx)
+      *
+      *  - shapeMap [String]: ShapeMap data (raw, URL containing the shapeMap or File with the shapeMap)
+      *  - shapeMapSource [String]: Identifies the source of the shapeMap (raw, URL, file...)
+      *  - shapeMapFormat [String]: Format of the shapemap
+      *
+      *  - endpoint [String]: Additional endpoint to serve as a source of data
+      *  - triggerMode [String]: Validation trigger mode
+      *
+      * Returns a JSON object with the operation results. See [[SchemaValidate.encodeSchemaValidateOperation]] and [[ValidationResult.toJson()]].
+      *
+      * @note When obtaining the trigger mode from the parameters,
+      *       if the [[TriggerMode]] is shapeMap, the corresponding [[ShapeMap]]
+      *       object will be embedded in the resulting [[TriggerShapeMap]]
+      */
+    case req @ POST -> Root / `api` / `verb` / "validate" =>
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+        val response = for {
+          /* Get the data, schema and trigger-mode from the partsMap.
+           * If the trigger-mode is "shapeMap", the shapemap will be embedded in
+           * the trigger object */
+
+          eitherData <- Data.mkData(partsMap)
+
+          eitherSchema <- Schema.mkSchema(partsMap)
+
+          eitherTriggerMode <- TriggerMode
+            .mkTriggerMode(
+              partsMap,
+              eitherData.toOption,
+              eitherSchema.toOption
+            )
+
+          // Contains either the first error encountered or the validation
+          eitherValidationData = for {
+            data    <- eitherData
+            schema  <- eitherSchema
+            trigger <- eitherTriggerMode
+          } yield (data, schema, trigger)
+
+          response <- eitherValidationData match {
+            case Left(err) => errorResponseJson(err, InternalServerError)
+            case Right((data, schema, trigger)) =>
+              SchemaValidate
+                .schemaValidate(data, schema, trigger)
+                .flatMap(result => Ok(result.asJson))
+                .handleErrorWith(err =>
+                  errorResponseJson(err.getMessage, InternalServerError)
+                )
+          }
+
+        } yield response
+        response.handleErrorWith(err =>
+          err.getMessage match {
+            case msg: String =>
+              errorResponseJson(
+                msg,
+                InternalServerError
+              )
+            case _ =>
+              errorResponseJson(
+                SchemaServiceError.couldNotValidateData,
+                InternalServerError
+              )
+          }
+        )
+
       //        {
       //          val partsMap = PartsMap(m.parts)
       //          val r = for {
@@ -284,7 +299,7 @@ class SchemaService(client: Client[IO])
       //                  schemaPair <- Schema.mkSchema(partsMap, Some(rdf))
       //                  (schema, _) = schemaPair
       /* maybeTriggerMode <- TriggerMode.mkTriggerMode(partsMap) */
-      //                  newRdf           <- applyInference(rdf, dp.inference)
+      /* newRdf <- applyInference(rdf, dp.inference) */
       //                  ret <- maybeTriggerMode match {
       //                    case Left(err) =>
       //                      IO.raiseError(
@@ -319,9 +334,9 @@ class SchemaService(client: Client[IO])
       //            )
       //          } yield res
       //        }
-      //      }
       }
   }
+
 }
 
 object SchemaService {
@@ -333,4 +348,10 @@ object SchemaService {
     */
   def apply(client: Client[IO]): SchemaService =
     new SchemaService(client)
+}
+
+private object SchemaServiceError extends Enumeration {
+  type SchemaServiceError = String
+  val couldNotValidateData: SchemaServiceError =
+    "Unknown error validating the data provided. Check the inputs."
 }

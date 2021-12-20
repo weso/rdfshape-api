@@ -4,7 +4,7 @@ import es.weso.rdfshape.server.api.format._
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
 import org.http4s.MediaType
 
-/** Extension of the Format interface to represent RDF data formats
+/** Extension of the Format interface to represent generic data formats (RDF, schema, shapeMaps...)
   */
 class DataFormat(formatName: String, formatMimeType: MediaType) extends Format {
   override val name: String        = formatName
@@ -16,7 +16,7 @@ class DataFormat(formatName: String, formatMimeType: MediaType) extends Format {
 object DataFormat extends FormatCompanion[DataFormat] {
 
   override lazy val availableFormats: List[DataFormat] =
-    (RDFFormat.availableFormats ++
+    (RdfFormat.availableFormats ++
       SchemaFormat.availableFormats ++
       HtmlFormat.availableFormats ++
       GraphicFormat.availableFormats ++
