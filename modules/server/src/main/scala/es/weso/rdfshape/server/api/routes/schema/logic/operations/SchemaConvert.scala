@@ -53,7 +53,7 @@ private[api] object SchemaConvert extends LazyLogging {
           ("message", Json.fromString(schemaConvert.successMessage)),
           ("schema", schemaConvert.inputSchema.asJson),
           ("result", schemaConvert.result.asJson),
-          ("targetDataFormat", schemaConvert.targetFormat.asJson)
+          ("targetSchemaFormat", schemaConvert.targetFormat.asJson)
         )
       )
 

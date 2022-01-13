@@ -94,7 +94,7 @@ private[api] object ShapeMap extends LazyLogging {
       Json.obj(
         ("shapeMap", shapeMap.rawShapeMap.asJson),
         ("format", shapeMap.format.asJson),
-        ("inner", shapeMap.innerShapeMap.toOption.map(_.toJson).asJson)
+        ("model", shapeMap.innerShapeMap.toOption.map(_.toJson).asJson)
       )
 
   /** Decode JSON into [[ShapeMap]] instances

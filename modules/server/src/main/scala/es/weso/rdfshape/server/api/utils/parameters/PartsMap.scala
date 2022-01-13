@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.format.Format
-import fs2.text.utf8Decode
+import fs2.text.utf8.decode
 import org.http4s.multipart.Part
 
 /** Data class containing a map of a request's parameters with the form (param name: param content)
@@ -51,7 +51,7 @@ case class PartsMap private (map: Map[String, Part[IO]]) {
   def optPartValue(key: String): IO[Option[String]] =
     map.get(key) match {
       case Some(part) =>
-        part.body.through(utf8Decode).compile.foldMonoid.map(Some.apply)
+        part.body.through(decode).compile.foldMonoid.map(Some.apply)
       case None => IO.pure(None)
     }
 }

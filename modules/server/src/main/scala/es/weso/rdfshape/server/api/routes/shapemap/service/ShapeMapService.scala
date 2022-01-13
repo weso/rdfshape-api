@@ -6,7 +6,7 @@ import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
-import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap.mkShapeMap
+import es.weso.rdfshape.server.api.routes.shapemap.logic.operations.ShapeMapInfo
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import io.circe._
@@ -16,8 +16,6 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.multipart._
-
-import scala.util.{Failure, Success, Try}
 
 /** API service to handle shapemap-related operations
   *
@@ -59,34 +57,25 @@ class ShapeMapService(client: Client[IO])
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
 
-        val maybeShapeMap: IO[Either[String, ShapeMap]] = mkShapeMap(partsMap)
-        maybeShapeMap.attempt.flatMap(
-          _.fold(
-            // General exception
-            e => errorResponseJson(e.getMessage, InternalServerError),
-            {
-              // Error parsing the ShapeMap information sent
-              case Left(errorStr) => errorResponseJson(errorStr, BadRequest)
-              // Success parsing the ShapeMap information sent
-              case Right(shapeMap) =>
-                shapeMap.innerShapeMap match {
-                  // Error creating the inner ShapeMap instance from the data
-                  case Left(errorStr) =>
-                    errorResponseJson(errorStr, InternalServerError)
-                  // Success creating the inner ShapeMap instance from the data.
-                  // Try to get JSON representation
-                  case Right(_) =>
-                    Try {
-                      shapeMap.asJson
-                    } match {
-                      case Failure(exc) =>
-                        errorResponseJson(exc.getMessage, InternalServerError)
-                      case Success(json) => Ok(json)
-                    }
-                }
-            }
+        for {
+          // Get the schema from the partsMap
+          eitherShapeMap <- ShapeMap.mkShapeMap(
+            partsMap
           )
-        )
+          response <- eitherShapeMap.fold(
+            // If there was an error parsing the schema, return it
+            err => errorResponseJson(err, InternalServerError),
+            // Else, try and compute the schema info
+            shapeMap =>
+              ShapeMapInfo
+                .shapeMapInfo(shapeMap)
+                .flatMap(info => Ok(info.asJson))
+                .handleErrorWith(err =>
+                  errorResponseJson(err.getMessage, InternalServerError)
+                )
+          )
+
+        } yield response
       }
   }
 

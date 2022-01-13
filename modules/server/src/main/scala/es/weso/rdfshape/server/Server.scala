@@ -21,12 +21,11 @@ import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.client.Client
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
-import org.http4s.server.middleware.{CORS, CORSConfig, Logger}
+import org.http4s.server.middleware.{CORS, CORSPolicy, Logger}
 import org.http4s.{HttpApp, HttpRoutes}
 
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
-import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
@@ -91,7 +90,7 @@ private class Server(
     */
   private def stream(sslContext: Option[SSLContext]): Stream[IO, ExitCode] = {
     for {
-      client <- BlazeClientBuilder[IO](global)
+      client <- BlazeClientBuilder[IO]
         .withRequestTimeout(requestTimeout.minute)
         .withIdleTimeout(idleTimeout.minute)
         .stream
@@ -112,7 +111,7 @@ private class Server(
       sslContext: Option[SSLContext] = None
   ): BlazeServerBuilder[IO] = {
 
-    val baseServer = BlazeServerBuilder[IO](global)
+    val baseServer = BlazeServerBuilder[IO]
       .bindHttp(port, ip)
       .withIdleTimeout(idleTimeout.minutes)
       .withResponseHeaderTimeout(requestTimeout.minute)
@@ -167,11 +166,10 @@ object Server {
 
   /** Application's CORS configuration
     */
-  private val corsConfiguration = CORSConfig.default
-    .withAnyOrigin(true)
-    .withAnyMethod(true)
-    .withAllowCredentials(true)
-    .withMaxAge(new FiniteDuration(1, TimeUnit.DAYS))
+  private val corsConfiguration: CORSPolicy =
+    CORS.policy.withAllowOriginAll.withAllowMethodsAll
+      .withAllowCredentials(true)
+      .withMaxAge(new FiniteDuration(1, TimeUnit.DAYS))
 
   // Act as a server factory
 
@@ -195,8 +193,8 @@ object Server {
 
   /** Configure the http4s application to use the specified sources as API routes
     */
-  private def routesService(client: Client[IO]): HttpRoutes[IO] =
-    CORS(
+  private def routesService(client: Client[IO]): HttpRoutes[IO] = {
+    corsConfiguration.apply(
       APIService(client).routes <+>
         DataService(client).routes <+>
         SchemaService(client).routes <+>
@@ -205,7 +203,7 @@ object Server {
         WikibaseService(client).routes <+>
         EndpointService(client).routes <+>
         PermalinkService(client).routes <+>
-        FetchService(client).routes,
-      corsConfiguration
+        FetchService(client).routes
     )
+  }
 }

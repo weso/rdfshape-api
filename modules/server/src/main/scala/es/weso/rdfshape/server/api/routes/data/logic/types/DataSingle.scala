@@ -196,7 +196,7 @@ private[api] object DataSingle
 
         dataInference <-
           cursor
-            .downField("inference")
+            .downField("dataInference")
             .as[InferenceEngine]
 
         dataSource <- cursor

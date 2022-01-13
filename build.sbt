@@ -139,9 +139,6 @@ lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
     "-private"
   )
 )
-
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
-ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 // Shared publish settings for all modules.
 lazy val publishSettings = Seq(
   organization := "es.weso",
@@ -186,6 +183,12 @@ lazy val resolverSettings = Seq(
     Resolver.sonatypeRepo("snapshots")
   )
 )
+// "sbt-github-actions" plugin settings
+val JavaCIVersion  = "adopt@1.11"
+val ScalaCIVersion = "2.13.6"
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
+ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
+
 // Shared settings for the BuildInfo Plugin
 // See https://github.com/sbt/sbt-buildinfo
 lazy val buildInfoSettings = Seq(
@@ -257,7 +260,6 @@ lazy val server = project
       http4sBlazeClient,
       http4sEmberClient,
       http4sCirce,
-      scalatags,
       umlShaclex,
       shexs,
       shaclex,
@@ -290,26 +292,25 @@ lazy val docs = project
   )
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* DEPENDENCY versions */
-lazy val http4sVersion = "1.0.0-M23"
-lazy val catsVersion   = "2.6.1"
+lazy val http4sVersion = "1.0.0-M30"
+lazy val catsVersion   = "2.7.0"
 /* ------------------------------------------------------------------------- */
-lazy val mongodbVersion      = "4.3.2"
+lazy val mongodbVersion      = "4.4.0"
 lazy val any23Version        = "2.4"
-lazy val rdf4jVersion        = "3.7.3"
+lazy val rdf4jVersion        = "3.7.4"
 lazy val graphvizJavaVersion = "0.18.1"
-lazy val logbackVersion      = "1.2.6"
+lazy val logbackVersion      = "1.2.10"
 lazy val loggingVersion      = "3.9.4"
 lazy val groovyVersion       = "3.0.8"
 lazy val munitVersion        = "0.7.27"
-lazy val munitEffectVersion  = "1.0.6"
+lazy val munitEffectVersion  = "1.0.7"
 lazy val plantumlVersion     = "1.2021.14"
 lazy val scalajVersion       = "2.4.2"
-lazy val scalatagsVersion    = "0.9.4"
 // WESO dependencies
-lazy val shaclexVersion    = "0.1.103-SNAPSHOT"
-lazy val shexsVersion      = "0.1.97"
+lazy val shaclexVersion    = "0.1.103ult"
+lazy val shexsVersion      = "0.1.105"
 lazy val umlShaclexVersion = "0.0.82"
-lazy val wesoUtilsVersion  = "0.1.99"
+lazy val wesoUtilsVersion  = "0.2.2"
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 lazy val http4sBlazeServer =
@@ -326,8 +327,9 @@ lazy val any23_core  = "org.apache.any23"   % "apache-any23-core"  % any23Versio
 lazy val any23_api   = "org.apache.any23"   % "apache-any23-api"   % any23Version
 lazy val any23_scraper =
   "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.3"
-lazy val rdf4j_runtime  = "org.eclipse.rdf4j"        % "rdf4j-runtime"   % rdf4jVersion
-lazy val graphvizJava   = "guru.nidi"                % "graphviz-java"   % graphvizJavaVersion
+lazy val rdf4j_runtime = "org.eclipse.rdf4j" % "rdf4j-runtime" % rdf4jVersion
+lazy val graphvizJava  = "guru.nidi"         % "graphviz-java" % graphvizJavaVersion
+//noinspection SbtDependencyVersionInspection
 lazy val plantuml       = "net.sourceforge.plantuml" % "plantuml"        % plantumlVersion
 lazy val logbackClassic = "ch.qos.logback"           % "logback-classic" % logbackVersion
 lazy val scalaLogging =
@@ -336,13 +338,9 @@ lazy val groovy = "org.codehaus.groovy" % "groovy" % groovyVersion
 lazy val munit  = "org.scalameta"      %% "munit"  % munitVersion
 lazy val munitEffect =
   "org.typelevel" %% "munit-cats-effect-3" % munitEffectVersion
-lazy val scalaj    = "org.scalaj"  %% "scalaj-http" % scalajVersion
-lazy val scalatags = "com.lihaoyi" %% "scalatags"   % scalatagsVersion
+lazy val scalaj = "org.scalaj" %% "scalaj-http" % scalajVersion
 // WESO dependencies
 lazy val shexs      = "es.weso" %% "shexs"      % shexsVersion
 lazy val shaclex    = "es.weso" %% "shaclex"    % shaclexVersion
 lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
 lazy val wesoUtils  = "es.weso" %% "utilstest"  % wesoUtilsVersion
-// "sbt-github-actions" plugin settings
-val JavaCIVersion  = "adopt@1.11"
-val ScalaCIVersion = "2.13.6"

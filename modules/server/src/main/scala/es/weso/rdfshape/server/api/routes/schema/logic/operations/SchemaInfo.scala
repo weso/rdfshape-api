@@ -24,7 +24,7 @@ private[api] object SchemaInfo extends LazyLogging {
 
   private val successMessage = "Well formed Schema"
 
-  /** Given an input data, get information about it
+  /** Given an input schema, get information about it
     *
     * @param schema Input schema instance of any type
     * @return A [[SchemaInfo]] instance with the information of the input schema
