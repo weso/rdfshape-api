@@ -28,9 +28,9 @@ import org.eclipse.rdf4j.model.{
 
 import scala.util.Try
 
-/** Utilities for extracting RDF models from different sources
+/** Utilities for extracting RDF models from HTML markdown fetched from different sources
   */
-object HTML2RDF extends LazyLogging {
+object HtmlToRdf extends LazyLogging {
 
   /** List of all available RDF data extractors
     */
@@ -164,6 +164,12 @@ object HTML2RDF extends LazyLogging {
       case b: BNode    => cnvBNode(b)
     }
 
+    def cnvBNode(b: BNode): JenaResource =
+      model.createResource(AnonId.create(b.getID))
+
+    def cnvIRI(p: RDF4jIRI): JenaProperty =
+      model.createProperty(p.toString)
+
     def cnvObj(o: Value): JenaRDFNode = o match {
       case i: RDF4jIRI => cnvIRI(i)
       case b: BNode    => cnvBNode(b)
@@ -173,12 +179,6 @@ object HTML2RDF extends LazyLogging {
         } else
           model.createTypedLiteral(l.getLabel, l.getDatatype.toString)
     }
-
-    def cnvBNode(b: BNode): JenaResource =
-      model.createResource(AnonId.create(b.getID))
-
-    def cnvIRI(p: RDF4jIRI): JenaProperty =
-      model.createProperty(p.toString)
 
     override def startDocument(
         documentIRI: RDF4jIRI

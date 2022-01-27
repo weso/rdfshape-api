@@ -12,7 +12,7 @@ import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.aux.InferenceCodecs._
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.rdfshape.server.html2rdf.HTML2RDF
+import es.weso.rdfshape.server.html2rdf.HtmlToRdf
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import io.circe._
 import io.circe.syntax.EncoderOps
@@ -94,8 +94,8 @@ sealed case class DataSingle(
   ): IO[Resource[IO, RDFAsJenaModel]] = {
     logger.debug(s"RDF from string with format: $format")
     val formatName = format.name
-    if(HTML2RDF.availableExtractorNames contains formatName)
-      IO(HTML2RDF.extractFromString(dataStr, formatName))
+    if(HtmlToRdf.availableExtractorNames.contains(formatName))
+      IO(HtmlToRdf.extractFromString(dataStr, formatName))
     else
       for {
         baseIri <- mkBase(base)

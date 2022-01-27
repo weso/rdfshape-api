@@ -93,7 +93,7 @@ class HTML2RDFTest extends CatsEffectSuite {
     ) {
       val r: IO[(Boolean, String, String)] = for {
         res1 <- IO(
-          HTML2RDF.extractFromString(html, extractorName)
+          HtmlToRdf.extractFromString(html, extractorName)
         )
         res2 <- RDFAsJenaModel.fromChars(expected, "TURTLE")
         vv <- (res1, res2).tupled.use { case (rdf, expected) =>

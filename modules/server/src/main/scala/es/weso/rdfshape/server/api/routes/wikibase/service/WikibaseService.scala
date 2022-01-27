@@ -4,506 +4,354 @@ import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.SchemaValidate
+import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.get.WikibaseGetLabels
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.languages.WikibaseLanguages
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.query.WikibaseQueryOperation
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.schema.{
+  WikibaseSchemaContent,
+  WikibaseSchemaExtract,
+  WikibaseSchemaValidate,
+  WikibaseSheXerExtract
+}
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.search.{
+  WikibaseSearchEntity,
+  WikibaseSearchLexeme,
+  WikibaseSearchProperty
+}
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.{
+  WikibaseOperationDetails,
+  WikibaseOperationResult
+}
+import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import es.weso.shapemaps.{Status => _}
+import io.circe.syntax.EncoderOps
 import org.http4s._
-import org.http4s.client._
+import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.client.middleware.FollowRedirect
-import org.http4s.dsl._
-import org.http4s.implicits._
+import org.http4s.dsl.Http4sDsl
+import org.http4s.multipart.Multipart
 
 /** API service to handle wikibase (and mostly wikidata) related operations
   * Acts as an intermediate proxy between clients and the MediaWiki API
   *
   * @param client HTTP4S client object
   */
+//noinspection DuplicatedCode
 class WikibaseService(client: Client[IO])
     extends Http4sDsl[IO]
     with ApiService
     with LazyLogging {
 
-  override val verb: String = "wikidata"
+  override val verb: String = "wikibase"
 
-  val wikidataUrl                = "https://www.wikidata.org"
-  val wikidataUri                = uri"https://www.wikidata.org"
-  val wikidataEntityUrl          = uri"https://www.wikidata.org/entity"
-  val apiUri                     = uri"/api/wikidata/entity"
-  val wikidataQueryUri: Uri      = uri"https://query.wikidata.org/sparql"
-  val defaultLimit               = 20
-  val defaultContinue            = 0
-  val redirectClient: Client[IO] = FollowRedirect(3)(client)
+  /** [[Client]] used for some queries, needs to follows some redirects to work properly
+    */
+  private val redirectClient: Client[IO] = FollowRedirect(3)(client)
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-    // TODO: uncomment routes and refactor along with wikishape client
-    case GET -> Root / `api` / `verb` => InternalServerError("Pending")
-
-    /** Search for wikidata entities using MediaWiki's API. Search based on entity ID
-      * See https://www.wikidata.org/w/api.php?action=help&modules=wbgetentities
-      * Receives a Wikidata entity label and a language and fetches entities in Wikidata
-      *  - wdEntity [String]: Wikidata entity label
-      *  - language [String]: Response desired language
-      *    Returns a JSON object after querying MediaWiki's "wbgetentities" endpoint
+    /** Search for wikidata objects and return their labels in the given languages.
+      * Receives a JSON object with the input schema information:
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata's.
+      *  - payload [String]: Entity identifier in the wikibase instance
+      *  - languages [String]: Optionally, the languages of the results. Language
+      *    codes separated by "|"
+      *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
       */
-    //    case GET -> Root / `api` / `verb` / "entityLabel" :?
-    //        WdEntityParameter(entity) +&
-    //        LanguageParameter(language) =>
-    //      val uri = wikidataUri
-    //        .withPath(Uri.Path.unsafeFromString("/w/api.php"))
-    //        .withQueryParam("action", "wbgetentities")
-    //        .withQueryParam("props", "labels")
-    //        .withQueryParam("ids", entity)
-    //        .withQueryParam("languages", language)
-    //        .withQueryParam("format", "json")
-    //
-    //      logger.debug(s"wikidata searchEntity uri: ${uri.toString}")
-    //
-    //      val req: Request[IO] = Request(method = GET, uri = uri)
-    //      for {
-    //        either <- client.run(req).use {
-    //          case Status.Successful(r) =>
-    //            r.attemptAs[Json].leftMap(_.message).value
-    //          case r =>
-    //            r.as[String]
-    //              .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                  .asLeft[Json]
-    //              )
-    //        }
-    //        resp <- Ok(either.fold(Json.fromString, identity))
-    //      } yield resp
+    case req @ GET -> Root / `api` / `verb` / "entityLabel" =>
+      for {
+        // Get operation information sent by the user
+        operationDetails <- WikibaseOperationDetails(req.params)
+        // Create response
+        response <- operationDetails.fold(
+          err => errorResponseJson(err, BadRequest),
+          opData => {
+            val op = WikibaseGetLabels(opData, client)
+            op.performOperation
+              .flatMap(results => Ok(results.asJson))
+              .handleErrorWith(err =>
+                errorResponseJson(err.getMessage, InternalServerError)
+              )
+          }
+        )
+      } yield response
 
-    /** Search for wikidata schemas using MediaWiki's API.
-      * Receives a Wikidata schema label and fetches schemas in Wikidata
-      *  - wdSchema [String]: Wikidata schema label
-      *    Returns a JSON object after manually querying the schema's page
+    /** Search for wikidata schemas using MediaWiki's API. Search based on lexeme labels.
+      * Receives a JSON object with the input schema information:
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata's.
+      *  - payload [String]: Schema identifier in the wikibase instance
+      *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
       */
-    //    case GET -> Root / `api` / `verb` / "schemaContent" :?
-    //        WdSchemaParameter(wdSchema) =>
-    //      val uri = wikidataUri.withPath(
-    /* Uri.Path.unsafeFromString(s"/wiki/Special:EntitySchemaText/$wdSchema") */
-    //      )
-    //
-    //      val req: Request[IO] = Request(method = GET, uri = uri)
-    //      for {
-    //        eitherValues <- client.run(req).use {
-    //          case Status.Successful(r) =>
-    //            r.attemptAs[String].leftMap(_.message).value
-    //          case r =>
-    //            r.as[String]
-    //              .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                  .asLeft[String]
-    //              )
-    //        }
-    //        json: Json = eitherValues.fold(
-    //          e => Json.fromFields(List(("error", Json.fromString(e)))),
-    //          s => Json.fromFields(List(("result", Json.fromString(s))))
-    //        )
-    //        resp <- Ok(json)
-    //      } yield resp
+    case req @ GET -> Root / `api` / `verb` / "schemaContent" =>
+      for {
+        // Get operation information sent by the user
+        operationDetails <- WikibaseOperationDetails(req.params)
+        // Create response
+        response <- operationDetails.fold(
+          err => errorResponseJson(err, BadRequest),
+          opData => {
+            val op = WikibaseSchemaContent(opData, client)
+            op.performOperation
+              .flatMap(results => Ok(results.asJson))
+              .handleErrorWith(err =>
+                errorResponseJson(err.getMessage, InternalServerError)
+              )
+          }
+        )
+      } yield response
 
-    /** Search for entities in a wikibase using MediaWiki's API. Search based on entity labels.
-      * See https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
-      * Receives an entity label and a language and fetches entities in the wikibase whose endpoint was selected
-      *  - endpoint [String]: SPARQL query endpoint of the target wikibase instance. Defaults to Wikidata
-      *  - label [String]: Label / keywords in the name of the entities searched
-      *  - language [String]: Response desired language
+    /** Search for entities in a wikibase using MediaWiki's API. Search based on lexeme labels.
+      * Receives a JSON object with the input property information:
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata's.
+      *  - payload [String]: Keywords for the search
+      *  - language [String]: Language in which the search is conducted
       *  - limit [Int]: Max number of results
       *  - continue [Int]: Offset where to continue a search
-      *    Returns a JSON object after querying MediaWiki's "wbsearchentities" endpoint
+      *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
+      *
+      * @note see https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
       */
-    //    case GET -> Root / `api` / `verb` / "searchEntity" :?
-    //        EndpointParameter(maybeEndpoint) +&
-    //        LabelParameter(label) +&
-    //        LanguageParameter(language) +&
-    //        LimitParameter(maybelimit) +&
-    //        ContinueParameter(maybeContinue) =>
-    //      val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
-    /* val continue: String = maybeContinue.getOrElse(defaultContinue.toString) */
-    //      val endpoint: String = maybeEndpoint.getOrElse(wikidataUrl)
-    //
-    //      logger.debug(s"Wikibase entity search with endpoint: $endpoint")
-    //
-    //      val uri = Uri
-    //        .unsafeFromString(endpoint)
-    //        .withPath(Uri.Path.unsafeFromString("/w/api.php"))
-    //        .withQueryParam("action", "wbsearchentities")
-    //        .withQueryParam("search", label)
-    //        .withQueryParam("language", language)
-    //        .withQueryParam("limit", limit)
-    //        .withQueryParam("continue", continue)
-    //        .withQueryParam("format", "json")
-    //
-    //      logger.debug(s"wikidata searchEntity uri: $uri")
-    //
-    //      val req: Request[IO] = Request(method = GET, uri = uri)
-    //
-    //      for {
-    //        eitherValues <- client.run(req).use {
-    //          case Status.Successful(r) =>
-    //            r.attemptAs[Json].leftMap(_.message).value
-    //          case r =>
-    //            r.as[String]
-    //              .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                  .asLeft[Json]
-    //              )
-    //        }
-    //        eitherResult = for {
-    //          json      <- eitherValues
-    //          converted <- convertEntities(json)
-    //        } yield converted
-    //        resp <- Ok(eitherResult.fold(Json.fromString, identity))
-    //      } yield resp
+    case req @ GET -> Root / `api` / `verb` / "searchEntity" =>
+      for {
+        // Get operation information sent by the user
+        operationDetails <- WikibaseOperationDetails(req.params)
+        // Create response
+        response <- operationDetails.fold(
+          err => errorResponseJson(err, BadRequest),
+          opData => {
+            val searchOperation = WikibaseSearchEntity(opData, client)
+            searchOperation.performOperation
+              .flatMap(results => Ok(results.asJson))
+              .handleErrorWith(err =>
+                errorResponseJson(err.getMessage, InternalServerError)
+              )
+          }
+        )
+      } yield response
 
     /** Search for properties in a wikibase using MediaWiki's API. Search based on property labels.
-      * See https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
-      * Receives a property label and a language and fetches properties in the wikibase whose endpoint was selected
-      *  - endpoint [String]: SPARQL query endpoint of the target wikibase instance. Defaults to Wikidata
-      *  - label [String]: Label / keywords in the name of the properties searched
-      *  - language [String]: Response desired language
+      * Receives a JSON object with the input property information:
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata
+      *  - payload [String]: Keywords for the search
+      *  - language [String]: Language in which the search is conducted
       *  - limit [Int]: Max number of results
       *  - continue [Int]: Offset where to continue a search
-      *    Returns a JSON object after querying MediaWiki's "wbsearchentities" endpoint.
+      *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
+      *
+      * @note see https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
       */
-    //    case GET -> Root / `api` / `verb` / "searchProperty" :?
-    //        EndpointParameter(maybeEndpoint) +&
-    //        LabelParameter(label) +&
-    //        LanguageParameter(language) +&
-    //        LimitParameter(maybelimit) +&
-    //        ContinueParameter(maybeContinue) =>
-    //      val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
-    /* val continue: String = maybeContinue.getOrElse(defaultContinue.toString) */
-    //      val endpoint: String = maybeEndpoint.getOrElse(wikidataUrl)
-    //
-    //      logger.debug(s"Wikibase property search with endpoint: $endpoint")
-    //
-    //      val uri = Uri
-    //        .fromString(endpoint)
-    //        .valueOr(throw _)
-    //        .withPath(Uri.Path.unsafeFromString("/w/api.php"))
-    //        .withQueryParam("action", "wbsearchentities")
-    //        .withQueryParam("search", label)
-    //        .withQueryParam("language", language)
-    //        .withQueryParam("limit", limit)
-    //        .withQueryParam("continue", continue)
-    //        .withQueryParam("type", "property")
-    //        .withQueryParam("format", "json")
-    //
-    //      logger.debug(s"wikidata searchProperty uri: $uri")
-    //
-    //      val req: Request[IO] = Request(method = GET, uri = uri)
-    //
-    //      for {
-    //        eitherValues <- client.run(req).use {
-    //          case Status.Successful(r) =>
-    //            r.attemptAs[Json].leftMap(_.message).value
-    //          case r =>
-    //            r.as[String]
-    //              .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                  .asLeft[Json]
-    //              )
-    //        }
-    //        eitherResult = for {
-    //          json      <- eitherValues
-    //          converted <- convertEntities(json)
-    //        } yield converted
-    //        resp <- Ok(eitherResult.fold(Json.fromString, identity))
-    //      } yield resp
+    case req @ GET -> Root / `api` / `verb` / "searchProperty" =>
+      for {
+        // Get operation information sent by the user
+        operationDetails <- WikibaseOperationDetails(req.params)
+        // Create response
+        response <- operationDetails.fold(
+          err => errorResponseJson(err, BadRequest),
+          opData => {
+            val searchOperation = WikibaseSearchProperty(opData, client)
+            searchOperation.performOperation
+              .flatMap(results => Ok(results.asJson))
+              .handleErrorWith(err =>
+                errorResponseJson(err.getMessage, InternalServerError)
+              )
+          }
+        )
+      } yield response
 
     /** Search for lexemes in a wikibase using MediaWiki's API. Search based on lexeme labels.
-      * See https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
-      * Receives a lexeme label and a language and fetches properties in the wikibase whose endpoint was selected
-      *  - endpoint [String]: SPARQL query endpoint of the target wikibase instance. Defaults to Wikidata
-      *  - label [String]: Label / keywords in the name of the lexemes searched
-      *  - language [String]: Response desired language
+      * Receives a JSON object with the input property information:
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata's.
+      *  - payload [String]: Keywords for the search
+      *  - language [String]: Language in which the search is conducted
       *  - limit [Int]: Max number of results
       *  - continue [Int]: Offset where to continue a search
-      *    Returns a JSON object after querying MediaWiki's "wbsearchentities" endpoint.
+      *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
+      *
+      * @note see https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
       */
-    //    case GET -> Root / `api` / `verb` / "searchLexeme" :?
-    //        EndpointParameter(maybeEndpoint) +&
-    //        LabelParameter(label) +&
-    //        LanguageParameter(language) +&
-    //        LimitParameter(maybelimit) +&
-    //        ContinueParameter(maybeContinue) =>
-    //      val limit: String    = maybelimit.getOrElse(defaultLimit.toString)
-    /* val continue: String = maybeContinue.getOrElse(defaultContinue.toString) */
-    //      val endpoint: String = maybeEndpoint.getOrElse(wikidataUrl)
-    //
-    //      logger.debug(s"Wikibase lexeme search with endpoint: $endpoint")
-    //
-    //      val uri = Uri
-    //        .fromString(endpoint)
-    //        .valueOr(throw _)
-    //        .withPath(Uri.Path.unsafeFromString("/w/api.php"))
-    //        .withQueryParam("action", "wbsearchentities")
-    //        .withQueryParam("search", label)
-    //        .withQueryParam("language", language)
-    //        .withQueryParam("limit", limit)
-    //        .withQueryParam("continue", continue)
-    //        .withQueryParam("type", "lexeme")
-    //        .withQueryParam("format", "json")
-    //
-    //      logger.debug(s"wikidata searchLexeme uri: $uri")
-    //
-    //      val req: Request[IO] = Request(method = GET, uri = uri)
-    //      for {
-    //        eitherValues <- client.run(req).use {
-    //          case Status.Successful(r) =>
-    //            r.attemptAs[Json].leftMap(_.message).value
-    //          case r =>
-    //            r.as[String]
-    //              .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                  .asLeft[Json]
-    //              )
-    //        }
-    //        eitherResult = for {
-    //          json      <- eitherValues
-    //          converted <- convertEntities(json)
-    //        } yield converted
-    //        resp <- Ok(eitherResult.fold(Json.fromString, identity))
-    //      } yield resp
+    case req @ GET -> Root / `api` / `verb` / "searchLexeme" =>
+      for {
+        // Get operation information sent by the user
+        operationDetails <- WikibaseOperationDetails(req.params)
+        // Create response
+        response <- operationDetails.fold(
+          err => errorResponseJson(err, BadRequest),
+          opData => {
+            val searchOperation = WikibaseSearchLexeme(opData, client)
+            searchOperation.performOperation
+              .flatMap(results => Ok(results.asJson))
+              .handleErrorWith(err =>
+                errorResponseJson(err.getMessage, InternalServerError)
+              )
+          }
+        )
+      } yield response
 
     /** Search for all the languages used in a wikibase instance.
-      *  - endpoint [String]: SPARQL query endpoint of the target wikibase instance. Defaults to Wikidata.
-      *    Returns a JSON object with the array of languages returned by the endpoint.
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata.
+      *    Returns a JSON object with the array of languages supported.
+      *    See [[WikibaseOperationResult]]
       */
-    //    case GET -> Root / `api` / `verb` / "languages" :?
-    //        EndpointParameter(maybeEndpoint) =>
-    //      val endpoint: String = maybeEndpoint.getOrElse(wikidataUrl)
-    //      logger.debug(s"Wikibase language search with endpoint: $endpoint")
-    //
-    //      val uri = Uri
-    //        .fromString(endpoint)
-    //        .valueOr(throw _)
-    //        .withPath(Uri.Path.unsafeFromString("/w/api.php"))
-    //        .withQueryParam("action", "query")
-    //        .withQueryParam("meta", "wbcontentlanguages")
-    //        .withQueryParam("wbclcontext", "term")
-    //        .withQueryParam("wbclprop", "code|autonym")
-    //        .withQueryParam("format", "json")
-    //
-    //      val req: Request[IO] = Request(method = GET, uri = uri)
-    //      for {
-    //        eitherValues <- client.run(req).use {
-    //          case Status.Successful(r) =>
-    //            r.attemptAs[Json].leftMap(_.message).value
-    //          case r =>
-    //            r.as[String]
-    //              .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                  .asLeft[Json]
-    //              )
-    //        }
-    //        eitherResult = for {
-    //          json      <- eitherValues
-    //          converted <- convertLanguages(json)
-    //        } yield converted
-    //        resp <- Ok(
-    //          eitherResult.fold(Json.fromString, identity)
-    //        )
-    //      } yield resp
+    case req @ GET -> Root / `api` / `verb` / "languages" =>
+      for {
+        // Get operation information sent by the user
+        operationDetails <- WikibaseOperationDetails(req.params)
+        // Create response
+        response <- operationDetails.fold(
+          err => errorResponseJson(err, BadRequest),
+          opData => {
+            val languagesOperation = WikibaseLanguages(opData, client)
+            languagesOperation.performOperation
+              .flatMap(results => Ok(results.asJson))
+              .handleErrorWith(err =>
+                errorResponseJson(err.getMessage, InternalServerError)
+              )
+          }
+        )
+      } yield response
 
     /** Execute a given SPARQL query to a given SPARQL endpoint of a wikibase instance.
       * Receives a target endpoint and the query text.
-      *  - endpoint [String]: SPARQL query endpoint. Defaults to Wikidata
-      *  - query [String]: SPARQL query to be run
+      *  - endpoint [String]: SPARQL query endpoint of the target wikibase instance. Defaults to Wikidata
+      *  - payload [String]: SPARQL query to be run
       *    Returns a JSON object with the query results:
-      *    - head [Object]: Query metadata
-      *      - vars: [Array]: Query variables
-      *    - results [Object]: Query results
-      *      - bindings: [Array]: Query results, each item being an object mapping each variable to its value
+      *    (see [[WikibaseOperationResult]])
+      *
+      * Query examples in [[https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples]]
       */
-    //    case req @ POST -> Root / `api` / `verb` / "query" =>
-    //      req.decode[Multipart[IO]] { m =>
-    //        {
-    //          val partsMap = PartsMap(m.parts)
-    //          for {
-    //            optQuery    <- partsMap.optPartValue("query")
-    //            optEndpoint <- partsMap.optPartValue("endpoint")
-    //            endpoint = optEndpoint.getOrElse(wikidataQueryUri.toString())
-    //            query    = optQuery.getOrElse("")
-    //            req: Request[IO] =
-    //              Request(
-    //                method = GET,
-    //                uri = Uri
-    //                  .fromString(endpoint)
-    //                  .valueOr(throw _)
-    //                  .withQueryParam("query", query)
-    //              )
-    //                .withHeaders(
-    //                  `Accept`(MediaType.application.`json`)
-    //                )
-    //            eitherValue <- client.run(req).use {
-    //              case Status.Successful(r) =>
-    //                r.attemptAs[Json].leftMap(_.message).value
-    //              case r =>
-    //                r.as[String]
-    //                  .map(b =>
-    /* s"Request $req failed with status ${r.status.code} and body $b" */
-    //                      .asLeft[Json]
-    //                  )
-    //            }
-    //            resp <- Ok(eitherValue.fold(Json.fromString, identity))
-    //          } yield resp
-    //        }
-    //      }
+    case req @ POST -> Root / `api` / `verb` / "query" =>
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+        for {
+          // Get operation information sent by the user
+          operationDetails <- WikibaseOperationDetails(partsMap)
+          // Create response
+          response <- operationDetails.fold(
+            err => errorResponseJson(err, BadRequest),
+            opData => {
+              val queryOp = WikibaseQueryOperation(opData, client)
+              queryOp.performOperation
+                .flatMap(results => Ok(results.asJson))
+                .handleErrorWith(err =>
+                  errorResponseJson(err.getMessage, InternalServerError)
+                )
+            }
+          )
+        } yield response
+      }
 
     /** Attempts to extract an schema (ShEx) from a given entity present in wikidata.
-      * Receives an entity URI:
-      *  - entity [String]: Unique address of the entity in wikidata
-      *    Returns a JSON object with the extraction results:
-      *  - entity [String]: URI of the entity whose information we searched
-      *  - result [String]: Extracted schema
+      * Receives an entity URI as payload.
+      *  - endpoint [String]: Base URL of the target wikibase instance. Defaults to Wikidata.
+      *  - payload [String]: Unique URI of the entity in wikidata
+      *    Returns a JSON object with the extracted schema:
+      *    (see [[WikibaseOperationResult]])
       */
-    //    case req @ POST -> Root / `api` / `verb` / "extract" =>
-    //      req.decode[Multipart[IO]] { m =>
-    //        val partsMap = PartsMap(m.parts)
-    //        val r: EitherT[IO, String, Response[IO]] = for {
-    //          label <- EitherT(partsMap.eitherPartValue("entity"))
-    //          info  <- either2es[WikibaseEntity](uriToEntity(label))
-    //          _ <- {
-    //            logger.debug(s"Extraction URI: ${info.uri}");
-    //            ok_esf[Unit, IO](())
-    //          }
-    //          strRdf <- io2es(redirectClient.expect[String](info.uri))
-    //          eitherInferred <- io2es(
-    //            RDFAsJenaModel
-    //              .fromString(strRdf, "TURTLE")
-    //              .flatMap(
-    //                _.use(rdf =>
-    //                  for {
-    //                    rdfSerialized <- rdf.serialize("TURTLE")
-    //                    nodeSelector = RDFNodeSelector(IRI(label))
-    //                    inferred <- SchemaInfer.runInferSchema(
-    //                      rdf,
-    //                      nodeSelector,
-    //                      "ShEx",
-    //                      IRI(s"http://example.org/Shape_${info.localName}"),
-    //                      InferOptions.defaultOptions.copy(maxFollowOn = 3)
-    //                    )
-    //                  } yield inferred
-    //                )
-    //              )
-    //          )
-    //          pair <- either2es[(Schema, ResultShapeMap)](eitherInferred)
-    //          shExCStr <- io2es({
-    //            val (schema, _) = pair
-    //            schema.serialize("SHEXC")
-    //          })
-    //          _ <- {
-    //            logger.trace(s"ShExC str: $shExCStr");
-    //            ok_es[Unit](())
-    //          }
-    //          resp <- io2es(
-    //            Ok(
-    //              Json.fromFields(
-    //                List(
-    //                  ("entity", Json.fromString(label)),
-    //                  ("result", Json.fromString(shExCStr))
-    //                )
-    //              )
-    //            )
-    //          )
-    //        } yield resp
-    //        for {
-    //          either <- r.value
-    //          resp <- either.fold(
-    //            err => errorResponseJson(err, InternalServerError),
-    //            r => IO.pure(r)
-    //          )
-    //        } yield resp
-    //      }
+    case req @ POST -> Root / `api` / `verb` / "extract" =>
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+        for {
+          // Get operation information sent by the user
+          operationDetails <- WikibaseOperationDetails(partsMap)
+          // Create response
+          response <- operationDetails.fold(
+            err => errorResponseJson(err, BadRequest),
+            opData => {
+              val queryOp = WikibaseSchemaExtract(opData, redirectClient)
+              queryOp.performOperation
+                .flatMap(results => Ok(results.asJson))
+                .handleErrorWith(err =>
+                  errorResponseJson(err.getMessage, InternalServerError)
+                )
+            }
+          )
+        } yield response
+      }
 
-    // TODO: This one doesn't work. It gives a timeout response
-    /** Attempts to extract an schema (ShEx) from a given entity present in wikidata using "shexer".
-      * See https://github.com/DaniFdezAlvarez/shexer
-      * Receives an entity URI:
-      *  - entity [String]: Unique address of the entity in wikidata
-      *    Returns a JSON object with the extraction results:
-      *  - entity [String]: URI of the entity whose information we searched
-      *  - result [String]: Extracted schema
+    // TODO: Needs exhaustive testing and client changes
+    /** Attempts to extract an schema (ShEx) from a given entity present in wikidata
+      * using SheXer. See [[https://github.com/DaniFdezAlvarez/shexer]].
+      * Receives an entity URI as payload.
+      *  - endpoint [String]: Base URL of the target wikibase instance. Should
+      *    be left empty so it defaults to Wikidata.
+      *  - payload [String]: Unique URI of the entity in wikidata
+      *    Returns a JSON object with the extracted schema:
+      *    (see [[WikibaseOperationResult]])
       */
-    //    case req @ POST -> Root / `api` / `verb` / "shexer" =>
-    //      req.decode[Multipart[IO]] { m =>
-    //        val partsMap = PartsMap(m.parts)
-    //        val r: EitherT[IO, String, Response[IO]] = for {
-    //          label      <- EitherT(partsMap.eitherPartValue("entity"))
-    //          jsonParams <- either2es[Json](mkShexerParams(label))
-    //          postRequest = Request[IO](
-    //            method = POST,
-    //            uri = uri"http://156.35.94.158:8081/shexer"
-    //          ).withHeaders(`Content-Type`(MediaType.application.`json`))
-    //            .withEntity[Json](jsonParams)
-    //          _ <- {
-    //            logger.debug(s"URI: ${jsonParams.spaces2}");
-    //            ok_es[Unit](())
-    //          }
-    //          result <- f2es(redirectClient.expect[Json](postRequest))
-    //          _ <- {
-    //            logger.trace(s"Result\n${result.spaces2}");
-    //            ok_es[Unit](())
-    //          }
-    //          resp <- f2es(Ok(result))
-    //        } yield resp
-    //        for {
-    //          either <- r.value
-    //          resp <- either.fold(
-    //            err => errorResponseJson(err, InternalServerError),
-    //            r => IO.pure(r)
-    //          )
-    //        } yield resp
-    //      }
+    case req @ POST -> Root / `api` / `verb` / "shexer" =>
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+        for {
+          // Get operation information sent by the user
+          operationDetails <- WikibaseOperationDetails(partsMap)
+          // Create response
+          response <- operationDetails.fold(
+            err => errorResponseJson(err, BadRequest),
+            opData => {
+              val queryOp = WikibaseSheXerExtract(opData, redirectClient)
+              queryOp.performOperation
+                .flatMap(results => Ok(results.asJson))
+                .handleErrorWith(err =>
+                  errorResponseJson(err.getMessage, InternalServerError)
+                )
+            }
+          )
+        } yield response
+      }
 
-    /** Validate entities in a wikibase using wikidata schemas or shape expressions.
-      * Receives several data:
-      *  - endpoint [String]: Endpoint of the target wikibase instance. Defaults to Wikidata
-      *  - entity [String]: URI of the entity to be validated
-      *  - entitySchema [String]: (Wikidata schema only) Identifier of the wikidata schema to be used
-      *  - schema [String]: (ShEx schema only) Raw contents of the schema supplied by the user
-      *  - schemaFormat [String]: (ShEx schema only) Format of the schema supplied by the user
-      *  - schemaEngine [String]: Schema engine to be used (defaults to ShEx)
-      *  - shape [String]: Shape of the schema which will be compared against the entity
-      *    Returns a JSON object with the results (pending).
+    // TODO: Needs exhaustive testing and client changes
+    /** Validate entities in wikidata using a given schema.
+      * Receives an entity URI as payload, as well as the parameters to create
+      * the ShEx schema against which to validate.
+      *  - endpoint [String]: Base URL of the target wikibase instance. Should
+      *    be left empty so it defaults to Wikidata.
+      *  - payload [String]: Unique URI of the entity in wikidata
+      *  - schema [String]: Schema data (raw, URL containing the schema or File with the schema)
+      *  - schemaSource [String]: Identifies the source of the schema (raw, URL, file...)
+      *  - schemaEngine [String]: Format of the schema, should be ShEx if using wikidata schemas
+      *
+      * Returns a JSON object with the validation results:
+      * (see [[WikibaseOperationResult]] and
+      * [[SchemaValidate.encodeSchemaValidateOperation]])
       */
-    //    case req @ POST -> Root / `api` / `verb` / "validate" =>
-    //      logger.debug(s"Wikidata validate request: $req")
-    //      req.decode[Multipart[IO]] { m =>
-    //        val partsMap = PartsMap(m.parts)
-    //        val r: IO[Response[IO]] = for {
-    //          eitherEntity <- partsMap.eitherPartValue("entity")
-    //          item         <- ioFromEither(eitherEntity)
-    //          info         <- ioFromEither(uriToEntity2(item))
-    //          pair         <- WikibaseSchema.mkSchema(partsMap, None, client)
-    //
-    //          (schema, wbp) = pair
-    //          iriItem  <- ioFromEither(IRI.fromString(info.sourceUri))
-    //          shapeMap <- ioFromEither(ShapeMap.empty.add(iriItem, Start))
-    //          triggerMode = ShapeMapTrigger(shapeMap)
-    //          result <- for {
-    //            res1 <- WikibaseRDF.wikidata
-    //            res2 <- RDFAsJenaModel.empty
-    //            vv <- (res1, res2).tupled.use { case (rdf, builder) =>
-    //              for {
-    /* validationResult <- schema.validate(rdf, triggerMode, builder) */
-    /* // json <- schemaResult2json(validationResult) */
-    /* } yield SchemaValidate.encodeValidationResult(validationResult) */
-    //            }
-    //          } yield vv
-    //          resp <- Ok(result)
-    //        } yield resp
-    //        r.attempt.flatMap(
-    //          _.fold(
-    //            s => errorResponseJson(s.getMessage, InternalServerError),
-    //            IO.pure
-    //          )
-    //        )
-    //      }
+    case req @ POST -> Root / `api` / `verb` / "validate" =>
+      req.decode[Multipart[IO]] { m =>
+        val partsMap = PartsMap(m.parts)
+        for {
+          // Get operation information sent by the user
+          eitherDetails <- WikibaseOperationDetails(partsMap)
+
+          // Get the validation schema sent by the user
+          eitherSchema <- Schema.mkSchema(partsMap)
+
+          operationData: Either[String, (WikibaseOperationDetails, Schema)] =
+            for {
+              details <- eitherDetails
+              schema  <- eitherSchema
+            } yield (details, schema)
+
+          // Create response
+          response <- operationData.fold(
+            err => errorResponseJson(err, BadRequest),
+            {
+              case (details, schema) => {
+                val operation = WikibaseSchemaValidate(details, client, schema)
+                operation.performOperation
+                  .flatMap(results => Ok(results.asJson))
+                  .handleErrorWith(err =>
+                    errorResponseJson(err.getMessage, InternalServerError)
+                  )
+              }
+            }
+          )
+        } yield response
+      }
   }
 
 }

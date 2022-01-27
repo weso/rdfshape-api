@@ -2,8 +2,8 @@ package es.weso.rdfshape.server.api.routes.shapemap.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
-import es.weso.rdfshape.server.api.format.dataFormats.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.operations.ShapeMapInfo
@@ -35,8 +35,8 @@ class ShapeMapService(client: Client[IO])
     /** Returns a JSON array with the accepted shapeMap formats.
       */
     case GET -> Root / `api` / `verb` / "formats" =>
-      val formats = ShapeMapFormat.availableFormats.map(_.name)
-      val json    = Json.fromValues(formats.map(str => Json.fromString(str)))
+      val formats = ApiDefinitions.availableShapeMapFormats
+      val json    = Json.fromValues(formats.map(f => Json.fromString(f.name)))
       Ok(json)
 
     /** Obtain information about a shapeMap.

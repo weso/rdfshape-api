@@ -28,6 +28,20 @@ case class PartsMap private (map: Map[String, Part[IO]]) {
 
   }
 
+  /** Extract the value from a request parameter, decoding it and handling errors
+    *
+    * @param key Parameter key
+    * @param alt Alternative value to be returned when parameter value
+   *                    is missing
+    * @return Optionally, the String contents of the parameter
+    */
+  def optPartValue(key: String, alt: Option[String] = None): IO[Option[String]] =
+    map.get(key) match {
+      case Some(part) =>
+        part.body.through(decode).compile.foldMonoid.map(Some.apply)
+      case None => IO.pure(None)
+    }
+
   /** Shorthand for extracting values from a request parameter with an informational error message
     *
     * @param key Parameter key
@@ -42,18 +56,6 @@ case class PartsMap private (map: Map[String, Part[IO]]) {
       )
     case Some(s) => Right(s)
   }
-
-  /** Extract the value from a request parameter, decoding it and handling errors
-    *
-    * @param key Parameter key
-    * @return Optionally, the String contents of the parameter
-    */
-  def optPartValue(key: String): IO[Option[String]] =
-    map.get(key) match {
-      case Some(part) =>
-        part.body.through(decode).compile.foldMonoid.map(Some.apply)
-      case None => IO.pure(None)
-    }
 }
 
 object PartsMap extends LazyLogging{

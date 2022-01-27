@@ -2,6 +2,7 @@ package es.weso.rdfshape.server.api.routes.schema.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.{
@@ -18,7 +19,6 @@ import es.weso.rdfshape.server.api.routes.schema.logic.operations.{
 }
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.{
   TriggerMode,
-  TriggerModeType,
   TriggerShapeMap
 }
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
@@ -52,9 +52,11 @@ class SchemaService(client: Client[IO])
 
     /** Returns a JSON array with the accepted schema engines for ShEx
       */
-    case GET -> Root / `api` / `verb` / "engines" =>
-      val engineNames = Schemas.availableSchemaNames
-      val json        = Json.fromValues(engineNames.map(Json.fromString))
+    case GET -> Root / `api` / `verb` / "engines" / "shex" =>
+      val shexSchemas = List(Schemas.shEx)
+      val json = Json.fromValues(
+        shexSchemas.map(_.name).map(str => Json.fromString(str))
+      )
       Ok(json)
 
     /** Returns a JSON array with the accepted schema engines for SHACL
@@ -70,8 +72,8 @@ class SchemaService(client: Client[IO])
     /** Returns the default schema format as a raw string
       */
     case GET -> Root / `api` / `verb` / "engines" / "default" =>
-      val schemaEngine = Schemas.defaultSchemaName
-      val json         = Json.fromString(schemaEngine)
+      val schemaEngine = Schemas.defaultSchema
+      val json         = Json.fromString(schemaEngine.name)
       Ok(json)
 
     /** Returns a JSON array with the accepted schema formats.
@@ -85,7 +87,7 @@ class SchemaService(client: Client[IO])
           optSchemaEngine.getOrElse(Schemas.defaultSchemaName)
         )
         formats = schema match {
-          case ShExSchema(_) => ShExFormat.availableFormats
+          case _: ShExSchema => ShExFormat.availableFormats
           case _             => ShaclFormat.availableFormats
         }
       } yield Json.fromValues(
@@ -103,7 +105,7 @@ class SchemaService(client: Client[IO])
       */
     case GET -> Root / `api` / `verb` / "triggerModes" =>
       val json = Json.fromValues(
-        List(TriggerModeType.SHAPEMAP, TriggerModeType.TARGET_DECLARATIONS).map(
+        ApiDefinitions.availableTriggerModes.map(
           Json.fromString
         )
       )
@@ -286,54 +288,6 @@ class SchemaService(client: Client[IO])
               )
           }
         )
-
-      //        {
-      //          val partsMap = PartsMap(m.parts)
-      //          val r = for {
-      //            dataPair <- DataSingle.getData(partsMap, relativeBase)
-      //            (resourceRdf, dp) = dataPair
-      //            res <- for {
-      //              emptyRes <- RDFAsJenaModel.empty
-      // vv <- (resourceRdf, emptyRes).tupled.use { case (rdf, builder) =>
-      //                for {
-      //                  schemaPair <- Schema.mkSchema(partsMap, Some(rdf))
-      //                  (schema, _) = schemaPair
-      /* maybeTriggerMode <- TriggerMode.mkTriggerMode(partsMap) */
-      /* newRdf <- applyInference(rdf, dp.inference) */
-      //                  ret <- maybeTriggerMode match {
-      //                    case Left(err) =>
-      //                      IO.raiseError(
-      //                        new RuntimeException(
-      //                          s"Could not obtain validation trigger: $err"
-      //                        )
-      //                      )
-      //                    case Right(triggerMode) =>
-      //                      for {
-      //                        r <- io2f(
-      //                          schemaValidate(
-      //                            newRdf,
-      //                            schema,
-      //                            triggerMode,
-      //                            relativeBase,
-      //                            builder
-      //                          )
-      //                        )
-      //                        json <- io2f(schemaResult2json(r._1))
-      //                      } yield json
-      //                  }
-      //                } yield ret
-      //              }
-      //            } yield vv
-      //          } yield res
-      //
-      //          for {
-      //            e <- r.attempt
-      //            res <- e.fold(
-      //              exc => errorResponseJson(exc.getMessage, BadRequest),
-      //              json => Ok(json)
-      //            )
-      //          } yield res
-      //        }
       }
   }
 

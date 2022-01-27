@@ -3,7 +3,7 @@ package es.weso.rdfshape.server.api.routes.schema.logic.types
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.definitions.ApiDefaults
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource.SchemaSource
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
@@ -21,7 +21,7 @@ trait Schema {
 
   /** Default URI obtained from current folder
     */
-  lazy val base: Option[IRI] = Some(ApiDefaults.localBase)
+  lazy val base: Option[IRI] = Some(ApiDefinitions.localBase)
   // ApiDefaults.relativeBase
 
   /** Source where the schema comes from

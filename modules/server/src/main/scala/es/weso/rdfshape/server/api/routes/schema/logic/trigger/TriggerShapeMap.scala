@@ -19,7 +19,7 @@ import io.circe.{Decoder, Encoder, HCursor, Json}
   *
   * @param shapeMap Inner shapemap associated to the [[TriggerShapeMap()]]
   */
-sealed case class TriggerShapeMap private (
+sealed case class TriggerShapeMap(
     shapeMap: ShapeMap,
     override val data: Option[Data],
     override val schema: Option[Schema]

@@ -43,6 +43,7 @@ object IncomingRequestParameters {
   lazy val wdEntity = "wdEntity"
   lazy val wdSchema = "wdSchema"
 
+  lazy val payload     = "payload"
   lazy val url         = "url"
   lazy val urlCode     = "urlCode"
   lazy val hostname    = "hostname"
@@ -50,8 +51,10 @@ object IncomingRequestParameters {
   lazy val examples    = "examples"
   lazy val manifestUrl = "manifestUrl"
   lazy val language    = "language"
+  lazy val languages   = "languages"
   lazy val label       = "label"
   lazy val limit       = "limit"
+  lazy val format      = "wbFormat"
   lazy val continue    = "continue"
   lazy val withDot     = "withDot"
 
@@ -230,6 +233,13 @@ object IncomingRequestParameters {
     val name: String = querySource
   }
 
+  /** Parameter expected to contain a payload for later use querying wikibase's API
+    */
+  object WikibasePayloadParameter
+      extends QueryParamDecoderMatcher[String](payload) {
+    val name: String = payload
+  }
+
   /** Parameter expected to contain a valid identifier/name/label of a wikidata entity
     * in wikidata-related operations
     */
@@ -245,12 +255,22 @@ object IncomingRequestParameters {
   }
 
   /** Parameter expected to contain a valid language code, normally for
-    * wikidata-related operations that return data in a user-selected language
+    * wikidata-related operations that search for data in a user-selected language
     *
-    * @note See {@linkplain https:// en.wikipedia.org / wiki / List_of_ISO_639 - 1 _codes}
+    * @note See [[https:// en.wikipedia.org / wiki / List_of_ISO_639 - 1 _codes]]
     */
   object LanguageParameter extends QueryParamDecoderMatcher[String](language) {
     val name: String = language
+  }
+
+  /** Parameter expected to contain a list of language codes, normally for
+    * wikidata-related operations that return data in a user-selected language
+    *
+    * @note See [[https:// en.wikipedia.org / wiki / List_of_ISO_639 - 1 _codes]]
+    */
+  object LanguagesParameter
+      extends QueryParamDecoderMatcher[String](languages) {
+    val name: String = languages
   }
 
   /** Parameter expected to contain a valid identifier/name/label of a wikibase entity
@@ -287,6 +307,14 @@ object IncomingRequestParameters {
   object ContinueParameter
       extends OptionalQueryParamDecoderMatcher[String](continue) {
     val name: String = continue
+  }
+
+  /** Parameter expected to contain the format requested to wikibase when
+    * searching for data
+    */
+  object WikibaseFormatParameter
+      extends OptionalQueryParamDecoderMatcher[String](format) {
+    val name: String = format
   }
 
 }

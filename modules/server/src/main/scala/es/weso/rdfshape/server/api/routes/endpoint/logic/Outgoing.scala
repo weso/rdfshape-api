@@ -8,36 +8,9 @@ import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.rdf.triples.RDFTriple
 import es.weso.rdfshape.server.utils.numeric.NumericUtils
 import es.weso.utils.IOUtils.{ESIO, stream2es}
-import io.circe.Json
+import io.circe.{Encoder, Json}
 
-case class Outgoing(node: IRI, endpoint: IRI, children: Children) {
-  def toJson: Json = Json.fromFields(
-    List(
-      ("node", Json.fromString(node.toString)),
-      ("endpoint", Json.fromString(endpoint.toString)),
-      (
-        "children",
-        Json.fromValues(
-          children.m.map(pair =>
-            Json.fromFields(
-              List(
-                ("pred", Json.fromString(pair._1.toString)),
-                (
-                  "values",
-                  Json.fromValues(
-                    pair._2.toList.map(value =>
-                      Json.fromString(value.node.toString)
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-}
+case class Outgoing(node: IRI, endpoint: IRI, children: Children)
 
 case class Children(m: Map[IRI, Vector[Value]])
 
@@ -96,5 +69,36 @@ object Outgoing {
 
     Outgoing(node, endpoint, Children(ts.foldLeft(zero)(cmb)))
   }
+
+  implicit val encode: Encoder[Outgoing] = (outgoing: Outgoing) =>
+    Json.fromFields(
+      List(
+        (
+          "node",
+          Json.fromString(outgoing.node.toString)
+        ),
+        ("endpoint", Json.fromString(outgoing.endpoint.toString)),
+        (
+          "children",
+          Json.fromValues(
+            outgoing.children.m.map(pair =>
+              Json.fromFields(
+                List(
+                  ("pred", Json.fromString(pair._1.toString)),
+                  (
+                    "values",
+                    Json.fromValues(
+                      pair._2.toList.map(value =>
+                        Json.fromString(value.node.toString)
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
 
 }

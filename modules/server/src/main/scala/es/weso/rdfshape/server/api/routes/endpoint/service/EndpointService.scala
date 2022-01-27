@@ -24,6 +24,7 @@ import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import es.weso.utils.IOUtils._
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
@@ -147,7 +148,7 @@ class EndpointService(client: Client[IO])
         eitherOutgoing <- getOutgoing(optEndpoint, optNode, optLimit).value
         resp <- eitherOutgoing.fold(
           (s: String) => errorResponseJson(s"Error: $s", InternalServerError),
-          (outgoing: Outgoing) => Ok(outgoing.toJson)
+          (outgoing: Outgoing) => Ok(outgoing.asJson)
         )
       } yield resp
 

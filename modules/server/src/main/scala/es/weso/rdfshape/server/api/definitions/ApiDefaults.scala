@@ -17,42 +17,63 @@ import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource.SchemaSource
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.ShapeMapSource
-import es.weso.schema.{Schema, Schemas, ShapeMapTrigger}
+import es.weso.schema.{
+  Schemas,
+  ShapeMapTrigger,
+  ValidationTrigger,
+  Schema => SchemaW
+}
 import es.weso.shapemaps.ShapeMap
-import es.weso.utils.FileUtils
 
 /** Application-wide defaults
   */
 case object ApiDefaults {
-  val availableDataFormats: List[DataFormat]     = DataFormat.availableFormats
-  val defaultDataFormat: DataFormat              = DataFormat.defaultFormat
-  val defaultRdfFormat: RdfFormat                = RdfFormat.defaultFormat
-  val availableSchemaFormats: List[SchemaFormat] = SchemaFormat.availableFormats
-  val defaultSchemaFormat: SchemaFormat          = ShaclFormat.defaultFormat
-  val defaultSchemaFormatName: String            = defaultSchemaFormat.name
-  val availableSchemaEngines: List[String]       = Schemas.availableSchemaNames
-  val defaultSchemaEngine: Schema                = Schemas.defaultSchema
-  val defaultSchemaEngineName: String            = defaultSchemaEngine.name
-  val availableTriggerModes: List[String]        = Schemas.availableTriggerModes
-  val defaultTriggerMode: String                 = ShapeMapTrigger(ShapeMap.empty).name
-  val availableInferenceEngines = List(
-    "NONE",
-    "RDFS",
-    "OWL"
-  ) // TODO: Obtain from RDFAsJenaModel.empty.map(_.availableInferenceEngines).unsafeRunSync
-  val defaultSchemaEmbedded                   = false
+
+  /** [[DataFormat]] used when the format can be omitted or is needed but none was provided
+    */
+  val defaultDataFormat: DataFormat = DataFormat.defaultFormat
+
+  /** [[RdfFormat]] used when the format can be omitted or is needed but none was provided
+    */
+  val defaultRdfFormat: RdfFormat = RdfFormat.defaultFormat
+
+  /** [[SchemaFormat]] used when the format can be omitted or is needed but none was provided
+    */
+  val defaultSchemaFormat: SchemaFormat = ShaclFormat.defaultFormat
+
+  /** [[ShapeMapFormat]] used when the format can be omitted or is needed but none was provided
+    */
+  val defaultShapeMapFormat: ShapeMapFormat = ShapeMapFormat.defaultFormat
+
+  /** Schema engined ([[SchemaW]]) used when the engine can be omitted or is needed but none was provided
+    */
+  val defaultSchemaEngine: SchemaW = Schemas.defaultSchema
+
+  /** [[ValidationTrigger]] used when the trigger can be omitted or is needed but none was provided
+    */
+  val defaultTriggerMode: ValidationTrigger = ShapeMapTrigger(
+    ShapeMap.empty
+  )
+
+  /** [[InferenceEngine]] used when the engine can be omitted or is needed but none was provided
+    */
   val defaultInferenceEngine: InferenceEngine = NONE
-  val defaultInferenceEngineName: String      = defaultInferenceEngine.name
-  val defaultDataSource: DataSource           = DataSource.defaultDataSource
+
+  /** [[DataSource]] used when the source can be omitted or is needed but none was provided
+    */
+  val defaultDataSource: DataSource = DataSource.defaultDataSource
+
+  /** [[SchemaSource]] used when the source can be omitted or is needed but none was provided
+    */
   val defaultSchemaSource: SchemaSource =
     SchemaSource.defaultSchemaSource
+
+  /** [[ShapeMapSource]] used when the source can be omitted or is needed but none was provided
+    */
   val defaultShapeMapSource: ShapeMapSource =
     ShapeMapSource.defaultShapeMapSource
-  val defaultShapeMapFormat: ShapeMapFormat  = ShapeMapFormat.defaultFormat
-  val availableShapeMapFormats: List[String] = ShapeMap.formats
-  val defaultActiveShapeMapTab               = "#shapeMapTextArea"
-  val defaultShapeLabel: IRI                 = IRI("Shape")
-  val relativeBase: Some[IRI]                = Some(IRI("internal://base/"))
-  def localBase: IRI                         = IRI(FileUtils.currentFolderURL)
 
+  /** [[IRI]] used when the shape label can be omitted or is needed but none was provided
+    */
+  val defaultShapeLabel: IRI = IRI("Shape")
 }

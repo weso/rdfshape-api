@@ -12,6 +12,8 @@ private[operations] abstract class SchemaOperation(
     val inputSchema: Schema
 )
 
+/** Static utils for Schema operations
+  */
 private[operations] object SchemaOperation {
 
   /** Dummy success message

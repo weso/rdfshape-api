@@ -3,11 +3,11 @@ package es.weso.rdfshape.server.api.routes.data.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.nodes.IRI
-import es.weso.rdfshape.server.api.definitions.ApiDefaults.{
-  availableInferenceEngines,
-  defaultInferenceEngineName
+import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultInferenceEngine
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.{
+  api,
+  availableInferenceEngines
 }
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats._
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.ShExC
 import es.weso.rdfshape.server.api.routes.ApiService
@@ -80,14 +80,14 @@ class DataService(client: Client[IO])
       */
     case GET -> Root / `api` / `verb` / "inferenceEngines" =>
       val inferenceEngines = availableInferenceEngines
-      val json             = Json.fromValues(inferenceEngines.map(Json.fromString))
+      val json =
+        Json.fromValues(inferenceEngines.map(e => Json.fromString(e.name)))
       Ok(json)
 
     /** Returns the default inference engine used as a raw string
       */
     case GET -> Root / `api` / `verb` / "inferenceEngines" / "default" =>
-      val defaultInferenceEngine = defaultInferenceEngineName
-      Ok(Json.fromString(defaultInferenceEngine))
+      Ok(Json.fromString(defaultInferenceEngine.name))
 
     /** Returns a JSON array with the valid data sources that the server will accept when sent via [[DataSourceParameter]]
       */
