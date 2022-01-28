@@ -1,10 +1,13 @@
 package es.weso.rdfshape
 
+import ch.qos.logback.classic.{Logger => Logger2}
+import ch.qos.logback.core.joran.util.ConfigurationWatchListUtil
 import com.typesafe.scalalogging._
 import es.weso.rdfshape.cli.ArgumentsData.unapply
 import es.weso.rdfshape.cli.{ArgumentsData, CliManager}
 import es.weso.rdfshape.logging.LoggingManager
 import es.weso.rdfshape.server.Server
+import org.slf4j.{Logger, LoggerFactory}
 
 object Main extends App with LazyLogging {
 

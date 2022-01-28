@@ -183,12 +183,6 @@ lazy val resolverSettings = Seq(
     Resolver.sonatypeRepo("snapshots")
   )
 )
-// "sbt-github-actions" plugin settings
-val JavaCIVersion  = "adopt@1.11"
-val ScalaCIVersion = "2.13.6"
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
-ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
-
 // Shared settings for the BuildInfo Plugin
 // See https://github.com/sbt/sbt-buildinfo
 lazy val buildInfoSettings = Seq(
@@ -275,6 +269,8 @@ lazy val server = project
       mongodb
     )
   )
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
+ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 /* ------------------------------------------------------------------------- */
 // Documentation project, for MDoc + Docusaurus documentation
 lazy val docs = project
@@ -299,8 +295,8 @@ lazy val mongodbVersion      = "4.4.0"
 lazy val any23Version        = "2.4"
 lazy val rdf4jVersion        = "3.7.4"
 lazy val graphvizJavaVersion = "0.18.1"
-lazy val logbackVersion      = "1.2.10"
-lazy val loggingVersion      = "3.9.4"
+lazy val logbackVersion      = "1.2.8"
+lazy val scalaLoggingVersion = "3.9.4"
 lazy val groovyVersion       = "3.0.8"
 lazy val munitVersion        = "0.7.27"
 lazy val munitEffectVersion  = "1.0.7"
@@ -333,7 +329,7 @@ lazy val graphvizJava  = "guru.nidi"         % "graphviz-java" % graphvizJavaVer
 lazy val plantuml       = "net.sourceforge.plantuml" % "plantuml"        % plantumlVersion
 lazy val logbackClassic = "ch.qos.logback"           % "logback-classic" % logbackVersion
 lazy val scalaLogging =
-  "com.typesafe.scala-logging" %% "scala-logging" % loggingVersion
+  "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion
 lazy val groovy = "org.codehaus.groovy" % "groovy" % groovyVersion
 lazy val munit  = "org.scalameta"      %% "munit"  % munitVersion
 lazy val munitEffect =
@@ -344,3 +340,6 @@ lazy val shexs      = "es.weso" %% "shexs"      % shexsVersion
 lazy val shaclex    = "es.weso" %% "shaclex"    % shaclexVersion
 lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
 lazy val wesoUtils  = "es.weso" %% "utilstest"  % wesoUtilsVersion
+// "sbt-github-actions" plugin settings
+val JavaCIVersion  = "adopt@1.11"
+val ScalaCIVersion = "2.13.6"

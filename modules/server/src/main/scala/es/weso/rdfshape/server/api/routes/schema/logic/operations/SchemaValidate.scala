@@ -59,8 +59,8 @@ private[api] object SchemaValidate extends LazyLogging {
           for {
             innerSchema <- schema.getSchema
             result = innerSchema.flatMap(s => {
-              trigger.getValidationTrigger.map(vt => {
-                s.validate(rdf, vt, builder)
+              trigger.getValidationTrigger.map(trigger => {
+                s.validate(rdf, trigger, builder)
               })
             })
             validation <- result match {

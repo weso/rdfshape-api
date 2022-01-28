@@ -192,7 +192,6 @@ class DataService(client: Client[IO])
                         case errorMessage: String =>
                           errorResponseJson(errorMessage, InternalServerError)
                         case _ => // null exception message, return a general error message
-                          err.printStackTrace()
                           errorResponseJson(
                             DataServiceError.couldNotParseData,
                             InternalServerError

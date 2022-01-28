@@ -1,12 +1,14 @@
 package es.weso.rdfshape.server.api.routes.wikibase.logic.operations.schema
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxEitherId
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.NONE
 import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.format.dataFormats.{Compact, Turtle}
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.types.DataSingle
+import es.weso.rdfshape.server.api.routes.data.logic.types.merged.DataCompound
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.SchemaValidate
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerShapeMap
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
@@ -53,25 +55,37 @@ private[wikibase] case class WikibaseSchemaValidate(
 
   override lazy val targetUri: Uri = uri"" // unused
 
+  private val entitiesSeparator = '|'
+
   override def performOperation: IO[WikibaseOperationResult] = {
-    val entityUri = operationData.payload
+
+    val entityUris = operationData.payload.split(entitiesSeparator)
 
     // Raise error if target is not Wikidata
     if(targetWikibase != Wikidata)
       IO.raiseError(WikibaseServiceException(wikidataOnlyMessage))
     else {
       val tryResult = for {
-        // Get the Wikidata item info from the URI submitted as payload
-        wdEntity <- Try {
-          WikidataEntity(Uri.unsafeFromString(entityUri))
+        // Get the Wikidata items info from the URI submitted as payload
+        wdEntities <- Try {
+          entityUris.map(it => WikidataEntity(Uri.unsafeFromString(it)))
         }
         // Create the data to be validated, using Wikidata to get the URL
         // to the Turtle contents
-        inputData = DataSingle(
-          dataPre = Some(wdEntity.contentUri.renderString),
-          dataFormat = Turtle,
-          inference = NONE,
-          dataSource = DataSource.URL
+        /* Data will be a compound of several simple data fetched from each
+         * entity */
+
+        inputData = DataCompound(
+          wdEntities
+            .map(entity =>
+              DataSingle(
+                dataPre = Some(entity.contentUri.renderString),
+                dataFormat = Turtle,
+                inference = NONE,
+                dataSource = DataSource.URL
+              )
+            )
+            .toList
         )
 
         /* Get the schema model needed for validation: already passed to the
@@ -80,9 +94,12 @@ private[wikibase] case class WikibaseSchemaValidate(
         // Perform validation
         eitherValidationResults = for {
           // Create your trigger mode: ShEx with basic Shapemap
-          shapeMapModel <- ShapeMapW.empty.add(
-            IRI(wdEntity.entityUri.renderString),
-            Start
+          // For each entity, add a start point
+          shapeMapModel <- wdEntities.foldLeft(ShapeMapW.empty.asRight[String])(
+            (sm, entity) => {
+              val entityUri = IRI(entity.entityUri.renderString)
+              sm.flatMap(_.add(entityUri, Start))
+            }
           )
           shapeMapFinalModel <- shapeMapModel.serialize(Compact.name)
           trigger = TriggerShapeMap(
@@ -122,7 +139,7 @@ private[wikibase] case class WikibaseSchemaValidate(
               wikibase = targetWikibase,
               result = Json.fromFields(
                 List(
-                  ("entity", Json.fromString(entityUri)),
+                  ("entity", entityUris.asJson),
                   ("result", validationResults.asJson)
                 )
               )

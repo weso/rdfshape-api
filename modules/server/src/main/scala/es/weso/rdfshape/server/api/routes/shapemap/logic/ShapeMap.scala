@@ -58,7 +58,6 @@ sealed case class ShapeMap private (
       case None | Some("") =>
         Left("Cannot extract the ShapeMap from an empty instance")
       case Some(shapeMapStr) =>
-        println(nodesPrefixMap.pm)
         ShapeMapW
           .fromString(
             shapeMapStr,

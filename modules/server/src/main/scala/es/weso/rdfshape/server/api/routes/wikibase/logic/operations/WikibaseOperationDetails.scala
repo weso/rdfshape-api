@@ -23,6 +23,7 @@ import org.http4s.implicits.http4sLiteralsSyntax
   *                        (empty list returns all available languages).
   *                        Each language must be represented by its language code.
   * @param limit           Maximum amount of results queried in search operations
+  *                        In SPARQL queries, the limit is embedded in the query text
   * @param continue        Offset where to continue a search operation
   * @param format          Format in which results are requested
   * @see [[https://www.mediawiki.org/wiki/Wikibase/API#API_documentation_and_Wikibase_modules]]
