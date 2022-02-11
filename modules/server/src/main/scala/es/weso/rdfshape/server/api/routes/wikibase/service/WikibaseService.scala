@@ -274,7 +274,7 @@ class WikibaseService(client: Client[IO])
         } yield response
       }
 
-    // TODO: Needs exhaustive testing and client changes
+    // TODO: Needs exhaustive testing. Timeouts.
     /** Attempts to extract an schema (ShEx) from a given entity present in wikidata
       * using SheXer. See [[https://github.com/DaniFdezAlvarez/shexer]].
       * Receives an entity URI as payload.

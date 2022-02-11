@@ -71,17 +71,13 @@ private[wikibase] case class WikibaseSchemaExtract(
                 .fromString(strRdf, Turtle.name)
                 .flatMap(
                   _.use(rdf =>
-                    for {
-                      rdfSerialized <- rdf.serialize(Turtle.name)
-                      nodeSelector = RDFNodeSelector(IRI(entityUri))
-                      inferred <- SchemaInfer.runInferSchema(
-                        rdf,
-                        nodeSelector,
-                        Schemas.shEx.name,
-                        IRI(s"http://example.org/Shape_${wdEntity.localName}"),
-                        InferOptions.defaultOptions.copy(maxFollowOn = 3)
-                      )
-                    } yield inferred
+                    SchemaInfer.runInferSchema(
+                      rdf,
+                      RDFNodeSelector(IRI(entityUri)),
+                      Schemas.shEx.name,
+                      IRI(s"http://example.org/Shape_${wdEntity.localName}"),
+                      InferOptions.defaultOptions.copy(maxFollowOn = 3)
+                    )
                   )
                 )
             )
