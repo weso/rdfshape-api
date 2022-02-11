@@ -7,14 +7,12 @@ import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
   getEndpointAsRDFReader,
-  getEndpointInfo,
   getEndpointUrl
 }
-import es.weso.rdfshape.server.api.routes.endpoint.logic.EndpointStatus._
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing.getOutgoing
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery.mkSparqlQuery
-import es.weso.rdfshape.server.api.routes.endpoint.logic.{Endpoint, Outgoing}
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   EndpointParameter,
   LimitParameter,
@@ -56,12 +54,14 @@ class EndpointService(client: Client[IO])
       *    - results [Object]: Query results
       *      - bindings: [Array]: Query results, each item being an object mapping each variable to its value
       */
+    /**
+      */
     case req @ POST -> Root / `api` / `verb` / "query" =>
       req.decode[Multipart[IO]] { m =>
         val partsMap = PartsMap(m.parts)
 
         val r: EitherT[IO, String, Json] = for {
-          endpointUrl <- getEndpointUrl(partsMap)
+          endpointUrl <- EitherT(getEndpointUrl(partsMap))
           endpoint    <- getEndpointAsRDFReader(endpointUrl)
           either <- EitherT
             .liftF[IO, String, Either[
@@ -73,7 +73,6 @@ class EndpointService(client: Client[IO])
           eitherQuery <- EitherT.fromEither[IO](either)
 
           json <- {
-
             eitherQuery.rawQuery.fold(
               err => EitherT.left(IO.pure(err)),
               raw => {
@@ -95,37 +94,6 @@ class EndpointService(client: Client[IO])
             json => Ok(json)
           )
         } yield resp
-      }
-
-    /** Attempt to contact an endpoint and return metadata about it.
-      * Receives a JSON object with the input endpoint:
-      *  - endpoint [String]: Target endpoint
-      *    Returns a JSON object with the endpoint response:
-      *    - head [Object]: Query metadata
-      *      - vars: [Array]: Query variables
-      *    - results [Object]: Query results
-      *      - bindings: [Array]: Query results, each item being an object mapping each variable to its value
-      */
-    case req @ POST -> Root / `api` / `verb` / "info" =>
-      req.decode[Multipart[IO]] { m =>
-        val partsMap = PartsMap(m.parts)
-        for {
-          endpointUrl <- getEndpointUrl(partsMap).value
-          response <- endpointUrl match {
-            case Left(err) => errorResponseJson(err, BadRequest)
-            case Right(endpointUrl) =>
-              val endpointInfo = getEndpointInfo(endpointUrl)
-              endpointInfo match {
-                case Endpoint(errMsg, OFFLINE) =>
-                  errorResponseJson(
-                    errMsg,
-                    InternalServerError
-                  )
-                case _ => Ok(endpointInfo.asJson)
-              }
-          }
-        } yield response
-
       }
 
     /** Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it.
