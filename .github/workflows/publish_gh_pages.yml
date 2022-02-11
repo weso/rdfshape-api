@@ -1,8 +1,8 @@
 name: Publish website (Mdoc + Docusaurus)
 on:
   push:
-    branches: [main, master]
-    tags: ["*"]
+    branches: [ main, master ]
+    tags: [ "*" ]
 jobs:
   publish:
     name: Build a docusaurus website with guides and scaladoc
@@ -15,13 +15,15 @@ jobs:
           fetch-depth: 0
       - name: Set up Scala
         uses: olafurpg/setup-scala@v11
-        
+        with:
+          java-version: openjdk@1.14
+
       - name: Set up GPG
         uses: olafurpg/setup-gpg@v3
 
       - name: Setup graphviz/dot for scaladoc diagrams
         uses: ts-graphviz/setup-graphviz@v1
-        
+
       - name: Build and publish docusaurus site, generating the scaladoc
         run: sbt '++2.13.6 docs/docusaurusPublishGhpages'
         env:
