@@ -6,12 +6,13 @@ import es.weso.rdfshape.cli.CliManager.{
   versionText
 }
 import es.weso.rdfshape.server.Server
-import es.weso.rdfshape.server.utils.error.SysUtils
+import es.weso.rdfshape.server.utils.error.{ExitCodes, SysUtils}
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.{Help, ValidationFailure, Version}
 
 /** Class in charge of parsing the arguments provided via command-line when executing RDFShape.
   * Parsed data is later used to instantiate the API server according to the user's needs.
+  *
   * @param arguments Array of arguments passed to the executable
   * @see es.weso.rdfshape.Main
   */
@@ -91,17 +92,17 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     // On "help", show help menu and exit
     case Help("") =>
       printHelp()
-      sys.exit(SysUtils.successCode)
+      sys.exit(ExitCodes.SUCCESS)
 
     // On "version", show version and exit
     case Version =>
       println(versionText)
-      sys.exit(SysUtils.successCode)
+      sys.exit(ExitCodes.SUCCESS)
 
     // On args validation failure: exit, printing the specific error message
     case _: ValidationFailure =>
       SysUtils.fatalError(
-        SysUtils.invalidArgumentsError,
+        ExitCodes.ARGUMENTS_INVALID_ERROR,
         s"""
            |Invalid argument provided: ${e.getMessage}
            |$useHelpText
@@ -110,11 +111,11 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     // On other CLI failure: exit, printing the specific error message
     case _ =>
       SysUtils.fatalError(
-        SysUtils.parseArgumentsError,
+        ExitCodes.ARGUMENTS_PARSE_ERROR,
         s"""
-          |Could not parse arguments: ${e.getMessage}
-          |$useHelpText
-          |""".stripMargin
+           |Could not parse arguments: ${e.getMessage}
+           |$useHelpText
+           |""".stripMargin
       )
   }
 
@@ -124,18 +125,19 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
 }
 
 /** Provide static members used by the CLI interface.
+  *
   * @see {@link es.weso.rdfshape.cli.CliManager}
   */
 object CliManager {
-
-  /** Text message shown when suggesting the user to check the help menu
-    */
-  private val useHelpText = s"""Use "--help" for usage information"""
 
   /** Text message shown when showing the user the program version
     */
   private lazy val formattedVersion: String =
     s"${buildinfo.BuildInfo.name} ${buildinfo.BuildInfo.version} by WESO Research Group (https://www.weso.es/)"
+
+  /** Text message shown when suggesting the user to check the help menu
+    */
+  private val useHelpText = s"""Use "--help" for usage information"""
 
   /** Simplified version text
     */

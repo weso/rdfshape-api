@@ -18,20 +18,7 @@ object LoggingManager {
   private val defaultLogbackConfigurationFile =
     "logback-configurations/logback.groovy"
 
-  /** Given a verbosity numeric value, map it to its corresponding logging level
-    * @param verbosity Verbosity numeric value
-    * @return A string representing the minimum level of the logs to be shown on console
-    */
-  def mapVerbosityValueToLogLevel(verbosity: Int): String = {
-    verbosity match {
-      case 0 => LoggingLevel.ERROR // No verbose argument. Show errors.
-      case 1 => LoggingLevel.WARN  // -v. Show warnings.
-      case 2 => LoggingLevel.INFO  // -vv. Show info.
-      case _ => LoggingLevel.DEBUG // -vvv and forth. Show debug information.
-    }
-  }
-
-  /** Set the System Properties that will be read in logback's configuration file to define logback's behavior.
+  /** Set the System Properties that will be read in logback's configuration file to define logback's behavior
     * @see setUpLogbackConfiguration
     * @see setUpLogbackLogLevel
     */
@@ -63,15 +50,17 @@ object LoggingManager {
       mapVerbosityValueToLogLevel(verbosity)
     )
   }
-}
 
-/** Enum classifying the accepted logging levels by their String representation.
-  */
-object LoggingLevel extends Enumeration {
-  type LoggingLevel = String
-  val ERROR = "ERROR"
-  val WARN  = "WARN"
-  val INFO  = "INFO"
-  val DEBUG = "DEBUG"
-  val TRACE = "TRACE"
+  /** Given a verbosity numeric value, map it to its corresponding logging level
+    * @param verbosity Verbosity numeric value
+    * @return A string representing the minimum level of the logs to be shown on console
+    */
+  def mapVerbosityValueToLogLevel(verbosity: Int): String = {
+    verbosity match {
+      case 0 => LoggingLevels.ERROR // No verbose argument. Show errors.
+      case 1 => LoggingLevels.WARN  // -v. Show warnings.
+      case 2 => LoggingLevels.INFO  // -vv. Show info.
+      case _ => LoggingLevels.DEBUG // -vvv and forth. Show debug information.
+    }
+  }
 }
