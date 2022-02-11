@@ -1,7 +1,7 @@
 package es.weso.rdfshape.server.api.routes.endpoint.logic
 
-import cats.data.EitherT
 import cats.effect.IO
+import cats.implicits.catsSyntaxEitherId
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.RDFReader
 import es.weso.rdf.jena.{Endpoint => EndpointJena}
@@ -65,17 +65,17 @@ private[api] object Endpoint extends LazyLogging {
     */
   def getEndpointUrl(
       partsMap: PartsMap
-  ): EitherT[IO, String, URL] = for {
-    maybeStr <- EitherT.liftF[IO, String, Option[String]](
-      partsMap.optPartValue("endpoint")
-    )
-    ep <- maybeStr match {
-      case None =>
-        EitherT.leftT[IO, URL](s"No value provided for parameter endpoint")
-      case Some(str) =>
-        Try(new URL(str)) match {
-          case Success(url) => EitherT.rightT[IO, String](url)
-          case Failure(ex)  => EitherT.leftT[IO, URL](ex.getMessage)
+  ): IO[Either[String, URL]] = for {
+    maybeStr <- partsMap.optPartValue("endpoint").map(_.toRight(""))
+
+    ep = maybeStr match {
+      case Left(_) =>
+        val msg = s"No value provided for parameter endpoint"
+        msg.asLeft[URL]
+      case Right(endpointStr) =>
+        Try(new URL(endpointStr)) match {
+          case Success(url) => url.asRight[String]
+          case Failure(ex)  => ex.getMessage.asLeft[URL]
         }
     }
   } yield ep

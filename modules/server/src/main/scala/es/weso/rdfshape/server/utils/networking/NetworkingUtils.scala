@@ -16,6 +16,15 @@ object NetworkingUtils extends LazyLogging {
   def getUrlContents(urlString: String): Either[String, String] = {
     Try {
       val url = new URL(urlString)
+      getUrlContents(url)
+    } match {
+      case Failure(exception) => Left(exception.getMessage)
+      case Success(value)     => value
+    }
+  }
+
+  def getUrlContents(url: URL): Either[String, String] = {
+    Try {
       val src = Source.fromURL(url)
       val str = src.mkString
       src.close()
@@ -24,7 +33,7 @@ object NetworkingUtils extends LazyLogging {
       case Success(urlContent) => Right(urlContent)
       case Failure(exception) =>
         val msg =
-          s"Could not obtain data from url $urlString."
+          s"Could not obtain data from url $url."
         logger.warn(s"$msg - ${exception.getMessage}")
         Left(msg)
     }
