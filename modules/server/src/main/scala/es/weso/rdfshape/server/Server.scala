@@ -130,7 +130,7 @@ private class Server(
   private def createApp(client: Client[IO]): HttpApp[IO] = {
     val app = routesService(client).orNotFound
     // Http4s logger middleware settings
-    Logger.httpApp(logHeaders = true, logBody = true)(app)
+    Logger.httpApp(logHeaders = true, logBody = false)(app)
   }
 }
 
