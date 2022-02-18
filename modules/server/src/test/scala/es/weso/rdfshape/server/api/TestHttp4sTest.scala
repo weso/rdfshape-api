@@ -62,7 +62,7 @@ class TestHttp4sTest extends CatsEffectSuite {
     routes.orNotFound(req)
 
   def parseBody(body: EntityBody[IO]): IO[String] = {
-    body.through(text.utf8Decode).compile.toList.map(_.mkString)
+    body.through(text.utf8.decode).compile.toList.map(_.mkString)
   }
 
   test("Routes") {

@@ -1,5 +1,6 @@
 package es.weso.rdfshape.cli
 
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.cli.CliManager.{
   formattedVersion,
   useHelpText,
@@ -45,7 +46,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     required = false,
     validate = p => p > 0 && p <= 65535,
     descr =
-      s"""Port in which the API will listen for requests. Values must be in range 1-65535 (defaults to ${Server.defaultPort})"""
+      s"""Port in which the API will listen for requests. Values must be in range 1-65535 (default is ${Server.defaultPort})"""
   )
 
   /** Configuration of the CLI argument setting whether the server should try to use HTTPS or not
@@ -56,7 +57,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     default = Some(Server.defaultHttps),
     required = true,
     descr =
-      s"""Attempt to serve the API via HTTPS (defaults to ${Server.defaultHttps})"""
+      s"""Attempt to serve the API via HTTPS (default is ${Server.defaultHttps})"""
   )
 
   /** Configuration of the CLI argument setting the application's verbosity
@@ -67,6 +68,17 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     short = 'v',
     descr =
       s"""Show additional logging information (use cumulative times for additional info, like: "-vvv")"""
+  )
+
+  /** Configuration of the CLI argument setting off all console output
+    */
+  val silent: ScallopOption[Boolean] = opt[Boolean](
+    name = "silent",
+    short = 's',
+    default = Some(false),
+    required = false,
+    descr =
+      s"""Enable silent mode in order not to log any output to console (default is ${false})"""
   )
 
   /** Configuration of the CLI argument triggering the application's help menu
@@ -90,7 +102,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     */
   override protected def onError(e: Throwable): Unit = e match {
     // On "help", show help menu and exit
-    case Help("") =>
+    case Help(_) =>
       printHelp()
       sys.exit(ExitCodes.SUCCESS)
 
@@ -128,7 +140,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
   *
   * @see {@link es.weso.rdfshape.cli.CliManager}
   */
-object CliManager {
+object CliManager extends LazyLogging {
 
   /** Text message shown when showing the user the program version
     */
@@ -158,8 +170,9 @@ object CliManager {
       |""".stripMargin
 
   /** Print a text-based banner with the program's name in a brand-like format
+    * @note Using logger INFO level to not overload the console of users
     */
-  def printBanner(): Unit = {
-    println(bannerText)
+  def showBanner(): Unit = {
+    logger.info(bannerText)
   }
 }

@@ -1,5 +1,6 @@
 package es.weso.rdfshape.logging
 
+import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.util.ContextInitializer
 
 /** Utilities related to the logging system used by the application to log information on the console and the logs folder
@@ -11,12 +12,13 @@ object LoggingManager {
 
   /** System property checked by logback to know how much console-output it should filter
     */
-  private val systemPropertyVerbosity = "rdfshape.api.verbosity.level"
+  val systemPropertyVerbosity = "rdfshape.api.verbosity.level"
 
-  /** Default location if logback's configuration file inside the "resources" folder
+  /** Location of logback's configuration file inside the "resources" folder
+    * @note Resorts to [[ContextInitializer.AUTOCONFIG_FILE]], i.e.: logback.xml
     */
-  private val defaultLogbackConfigurationFile =
-    "logback-configurations/logback.groovy"
+  private val logbackConfigurationFile =
+    ContextInitializer.AUTOCONFIG_FILE
 
   /** Set the System Properties that will be read in logback's configuration file to define logback's behavior
     * @see setUpLogbackConfiguration
@@ -24,9 +26,10 @@ object LoggingManager {
     */
   def setUp(
       verbosity: Int,
-      logbackConfigurationFile: String = defaultLogbackConfigurationFile
+      silent: Boolean,
+      logbackConfigurationFile: String = logbackConfigurationFile
   ): Unit = {
-    setUpLogbackLogLevel(verbosity)
+    setUpLogbackLogLevel(verbosity, silent)
     setUpLogbackConfiguration(logbackConfigurationFile)
   }
 
@@ -44,10 +47,12 @@ object LoggingManager {
     * in console (see logback configuration file).
     * @param verbosity numeric representation of the required verbosity level
     */
-  private def setUpLogbackLogLevel(verbosity: Int): Unit = {
+  private def setUpLogbackLogLevel(verbosity: Int, silent: Boolean): Unit = {
+    val logLevel =
+      if(silent) Level.OFF else mapVerbosityValueToLogLevel(verbosity)
     System.setProperty(
       systemPropertyVerbosity,
-      mapVerbosityValueToLogLevel(verbosity)
+      logLevel.toString
     )
   }
 
@@ -55,12 +60,12 @@ object LoggingManager {
     * @param verbosity Verbosity numeric value
     * @return A string representing the minimum level of the logs to be shown on console
     */
-  def mapVerbosityValueToLogLevel(verbosity: Int): String = {
+  def mapVerbosityValueToLogLevel(verbosity: Int): Level = {
     verbosity match {
-      case 0 => LoggingLevels.ERROR // No verbose argument. Show errors.
-      case 1 => LoggingLevels.WARN  // -v. Show warnings.
-      case 2 => LoggingLevels.INFO  // -vv. Show info.
-      case _ => LoggingLevels.DEBUG // -vvv and forth. Show debug information.
+      case 0 => Level.ERROR // No verbose argument. Show errors.
+      case 1 => Level.WARN  // -v. Show warnings.
+      case 2 => Level.INFO  // -vv. Show info.
+      case _ => Level.DEBUG // -vvv and forth. Show debug information.
     }
   }
 }

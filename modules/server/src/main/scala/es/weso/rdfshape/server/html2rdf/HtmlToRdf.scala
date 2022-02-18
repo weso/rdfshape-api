@@ -15,7 +15,6 @@ import org.apache.jena.rdf.model.{
   Property => JenaProperty,
   RDFNode => JenaRDFNode,
   Resource => JenaResource,
-  RDFReader => _,
   _
 }
 import org.eclipse.rdf4j.model.{
@@ -164,12 +163,6 @@ object HtmlToRdf extends LazyLogging {
       case b: BNode    => cnvBNode(b)
     }
 
-    def cnvBNode(b: BNode): JenaResource =
-      model.createResource(AnonId.create(b.getID))
-
-    def cnvIRI(p: RDF4jIRI): JenaProperty =
-      model.createProperty(p.toString)
-
     def cnvObj(o: Value): JenaRDFNode = o match {
       case i: RDF4jIRI => cnvIRI(i)
       case b: BNode    => cnvBNode(b)
@@ -179,6 +172,12 @@ object HtmlToRdf extends LazyLogging {
         } else
           model.createTypedLiteral(l.getLabel, l.getDatatype.toString)
     }
+
+    def cnvBNode(b: BNode): JenaResource =
+      model.createResource(AnonId.create(b.getID))
+
+    def cnvIRI(p: RDF4jIRI): JenaProperty =
+      model.createProperty(p.toString)
 
     override def startDocument(
         documentIRI: RDF4jIRI

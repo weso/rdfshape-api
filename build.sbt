@@ -26,6 +26,15 @@ Global / excludeLintKeys ++= Set(
 lazy val sharedDependencies = Seq()
 // Shared packaging settings for all modules.
 lazy val packagingSettings = Seq(
+  // Do not package logback files in .jar, they interfere with other logback
+  // files in classpath
+  Compile / packageBin / mappings ~= { project =>
+    project.filter { case (file, _) =>
+      val fileName = file.getName
+      !(fileName.startsWith("logback") && (fileName.endsWith(".xml") || fileName
+        .endsWith(".groovy")))
+    }
+  },
   Compile / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / mainClass := Some("es.weso.rdfshape.Main"),
   assembly / test := {},
@@ -228,8 +237,7 @@ lazy val rdfshape = project
     crossScalaVersions := Nil,
     libraryDependencies ++= Seq(
       logbackClassic,
-      scalaLogging,
-      groovy
+      scalaLogging
     )
   )
 // Server project in /modules: server
@@ -269,8 +277,13 @@ lazy val server = project
       mongodb
     )
   )
+
+// "sbt-github-actions" plugin settings
+lazy val JavaCIVersion  = "adopt@1.11"
+lazy val ScalaCIVersion = "2.13.6"
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
 ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
+
 /* ------------------------------------------------------------------------- */
 // Documentation project, for MDoc + Docusaurus documentation
 lazy val docs = project
@@ -297,14 +310,13 @@ lazy val rdf4jVersion        = "3.7.4"
 lazy val graphvizJavaVersion = "0.18.1"
 lazy val logbackVersion      = "1.2.8"
 lazy val scalaLoggingVersion = "3.9.4"
-lazy val groovyVersion       = "3.0.8"
 lazy val munitVersion        = "0.7.27"
 lazy val munitEffectVersion  = "1.0.7"
 lazy val plantumlVersion     = "1.2021.14"
 lazy val scalajVersion       = "2.4.2"
 // WESO dependencies
-lazy val shaclexVersion    = "0.1.103ult"
-lazy val shexsVersion      = "0.1.105"
+lazy val shaclexVersion    = "0.1.103-ult"
+lazy val shexsVersion      = "0.1.108-ult"
 lazy val umlShaclexVersion = "0.0.82"
 lazy val wesoUtilsVersion  = "0.2.2"
 // Dependency modules
@@ -330,8 +342,7 @@ lazy val plantuml       = "net.sourceforge.plantuml" % "plantuml"        % plant
 lazy val logbackClassic = "ch.qos.logback"           % "logback-classic" % logbackVersion
 lazy val scalaLogging =
   "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion
-lazy val groovy = "org.codehaus.groovy" % "groovy" % groovyVersion
-lazy val munit  = "org.scalameta"      %% "munit"  % munitVersion
+lazy val munit = "org.scalameta" %% "munit" % munitVersion
 lazy val munitEffect =
   "org.typelevel" %% "munit-cats-effect-3" % munitEffectVersion
 lazy val scalaj = "org.scalaj" %% "scalaj-http" % scalajVersion
@@ -340,6 +351,3 @@ lazy val shexs      = "es.weso" %% "shexs"      % shexsVersion
 lazy val shaclex    = "es.weso" %% "shaclex"    % shaclexVersion
 lazy val umlShaclex = "es.weso" %% "umlshaclex" % umlShaclexVersion
 lazy val wesoUtils  = "es.weso" %% "utilstest"  % wesoUtilsVersion
-// "sbt-github-actions" plugin settings
-val JavaCIVersion  = "adopt@1.11"
-val ScalaCIVersion = "2.13.6"
