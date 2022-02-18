@@ -1,13 +1,11 @@
 package es.weso.rdfshape
 
-import ch.qos.logback.classic.{Logger => Logger2}
-import ch.qos.logback.core.joran.util.ConfigurationWatchListUtil
 import com.typesafe.scalalogging._
 import es.weso.rdfshape.cli.ArgumentsData.unapply
 import es.weso.rdfshape.cli.{ArgumentsData, CliManager}
 import es.weso.rdfshape.logging.LoggingManager
+import es.weso.rdfshape.logging.LoggingManager.systemPropertyVerbosity
 import es.weso.rdfshape.server.Server
-import org.slf4j.{Logger, LoggerFactory}
 
 object Main extends App with LazyLogging {
 
@@ -19,12 +17,12 @@ object Main extends App with LazyLogging {
     */
   private def run(args: Array[String]): Unit = {
     // Parse arguments
-    val argumentsData            = parseArguments(args)
-    val (port, https, verbosity) = unapply(argumentsData)
+    val argumentsData                    = parseArguments(args)
+    val (port, https, verbosity, silent) = unapply(argumentsData)
     // Set up the logging framework depending on the verbose argument
-    setUpLogger(verbosity)
+    setUpLogger(verbosity, silent)
     // Start the server module
-    CliManager.printBanner()
+    CliManager.showBanner()
     Server(port, https)
   }
 
@@ -38,17 +36,19 @@ object Main extends App with LazyLogging {
     ArgumentsData(
       port = cliManager.port.apply(),
       https = cliManager.https.apply(),
-      verbosity = cliManager.verbose.apply()
+      verbosity = cliManager.verbose.apply(),
+      silent = cliManager.silent.apply()
     )
   }
 
   /** Let {@linkplain es.weso.rdfshape.logging.LoggingManager LoggingManager} prepare the logging framework according to the user's CLI arguments and inform the user
     * @param verbosity Verbosity level introduced by the user
     */
-  private def setUpLogger(verbosity: Int): Unit = {
-    LoggingManager.setUp(verbosity)
-    logger.info(
-      s"Console logging filter set to ${LoggingManager.mapVerbosityValueToLogLevel(verbosity)}"
-    )
+  private def setUpLogger(verbosity: Int, silent: Boolean = false): Unit = {
+    LoggingManager.setUp(verbosity, silent)
+    if(!silent)
+      logger.info(
+        s"Console logging filter set to ${System.getProperty(systemPropertyVerbosity)}"
+      )
   }
 }

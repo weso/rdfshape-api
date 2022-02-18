@@ -129,7 +129,8 @@ private class Server(
     */
   private def createApp(client: Client[IO]): HttpApp[IO] = {
     val app = routesService(client).orNotFound
-    Logger.httpApp(logHeaders = true, logBody = false)(app)
+    // Http4s logger middleware settings
+    Logger.httpApp(logHeaders = true, logBody = true)(app)
   }
 }
 
@@ -167,7 +168,6 @@ object Server {
     */
   private val corsConfiguration: CORSPolicy =
     CORS.policy.withAllowOriginAll.withAllowMethodsAll
-      .withAllowCredentials(true)
       .withMaxAge(new FiniteDuration(1, TimeUnit.DAYS))
 
   // Act as a server factory

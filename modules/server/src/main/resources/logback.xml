@@ -1,0 +1,105 @@
+<configuration debug="false" scan="true" scanPeriod="60 seconds">
+
+    <!--  GENERAL SETTINGS  -->
+
+    <!-- Prevent logback status messages from being printed -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
+    <!--  ............................................  -->
+    <!--  VARIABLE DEFINITIONS  -->
+    <!--  https://dennis-xlc.gitbooks.io/the-logback-manual/content/en/chapter-3-configuration/configuration-file-syntax/variable-substitution.html -->
+
+    <!-- Folder, relative to the program's execution path, where program logs will be stored -->
+    <property name="LOGS_FOLDER" value="logs"/>
+    <!-- Log files base name -->
+    <property name="LOGS_FILENAME" value="rdfshape-api.log"/>
+
+    <!-- Name (key) of the system property storing the application verbosity -->
+    <property name="SYSTEM_PROPERTY_VERBOSITY"
+              value="rdfshape.api.verbosity.level"/>
+
+    <!--  ............................................  -->
+    <!--  LOG APPENDERS  -->
+
+    <!-- 
+    1. Console appender. Show log messages on console while the app is running. 
+    - Log messages are emitted from the code with the aid of the scala-logging library.
+    - A filter is used to determine which messages are shown on console or not, adapting to the user's selected verbosity level.
+    (http://logback.qos.ch/manual/filters.html)
+    -->
+    <appender name="CONSOLE"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <!-- Use custom filter -->
+        <filter class="es.weso.rdfshape.logging.filters.VerbosityFilter"/>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- 
+    2. Rolling file appender. Create several files inside LOGS_FOLDER. 
+    Archives and compresses old logs.
+    Choices are:
+        - Store some time of logs before rollback (http://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy)
+        -> Store N compressed log files of size M before rollback (http://logback.qos.ch/manual/appenders.html#SizeBasedTriggeringPolicy)*/
+    -->
+    <appender name="ROLLING"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Destination file -->
+        <file>${LOGS_FOLDER}/${LOGS_FILENAME}</file>
+        <!-- Level filter, do not log below INFO level (that is DEBUG and TRACE) -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d %level %thread %mdc %logger - %m%n</pattern>
+        </encoder>
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${LOGS_FOLDER}/${LOGS_FILENAME}.%i.zip
+            </fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+
+    </appender>
+
+    <!-- 
+    3. AsyncAppender. Async writes to files to reduce overhead.
+    - Log messages are emitted from the code with the aid of the scala-logging library.
+    - A filter is used to determine which messages are shown on console or not, adapting to the user's selected verbosity level.
+    (http://logback.qos.ch/manual/filters.html)
+    -->
+    <appender name="ASYNC"
+              class="ch.qos.logback.core.AsyncAppenderBase">
+        <appender-ref ref="ROLLING"/>
+
+    </appender>
+
+
+    <!--  ............................................  -->
+    <!--  LOGGERS AND ASSOCIATED APPENDERS  -->
+
+    <!-- 
+    Root logger:
+    - Show console messages
+    - Let DEBUG and above logs pass through. Each appender implements finer filters
+    -->
+    <root level="debug">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ROLLING"/>
+        <appender-ref ref="ASYNC"/>
+    </root>
+
+    <!--  ............................................  -->
+    <!--  ADDITIONAL SETTINGS  -->
+
+
+</configuration>
