@@ -1,6 +1,6 @@
 ## Build environment.
 # Java 11, Scala 2.12.13, SBT 1.5.0 included.
-FROM hseeberger/scala-sbt:11.0.11-oraclelinux8_1.5.4_2.13.6 as build
+FROM hseeberger/scala-sbt:11.0.14.1-oraclelinux8_1.6.2_2.13.8 as build
 # Build application inside /app
 WORKDIR /app
 
