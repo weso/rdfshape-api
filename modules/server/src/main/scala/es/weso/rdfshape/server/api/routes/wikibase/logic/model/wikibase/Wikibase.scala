@@ -1,6 +1,6 @@
 package es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase
 
-import es.weso.rdfshape.server.utils.codec.CodecUtils.uriEncoder
+import es.weso.rdfshape.server.implicits.codecs.encodeUri
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 import org.http4s._

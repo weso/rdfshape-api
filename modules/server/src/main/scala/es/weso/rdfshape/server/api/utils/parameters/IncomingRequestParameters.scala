@@ -35,6 +35,9 @@ object IncomingRequestParameters {
 
   lazy val endpoint = "endpoint"
 
+  lazy val content = "content"
+
+  lazy val source         = "source"
   lazy val dataSource     = "dataSource"
   lazy val schemaSource   = "schemaSource"
   lazy val shapeMapSource = "shapeMapSource"
@@ -57,6 +60,17 @@ object IncomingRequestParameters {
   lazy val format      = "wbFormat"
   lazy val continue    = "continue"
   lazy val withDot     = "withDot"
+
+  /** Parameter expected to contain the content inputted by the user for a certain
+    * operation
+    *
+    * @note These contents may be raw data, a URL/File with the contents...
+    *       The source of the query is therefore specified in other [[SourceParameter]]
+    */
+  object ContentParameter
+      extends OptionalQueryParamDecoderMatcher[String](content) {
+    val name: String = content
+  }
 
   /** Parameter expected to contain RDF data contents (URL encoded)
     *
@@ -199,6 +213,14 @@ object IncomingRequestParameters {
   object EndpointParameter
       extends OptionalQueryParamDecoderMatcher[String](endpoint) {
     val name: String = endpoint
+  }
+
+  /** Parameter expected to contain a valid identifier of the source of the data sent by the client
+    * for any operation
+    */
+  object SourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](source) {
+    val name: String = source
   }
 
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)

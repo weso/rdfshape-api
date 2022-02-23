@@ -7,7 +7,7 @@ import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.WikibaseOperationFormats.WikibaseQueryFormat
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.rdfshape.server.utils.codec.CodecUtils.uriEncoder
+import es.weso.rdfshape.server.implicits.codecs.encodeUri
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 import org.http4s.Uri

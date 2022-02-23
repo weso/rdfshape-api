@@ -10,6 +10,7 @@ import java.net.{MalformedURLException, URL}
 import scala.util.{Failure, Success, Try}
 
 /** Custom query parsers used by Rho when parsing query parameters to complex data-types
+  * @see https://github.com/http4s/rho/blob/main/core/src/main/scala/org/http4s/rho/bits/QueryParser.scala
   */
 package object query_parsers {
 

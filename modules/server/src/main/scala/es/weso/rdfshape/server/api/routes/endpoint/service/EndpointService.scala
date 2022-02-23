@@ -1,33 +1,22 @@
 package es.weso.rdfshape.server.api.routes.endpoint.service
 
-import cats.data.EitherT
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{
-  getEndpointAsRDFReader,
-  getEndpointUrl
-}
-import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing
-import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing.getOutgoing
-import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
-import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery.mkSparqlQuery
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
-  EndpointParameter,
-  LimitParameter,
-  NodeParameter
-}
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
-import es.weso.utils.IOUtils._
-import io.circe.Json
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.getEndpointAsRDFReader
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing._
+import es.weso.rdfshape.server.api.routes.endpoint.service.operations.EndpointOutgoingInput
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
+import es.weso.rdfshape.server.implicits.query_parsers.urlQueryParser
+import es.weso.utils.IOUtils.io2es
 import io.circe.syntax.EncoderOps
-import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl._
-import org.http4s.multipart._
+import org.http4s.rho.RhoRoutes
+
+import java.net.URL
 
 /** API service to handle endpoints and operations targeted to them (queries, etc.)
   *
@@ -42,10 +31,11 @@ class EndpointService(client: Client[IO])
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
-  def routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
+  def routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
     /** Perform a SPARQL query targeted to a specific endpoint.
       * Receives a JSON object with the input endpoint query:
+      *  - endpoint [URL]: Query target endpoint
       *  - query [String]: User input for the query
       *  - querySource [String]: Identifies the source of the query (raw, URL, file...)
       *    Returns a JSON object with the query results:
@@ -56,51 +46,33 @@ class EndpointService(client: Client[IO])
       */
     /**
       */
-    case req @ POST -> Root / `api` / `verb` / "query" =>
-      req.decode[Multipart[IO]] { m =>
-        val partsMap = PartsMap(m.parts)
-
-        val r: EitherT[IO, String, Json] = for {
-          endpointUrl <- EitherT(getEndpointUrl(partsMap))
-          endpoint    <- getEndpointAsRDFReader(endpointUrl)
-          either <- EitherT
-            .liftF[IO, String, Either[
-              String,
-              SparqlQuery
-            ]](
-              mkSparqlQuery(partsMap)
-            )
-          eitherQuery <- EitherT.fromEither[IO](either)
-
-          json <- {
-            eitherQuery.rawQuery.fold(
-              err => EitherT.left(IO.pure(err)),
-              raw => {
-                logger.debug(s"Query to endpoint $endpoint: $raw")
-                io2es(endpoint.queryAsJson(raw))
-              }
-            )
+    POST / `api` / `verb` / "query" ^ jsonOf[
+      IO,
+      Either[String, EndpointOutgoingInput]
+    ] |>> { (body: Either[String, EndpointOutgoingInput]) =>
+      body match {
+        // Return any error accumulated during the parsing of the body
+        case Left(err) => BadRequest(err)
+        case Right(EndpointOutgoingInput(endpointUrl, queryObject)) =>
+         
+          val ioResponse = for {
+            endpoint <- getEndpointAsRDFReader(endpointUrl)
+            _ = logger.debug(s"Query to \"$endpointUrl\": \"${queryObject.rawQuery}\"")
+            queryResponse  <- io2es(endpoint.queryAsJson(queryObject.rawQuery))
+          } yield queryResponse
+          
+          ioResponse.value.flatMap {
+            case Left(err) => InternalServerError(err)
+            case Right(json) => Ok(json)
           }
-        } yield json
-
-        for {
-          either <- r.value
-          resp <- either.fold(
-            e =>
-              errorResponseJson(
-                s"Query failed. $e",
-                InternalServerError
-              ),
-            json => Ok(json)
-          )
-        } yield resp
       }
+    }
 
     /** Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it.
       * Receives a JSON object with the input endpoint, node and limits:
-      *  - endpoint [String]: Target endpoint
+      *  - endpoint [URL]: Query target endpoint
       *  - node [String]: Node identifier in the target wikibase
-      *  - limit [Int]: Max number of results
+      *  - limit [Int]: Max number of results, defaults to one
       *    Returns a JSON object with the endpoint response:
       *    - endpoint [String]: Target endpoint
       *    - node [String]: Node identifier in the target wikibase
@@ -108,20 +80,25 @@ class EndpointService(client: Client[IO])
       *      - pred: [String]: Predicate identifier in the target wikibase
       *      - values: [Array]: List of raw values for the entity and predicate
       */
-    case GET -> Root / `api` / `verb` / "outgoing" :?
-        EndpointParameter(optEndpoint) +&
-        NodeParameter(optNode) +&
-        LimitParameter(optLimit) =>
-      for {
-        eitherOutgoing <- getOutgoing(optEndpoint, optNode, optLimit).value
-        resp <- eitherOutgoing.fold(
-          (s: String) => errorResponseJson(s"Error: $s", InternalServerError),
-          (outgoing: Outgoing) => Ok(outgoing.asJson)
-        )
-      } yield resp
+    GET / `api` / `verb` / "outgoing" +?
+      param[URL](EndpointParameter.name) &
+      param[String](NodeParameter.name) &
+      param[Option[Int]](LimitParameter.name) |>> {
+        (endpointUrl: URL, node: String, limit: Option[Int]) =>
+          for {
+            eitherOutgoing <- getOutgoing(
+              endpointUrl,
+              node,
+              limit
+            ).value
+            resp <- eitherOutgoing.fold(
+              err => InternalServerError(s"Error: $err"),
+              outgoing => Ok(outgoing.asJson)
+            )
+          } yield resp
+      }
 
   }
-
 }
 
 object EndpointService {
@@ -133,4 +110,5 @@ object EndpointService {
     */
   def apply(client: Client[IO]): EndpointService =
     new EndpointService(client)
+
 }

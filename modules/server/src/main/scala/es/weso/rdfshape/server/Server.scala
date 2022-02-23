@@ -197,6 +197,7 @@ object Server {
     val routesFromRho =
       (BaseService(client).routes and
         PermalinkService(client).routes and
+        EndpointService(client).routes and
         FetchService(client).routes)
         .toRoutes(swaggerMiddleware)
     val allRoutes =
@@ -204,8 +205,7 @@ object Server {
         DataService(client).routes <+>
         SchemaService(client).routes <+>
         ShapeMapService(client).routes <+>
-        WikibaseService(client).routes <+>
-        EndpointService(client).routes
+        WikibaseService(client).routes
 
     corsConfiguration.apply(allRoutes)
   }

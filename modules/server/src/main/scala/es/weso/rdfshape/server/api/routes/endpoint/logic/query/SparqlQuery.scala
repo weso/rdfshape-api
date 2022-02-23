@@ -1,27 +1,24 @@
 package es.weso.rdfshape.server.api.routes.endpoint.logic.query
 
 import cats.effect.IO
+import cats.implicits.{catsSyntaxEitherId, toBifunctorOps}
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuerySource.{
-  SparqlQuerySource,
-  defaultQuerySource
-}
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
-  QueryParameter,
-  QuerySourceParameter
-}
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuerySource.{SparqlQuerySource, defaultQuerySource}
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{ContentParameter, QueryParameter, QuerySourceParameter, SourceParameter}
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
+import io.circe._
 import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, Json}
+
+import scala.util.Try
 
 /** Data class representing a SPARQL query and its current source
   *
-  * @param queryPre    Query contents, as received before being processed depending on the [[querySource]]
+  * @param queryContent    Query contents, as received before being processed depending on the [[querySource]]
   * @param querySource Active source, used to know which source the query comes from
   */
 sealed case class SparqlQuery private (
-    private val queryPre: Option[String],
+    private val queryContent: String,
     querySource: SparqlQuerySource
 ) extends LazyLogging {
 
@@ -30,40 +27,78 @@ sealed case class SparqlQuery private (
     *
     * @return Either an error building the query text or a String containing the final text of the SPARQL query
     */
-  lazy val rawQuery: Either[String, String] =
-    queryPre.map(_.trim) match {
-      case None | Some("") => Left("Could not build the query from empty data")
+  lazy val fetchedQueryContents: Either[String, String] =
+    querySource match {
+      case SparqlQuerySource.URL =>
+        getUrlContents(queryContent)
 
-      case Some(userQuery) =>
-        querySource match {
-          case SparqlQuerySource.TEXT | SparqlQuerySource.FILE =>
-            Right(userQuery)
-          case SparqlQuerySource.URL =>
-            getUrlContents(userQuery)
+      // Text or file
+      case _ =>
+        Right(queryContent)
 
-          case other =>
-            val msg = s"Unknown query source: $other"
-            logger.warn(msg)
-            Left(msg)
-        }
     }
+    
+  assume(fetchedQueryContents.isRight, 
+    fetchedQueryContents.left.getOrElse("Unknown error"))
+
+  /**
+   * Raw query value, i.e.: the text forming the query
+   * @note It is safely extracted fromm [[fetchedQueryContents]] after asserting 
+   *       the contents are right
+   */
+  val rawQuery: String = fetchedQueryContents.toOption.get
+  
+  
 }
 
 private[api] object SparqlQuery extends LazyLogging {
 
-  implicit val encodeSparqlQuery: Encoder[SparqlQuery] =
+  /**
+   * Encoder [[SparqlQuery]] => [[Json]]
+   */
+  implicit val encoder: Encoder[SparqlQuery] =
     (query: SparqlQuery) =>
       Json.obj(
-        ("query", query.rawQuery.toOption.asJson),
+        ("query", query.fetchedQueryContents.toOption.asJson),
         ("source", query.querySource.asJson)
       )
 
-  /** Placeholder value used for the sparql query whenever an empty query is issued/needed.
-    */
-  private val emptyQuery = SparqlQuery(
-    queryPre = None,
-    querySource = defaultQuerySource
-  )
+  /**
+   * Decoder [[Json]] => [[SparqlQuery]]
+   * @note Returns an either whose left contains specific errors building the query
+   */
+  implicit val decoder: Decoder[Either[String, SparqlQuery]] =
+    (cursor: HCursor) => {
+      // Get request data
+      val queryData = for {
+        queryContent <- cursor
+          .downField(ContentParameter.name)
+          .as[String]
+          .map(_.trim)
+        querySource <- cursor
+          .downField(SourceParameter.name)
+          .as[SparqlQuerySource]
+
+      } yield (queryContent, querySource)
+
+      // Safety checks: non empty query content and valid query source
+      queryData.map {
+        // Destructure
+        case (content, source) =>
+          if(content.isBlank)
+            "Could not build the query from empty data".asLeft[SparqlQuery]
+          else if(
+            source != SparqlQuerySource.TEXT && source != SparqlQuerySource.URL && source != SparqlQuerySource.FILE
+          )
+            s"Unknown query source: \"$source\"".asLeft[SparqlQuery]
+          else {
+            // Try to build a query, catch the exception as error message if needed
+            Try {
+              SparqlQuery(content, source)
+            }.toEither.leftMap( err => s"Could not build the SPARQL query from user data:\n ${err.getMessage}")
+          }
+      }
+    }
 
   /** Given a request's parameters, try to extract a SPARQL query from them
     *
@@ -100,12 +135,12 @@ private[api] object SparqlQuery extends LazyLogging {
   ): IO[Either[String, SparqlQuery]] =
     for {
       query <- IO {
-        emptyQuery.copy(
-          queryPre = queryStr,
+        SparqlQuery(
+          queryContent = queryStr.getOrElse(""),
           querySource = activeQuerySource.getOrElse(defaultQuerySource)
         )
       }
-    } yield query.rawQuery.fold(
+    } yield query.fetchedQueryContents.fold(
       // If the query text built is blank, an error occurred
       err => Left(err),
       _ => Right(query)

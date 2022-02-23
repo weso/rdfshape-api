@@ -148,17 +148,6 @@ class PermalinkService(client: Client[IO])
     retrievePermalink(codeFilter)
   }
 
-  /** Given the path of a URL, get the permalink already targeting it, if any
-    *
-    * @param urlPath URL which we want to find a permalink for
-    * @return Optionally, the Permalink targeting the given URL
-    */
-  private def getPermalinkByUrl(urlPath: String): IO[Option[Permalink]] = {
-    logger.debug(s"Retrieve permalink for URL: $urlPath")
-    val sameUrlPathFilter = Filter.eq("longUrl", urlPath)
-    retrievePermalink(sameUrlPathFilter)
-  }
-
   /** Given a condition, search for a permalink fulfilling it.
     *
     * @param filter     Filter used to to find the permalink
@@ -209,6 +198,17 @@ class PermalinkService(client: Client[IO])
           update <- col.findOneAndUpdate(sameCodeFilter, usageDateUpdate)
         } yield update
       })
+  }
+
+  /** Given the path of a URL, get the permalink already targeting it, if any
+    *
+    * @param urlPath URL which we want to find a permalink for
+    * @return Optionally, the Permalink targeting the given URL
+    */
+  private def getPermalinkByUrl(urlPath: String): IO[Option[Permalink]] = {
+    logger.debug(s"Retrieve permalink for URL: $urlPath")
+    val sameUrlPathFilter = Filter.eq("longUrl", urlPath)
+    retrievePermalink(sameUrlPathFilter)
   }
 
   /** Insert a given permalink in the database
