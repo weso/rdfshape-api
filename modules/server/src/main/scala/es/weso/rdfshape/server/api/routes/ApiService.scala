@@ -6,5 +6,5 @@ trait ApiService {
 
   /** The service's characteristic verb, e.g.: "permalink", "data", "wikidata"...
     */
-  val verb: String = "api"
+  val verb: String
 }

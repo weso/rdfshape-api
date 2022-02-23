@@ -1,10 +1,10 @@
 package es.weso.rdfshape.server
 
 import cats.effect._
-import cats.implicits._
+import cats.implicits.{catsSyntaxOptionId, toSemigroupKOps}
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
-import es.weso.rdfshape.server.api.routes.api.service.APIService
+import es.weso.rdfshape.server.api.routes.api.service.BaseService
 import es.weso.rdfshape.server.api.routes.data.service.DataService
 import es.weso.rdfshape.server.api.routes.endpoint.service.EndpointService
 import es.weso.rdfshape.server.api.routes.fetch.service.FetchService
@@ -20,6 +20,10 @@ import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.client.Client
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
+import org.http4s.rho.RhoMiddleware
+import org.http4s.rho.swagger.models._
+import org.http4s.rho.swagger.syntax.{io => ioSwagger}
+import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerMetadata}
 import org.http4s.server.middleware.{CORS, CORSPolicy, Logger}
 import org.http4s.{HttpApp, HttpRoutes}
 
@@ -193,15 +197,64 @@ object Server {
   /** Configure the http4s application to use the specified sources as API routes
     */
   private def routesService(client: Client[IO]): HttpRoutes[IO] = {
-    corsConfiguration.apply(
-      APIService(client).routes <+>
+    val allRoutes =
+      (BaseService(client).routes and PermalinkService(client).routes)
+        .toRoutes(swaggerMiddleware) <+>
         DataService(client).routes <+>
         SchemaService(client).routes <+>
         ShapeMapService(client).routes <+>
         WikibaseService(client).routes <+>
         EndpointService(client).routes <+>
-        PermalinkService(client).routes <+>
         FetchService(client).routes
-    )
+    corsConfiguration.apply(allRoutes)
   }
+
+  /** All route functions composed into one
+    * @note <+> is part of cats syntax for composing functions
+    */
+//  def allRoutes(client: Client[IO]): HttpRoutes[IO] =
+//    BaseService(client).routes <+>
+//      DataService(client).routes <+>
+//      SchemaService(client).routes <+>
+//      ShapeMapService(client).routes <+>
+//      WikibaseService(client).routes <+>
+//      EndpointService(client).routes <+>
+//      PermalinkService(client).routes <+>
+//      FetchService(client).routes
+
+  /** Swagger middleware to transform the RhoService into HttpService
+    * with an attached Swagger definition
+    * Includes the base API spec
+    * @note We use the default API paths; therefore swagger files are in
+    *       /swagger.(json|yml)
+    */
+  lazy val swaggerMiddleware: RhoMiddleware[IO] =
+    ioSwagger.createRhoMiddleware(
+      swaggerFormats = DefaultSwaggerFormats,
+      swaggerMetadata = SwaggerMetadata(
+        apiInfo = Info(
+          title = "RDFShape API",
+          version =
+            buildinfo.BuildInfo.version, // programmatically get project version
+          description =
+            ("RDFShape is web API for semantic data analysis and validation" +
+              "implemented in Scala using http4s (https://http4s.org/)").some,
+          contact = Contact(
+            name = "WESO Research group",
+            email = "info@weso.es".some,
+            url = "https://www.weso.es/#contact".some
+          ).some,
+          license = License(
+            name = "Apache 2.0",
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"
+          ).some
+        ),
+        host = "api.rdfshape.weso.es".some,
+        basePath = "/api/".some,
+        schemes = List(Scheme.HTTP, Scheme.HTTPS),
+        consumes = List("multipart/form-data"),
+        produces = List("text/plain; charset=utf-8", "application/json"),
+        tags = List(Tag(name = "api", description = "RDFShape REST API".some))
+      )
+    )
 }
