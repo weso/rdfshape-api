@@ -61,17 +61,17 @@ case object ApiDefaults {
 
   /** [[DataSource]] used when the source can be omitted or is needed but none was provided
     */
-  val defaultDataSource: DataSource = DataSource.defaultDataSource
+  val defaultDataSource: DataSource = DataSource.default
 
   /** [[SchemaSource]] used when the source can be omitted or is needed but none was provided
     */
   val defaultSchemaSource: SchemaSource =
-    SchemaSource.defaultSchemaSource
+    SchemaSource.default
 
   /** [[ShapeMapSource]] used when the source can be omitted or is needed but none was provided
     */
   val defaultShapeMapSource: ShapeMapSource =
-    ShapeMapSource.defaultShapeMapSource
+    ShapeMapSource.default
 
   /** [[IRI]] used when the shape label can be omitted or is needed but none was provided
     */

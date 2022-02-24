@@ -36,7 +36,7 @@ private[api] object DataQuery {
     */
 
   def dataQuery(data: Data, query: SparqlQuery): IO[DataQuery] =
-    query.fetchedQueryContents match {
+    query.fetchedContents match {
       case Left(err) => IO.raiseError(new RuntimeException(err))
       case Right(raw) =>
         for {

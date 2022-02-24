@@ -40,23 +40,23 @@ object TriggerMode extends TriggerModeCompanion[TriggerMode] {
     * If called on a general [[TriggerMode]] instance, pattern match among the available types to
     * use the correct implementation
     */
-  override implicit val encodeTriggerMode: Encoder[TriggerMode] = {
-    case tsm: TriggerShapeMap => TriggerShapeMap.encodeTriggerMode(tsm)
+  override implicit val encoder: Encoder[TriggerMode] = {
+    case tsm: TriggerShapeMap => TriggerShapeMap.encoder(tsm)
     case ttd: TriggerTargetDeclarations =>
-      TriggerTargetDeclarations.encodeTriggerMode(ttd)
+      TriggerTargetDeclarations.encoder(ttd)
   }
 
   /** Dummy implementation meant to be overridden
     * If called on a general [[TriggerMode]] instance, pattern match among the available types to
     * use the correct implementation
     */
-  override implicit val decodeTriggerMode: Decoder[TriggerMode] =
+  override implicit val decoder: Decoder[TriggerMode] =
     (cursor: HCursor) => {
       this.getClass match {
         case tsm if tsm == classOf[TriggerShapeMap] =>
-          TriggerShapeMap.decodeTriggerMode(cursor)
+          TriggerShapeMap.decoder(cursor)
         case ttd if ttd == classOf[TriggerTargetDeclarations] =>
-          TriggerTargetDeclarations.decodeTriggerMode(cursor)
+          TriggerTargetDeclarations.decoder(cursor)
       }
     }
 
@@ -100,11 +100,11 @@ private[schema] trait TriggerModeCompanion[T <: TriggerMode]
 
   /** Encoder used to transform [[TriggerMode]] instances to JSON values
     */
-  implicit val encodeTriggerMode: Encoder[T]
+  implicit val encoder: Encoder[T]
 
   /** Decoder used to extract [[TriggerMode]] instances from JSON values
     */
-  implicit val decodeTriggerMode: Decoder[T]
+  implicit val decoder: Decoder[T]
 
   /** Given a request's parameters, try to extract an instance of [[TriggerMode]] (type [[T]]) from them
     *

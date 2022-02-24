@@ -196,6 +196,7 @@ object Server {
   private def routesService(client: Client[IO]): HttpRoutes[IO] = {
     val routesFromRho =
       (BaseService(client).routes and
+        ShapeMapService(client).routes and
         PermalinkService(client).routes and
         EndpointService(client).routes and
         FetchService(client).routes)
@@ -204,7 +205,6 @@ object Server {
       routesFromRho <+>
         DataService(client).routes <+>
         SchemaService(client).routes <+>
-        ShapeMapService(client).routes <+>
         WikibaseService(client).routes
 
     corsConfiguration.apply(allRoutes)

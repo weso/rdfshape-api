@@ -5,17 +5,14 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.operations.ShapeMapInfo
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
+import es.weso.rdfshape.server.api.routes.shapemap.service.operations.ShapeMapInfoInput
 import io.circe._
 import io.circe.syntax.EncoderOps
-import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
-import org.http4s.multipart._
+import org.http4s.rho.RhoRoutes
 
 /** API service to handle shapemap-related operations
   *
@@ -30,14 +27,15 @@ class ShapeMapService(client: Client[IO])
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
-  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
+  val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
     /** Returns a JSON array with the accepted shapeMap formats.
       */
-    case GET -> Root / `api` / `verb` / "formats" =>
+    GET / `api` / `verb` / "formats" |>> {
       val formats = ApiDefinitions.availableShapeMapFormats
       val json    = Json.fromValues(formats.map(f => Json.fromString(f.name)))
       Ok(json)
+    }
 
     /** Obtain information about a shapeMap.
       * Receives a JSON object with the input shapeMap information:
@@ -46,30 +44,13 @@ class ShapeMapService(client: Client[IO])
       *  - shapeMapSource [String]: Identifies the source of the shapeMap (raw, URL, file...)
       * Returns a JSON object with the query inputs and results (see [[ShapeMapInfo.encodeShapeMapInfoOperation]]).
       */
-    case req @ POST -> Root / `api` / `verb` / "info" =>
-      req.decode[Multipart[IO]] { m =>
-        val partsMap = PartsMap(m.parts)
-
-        for {
-          // Get the schema from the partsMap
-          eitherShapeMap <- ShapeMap.mkShapeMap(
-            partsMap
-          )
-          response <- eitherShapeMap.fold(
-            // If there was an error parsing the schema, return it
-            err => errorResponseJson(err, InternalServerError),
-            // Else, try and compute the schema info
-            shapeMap =>
-              ShapeMapInfo
-                .shapeMapInfo(shapeMap)
-                .flatMap(info => Ok(info.asJson))
-                .handleErrorWith(err =>
-                  errorResponseJson(err.getMessage, InternalServerError)
-                )
-          )
-
-        } yield response
-      }
+    POST / `api` / `verb` / "info" ^ jsonOf[IO, ShapeMapInfoInput] |>> {
+      body: ShapeMapInfoInput =>
+        ShapeMapInfo
+          .shapeMapInfo(body.shapeMap)
+          .flatMap(info => Ok(info.asJson))
+          .handleErrorWith(err => InternalServerError(err.getMessage))
+    }
   }
 
 }

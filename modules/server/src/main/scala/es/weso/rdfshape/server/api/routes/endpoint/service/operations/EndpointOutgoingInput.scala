@@ -1,6 +1,5 @@
 package es.weso.rdfshape.server.api.routes.endpoint.service.operations
 
-import cats.implicits.catsSyntaxEitherId
 import es.weso.rdfshape.server.api.ServiceRouteOperation
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
@@ -8,7 +7,8 @@ import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   QueryParameter
 }
 import es.weso.rdfshape.server.implicits.codecs.decodeUrl
-import io.circe.{Decoder, DecodingFailure, HCursor}
+import es.weso.rdfshape.server.utils.other.mapEitherToDecodeResult
+import io.circe.{Decoder, HCursor}
 
 import java.net.URL
 
@@ -35,14 +35,6 @@ object EndpointOutgoingInput
 
       } yield decoded
 
-      /* If a native decoding failure occurred, leave it as is, else if an error
-       * occurred return it as a decoding failure , else return the value */
-      decodeResult.fold(
-        _.asLeft,
-        {
-          case Left(errStr) => DecodingFailure(errStr, Nil).asLeft
-          case Right(value) => value.asRight
-        }
-      )
+      mapEitherToDecodeResult(decodeResult)
     }
 }

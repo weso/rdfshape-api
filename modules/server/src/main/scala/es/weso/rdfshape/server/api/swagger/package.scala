@@ -2,11 +2,21 @@ package es.weso.rdfshape.server.api
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
+import es.weso.rdfshape.server.api.format.dataFormats.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.{
   SparqlQuery,
   SparqlQuerySource
 }
+import es.weso.rdfshape.server.api.routes.shapemap.logic.{
+  ShapeMap,
+  ShapeMapSource
+}
 import es.weso.rdfshape.server.api.swagger.SwaggerModelProperties.url
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  ContentParameter,
+  FormatParameter,
+  SourceParameter
+}
 import org.http4s.rho.RhoMiddleware
 import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.syntax.{io => ioSwagger}
@@ -90,6 +100,7 @@ package object swagger {
   /** Set of all swagger object serializers defined in [[SwaggerModels]]
     */
   val customSwaggerSerializers = Set(
+    (typeOf[ShapeMap], shapeMap),
     (typeOf[SparqlQuery], sparqlQuery)
   )
 
@@ -103,30 +114,71 @@ package object swagger {
     * in the domain
     */
   object SwaggerModels {
+    val shapeMap: Set[Model] = Set(
+      ModelImpl(
+        id = classOf[ShapeMap].getSimpleName,
+        id2 = classOf[ShapeMap].getSimpleName,
+        `type` = "object".some,
+        description = "ShapeMap matching nodes with shapes".some,
+        name = "ShapeMap".some,
+        properties = Map(
+          ContentParameter.name -> StringProperty(
+            required = true,
+            description = "ShapeMap contents".some,
+            enums = Set(),
+            pattern = "(<Node>@<Shape>)+".some
+          ),
+          FormatParameter.name -> StringProperty(
+            required = true,
+            description = "ShapeMap format".some,
+            enums = ShapeMapFormat.availableFormats.map(_.name).toSet
+          ),
+          SourceParameter.name -> StringProperty(
+            required = true,
+            description =
+              "Source of the shapeMap content, used to know how to access it".some,
+            enums = SparqlQuerySource.values
+          )
+        ),
+        externalDocs = ExternalDocs(
+          "W3C Draft - ShapeMap Structure and Language",
+          "https://shex.io/shape-map/"
+        ).some,
+        example = s"""{
+             |    "content": "<http://example.org/Alice>@<http://example.org/User>",
+             |    "source": "${ShapeMapSource.TEXT}"
+             |}""".stripMargin.some
+      )
+    )
+
     val sparqlQuery: Set[Model] = Set(
       ModelImpl(
-        id = "SparqlQuery",
-        id2 = "SparqlQuery",
+        id = classOf[SparqlQuery].getSimpleName,
+        id2 = classOf[SparqlQuery].getSimpleName,
         `type` = "object".some,
-        description = "Sparql Query description".some,
+        description = "SPARQL query used to query RDF data".some,
         name = "SPARQL Query".some,
         properties = Map(
-          "content" -> StringProperty(
+          ContentParameter.name -> StringProperty(
             required = true,
-            description = "Query content: textual, URL or file".some,
+            description = "Query contents".some,
             enums = Set()
           ),
-          "source" -> StringProperty(
+          SourceParameter.name -> StringProperty(
             required = true,
             description =
               "Source of the query content, used to know how to access it".some,
-            enums = Set("byText", "byUrl", "byFile")
+            enums = SparqlQuerySource.values
           )
         ),
+        externalDocs = ExternalDocs(
+          "W3C - SPARQL query language for RDF",
+          "https://www.w3.org/TR/rdf-sparql-query/"
+        ).some,
         example = s"""{
-            |    "content": "SELECT ?a ?b ?c WHERE { ?a ?b ?c } LIMIT 1",
-            |    "source": "${SparqlQuerySource.TEXT}"
-            |}""".stripMargin.some
+             |    "content": "SELECT ?a ?b ?c WHERE { ?a ?b ?c } LIMIT 1",
+             |    "source": "${SparqlQuerySource.TEXT}"
+             |}""".stripMargin.some
       )
     )
   }

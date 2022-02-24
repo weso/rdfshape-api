@@ -43,7 +43,7 @@ ENV SSL_FIX="-Djdk.tls.client.protocols=TLSv1.2"
 
 # Define commands to launch RDFShape
 ENV HTTPS_CLI_ARG="--https"
-ENV RDFSHAPE_CMD_HTTP="rdfshape $SSL_FIX --port $PORT"
+ENV RDFSHAPE_CMD_HTTP="rdfshape $SSL_FIX --port $PORT -s"
 ENV RDFSHAPE_CMD_HTTPS="$RDFSHAPE_CMD_HTTP $HTTPS_CLI_ARG"
 
 CMD bash -c "if [[ ! -z '$USE_HTTPS' ]]; then $RDFSHAPE_CMD_HTTPS; else $RDFSHAPE_CMD_HTTP; fi"

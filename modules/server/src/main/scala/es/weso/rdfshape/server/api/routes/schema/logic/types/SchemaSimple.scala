@@ -102,43 +102,6 @@ private[api] object SchemaSimple
       schemaEngine = ApiDefaults.defaultSchemaEngine,
       schemaSource = ApiDefaults.defaultSchemaSource
     )
-
-  override def mkSchema(partsMap: PartsMap): IO[Either[String, SchemaSimple]] =
-    for {
-      // Schema param as sent by client
-      paramSchema <- partsMap.optPartValue(SchemaParameter.name)
-      paramFormat <- SchemaFormat.fromRequestParams(
-        SchemaFormatParameter.name,
-        partsMap
-      )
-      paramEngine <- partsMap.optPartValue(SchemaEngineParameter.name)
-      paramSource <- partsMap.optPartValue(SchemaSourceParameter.name)
-      _ = Schemas.availableSchemaNames
-      // Confirm format and engine or resort to defaults
-      schemaFormat = paramFormat.getOrElse(ApiDefaults.defaultSchemaFormat)
-      schemaEngine = paramEngine
-        .flatMap(SchemaAdapter.schemaEngineFromString)
-        .getOrElse(ApiDefaults.defaultSchemaEngine)
-
-      // Check the client's selected source
-      schemaSource = paramSource.getOrElse(SchemaSource.defaultSchemaSource)
-      _ = logger.debug(
-        s"Schema received ($schemaFormat) - Source: $schemaSource"
-      )
-
-      // Base for the result
-      schema = SchemaSimple(
-        schemaPre = paramSchema,
-        schemaFormat = schemaFormat,
-        schemaEngine = schemaEngine,
-        schemaSource = schemaSource
-      )
-
-    } yield schema.rawSchema.fold(
-      err => Left(err),
-      _ => Right(schema)
-    )
-
   override implicit val encodeSchema: Encoder[SchemaSimple] =
     (schema: SchemaSimple) => {
       Json.obj(
@@ -165,7 +128,7 @@ private[api] object SchemaSimple
         schemaSource <- cursor
           .downField("schemaSource")
           .as[SchemaSource]
-          .orElse(Right(SchemaSource.defaultSchemaSource))
+          .orElse(Right(SchemaSource.default))
 
         decoded = SchemaSimple.emptySchema.copy(
           schemaPre = schema,
@@ -175,4 +138,40 @@ private[api] object SchemaSimple
         )
 
       } yield decoded
+
+  override def mkSchema(partsMap: PartsMap): IO[Either[String, SchemaSimple]] =
+    for {
+      // Schema param as sent by client
+      paramSchema <- partsMap.optPartValue(SchemaParameter.name)
+      paramFormat <- SchemaFormat.fromRequestParams(
+        SchemaFormatParameter.name,
+        partsMap
+      )
+      paramEngine <- partsMap.optPartValue(SchemaEngineParameter.name)
+      paramSource <- partsMap.optPartValue(SchemaSourceParameter.name)
+      _ = Schemas.availableSchemaNames
+      // Confirm format and engine or resort to defaults
+      schemaFormat = paramFormat.getOrElse(ApiDefaults.defaultSchemaFormat)
+      schemaEngine = paramEngine
+        .flatMap(SchemaAdapter.schemaEngineFromString)
+        .getOrElse(ApiDefaults.defaultSchemaEngine)
+
+      // Check the client's selected source
+      schemaSource = paramSource.getOrElse(SchemaSource.default)
+      _ = logger.debug(
+        s"Schema received ($schemaFormat) - Source: $schemaSource"
+      )
+
+      // Base for the result
+      schema = SchemaSimple(
+        schemaPre = paramSchema,
+        schemaFormat = schemaFormat,
+        schemaEngine = schemaEngine,
+        schemaSource = schemaSource
+      )
+
+    } yield schema.rawSchema.fold(
+      err => Left(err),
+      _ => Right(schema)
+    )
 }

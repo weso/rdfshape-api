@@ -56,7 +56,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
 
   /** Format encoder. Forms a JSON object with the formats name and mimetype
     */
-  implicit val encodeFormat: Encoder[F] = (format: F) => {
+  implicit val encoder: Encoder[F] = (format: F) => {
     Json.obj(
       ("name", Json.fromString(format.name)),
       (
@@ -73,7 +73,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     * @note The decoder is simplified because the client normally sends the format name only, like:
     *       "format": "turtle"
     */
-  implicit val decodeFormat: Decoder[F] = (cursor: HCursor) =>
+  implicit val decoder: Decoder[F] = (cursor: HCursor) =>
     for {
       formatStr <- cursor.value.as[String]
       format = fromString(formatStr).toOption.getOrElse(defaultFormat)

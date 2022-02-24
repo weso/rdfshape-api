@@ -43,14 +43,14 @@ class EndpointService(client: Client[IO])
     POST / `api` / `verb` / "info" ^ jsonOf[
       IO,
       EndpointOutgoingInput
-    ] |>> { (body:EndpointOutgoingInput) =>
+    ] |>> { (body: EndpointOutgoingInput) =>
       body match {
         case EndpointOutgoingInput(endpointUrl, queryObject) =>
 
           val ioResponse = for {
             endpoint <- getEndpointAsRDFReader(endpointUrl)
-            _ = logger.debug(s"Query to \"$endpointUrl\": \"${queryObject.rawQuery}\"")
-            queryResponse  <- io2es(endpoint.queryAsJson(queryObject.rawQuery))
+            _ = logger.debug(s"Query to \"$endpointUrl\": \"${queryObject.raw}\"")
+            queryResponse  <- io2es(endpoint.queryAsJson(queryObject.raw))
           } yield queryResponse
 
           ioResponse.value.flatMap {

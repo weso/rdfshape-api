@@ -37,6 +37,8 @@ object IncomingRequestParameters {
 
   lazy val content = "content"
 
+  lazy val format = "format"
+
   lazy val source         = "source"
   lazy val dataSource     = "dataSource"
   lazy val schemaSource   = "schemaSource"
@@ -57,7 +59,7 @@ object IncomingRequestParameters {
   lazy val languages   = "languages"
   lazy val label       = "label"
   lazy val limit       = "limit"
-  lazy val format      = "wbFormat"
+  lazy val wbFormat    = "wbFormat"
   lazy val continue    = "continue"
   lazy val withDot     = "withDot"
 
@@ -70,6 +72,14 @@ object IncomingRequestParameters {
   object ContentParameter
       extends OptionalQueryParamDecoderMatcher[String](content) {
     val name: String = content
+  }
+
+  /** Parameter expected to contain the format of the content inputted by the user for a certain
+    * operation
+    */
+  object FormatParameter
+      extends OptionalQueryParamDecoderMatcher[String](format) {
+    val name: String = format
   }
 
   /** Parameter expected to contain RDF data contents (URL encoded)
@@ -335,8 +345,8 @@ object IncomingRequestParameters {
     * searching for data
     */
   object WikibaseFormatParameter
-      extends OptionalQueryParamDecoderMatcher[String](format) {
-    val name: String = format
+      extends OptionalQueryParamDecoderMatcher[String](wbFormat) {
+    val name: String = wbFormat
   }
 
 }

@@ -104,7 +104,7 @@ private[wikibase] case class WikibaseSchemaValidate(
           shapeMapFinalModel <- shapeMapModel.serialize(Compact.name)
           trigger = TriggerShapeMap(
             shapeMap = ShapeMap(
-              shapeMapPre = Some(shapeMapFinalModel),
+              content = shapeMapFinalModel,
               nodesPrefixMap = shapeMapModel.nodesPrefixMap.addPrefixMap(
                 Wikidata.wikidataPrefixMap
               ),

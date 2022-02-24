@@ -30,6 +30,21 @@ private[api] object TriggerTargetDeclarations
     extends TriggerModeCompanion[TriggerTargetDeclarations]
     with LazyLogging {
 
+  override implicit val encoder: Encoder[TriggerTargetDeclarations] =
+    (tsm: TriggerTargetDeclarations) =>
+      Json.obj(
+        ("type", tsm.triggerModeType.asJson),
+        ("data", tsm.data.asJson),
+        ("schema", tsm.schema.asJson)
+      )
+  override implicit val decoder: Decoder[TriggerTargetDeclarations] =
+    (cursor: HCursor) =>
+      for {
+        data   <- cursor.downField("data").as[Option[Data]]
+        schema <- cursor.downField("schema").as[Option[Schema]]
+        decoded = TriggerTargetDeclarations(data, schema)
+      } yield decoded
+
   /** Given a request's parameters, try to extract a TriggerMode instance from them
     *
     * @param partsMap Request's parameters
@@ -41,20 +56,4 @@ private[api] object TriggerTargetDeclarations
       schema: Option[Schema]
   ): IO[Either[String, TriggerTargetDeclarations]] =
     IO.pure(Right(TriggerTargetDeclarations(data, schema)))
-
-  override implicit val encodeTriggerMode: Encoder[TriggerTargetDeclarations] =
-    (tsm: TriggerTargetDeclarations) =>
-      Json.obj(
-        ("type", tsm.triggerModeType.asJson),
-        ("data", tsm.data.asJson),
-        ("schema", tsm.schema.asJson)
-      )
-
-  override implicit val decodeTriggerMode: Decoder[TriggerTargetDeclarations] =
-    (cursor: HCursor) =>
-      for {
-        data   <- cursor.downField("data").as[Option[Data]]
-        schema <- cursor.downField("schema").as[Option[Schema]]
-        decoded = TriggerTargetDeclarations(data, schema)
-      } yield decoded
 }

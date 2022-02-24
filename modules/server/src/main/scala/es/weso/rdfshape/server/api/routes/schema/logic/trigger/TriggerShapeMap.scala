@@ -42,6 +42,23 @@ private[api] object TriggerShapeMap
     extends TriggerModeCompanion[TriggerShapeMap]
     with LazyLogging {
 
+  override implicit val encoder: Encoder[TriggerShapeMap] =
+    (tsm: TriggerShapeMap) =>
+      Json.obj(
+        ("type", tsm.triggerModeType.asJson),
+        ("shapeMap", tsm.shapeMap.asJson),
+        ("data", tsm.data.asJson),
+        ("schema", tsm.schema.asJson)
+      )
+  override implicit val decoder: Decoder[TriggerShapeMap] =
+    (cursor: HCursor) =>
+      for {
+        shapeMap <- cursor.downField("shapeMap").as[Either[String, ShapeMap]]
+        data     <- cursor.downField("data").as[Option[Data]]
+        schema   <- cursor.downField("schema").as[Option[Schema]]
+        decoded = TriggerShapeMap(shapeMap.toOption.get, data, schema)
+      } yield decoded
+
   /** Given a request's parameters, try to extract a TriggerMode instance from them
     *
     * @param partsMap Request's parameters
@@ -101,22 +118,4 @@ private[api] object TriggerShapeMap
 
     } yield maybeTriggerMode
   }
-
-  override implicit val encodeTriggerMode: Encoder[TriggerShapeMap] =
-    (tsm: TriggerShapeMap) =>
-      Json.obj(
-        ("type", tsm.triggerModeType.asJson),
-        ("shapeMap", tsm.shapeMap.asJson),
-        ("data", tsm.data.asJson),
-        ("schema", tsm.schema.asJson)
-      )
-
-  override implicit val decodeTriggerMode: Decoder[TriggerShapeMap] =
-    (cursor: HCursor) =>
-      for {
-        shapeMap <- cursor.downField("shapeMap").as[ShapeMap]
-        data     <- cursor.downField("data").as[Option[Data]]
-        schema   <- cursor.downField("schema").as[Option[Schema]]
-        decoded = TriggerShapeMap(shapeMap, data, schema)
-      } yield decoded
 }

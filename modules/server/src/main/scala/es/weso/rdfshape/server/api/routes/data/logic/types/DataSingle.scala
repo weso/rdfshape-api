@@ -82,6 +82,8 @@ sealed case class DataSingle(
 
   }
 
+  override def toString: String = rawData.toString
+
   /** @param dataStr RDF data as a raw string
     * @param format   RDF data format
     * @param base     Base
@@ -118,8 +120,6 @@ sealed case class DataSingle(
           (iri: IRI) => IO(Some(iri))
         )
   }
-
-  override def toString: String = rawData.toString
 }
 
 private[api] object DataSingle
@@ -144,6 +144,33 @@ private[api] object DataSingle
         ("inference", data.inference.asJson),
         ("source", data.dataSource.asJson)
       )
+  override implicit val decodeData: Decoder[DataSingle] =
+    (cursor: HCursor) =>
+      for {
+        data <- cursor.downField("data").as[Option[String]]
+
+        dataFormat <- cursor
+          .downField("dataFormat")
+          .as[RdfFormat]
+
+        dataInference <-
+          cursor
+            .downField("dataInference")
+            .as[InferenceEngine]
+
+        dataSource <- cursor
+          .downField("dataSource")
+          .as[DataSource]
+          .orElse(Right(DataSource.default))
+
+        decoded = DataSingle.emptyData.copy(
+          dataPre = data,
+          dataFormat = dataFormat,
+          dataSource = dataSource,
+          inference = dataInference
+        )
+
+      } yield decoded
 
   override def mkData(partsMap: PartsMap): IO[Either[String, DataSingle]] =
     for {
@@ -163,7 +190,7 @@ private[api] object DataSingle
       format    = paramFormat.getOrElse(ApiDefaults.defaultDataFormat)
 
       // Check the client's selected source
-      dataSource = paramDataSource.getOrElse(DataSource.defaultDataSource)
+      dataSource = paramDataSource.getOrElse(DataSource.default)
       _          = logger.debug(s"RDF Data received - Source: $dataSource")
 
       // Create the data instance
@@ -184,32 +211,4 @@ private[api] object DataSingle
   ): Option[InferenceEngine] = {
     inferenceStr.flatMap(InferenceEngine.fromString(_).toOption)
   }
-
-  override implicit val decodeData: Decoder[DataSingle] =
-    (cursor: HCursor) =>
-      for {
-        data <- cursor.downField("data").as[Option[String]]
-
-        dataFormat <- cursor
-          .downField("dataFormat")
-          .as[RdfFormat]
-
-        dataInference <-
-          cursor
-            .downField("dataInference")
-            .as[InferenceEngine]
-
-        dataSource <- cursor
-          .downField("dataSource")
-          .as[DataSource]
-          .orElse(Right(DataSource.defaultDataSource))
-
-        decoded = DataSingle.emptyData.copy(
-          dataPre = data,
-          dataFormat = dataFormat,
-          dataSource = dataSource,
-          inference = dataInference
-        )
-
-      } yield decoded
 }
