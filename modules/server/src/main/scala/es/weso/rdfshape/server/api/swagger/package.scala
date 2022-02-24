@@ -2,12 +2,19 @@ package es.weso.rdfshape.server.api
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
-import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuery
+import es.weso.rdfshape.server.api.routes.endpoint.logic.query.{
+  SparqlQuery,
+  SparqlQuerySource
+}
 import es.weso.rdfshape.server.api.swagger.SwaggerModelProperties.url
 import org.http4s.rho.RhoMiddleware
 import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.syntax.{io => ioSwagger}
-import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerMetadata}
+import org.http4s.rho.swagger.{
+  DefaultSwaggerFormats,
+  SwaggerFormats,
+  SwaggerMetadata
+}
 
 import java.net.URL
 import scala.reflect.runtime.universe.typeOf
@@ -29,17 +36,7 @@ package object swagger {
     */
   lazy val swaggerMiddleware: RhoMiddleware[IO] =
     ioSwagger.createRhoMiddleware(
-      swaggerFormats = allCustomSerializers.foldLeft(
-        DefaultSwaggerFormats
-      )((prev, curr) =>
-        curr match {
-          case (classType, serializerModel) =>
-            serializerModel match {
-              case model: Set[Model] => prev.withSerializers(classType, model)
-              case prop: Property    => prev.withFieldSerializers(classType, prop)
-            }
-        }
-      ),
+      swaggerFormats = allSwaggerFormats,
       swaggerMetadata = SwaggerMetadata(
         apiInfo = Info(
           title = "RDFShape API",
@@ -67,10 +64,28 @@ package object swagger {
       )
     )
 
-  /** Merge of both object and field serializer sets
+  /** Merge of both object and field serializer sets as SwaggerFormats
     */
-  lazy val allCustomSerializers =
-    customSwaggerSerializers ++ customSwaggerFieldSerializers
+  lazy val allSwaggerFormats: SwaggerFormats = {
+    // Add all object models
+    val objectSerializers = customSwaggerSerializers.foldLeft(
+      DefaultSwaggerFormats
+    )((prev, curr) =>
+      curr match {
+        case (classType, serializerModel) =>
+          prev.withSerializers(classType, serializerModel)
+      }
+    )
+    // Add all property models on top
+    customSwaggerFieldSerializers.foldLeft(
+      objectSerializers
+    )((prev, curr) =>
+      curr match {
+        case (classType, prop) =>
+          prev.withFieldSerializers(classType, prop)
+      }
+    )
+  }
 
   /** Set of all swagger object serializers defined in [[SwaggerModels]]
     */
@@ -108,9 +123,9 @@ package object swagger {
             enums = Set("byText", "byUrl", "byFile")
           )
         ),
-        example = """{
-            |    "content": "https://pastebin.com/raw/4fFvFjXp",
-            |    "source": "byUrl"
+        example = s"""{
+            |    "content": "SELECT ?a ?b ?c WHERE { ?a ?b ?c } LIMIT 1",
+            |    "source": "${SparqlQuerySource.TEXT}"
             |}""".stripMargin.some
       )
     )
@@ -124,7 +139,8 @@ package object swagger {
       required = true,
       description =
         "Representation of a valid URL (including protocol, host, port... as needed)".some,
-      enums = Set()
+      enums = Set(),
+      default = "https://...".some
     )
 
   }

@@ -5,12 +5,13 @@ package es.weso.rdfshape.server.api.routes.endpoint.logic.query
   * to be fetched or as a text file containing the query.
   * In case the client submits the query in several formats, the selected source will indicate the one format.
   */
-private[api] object SparqlQuerySource extends Enumeration {
+private[api] object SparqlQuerySource {
   type SparqlQuerySource = String
 
   val TEXT = "byText"
   val URL  = "byUrl"
   val FILE = "byFile"
 
+  val values                                = Set(TEXT, URL, FILE)
   val defaultQuerySource: SparqlQuerySource = TEXT
 }

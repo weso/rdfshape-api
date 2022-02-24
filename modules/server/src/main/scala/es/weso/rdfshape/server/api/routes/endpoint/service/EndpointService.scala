@@ -4,7 +4,8 @@ import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.getEndpointAsRDFReader
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{getEndpointAsRDFReader, getEndpointInfo}
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing._
 import es.weso.rdfshape.server.api.routes.endpoint.service.operations.EndpointOutgoingInput
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
@@ -33,11 +34,36 @@ class EndpointService(client: Client[IO])
     */
   def routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
+    /** Check the existence of an endpoint and get its response, if any
+     * Receives a JSON object with the input endpoint:
+     *  - endpoint [URL]: Target endpoint
+     *  - query [String]: User query with content and source
+     * Returns a JSON object with the results (see [[Endpoint.encoder]]).
+     */
+    POST / `api` / `verb` / "info" ^ jsonOf[
+      IO,
+      EndpointOutgoingInput
+    ] |>> { (body:EndpointOutgoingInput) =>
+      body match {
+        case EndpointOutgoingInput(endpointUrl, queryObject) =>
+
+          val ioResponse = for {
+            endpoint <- getEndpointAsRDFReader(endpointUrl)
+            _ = logger.debug(s"Query to \"$endpointUrl\": \"${queryObject.rawQuery}\"")
+            queryResponse  <- io2es(endpoint.queryAsJson(queryObject.rawQuery))
+          } yield queryResponse
+
+          ioResponse.value.flatMap {
+            case Left(err) => InternalServerError(err)
+            case Right(json) => Ok(json)
+          }
+      }
+    }
+
     /** Perform a SPARQL query targeted to a specific endpoint.
       * Receives a JSON object with the input endpoint query:
       *  - endpoint [URL]: Query target endpoint
-      *  - query [String]: User input for the query
-      *  - querySource [String]: Identifies the source of the query (raw, URL, file...)
+      *  - query [String]: User query with content and source
       *    Returns a JSON object with the query results:
       *    - head [Object]: Query metadata
       *      - vars: [Array]: Query variables
@@ -46,26 +72,9 @@ class EndpointService(client: Client[IO])
       */
     /**
       */
-    POST / `api` / `verb` / "query" ^ jsonOf[
-      IO,
-      Either[String, EndpointOutgoingInput]
-    ] |>> { (body: Either[String, EndpointOutgoingInput]) =>
-      body match {
-        // Return any error accumulated during the parsing of the body
-        case Left(err) => BadRequest(err)
-        case Right(EndpointOutgoingInput(endpointUrl, queryObject)) =>
-         
-          val ioResponse = for {
-            endpoint <- getEndpointAsRDFReader(endpointUrl)
-            _ = logger.debug(s"Query to \"$endpointUrl\": \"${queryObject.rawQuery}\"")
-            queryResponse  <- io2es(endpoint.queryAsJson(queryObject.rawQuery))
-          } yield queryResponse
-          
-          ioResponse.value.flatMap {
-            case Left(err) => InternalServerError(err)
-            case Right(json) => Ok(json)
-          }
-      }
+    GET / `api` / `verb` / "info" +?
+      param[URL](EndpointParameter.name) |>> { (endpointUrl: URL) =>
+      Ok(getEndpointInfo(endpointUrl).asJson)
     }
 
     /** Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it.

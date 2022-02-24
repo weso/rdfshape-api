@@ -4,7 +4,7 @@ import cats.effect.IO
 import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
 import org.http4s.Status._
 import org.http4s.rho.bits.QueryParser.Params
-import org.http4s.rho.bits.{FailureResponse, QueryParser, SuccessResponse}
+import org.http4s.rho.bits._
 
 import java.net.{MalformedURLException, URL}
 import scala.util.{Failure, Success, Try}
@@ -30,7 +30,7 @@ package object query_parsers {
                 case _: MalformedURLException =>
                   FailureResponse.pure(
                     errorResponseJson(
-                      s"Invalid URL provided for shortening: $value",
+                      s"Invalid URL provided: $value",
                       BadRequest
                     )
                   )

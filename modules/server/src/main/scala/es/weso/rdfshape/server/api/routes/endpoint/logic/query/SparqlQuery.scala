@@ -28,15 +28,11 @@ sealed case class SparqlQuery private (
     * @return Either an error building the query text or a String containing the final text of the SPARQL query
     */
   lazy val fetchedQueryContents: Either[String, String] =
-    querySource match {
-      case SparqlQuerySource.URL =>
-        getUrlContents(queryContent)
-
-      // Text or file
-      case _ =>
-        Right(queryContent)
-
-    }
+    if (querySource equalsIgnoreCase SparqlQuerySource.URL)
+      getUrlContents(queryContent)
+    // Text or file  
+    else Right(queryContent)
+   
     
   assume(fetchedQueryContents.isRight, 
     fetchedQueryContents.left.getOrElse("Unknown error"))
@@ -88,7 +84,7 @@ private[api] object SparqlQuery extends LazyLogging {
           if(content.isBlank)
             "Could not build the query from empty data".asLeft[SparqlQuery]
           else if(
-            source != SparqlQuerySource.TEXT && source != SparqlQuerySource.URL && source != SparqlQuerySource.FILE
+            !SparqlQuerySource.values.exists(_ equalsIgnoreCase source)
           )
             s"Unknown query source: \"$source\"".asLeft[SparqlQuery]
           else {

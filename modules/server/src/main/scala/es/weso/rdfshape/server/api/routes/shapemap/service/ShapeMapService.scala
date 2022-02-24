@@ -42,16 +42,9 @@ class ShapeMapService(client: Client[IO])
     /** Obtain information about a shapeMap.
       * Receives a JSON object with the input shapeMap information:
       *  - shapeMap [String]: Raw shapemap data
-      *  - shapeMapUrl [String]: Url containing the shapemap
-      *  - shapeMapFile [File Object]: File containing the shapemap
       *  - shapeMapFormat [String]: Format of the shapeMap
-      *  - activeShapeMapTab [String]: Identifies the source of the shapeMap (raw, URL, file...)
-      *    Returns a JSON object with the shapeMap information:
-      *    - shapeMap [String]: Input shapeMap string
-      *    - shapeMapFormat [String]: Input shapeMap format
-      *    - shapeMapJson [Array]: Array of the elements in the shapeMap
-      *        - node [String]: Referenced node
-      *        - shape [String]: Target shape for the node
+      *  - shapeMapSource [String]: Identifies the source of the shapeMap (raw, URL, file...)
+      * Returns a JSON object with the query inputs and results (see [[ShapeMapInfo.encodeShapeMapInfoOperation]]).
       */
     case req @ POST -> Root / `api` / `verb` / "info" =>
       req.decode[Multipart[IO]] { m =>
