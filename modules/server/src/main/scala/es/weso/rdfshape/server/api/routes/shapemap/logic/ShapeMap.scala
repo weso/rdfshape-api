@@ -29,56 +29,67 @@ sealed case class ShapeMap private (
     private val content: String,
     private val nodesPrefixMap: PrefixMap = PrefixMap.empty,
     private val shapesPrefixMap: PrefixMap = PrefixMap.empty,
-    format: ShapeMapFormat,
-    source: ShapeMapSource
+    format: ShapeMapFormat = ShapeMapFormat.default,
+    source: ShapeMapSource = ShapeMapSource.default
 ) extends LazyLogging {
 
-  // Non empty content 
+  // Non empty content
   assume(!content.isBlank, "Could not build the shapeMap from empty data")
   // Valid source
-  assume(ShapeMapSource.values.exists(_ equalsIgnoreCase source),
-    s"Unknown shapemap source: \"$source\"")
+  assume(
+    ShapeMapSource.values.exists(_ equalsIgnoreCase source),
+    s"Unknown shapemap source: '$source'"
+  )
 
   /** Given the (user input) for the shapeMap and its source, fetch the shapeMap contents using the input in the way the source needs it
     * (e.g.: for URLs, fetch the input with a web request; for files, decode the input; for raw data, do nothing)
     *
     * @return Optionally, a String containing the final text of the shapeMap query
     */
-  lazy val fetchedContents: Either[String, String] = 
-    if (source equalsIgnoreCase ShapeMapSource.URL)
+  lazy val fetchedContents: Either[String, String] =
+    if(source equalsIgnoreCase ShapeMapSource.URL)
       getUrlContents(content)
-    // Text or file  
+    // Text or file
     else Right(content)
-  
 
-  assume(fetchedContents.isRight,
-    fetchedContents.left.getOrElse("Unknown error"))
-  
+  // Fetched contents successfully
+  assume(
+    fetchedContents.isRight,
+    fetchedContents.left.getOrElse("Unknown error creating the ShapeMap")
+  )
+
   /** Inner shapemap structure of the data in this instance
     *
     * @return A ShapeMap instance used by WESO libraries in validation
     */
   lazy val innerShapeMap: Either[String, ShapeMapW] = {
-    if (raw.isBlank) "Cannot extract the ShapeMap from an empty instance".asLeft
-    else ShapeMapW
-      .fromString(
-        raw,
-        format.name,
-        base = None,
-        nodesPrefixMap,
-        shapesPrefixMap
-      ) match {
-      case Left(errorList) => errorList.toList.mkString("\n").asLeft
-      case Right(shapeMap) => shapeMap.asRight
-    }
+    if(raw.isBlank) "Cannot extract the ShapeMap from an empty instance".asLeft
+    else
+      ShapeMapW
+        .fromString(
+          raw,
+          format.name,
+          base = None,
+          nodesPrefixMap,
+          shapesPrefixMap
+        ) match {
+        case Left(errorList) => errorList.toList.mkString("\n").asLeft
+        case Right(shapeMap) => shapeMap.asRight
+      }
   }
-  /**
-   * Raw shapeMap value, i.e.: the text forming the shapeMap
-   *
-   * @note It is safely extracted fromm [[fetchedContents]] after asserting 
-   *       the contents are right
-   */
+
+  /** Raw shapeMap value, i.e.: the text forming the shapeMap
+    *
+    * @note It is safely extracted from [[fetchedContents]] after asserting
+    *       the [[shapeMapSource]] and contents are right
+    */
   val raw: String = fetchedContents.toOption.get
+
+  /** @return A String with the raw contents or the error that made them
+    *          un-parseable
+    */
+  override def toString: String =
+    fetchedContents.fold(identity, identity)
 }
 
 private[api] object ShapeMap extends LazyLogging {
@@ -109,7 +120,7 @@ private[api] object ShapeMap extends LazyLogging {
 
         format <- cursor
           .downField(FormatParameter.name)
-          .as[ShapeMapFormat]
+          .as[Either[String, ShapeMapFormat]]
 
         source <- cursor
           .downField(SourceParameter.name)
@@ -120,19 +131,21 @@ private[api] object ShapeMap extends LazyLogging {
       shapeMapData.map {
         /* Destructure and try to build the object, catch the exception as error
          * message if needed */
-        case (content, format, source) =>
-          Try {
-            ShapeMap(
-              content,
-              nodesPrefixMap = PrefixMap.empty,
-              shapesPrefixMap = PrefixMap.empty,
-              format,
-              source
+        case (content, maybeFormat, source) =>
+          for {
+            format <- maybeFormat
+            shapeMap <- Try {
+              ShapeMap(
+                content,
+                nodesPrefixMap = PrefixMap.empty,
+                shapesPrefixMap = PrefixMap.empty,
+                format,
+                source
+              )
+            }.toEither.leftMap(err =>
+              s"Could not build the ShapeMap from user data:\n ${err.getMessage}"
             )
-          }.toEither.leftMap(err =>
-            s"Could not build the ShapeMap from user data:\n ${err.getMessage}"
-          )
-
+          } yield shapeMap
       }
     }
 

@@ -1,35 +1,62 @@
 package es.weso.rdfshape.server.api.routes.data.logic.types
 
 import cats.effect.{IO, Resource}
+import cats.implicits.catsSyntaxEitherId
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdf.RDFReasoner
 import es.weso.rdf.nodes.IRI
+import es.weso.rdf.{PrefixMap, RDFReasoner}
 import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
-import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
+import es.weso.rdfshape.server.api.routes.data.logic.DataSource._
 import es.weso.rdfshape.server.api.routes.data.logic.types.merged.DataCompound
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   CompoundDataParameter,
-  EndpointParameter
+  SourceParameter
 }
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import io.circe.{Decoder, Encoder, HCursor}
+import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 
 /** Common trait to all data, whichever its nature (single, compound, endpoint...)
   */
 trait Data {
 
-  /** Either the raw RDF content represented as a String,
-    * or the error occurred when trying to parse the data
+  /** Lazily obtain the prefix map of this data instance
+    * Needs to create the in-memory RDF model first
     */
-  lazy val rawData: Either[String, String] = Left("")
+  lazy val prefixMap: IO[PrefixMap] = for {
+    model <- this.toRdf()
+    pm    <- model.use(_.getPrefixMap)
+  } yield pm
+
+  /** Given the user input for the data and its source, fetch the contents
+    * using the input in the way the source needs it
+    * (e.g.: for URLs, fetch the input with a web request; for files,
+    * decode the input; for raw data, do nothing)
+    *
+    * @return Either the raw data contents represented as a String,
+    *         or the error occurred when trying to parse the schema
+    */
+  val fetchedContents: Either[String, String]
+
+  /** Raw data value, i.e.: the text forming the schema
+    *
+    * @note It is safely extracted from [[fetchedContents]] after asserting
+    *       the [[source]] and fetched contents are right
+    */
+  val raw: String
 
   /** Source where the data comes from
     */
-  val dataSource: DataSource
+  val source: DataSource
 
   /** Format of the data
     */
-  val format: Option[DataFormat] = None
+  val format: DataFormat
+
+  /** @return A String with the raw contents or the error that made them
+    *          un-parseable
+    */
+  override def toString: String =
+    fetchedContents.fold(identity, identity)
 
   /** Given an RDF source of data, try to parse it and get the RDF model representation
     *
@@ -40,49 +67,45 @@ trait Data {
 
 object Data extends DataCompanion[Data] {
 
-  /** Dummy implementation meant to be overridden
-    *
-    * @note Resort by default to [[DataSingle]]'s empty representation
-    */
-  override val emptyData: Data = DataSingle.emptyData
-
   /** Dummy implementation meant to be overridden.
     * If called on a general [[Data]] instance, pattern match among the available data types to
     * use the correct implementation
     */
-  implicit val encodeData: Encoder[Data] = {
-    case ds: DataSingle   => DataSingle.encodeData(ds)
-    case de: DataEndpoint => DataEndpoint.encodeData(de)
-    case dc: DataCompound => DataCompound.encodeData(dc)
+  implicit val encode: Encoder[Data] = {
+    case ds: DataSingle   => DataSingle.encode(ds)
+    case dc: DataCompound => DataCompound.encode(dc)
   }
 
   /** Dummy implementation meant to be overridden
-    * If called on a general [[Data]] instance, pattern match among the available data types to
-    * use the correct implementation
+    * If called on a general [[Data]] instance, look for the data source to
+    * redirecting the decoding to the correct implementation
+    *
     * @note Defaults to [[DataSingle]]'s implementation
     */
-  implicit val decodeData: Decoder[Data] = (cursor: HCursor) => {
-    this.getClass match {
-      case de if de == classOf[DataEndpoint] => DataEndpoint.decodeData(cursor)
-      case dc if dc == classOf[DataCompound] => DataCompound.decodeData(cursor)
-      case _                                 => DataSingle.decodeData(cursor)
-    }
-  }
+  implicit val decode: Decoder[Either[String, Data]] = (cursor: HCursor) =>
+    for {
+      source <- cursor
+        .downField(SourceParameter.name)
+        .as[DataSource]
+
+      decoded <- source match {
+        case COMPOUND          => DataCompound.decode(cursor)
+        case TEXT | URL | FILE => DataSingle.decode(cursor)
+        case _                 => DecodingFailure(s"Invalid data source '$source'", Nil).asLeft
+      }
+    } yield decoded
 
   /** General implementation delegating on subclasses
     */
   override def mkData(partsMap: PartsMap): IO[Either[String, Data]] = for {
     // 1. Make some checks on the parameters to distinguish between Data types
-    compoundData  <- partsMap.optPartValue(CompoundDataParameter.name)
-    paramEndpoint <- partsMap.optPartValue(EndpointParameter.name)
+    compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
 
     // 2. Delegate on the correct sub-class for creating the Data
     maybeData <- {
       // 1. Compound data
       if(compoundData.isDefined) DataCompound.mkData(partsMap)
-      // 2. Endpoint data
-      else if(paramEndpoint.isDefined) DataEndpoint.mkData(partsMap)
-      // 3. Simple data or unknown
+      // 2. Simple data or unknown
       else DataSingle.mkData(partsMap)
     }
 
@@ -95,17 +118,13 @@ object Data extends DataCompanion[Data] {
   */
 private[data] trait DataCompanion[D <: Data] extends LazyLogging {
 
-  /** Empty instance of the [[Data]] representation in use
-    */
-  val emptyData: D
-
   /** Encoder used to transform [[Data]] instances to JSON values
     */
-  implicit val encodeData: Encoder[D]
+  implicit val encode: Encoder[D]
 
   /** Decoder used to extract [[Data]] instances from JSON values
     */
-  implicit val decodeData: Decoder[D]
+  implicit val decode: Decoder[Either[String, D]]
 
   /** Given a request's parameters, try to extract an instance of [[Data]] (type [[D]]) from them
     *

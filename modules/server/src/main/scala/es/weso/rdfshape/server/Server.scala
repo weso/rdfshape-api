@@ -1,7 +1,6 @@
 package es.weso.rdfshape.server
 
 import cats.effect._
-import cats.implicits.toSemigroupKOps
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
 import es.weso.rdfshape.server.api.routes.api.service.BaseService
@@ -191,36 +190,23 @@ object Server {
     s.main(Array.empty[String])
   }
 
-  /** Configure the http4s application to use the specified sources as API routes
+  /** Application's global service composed of all routes and CORS configuration
     */
   private def routesService(client: Client[IO]): HttpRoutes[IO] = {
-    val routesFromRho =
-      (BaseService(client).routes and
-        ShapeMapService(client).routes and
-        PermalinkService(client).routes and
-        EndpointService(client).routes and
-        FetchService(client).routes)
-        .toRoutes(swaggerMiddleware)
-    val allRoutes =
-      routesFromRho <+>
-        DataService(client).routes <+>
-        SchemaService(client).routes <+>
-        WikibaseService(client).routes
-
-    corsConfiguration.apply(allRoutes)
+    corsConfiguration.apply(allRoutes(client))
   }
 
-  /** All route functions composed into one
-    * @note <+> is part of cats syntax for composing functions
+  /** All Rho route functions composed into one with swagger middleware
     */
-//  def allRoutes(client: Client[IO]): HttpRoutes[IO] =
-//    BaseService(client).routes <+>
-//      DataService(client).routes <+>
-//      SchemaService(client).routes <+>
-//      ShapeMapService(client).routes <+>
-//      WikibaseService(client).routes <+>
-//      EndpointService(client).routes <+>
-//      PermalinkService(client).routes <+>
-//      FetchService(client).routes
+  private def allRoutes(client: Client[IO]): HttpRoutes[IO] =
+    (BaseService(client).routes and
+      DataService(client).routes and
+      SchemaService(client).routes and
+      ShapeMapService(client).routes and
+      WikibaseService(client).routes and
+      PermalinkService(client).routes and
+      EndpointService(client).routes and
+      FetchService(client).routes)
+      .toRoutes(swaggerMiddleware)
 
 }

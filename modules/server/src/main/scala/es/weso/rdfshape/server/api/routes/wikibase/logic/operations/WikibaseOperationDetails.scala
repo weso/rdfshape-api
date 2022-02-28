@@ -1,24 +1,26 @@
 package es.weso.rdfshape.server.api.routes.wikibase.logic.operations
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxEitherId
+import cats.implicits.{catsSyntaxEitherId, toBifunctorOps}
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.WikibaseOperationFormats.WikibaseQueryFormat
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
-import es.weso.rdfshape.server.implicits.codecs.encodeUri
+import es.weso.rdfshape.server.implicits.codecs.{decodeUri, encodeUri}
 import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, Json}
+import io.circe.{Decoder, Encoder, HCursor, Json}
 import org.http4s.Uri
-import org.http4s.implicits.http4sLiteralsSyntax
+
+import scala.util.Try
 
 /** Case class representing the data attached to the queries made to wikibase's API
   * or SPARQL endpoint. Optional parameters may not be required in some operations.
   *
   * @param endpoint        [[Uri]] to be used to access a resource in a wikibase instance
   * @param payload         Data accompanying the request to the wikibase
-  * @param searchLanguage  Tell the wikibase the language used in a search operation.
+  * @param searchLanguage  Tell the wikibase the language used in a search operation
+  *                        as well as the language for the returned results.
   * @param resultLanguages Filter the languages returned in queries with internationalized results
   *                        (empty list returns all available languages).
   *                        Each language must be represented by its language code.
@@ -36,21 +38,19 @@ case class WikibaseOperationDetails(
     limit: Option[Int],
     continue: Option[Int],
     format: Option[WikibaseQueryFormat]
-)
+) {
+  // Non empty content
+  assume(
+    !endpoint.renderString.isBlank,
+    "Could not build the Wikibase for an empty target"
+  )
+  assume(
+    !payload.isBlank,
+    "Empty payload for the Wikibase request"
+  )
+}
 
 object WikibaseOperationDetails extends LazyLogging {
-
-  /** Dummy empty query to be used when needed
-    */
-  val emptyQuery: WikibaseOperationDetails = WikibaseOperationDetails(
-    endpoint = uri"",
-    payload = "",
-    searchLanguage = None,
-    resultLanguages = None,
-    limit = None,
-    continue = None,
-    format = None
-  )
 
   /** Message to be logged/used when no endpoint was supplied
     */
@@ -79,6 +79,87 @@ object WikibaseOperationDetails extends LazyLogging {
           ("format", opDetails.format.asJson)
         )
       )
+
+  /** Decoder used to extract [[WikibaseOperationDetails]] instances from JSON values
+    */
+  implicit val decode: Decoder[Either[String, WikibaseOperationDetails]] =
+    (cursor: HCursor) => {
+      val operationInfo = for {
+        // Default to wikidata if empty
+        endpoint <- cursor
+          .downField(EndpointParameter.name)
+          .as[Either[String, Uri]] match {
+          // Decode error, parameter was missing. Default to Wikidata
+          case Left(_) =>
+            logger.warn(missingEndpointMessage)
+            Right(Wikidata.baseUrl).asRight
+          // Extracted value, leave as is
+          case other => other
+        }
+
+        payload <- cursor
+          .downField(WikibasePayloadParameter.name)
+          .as[String]
+
+        searchLanguage <-
+          cursor
+            .downField(LanguageParameter.name)
+            .as[Option[String]]
+
+        resultLanguages <-
+          cursor
+            .downField(LanguagesParameter.name)
+            .as[Option[List[String]]]
+
+        limit <- cursor
+          .downField(LimitParameter.name)
+          .as[Option[Int]]
+
+        continue <- cursor
+          .downField(ContinueParameter.name)
+          .as[Option[Int]]
+
+        format <- cursor
+          .downField(WikibaseFormatParameter.name)
+          .as[Option[WikibaseQueryFormat]]
+
+      } yield (
+        endpoint,
+        payload,
+        searchLanguage,
+        resultLanguages,
+        limit,
+        continue,
+        format
+      )
+
+      operationInfo.map {
+        case (
+              maybeUri,
+              payload,
+              optSearchLang,
+              optResultLanguages,
+              optLimit,
+              optContinue,
+              optFormat
+            ) =>
+          maybeUri.flatMap(uri =>
+            Try {
+              WikibaseOperationDetails(
+                uri,
+                payload,
+                optSearchLang,
+                optResultLanguages,
+                optLimit,
+                optContinue,
+                optFormat
+              )
+            }.toEither.leftMap(err =>
+              s"Could not build the Wikibase operation from user data:\n ${err.getMessage}"
+            )
+          )
+      }
+    }
 
   /** Given a GET request's parameters, try to extract an instance
     * of [[WikibaseOperationDetails]] from them

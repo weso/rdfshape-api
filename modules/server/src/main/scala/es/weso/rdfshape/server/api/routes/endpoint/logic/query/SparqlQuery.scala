@@ -4,7 +4,12 @@ import cats.effect.IO
 import cats.implicits.toBifunctorOps
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuerySource.SparqlQuerySource
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{ContentParameter, QueryParameter, QuerySourceParameter, SourceParameter}
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  ContentParameter,
+  QueryParameter,
+  QuerySourceParameter,
+  SourceParameter
+}
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import io.circe._
@@ -18,16 +23,17 @@ import scala.util.Try
   * @param source Active source, used to know which source the query comes from
   */
 sealed case class SparqlQuery private (
-                                        private val content: String,
-                                        source: SparqlQuerySource
+    private val content: String,
+    source: SparqlQuerySource
 ) extends LazyLogging {
 
-  // Non empty content 
+  // Non empty content
   assume(!content.isBlank, "Could not build the query from empty data")
   // Valid source
-  assume(SparqlQuerySource.values.exists(_ equalsIgnoreCase source), 
-    s"Unknown query source: \"$source\"")
-  
+  assume(
+    SparqlQuerySource.values.exists(_ equalsIgnoreCase source),
+    s"Unknown query source: '$source'"
+  )
 
   /** Given the (user input) for the query and its source, fetch the Query contents using the input in the way the source needs it
     * (e.g.: for URLs, fetch the input with a web request; for files, decode the input; for raw data, do nothing)
@@ -35,42 +41,39 @@ sealed case class SparqlQuery private (
     * @return Either an error building the query text or a String containing the final text of the SPARQL query
     */
   lazy val fetchedContents: Either[String, String] =
-    if (source equalsIgnoreCase SparqlQuerySource.URL)
+    if(source equalsIgnoreCase SparqlQuerySource.URL)
       getUrlContents(content)
-    // Text or file  
+    // Text or file
     else Right(content)
-   
-    
-  assume(fetchedContents.isRight, 
-    fetchedContents.left.getOrElse("Unknown error"))
 
-  /**
-   * Raw query value, i.e.: the text forming the query
-   *
-   * @note It is safely extracted fromm [[fetchedContents]] after asserting 
-   *       the contents are right
-   */
+  assume(
+    fetchedContents.isRight,
+    fetchedContents.left.getOrElse("Unknown error")
+  )
+
+  /** Raw query value, i.e.: the text forming the query
+    *
+    * @note It is safely extracted fromm [[fetchedContents]] after asserting
+    *       the contents are right
+    */
   val raw: String = fetchedContents.toOption.get
-  
-  
+
 }
 
 private[api] object SparqlQuery extends LazyLogging {
 
-  /**
-   * Encoder [[SparqlQuery]] => [[Json]]
-   */
+  /** Encoder [[SparqlQuery]] => [[Json]]
+    */
   implicit val encoder: Encoder[SparqlQuery] =
     (query: SparqlQuery) =>
       Json.obj(
-        ("query", query.raw.asJson),
+        ("content", query.raw.asJson),
         ("source", query.source.asJson)
       )
 
-  /**
-   * Decoder [[Json]] => [[SparqlQuery]]
-   * @note Returns an either whose left contains specific errors building the query
-   */
+  /** Decoder [[Json]] => [[SparqlQuery]]
+    * @note Returns an either whose left contains specific errors building the query
+    */
   implicit val decoder: Decoder[Either[String, SparqlQuery]] =
     (cursor: HCursor) => {
       // Get request data
@@ -86,11 +89,14 @@ private[api] object SparqlQuery extends LazyLogging {
       } yield (queryContent, querySource)
 
       queryData.map {
-        // Destructure and try to build the object, catch the exception as error message if needed
+        /* Destructure and try to build the object, catch the exception as error
+         * message if needed */
         case (content, source) =>
-            Try {
-              SparqlQuery(content, source)
-            }.toEither.leftMap( err => s"Could not build the SPARQL query from user data:\n ${err.getMessage}")
+          Try {
+            SparqlQuery(content, source)
+          }.toEither.leftMap(err =>
+            s"Could not build the SPARQL query from user data:\n ${err.getMessage}"
+          )
       }
     }
 

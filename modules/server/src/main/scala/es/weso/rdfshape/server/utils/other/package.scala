@@ -18,12 +18,9 @@ package object other {
   def mapEitherToDecodeResult[L, R](
       input: Either[DecodingFailure, Either[L, R]]
   ): Either[DecodingFailure, R] = {
-    input.fold(
-      _.asLeft,
-      {
-        case Left(err)    => DecodingFailure(err.toString, Nil).asLeft
-        case Right(value) => value.asRight
-      }
-    )
+    input.map {
+      case Left(err)    => DecodingFailure(err.toString, Nil).asLeft
+      case Right(value) => value.asRight
+    }.flatten
   }
 }

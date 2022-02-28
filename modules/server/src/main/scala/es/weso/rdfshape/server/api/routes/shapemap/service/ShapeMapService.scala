@@ -38,10 +38,6 @@ class ShapeMapService(client: Client[IO])
     }
 
     /** Obtain information about a shapeMap.
-      * Receives a JSON object with the input shapeMap information:
-      *  - shapeMap [String]: Raw shapemap data
-      *  - shapeMapFormat [String]: Format of the shapeMap
-      *  - shapeMapSource [String]: Identifies the source of the shapeMap (raw, URL, file...)
       * Returns a JSON object with the query inputs and results (see [[ShapeMapInfo.encodeShapeMapInfoOperation]]).
       */
     POST / `api` / `verb` / "info" ^ jsonOf[IO, ShapeMapInfoInput] |>> {

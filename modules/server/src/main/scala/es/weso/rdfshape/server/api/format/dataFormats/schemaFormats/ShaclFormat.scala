@@ -28,5 +28,5 @@ object ShaclFormat extends FormatCompanion[ShaclFormat] {
       new ShaclFormat(JsonLd),
       new ShaclFormat(RdfXml)
     )
-  override val defaultFormat: ShaclFormat = new ShaclFormat(Turtle)
+  override val default: ShaclFormat = new ShaclFormat(Turtle)
 }

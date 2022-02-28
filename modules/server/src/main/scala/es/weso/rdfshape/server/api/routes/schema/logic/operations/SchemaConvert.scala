@@ -3,7 +3,6 @@ package es.weso.rdfshape.server.api.routes.schema.logic.operations
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena.RDFAsJenaModel
-import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.definitions.UmlDefinitions.umlOptions
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
 import es.weso.rdfshape.server.api.format.dataFormats.{
@@ -12,6 +11,7 @@ import es.weso.rdfshape.server.api.format.dataFormats.{
   Svg,
   Json => JsonFormat
 }
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource
 import es.weso.rdfshape.server.api.routes.schema.logic.types.{
   Schema,
   SchemaSimple
@@ -36,13 +36,11 @@ import io.circe.{Encoder, Json}
 final case class SchemaConvert private (
     override val inputSchema: Schema,
     targetFormat: SchemaFormat,
-    targetEngine: Option[SchemaW],
+    targetEngine: SchemaW,
     result: Schema
 ) extends SchemaOperation(SchemaConvert.successMessage, inputSchema)
 
 private[api] object SchemaConvert extends LazyLogging {
-
-  private val successMessage = "Conversion successful"
 
   /** JSON encoder for [[SchemaConvert]]
     */
@@ -56,26 +54,27 @@ private[api] object SchemaConvert extends LazyLogging {
           ("targetSchemaFormat", schemaConvert.targetFormat.asJson)
         )
       )
+  private val successMessage = "Conversion successful"
 
   /** Perform the actual conversion operation between Schema formats.
     *
     * @note Firstly, check the conversion target
     *       (another Schema, a Graphic visualization, etc.).
     *       Secondly, invoke the corresponding logic for each transformation
-    * @param inputSchema     Input conversion schema
-    * @param targetFormat    Target format
-    * @param optTargetEngine Target engine (discarded in visualizations)
+    * @param inputSchema  Input conversion schema
+    * @param targetFormat Target format
+    * @param targetEngine Target engine (discarded in visualizations)
     * @return A new [[SchemaConvert]] instance with the conversion information
     */
   def schemaConvert(
       inputSchema: Schema,
       targetFormat: DataFormat,
-      optTargetEngine: Option[SchemaW]
+      targetEngine: SchemaW
   ): IO[SchemaConvert] = {
-    logger.info(
+    logger.debug(
       s"""Schema conversion targets:
           - Format: ${targetFormat.name}
-          - Engine: ${optTargetEngine.map(_.name)}"""
+          - Engine: ${targetEngine.name}"""
     )
 
     // Check the format nature to see which logic to invoke
@@ -84,7 +83,7 @@ private[api] object SchemaConvert extends LazyLogging {
       schemaToSchema(
         inputSchema,
         new SchemaFormat(targetFormat),
-        optTargetEngine
+        targetEngine
       )
     }
     // 2) Schema to visualization
@@ -98,7 +97,7 @@ private[api] object SchemaConvert extends LazyLogging {
           schemaToJson(inputSchema)
         case _ =>
           val msg =
-            s"Unavailable conversion from ${inputSchema.format.get.name} to ${targetFormat.name}"
+            s"Unavailable conversion from ${inputSchema.format.name} to ${targetFormat.name}"
           logger.error(msg)
           IO.raiseError(new RuntimeException(msg))
       }
@@ -109,28 +108,16 @@ private[api] object SchemaConvert extends LazyLogging {
     * Auxiliary method for [[schemaConvert]]
     * Convert a given Schema to another one, given the target engine and format
     *
-    * @param inputSchema     Input schema for conversion
-    * @param targetFormat    Target format
-    * @param optTargetEngine Target engine
+    * @param inputSchema  Input schema for conversion
+    * @param targetFormat Target format
+    * @param targetEngine Target engine
     * @return A new [[SchemaConvert]] instance with the conversion information
     */
   private def schemaToSchema(
       inputSchema: Schema,
       targetFormat: SchemaFormat,
-      optTargetEngine: Option[SchemaW]
+      targetEngine: SchemaW
   ): IO[SchemaConvert] = {
-    // Get schema engine and target engine. If unavailable, throw errors
-    if(inputSchema.engine.isEmpty) {
-      throw new RuntimeException(
-        "Could not perform conversion, unknown input schema engine"
-      )
-    }
-    if(optTargetEngine.isEmpty) {
-      throw new RuntimeException(
-        "Could not perform conversion, unknown target schema engine"
-      )
-    }
-
     // Try to extract the inner-library schema from the user given schema
     for {
       maybeInnerSchema <- inputSchema.getSchema
@@ -142,7 +129,7 @@ private[api] object SchemaConvert extends LazyLogging {
       // Tuple with the input data and an empty representation of the output
       conversionSchemas = (
         innerSchema,
-        optTargetEngine.get
+        targetEngine
       )
       _ = logger.debug(
         s"Schema conversion: ${conversionSchemas._1.name} -> ${conversionSchemas._2.name}"
@@ -160,15 +147,15 @@ private[api] object SchemaConvert extends LazyLogging {
                 None
               )
             outputSchema = SchemaSimple(
-              schemaPre = Option(rawOutputSchema.trim),
-              schemaFormat = targetFormat,
-              schemaEngine = schemaOut,
-              schemaSource = inputSchema.schemaSource
+              content = rawOutputSchema.trim,
+              format = targetFormat,
+              engine = schemaOut,
+              source = inputSchema.source
             )
           } yield SchemaConvert(
             inputSchema = inputSchema,
             targetFormat = targetFormat,
-            targetEngine = Option(schemaOut),
+            targetEngine = targetEngine,
             result = outputSchema
           )
 
@@ -180,10 +167,10 @@ private[api] object SchemaConvert extends LazyLogging {
             outputSchema = shexSchema match {
               case (_, schemaStr) =>
                 SchemaSimple(
-                  schemaPre = Option(schemaStr.trim),
-                  schemaFormat = targetFormat,
-                  schemaEngine = shexOut,
-                  schemaSource = inputSchema.schemaSource
+                  content = schemaStr.trim,
+                  format = targetFormat,
+                  engine = shexOut,
+                  source = SchemaSource.TEXT
                 )
             }
           } yield SchemaConvert(
@@ -261,10 +248,10 @@ private[api] object SchemaConvert extends LazyLogging {
 
       outputSchema = jsonSchema.map(jsonData =>
         SchemaSimple(
-          schemaPre = Option(jsonData.spaces2),
-          schemaFormat = new SchemaFormat(JsonFormat),
-          schemaEngine = inputSchema.engine.get,
-          schemaSource = inputSchema.schemaSource
+          content = jsonData.spaces2,
+          format = new SchemaFormat(JsonFormat),
+          engine = inputSchema.engine,
+          source = SchemaSource.TEXT
         )
       )
 
@@ -275,7 +262,7 @@ private[api] object SchemaConvert extends LazyLogging {
             SchemaConvert(
               inputSchema = inputSchema,
               targetFormat = new SchemaFormat(JsonFormat),
-              targetEngine = None,
+              targetEngine = inputSchema.engine,
               result = schema
             )
           )
@@ -308,11 +295,10 @@ private[api] object SchemaConvert extends LazyLogging {
                 .toSVG(umlOptions)
                 .map(svg => {
                   SchemaSimple(
-                    schemaPre = Option(svg.trim),
-                    schemaFormat = new SchemaFormat(Svg),
-                    schemaEngine = inputSchema.engine
-                      .getOrElse(ApiDefaults.defaultSchemaEngine),
-                    schemaSource = inputSchema.schemaSource
+                    content = svg.trim,
+                    format = new SchemaFormat(Svg),
+                    engine = inputSchema.engine,
+                    source = SchemaSource.TEXT
                   )
                 })
             )
@@ -326,8 +312,8 @@ private[api] object SchemaConvert extends LazyLogging {
       _.map(resultSchema =>
         SchemaConvert(
           inputSchema = inputSchema,
-          targetFormat = resultSchema.format.get,
-          targetEngine = None,
+          targetFormat = resultSchema.format,
+          targetEngine = inputSchema.engine,
           result = resultSchema
         )
       ).handleErrorWith(err =>

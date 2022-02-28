@@ -79,10 +79,10 @@ private[wikibase] case class WikibaseSchemaValidate(
           wdEntities
             .map(entity =>
               DataSingle(
-                dataPre = Some(entity.contentUri.renderString),
-                dataFormat = Turtle,
+                content = entity.contentUri.renderString,
+                format = Turtle,
                 inference = NONE,
-                dataSource = DataSource.URL
+                source = DataSource.URL
               )
             )
             .toList

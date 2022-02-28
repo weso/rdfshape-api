@@ -23,5 +23,5 @@ object SchemaFormat extends FormatCompanion[SchemaFormat] {
     (ShExFormat.availableFormats ++
       ShaclFormat.availableFormats).distinct
   }
-  override val defaultFormat: SchemaFormat = ShExC
+  override val default: SchemaFormat = ShExC
 }

@@ -9,14 +9,12 @@ import es.weso.rdfshape.server.utils.other.MyEnum
   */
 private[api] object DataSource extends MyEnum[String] {
   type DataSource = String
-
   val TEXT     = "byText"
   val URL      = "byUrl"
   val FILE     = "byFile"
-  val COMPOUND = "compoundData"
-  val ENDPOINT = "dataEndpoint"
+  val COMPOUND = "byCompound"
 
-  override val values =
-    Set(TEXT, URL, FILE, COMPOUND, ENDPOINT)
-  override val default: DataSource = TEXT
+  val values =
+    Set(TEXT, URL, FILE, COMPOUND)
+  val default: DataSource = TEXT
 }

@@ -32,7 +32,7 @@ trait Format {
 
 object Format extends FormatCompanion[Format] {
 
-  override val defaultFormat: Format = DataFormat.defaultFormat
+  override val default: Format = DataFormat.default
 
   // Should append all available formats in the future.
   // Currently, all formats are data formats.
@@ -48,7 +48,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
 
   /** Default format to be used when none specified
     */
-  val defaultFormat: F
+  val default: F
 
   /** List of all formats available for the current type of entity
     */
@@ -73,10 +73,10 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     * @note The decoder is simplified because the client normally sends the format name only, like:
     *       "format": "turtle"
     */
-  implicit val decoder: Decoder[F] = (cursor: HCursor) =>
+  implicit val decoder: Decoder[Either[String, F]] = (cursor: HCursor) =>
     for {
       formatStr <- cursor.value.as[String]
-      format = fromString(formatStr).toOption.getOrElse(defaultFormat)
+      format = fromString(formatStr)
     } yield format
 
   /** Try to build a Format object from a request's parameters
@@ -110,7 +110,7 @@ trait FormatCompanion[F <: Format] extends LazyLogging {
     * @return the Format object with the format data (an error String if it does not exist)
     */
   def fromString(name: String): Either[String, F] = {
-    if(name.isBlank) Right(defaultFormat)
+    if(name.isBlank) Right(default)
     else {
       formatsMap.get(name.toLowerCase) match {
         case None =>

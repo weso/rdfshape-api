@@ -38,6 +38,23 @@ final case class DataExtract private (
   */
 private[api] object DataExtract extends LazyLogging {
 
+  /** Convert a [[DataExtract]] to its JSON representation
+    *
+    * @return JSON representation of the extraction result
+    */
+
+  implicit val encodeDataExtractOperation: Encoder[DataExtract] =
+    (dataExtract: DataExtract) => {
+      Json.fromFields(
+        List(
+          ("message", Json.fromString(dataExtract.successMessage)),
+          ("data", dataExtract.inputData.asJson),
+          ("schemaFormat", dataExtract.schemaFormat.asJson),
+          ("schemaEngine", Json.fromString(dataExtract.schemaEngine.name)),
+          ("result", dataExtract.result.asJson)
+        )
+      )
+    }
   private val successMessage = "Extraction successful"
 
   /** Common infer options to all extraction operations
@@ -51,6 +68,24 @@ private[api] object DataExtract extends LazyLogging {
     followOnThreshold = Some(1),
     sortFunction = InferOptions.orderByIRI
   )
+
+  /** Encoder for [[DataExtractResult]]
+    */
+  private implicit val encodeDataExtractResult: Encoder[DataExtractResult] =
+    (dataExtract: DataExtractResult) =>
+      Json.fromFields(
+        List(
+          (
+            "schema",
+            Json.fromString(
+              dataExtract.schema
+                .serialize(dataExtract.targetSchemaFormat.name)
+                .unsafeRunSync()
+            )
+          ),
+          ("shapeMap", Json.fromString(dataExtract.shapeMap.toString))
+        )
+      )
 
   /** Extract Shex from a given RDF input
     *
@@ -123,42 +158,6 @@ private[api] object DataExtract extends LazyLogging {
       )
     } yield finalResult
   }
-
-  /** Encoder for [[DataExtractResult]]
-    */
-  private implicit val encodeDataExtractResult: Encoder[DataExtractResult] =
-    (dataExtract: DataExtractResult) =>
-      Json.fromFields(
-        List(
-          (
-            "schema",
-            Json.fromString(
-              dataExtract.schema
-                .serialize(dataExtract.targetSchemaFormat.name)
-                .unsafeRunSync()
-            )
-          ),
-          ("shapeMap", Json.fromString(dataExtract.shapeMap.toString))
-        )
-      )
-
-  /** Convert a [[DataExtract]] to its JSON representation
-    *
-    * @return JSON representation of the extraction result
-    */
-
-  implicit val encodeDataExtractOperation: Encoder[DataExtract] =
-    (dataExtract: DataExtract) => {
-      Json.fromFields(
-        List(
-          ("message", Json.fromString(dataExtract.successMessage)),
-          ("data", dataExtract.inputData.asJson),
-          ("schemaFormat", dataExtract.schemaFormat.asJson),
-          ("schemaEngine", Json.fromString(dataExtract.schemaEngine.name)),
-          ("result", dataExtract.result.asJson)
-        )
-      )
-    }
 
   /** Case class representing the results to be returned when performing a data-info operation
     */

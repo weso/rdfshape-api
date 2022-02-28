@@ -6,6 +6,10 @@ import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.Sh
 import es.weso.rdfshape.server.utils.other.mapEitherToDecodeResult
 import io.circe.{Decoder, HCursor}
 
+/** Data class representing the inputs required when querying the server
+  * for ShapeMap information
+  * @param shapeMap ShapeMap to be inspected
+  */
 case class ShapeMapInfoInput(shapeMap: ShapeMap)
 
 object ShapeMapInfoInput extends ServiceRouteOperation[ShapeMapInfoInput] {

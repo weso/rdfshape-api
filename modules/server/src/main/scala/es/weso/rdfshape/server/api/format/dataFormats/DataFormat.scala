@@ -22,7 +22,7 @@ object DataFormat extends FormatCompanion[DataFormat] {
       GraphicFormat.availableFormats ++
       ShapeMapFormat.availableFormats ++
       List(Json, Dot)).distinct
-  override val defaultFormat: DataFormat = Json
+  override val default: DataFormat = Json
 }
 
 /** Represents the mime-type "application/json"

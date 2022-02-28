@@ -16,5 +16,5 @@ sealed case class WikibaseSearchEntity private (
 ) extends WikibaseSearchOperation(
       operationData,
       client,
-      WikibaseSearchTypes.ITEM
+      WikibaseSearchTypes.ENTITY
     )

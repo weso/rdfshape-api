@@ -4,9 +4,9 @@ import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{getEndpointAsRDFReader, getEndpointInfo}
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing._
+import es.weso.rdfshape.server.api.routes.endpoint.logic.{Endpoint, Outgoing}
 import es.weso.rdfshape.server.api.routes.endpoint.service.operations.EndpointOutgoingInput
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.implicits.query_parsers.urlQueryParser
@@ -78,16 +78,8 @@ class EndpointService(client: Client[IO])
     }
 
     /** Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it.
-      * Receives a JSON object with the input endpoint, node and limits:
-      *  - endpoint [URL]: Query target endpoint
-      *  - node [String]: Node identifier in the target wikibase
-      *  - limit [Int]: Max number of results, defaults to one
-      *    Returns a JSON object with the endpoint response:
-      *    - endpoint [String]: Target endpoint
-      *    - node [String]: Node identifier in the target wikibase
-      *    - children [Array]: List of returned objects, each being a triplet:
-      *      - pred: [String]: Predicate identifier in the target wikibase
-      *      - values: [Array]: List of raw values for the entity and predicate
+      * Receives a JSON object with the input endpoint, node and limits
+      *    Returns a JSON object with the endpoint response (see [[Outgoing.encode]])
       */
     GET / `api` / `verb` / "outgoing" +?
       param[URL](EndpointParameter.name) &

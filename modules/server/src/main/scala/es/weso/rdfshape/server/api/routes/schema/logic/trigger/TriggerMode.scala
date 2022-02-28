@@ -1,14 +1,20 @@
 package es.weso.rdfshape.server.api.routes.schema.logic.trigger
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxEitherId
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerModeType._
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.TriggerModeParameter
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  TriggerModeParameter,
+  TypeParameter
+}
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.schema.ValidationTrigger
-import io.circe.{Decoder, Encoder, HCursor}
+import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
+
+import scala.language.implicitConversions
 
 /** Common trait to all schemas, whichever its nature
   */
@@ -16,7 +22,7 @@ trait TriggerMode {
 
   /** Corresponding type of this adapter inside [[ValidationTrigger]]
     */
-  val triggerModeType: TriggerModeType
+  val _type: TriggerModeType
 
   /** Optionally, the [[Data]] being validated in the validation using this trigger
     */
@@ -28,37 +34,49 @@ trait TriggerMode {
 
   /** Get the inner [[ValidationTrigger]], which is used internally for schema validations
     *
-    * @return Either the inner [[ValidationTrigger]] logical model as used by WESO libraries,
-    *         or an error extracting the model
+    * @return The inner [[ValidationTrigger]] logical model as used by WESO libraries
     */
-  def getValidationTrigger: Either[String, ValidationTrigger]
+  def getValidationTrigger: ValidationTrigger
 }
 
 object TriggerMode extends TriggerModeCompanion[TriggerMode] {
+
+  /** Dummy implementation meant to be overridden
+    * If called on a general [[TriggerMode]] instance, look for the type to
+    * redirecting the decoding to the correct implementation
+    */
+  override implicit def decode(
+      data: Option[Data] = None,
+      schema: Option[Schema] = None
+  ): Decoder[Either[String, TriggerMode]] =
+    (cursor: HCursor) => {
+      for {
+        triggerType <- cursor
+          .downField(TypeParameter.name)
+          .as[TriggerModeType]
+
+        decoded <- triggerType match {
+          case SHAPEMAP => TriggerShapeMap.decode(data, schema)(cursor)
+          case TARGET_DECLARATIONS =>
+            TriggerTargetDeclarations.decode(data, schema)(cursor)
+          case _ =>
+            DecodingFailure(
+              s"Invalid trigger mode type '$triggerType'",
+              Nil
+            ).asLeft
+        }
+      } yield decoded
+    }
 
   /** Dummy implementation meant to be overridden.
     * If called on a general [[TriggerMode]] instance, pattern match among the available types to
     * use the correct implementation
     */
-  override implicit val encoder: Encoder[TriggerMode] = {
-    case tsm: TriggerShapeMap => TriggerShapeMap.encoder(tsm)
+  override implicit val encode: Encoder[TriggerMode] = {
+    case tsm: TriggerShapeMap => TriggerShapeMap.encode(tsm)
     case ttd: TriggerTargetDeclarations =>
-      TriggerTargetDeclarations.encoder(ttd)
+      TriggerTargetDeclarations.encode(ttd)
   }
-
-  /** Dummy implementation meant to be overridden
-    * If called on a general [[TriggerMode]] instance, pattern match among the available types to
-    * use the correct implementation
-    */
-  override implicit val decoder: Decoder[TriggerMode] =
-    (cursor: HCursor) => {
-      this.getClass match {
-        case tsm if tsm == classOf[TriggerShapeMap] =>
-          TriggerShapeMap.decoder(cursor)
-        case ttd if ttd == classOf[TriggerTargetDeclarations] =>
-          TriggerTargetDeclarations.decoder(cursor)
-      }
-    }
 
   /** General implementation delegating on subclasses
     */
@@ -98,19 +116,24 @@ object TriggerMode extends TriggerModeCompanion[TriggerMode] {
 private[schema] trait TriggerModeCompanion[T <: TriggerMode]
     extends LazyLogging {
 
+  /** @param data Optional data accompanying the ShapeMap
+    * @param schema Optional schema accompanying the ShapeMap
+    * @return Decoding function used to extract [[TriggerMode]] instances from JSON values
+    */
+  implicit def decode(
+      data: Option[Data],
+      schema: Option[Schema]
+  ): Decoder[Either[String, T]]
+
   /** Encoder used to transform [[TriggerMode]] instances to JSON values
     */
-  implicit val encoder: Encoder[T]
-
-  /** Decoder used to extract [[TriggerMode]] instances from JSON values
-    */
-  implicit val decoder: Decoder[T]
+  implicit val encode: Encoder[T]
 
   /** Given a request's parameters, try to extract an instance of [[TriggerMode]] (type [[T]]) from them
     *
     * @param partsMap Request's parameters
-    * @param data Optionally, the [[Data]] being validated in the validation using this trigger
-    * @param schema Optionally, the [[Schema]] being used in the validation using this trigger
+    * @param data     Optionally, the [[Data]] being validated in the validation using this trigger
+    * @param schema   Optionally, the [[Schema]] being used in the validation using this trigger
     * @return Either the [[TriggerMode]] instance or an error message
     */
   def mkTriggerMode(

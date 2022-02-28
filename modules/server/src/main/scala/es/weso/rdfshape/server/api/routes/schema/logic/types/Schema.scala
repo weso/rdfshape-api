@@ -1,40 +1,54 @@
 package es.weso.rdfshape.server.api.routes.schema.logic.types
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxEitherId
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.nodes.IRI
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
+import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource.SchemaSource
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.SourceParameter
 import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.schema.{Schema => SchemaW}
-import io.circe.{Decoder, Encoder, HCursor}
+import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 
 /** Common trait to all schemas, whichever its nature
   */
 trait Schema {
 
-  /** Either the raw schema contents represented as a String,
-    * or the error occurred when trying to parse the schema
-    */
-  lazy val rawSchema: Either[String, String] = Left("")
-
   /** Default URI obtained from current folder
     */
   lazy val base: Option[IRI] = Some(ApiDefinitions.localBase)
-  // ApiDefaults.relativeBase
+
+  /** Given the user input for the schema and its source, fetch the Schema contents
+    * using the input in the way the source needs it
+    * (e.g.: for URLs, fetch the input with a web request; for files,
+    * decode the input; for raw data, do nothing)
+    *
+    * @return Either the raw schema contents represented as a String,
+    *         or the error occurred when trying to parse the schema
+    */
+  val fetchedContents: Either[String, String]
+
+  /** Raw schema value, i.e.: the text forming the schema
+    *
+    * @note It is safely extracted from [[fetchedContents]] after asserting
+    *       the [[source]] and fetched contents are right
+    */
+  val raw: String
 
   /** Source where the schema comes from
     */
-  val schemaSource: SchemaSource
+  val source: SchemaSource
 
   /** Format of the schema
     */
-  val format: Option[SchemaFormat] = None
+  val format: SchemaFormat
 
   /** Engine used for operating the schema
     */
-  val engine: Option[SchemaW] = None
+  val engine: SchemaW
 
   /** Get the inner schema entity of type [[SchemaW]], which is used internally for schema operations
     *
@@ -42,15 +56,15 @@ trait Schema {
     *         or an error extracting the model
     */
   def getSchema: IO[Either[String, SchemaW]]
+
+  /** @return A String with the raw contents or the error that made them
+    *          un-parseable
+    */
+  override def toString: String =
+    fetchedContents.fold(identity, identity)
 }
 
 object Schema extends SchemaCompanion[Schema] {
-
-  /** Dummy implementation meant to be overridden
-    *
-    * @note Resort by default to [[SchemaSimple]]'s empty representation
-    */
-  override val emptySchema: Schema = SchemaSimple.emptySchema
 
   /** Dummy implementation meant to be overridden.
     * If called on a general [[Schema]] instance, pattern match among the available data types to
@@ -66,12 +80,22 @@ object Schema extends SchemaCompanion[Schema] {
     *
     * @note Defaults to [[SchemaSimple]]'s implementation of decoding data
     */
-  override implicit val decodeSchema: Decoder[Schema] = (cursor: HCursor) => {
-    this.getClass match {
-      case ss if ss == classOf[SchemaSimple] =>
-        SchemaSimple.decodeSchema(cursor)
+  override implicit val decodeSchema: Decoder[Either[String, Schema]] =
+    (cursor: HCursor) => {
+      for {
+        source <- cursor
+          .downField(SourceParameter.name)
+          .as[SchemaSource]
+
+        decoded <- source match {
+          case _ if SchemaSource.values.contains(source) =>
+            SchemaSimple.decodeSchema(cursor)
+          case _ =>
+            DecodingFailure(s"Invalid schema source '$source'", Nil).asLeft
+        }
+      } yield decoded
+
     }
-  }
 
   /** Build a [[Schema]] from request parameters
     *
@@ -91,17 +115,15 @@ object Schema extends SchemaCompanion[Schema] {
   */
 private[schema] trait SchemaCompanion[S <: Schema] extends LazyLogging {
 
-  /** Empty instance of the [[Schema]] representation in use
-    */
-  val emptySchema: S
-
   /** Encoder used to transform [[Schema]] instances to JSON values
     */
   implicit val encodeSchema: Encoder[S]
 
   /** Decoder used to extract [[Schema]] instances from JSON values
+    * The decoder returns either the decoded Schema or the error occurred
+    * in the decoding process
     */
-  implicit val decodeSchema: Decoder[S]
+  implicit val decodeSchema: Decoder[Either[String, S]]
 
   /** Given a request's parameters, try to extract an instance of [[Schema]] (type [[S]]) from them
     *
