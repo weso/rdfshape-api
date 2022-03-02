@@ -2,7 +2,6 @@ package es.weso.rdfshape.server.api.routes.endpoint.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{getEndpointAsRDFReader, getEndpointInfo}
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing._
@@ -40,7 +39,7 @@ class EndpointService(client: Client[IO])
      *  - query [String]: User query with content and source
      * Returns a JSON object with the results (see [[Endpoint.encoder]]).
      */
-    POST / `api` / `verb` / "info" ^ jsonOf[
+    POST / `verb` / "info" ^ jsonOf[
       IO,
       EndpointOutgoingInput
     ] |>> { (body: EndpointOutgoingInput) =>
@@ -72,7 +71,7 @@ class EndpointService(client: Client[IO])
       */
     /**
       */
-    GET / `api` / `verb` / "info" +?
+    GET / `verb` / "info" +?
       param[URL](EndpointParameter.name) |>> { (endpointUrl: URL) =>
       Ok(getEndpointInfo(endpointUrl).asJson)
     }
@@ -81,7 +80,7 @@ class EndpointService(client: Client[IO])
       * Receives a JSON object with the input endpoint, node and limits
       *    Returns a JSON object with the endpoint response (see [[Outgoing.encode]])
       */
-    GET / `api` / `verb` / "outgoing" +?
+    GET / `verb` / "outgoing" +?
       param[URL](EndpointParameter.name) &
       param[String](NodeParameter.name) &
       param[Option[Int]](LimitParameter.name) |>> {

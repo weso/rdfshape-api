@@ -3,7 +3,6 @@ package es.weso.rdfshape.server.api.routes.schema.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.{
   ShExFormat,
   ShaclFormat
@@ -58,7 +57,7 @@ class SchemaService(client: Client[IO])
 
     /** Returns a JSON array with the accepted schema engines a given schema type (ShEx or Shacl)
       */
-    GET / `api` / `verb` / "engines" / pathVar[String] |>> { `type`: String =>
+    GET / `verb` / "engines" / pathVar[String] |>> { `type`: String =>
       val engines = `type`.toLowerCase match {
         case "shex" => List(Schemas.shEx)
         case "shacl" =>
@@ -72,14 +71,14 @@ class SchemaService(client: Client[IO])
 
     /** Returns the default schema engine as a raw string
       */
-    GET / `api` / `verb` / "engines" / "default" |>> {
+    GET / `verb` / "engines" / "default" |>> {
       val json = Json.fromString(Schemas.defaultSchema.name)
       Ok(json)
     }
 
     /** Returns the default schema format for a given engine as a raw string
       */
-    GET / `api` / `verb` / "formats" / "default" / pathVar[SchemaW] |>> {
+    GET / `verb` / "formats" / "default" / pathVar[SchemaW] |>> {
       engine: SchemaW =>
         val defaultFormat = engine match {
           case ShExSchema(_) => ShExFormat.default
@@ -94,7 +93,7 @@ class SchemaService(client: Client[IO])
       * Accepts an optional query parameter specifying the schema engine:
       * - schemaEngine [String]: schema engine for which we are listing the formats
       */
-    GET / `api` / `verb` / "formats" / pathVar[SchemaW] |>> { engine: SchemaW =>
+    GET / `verb` / "formats" / pathVar[SchemaW] |>> { engine: SchemaW =>
       val formats = engine match {
         case ShExSchema(_) => ShExFormat.availableFormats
         case JenaShacl(_) | ShaclTQ(_) | ShaclexSchema(_) =>
@@ -106,7 +105,7 @@ class SchemaService(client: Client[IO])
 
     /** Returns a JSON array with the accepted Trigger Modes
       */
-    GET / `api` / `verb` / "triggerModes" |>> {
+    GET / `verb` / "triggerModes" |>> {
       val json = Json.fromValues(
         ApiDefinitions.availableTriggerModes.map(
           Json.fromString
@@ -120,7 +119,7 @@ class SchemaService(client: Client[IO])
       * Returns a JSON object with the operation results. See
       * [[SchemaInfo.encodeSchemaInfoOperation]].
       */
-    POST / `api` / `verb` / "info" ^ jsonOf[IO, SchemaInfoInput] |>> {
+    POST / `verb` / "info" ^ jsonOf[IO, SchemaInfoInput] |>> {
       body: SchemaInfoInput =>
         SchemaInfo
           .schemaInfo(body.schema)
@@ -135,7 +134,7 @@ class SchemaService(client: Client[IO])
       * Returns a JSON object with the operation results. See
       * [[SchemaConvert.encodeSchemaConvertOperation]].
       */
-    POST / `api` / `verb` / "convert" ^ jsonOf[IO, SchemaConvertInput] |>> {
+    POST / `verb` / "convert" ^ jsonOf[IO, SchemaConvertInput] |>> {
       body: SchemaConvertInput =>
         SchemaConvert
           .schemaConvert(
@@ -156,7 +155,7 @@ class SchemaService(client: Client[IO])
       *       if the [[TriggerMode]] is shapeMap, the corresponding [[ShapeMap]]
       *       object will be embedded in the resulting [[TriggerShapeMap]]
       */
-    POST / `api` / `verb` / "validate" ^ jsonOf[IO, SchemaValidateInput] |>> {
+    POST / `verb` / "validate" ^ jsonOf[IO, SchemaValidateInput] |>> {
       body: SchemaValidateInput =>
         SchemaValidate
           .schemaValidate(body.data, body.schema, body.triggerMode)

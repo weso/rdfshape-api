@@ -3,6 +3,7 @@ package es.weso.rdfshape.server
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.api.service.BaseService
 import es.weso.rdfshape.server.api.routes.data.service.DataService
 import es.weso.rdfshape.server.api.routes.endpoint.service.EndpointService
@@ -20,6 +21,7 @@ import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.client.Client
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
+import org.http4s.server.Router
 import org.http4s.server.middleware.{CORS, CORSPolicy, Logger}
 import org.http4s.{HttpApp, HttpRoutes}
 
@@ -126,9 +128,11 @@ private class Server(
     *
     * @param client Http4s' client in charge of the application
     * @return Http4s' application with the given client and a request-logging middleware
+    * @note All application services are mounted behind the "api/" prefix
     */
   private def createApp(client: Client[IO]): HttpApp[IO] = {
-    val app = routesService(client).orNotFound
+    // Mount all routes behind "api/"
+    val app = Router(`api` -> routesService(client)).orNotFound
     // Http4s logger middleware settings
     Logger.httpApp(logHeaders = true, logBody = false)(app)
   }

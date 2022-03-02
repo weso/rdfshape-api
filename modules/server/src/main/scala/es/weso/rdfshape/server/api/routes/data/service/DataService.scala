@@ -3,10 +3,7 @@ package es.weso.rdfshape.server.api.routes.data.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefaults.defaultInferenceEngine
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.{
-  api,
-  availableInferenceEngines
-}
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.availableInferenceEngines
 import es.weso.rdfshape.server.api.format.dataFormats._
 import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.ShExC
 import es.weso.rdfshape.server.api.routes.ApiService
@@ -50,7 +47,7 @@ class DataService(client: Client[IO])
 
     /** Returns a JSON array with the accepted input RDF data formats
       */
-    GET / `api` / `verb` / "formats" / "input" |>> {
+    GET / `verb` / "formats" / "input" |>> {
       val formats     = RdfFormat.availableFormats ++ HtmlFormat.availableFormats
       val formatNames = formats.map(_.name)
       val json        = Json.fromValues(formatNames.map(Json.fromString))
@@ -59,7 +56,7 @@ class DataService(client: Client[IO])
 
     /** Returns a JSON array with the available output RDF data formats
       */
-    GET / `api` / `verb` / "formats" / "output" |>> {
+    GET / `verb` / "formats" / "output" |>> {
       val formatNames =
         RdfFormat.availableFormats.filter(!_.equals(Mixed)).map(_.name)
       val json = Json.fromValues(formatNames.map(Json.fromString))
@@ -68,7 +65,7 @@ class DataService(client: Client[IO])
 
     /** Returns a JSON array with the available visualization formats
       */
-    GET / `api` / `verb` / "formats" / "visual" |>> {
+    GET / `verb` / "formats" / "visual" |>> {
       val formats = GraphicFormat.availableFormats.map(_.name)
       val json    = Json.fromValues(formats.map(Json.fromString))
       Ok(json)
@@ -76,14 +73,14 @@ class DataService(client: Client[IO])
 
     /** Returns the default RDF format as a raw string
       */
-    GET / `api` / `verb` / "formats" / "default" |>> {
+    GET / `verb` / "formats" / "default" |>> {
       val dataFormat = DataFormat.default.name
       Ok(Json.fromString(dataFormat))
     }
 
     /** Returns a JSON array with the available inference engines
       */
-    GET / `api` / `verb` / "inferenceEngines" |>> {
+    GET / `verb` / "inferenceEngines" |>> {
       val inferenceEngines = availableInferenceEngines
       val json =
         Json.fromValues(inferenceEngines.map(e => Json.fromString(e.name)))
@@ -92,13 +89,13 @@ class DataService(client: Client[IO])
 
     /** Returns the default inference engine used as a raw string
       */
-    GET / `api` / `verb` / "inferenceEngines" / "default" |>> {
+    GET / `verb` / "inferenceEngines" / "default" |>> {
       Ok(Json.fromString(defaultInferenceEngine.name))
     }
 
     /** Returns a JSON array with the valid data sources that the server will accept when sent via [[DataSourceParameter]]
       */
-    GET / `api` / `verb` / "sources" |>> {
+    GET / `verb` / "sources" |>> {
       val json = Json.arr(
         Json.fromString(DataSource.TEXT),
         Json.fromString(DataSource.URL),
@@ -111,7 +108,7 @@ class DataService(client: Client[IO])
       * Receives a JSON object with the input RDF information
       * Returns a JSON object with the operation results. See [[DataInfo.encodeDataInfoOperation]]
       */
-    POST / `api` / `verb` / "info" ^ jsonOf[IO, DataInfoInput] |>> {
+    POST / `verb` / "info" ^ jsonOf[IO, DataInfoInput] |>> {
       body: DataInfoInput =>
         DataInfo
           .dataInfo(body.data)
@@ -133,7 +130,7 @@ class DataService(client: Client[IO])
       *       since these are just conversions to JSON, DOT, etc. later
       *       interpreted by the web client
       */
-    POST / `api` / `verb` / "convert" ^ jsonOf[IO, DataConvertInput] |>> {
+    POST / `verb` / "convert" ^ jsonOf[IO, DataConvertInput] |>> {
       body: DataConvertInput =>
         DataConvert
           .dataConvert(body.data, body.targetFormat)
@@ -151,7 +148,7 @@ class DataService(client: Client[IO])
       * Receives a JSON object with the input RDF and query information
       * Returns a JSON object with the query inputs and results (see [[DataQuery.encodeDataQueryOperation]]).
       */
-    POST / `api` / `verb` / "query" ^ jsonOf[IO, DataQueryInput] |>> {
+    POST / `verb` / "query" ^ jsonOf[IO, DataQueryInput] |>> {
       body: DataQueryInput =>
         DataQuery
           .dataQuery(body.data, body.query)
@@ -163,7 +160,7 @@ class DataService(client: Client[IO])
       * Receives a JSON object with the input RDF information
       * Returns a JSON object with the extraction information (see [[DataExtract.encodeDataExtractOperation]]
       */
-    POST / `api` / `verb` / "extract" ^ jsonOf[IO, DataExtractInput] |>> {
+    POST / `verb` / "extract" ^ jsonOf[IO, DataExtractInput] |>> {
       body: DataExtractInput =>
         DataExtract
           .dataExtract(

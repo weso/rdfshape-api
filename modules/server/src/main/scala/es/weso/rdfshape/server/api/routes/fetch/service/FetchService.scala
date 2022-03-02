@@ -2,7 +2,6 @@ package es.weso.rdfshape.server.api.routes.fetch.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.UrlParameter
 import es.weso.rdfshape.server.implicits.query_parsers.urlQueryParser
@@ -26,7 +25,7 @@ class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
       *  - url [String]: URL to be queried
       *    Returns the URL contents (response body)
       */
-    GET / `api` / `verb` +? param[URL](UrlParameter.name) |>> { (url: URL) =>
+    GET / `verb` +? param[URL](UrlParameter.name) |>> { (url: URL) =>
       getUrlContents(url) match {
         case Left(err)      => InternalServerError(err)
         case Right(content) => Ok(content)

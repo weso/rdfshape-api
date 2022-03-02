@@ -3,7 +3,6 @@ package es.weso.rdfshape.server.api.routes.shapemap.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.definitions.ApiDefinitions
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.shapemap.logic.operations.ShapeMapInfo
 import es.weso.rdfshape.server.api.routes.shapemap.service.operations.ShapeMapInfoInput
@@ -31,7 +30,7 @@ class ShapeMapService(client: Client[IO])
 
     /** Returns a JSON array with the accepted shapeMap formats.
       */
-    GET / `api` / `verb` / "formats" |>> {
+    GET / `verb` / "formats" |>> {
       val formats = ApiDefinitions.availableShapeMapFormats
       val json    = Json.fromValues(formats.map(f => Json.fromString(f.name)))
       Ok(json)
@@ -40,7 +39,7 @@ class ShapeMapService(client: Client[IO])
     /** Obtain information about a shapeMap.
       * Returns a JSON object with the query inputs and results (see [[ShapeMapInfo.encodeShapeMapInfoOperation]]).
       */
-    POST / `api` / `verb` / "info" ^ jsonOf[IO, ShapeMapInfoInput] |>> {
+    POST / `verb` / "info" ^ jsonOf[IO, ShapeMapInfoInput] |>> {
       body: ShapeMapInfoInput =>
         ShapeMapInfo
           .shapeMapInfo(body.shapeMap)

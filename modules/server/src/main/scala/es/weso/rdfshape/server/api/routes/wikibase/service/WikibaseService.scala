@@ -2,7 +2,6 @@ package es.weso.rdfshape.server.api.routes.wikibase.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.SchemaValidate
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.WikibaseOperationResult
@@ -64,7 +63,7 @@ class WikibaseService(client: Client[IO])
       *    codes separated by "|"
       *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
       */
-    POST / `api` / `verb` / "entityLabel" ^ jsonOf[
+    POST / `verb` / "entityLabel" ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { body: WikibaseOperationInput =>
@@ -80,7 +79,7 @@ class WikibaseService(client: Client[IO])
       *  - payload [String]: Schema identifier in the wikibase instance
       *    Returns a JSON object with the results. See [[WikibaseOperationResult]]
       */
-    POST / `api` / `verb` / "schemaContent" ^ jsonOf[
+    POST / `verb` / "schemaContent" ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { body: WikibaseOperationInput =>
@@ -101,7 +100,7 @@ class WikibaseService(client: Client[IO])
       *
       * @note see https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
       */
-    POST / `api` / `verb` / "search" / pathVar[WikibaseSearchTypes] ^ jsonOf[
+    POST / `verb` / "search" / pathVar[WikibaseSearchTypes] ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { (searchType: String, body: WikibaseOperationInput) =>
@@ -133,7 +132,7 @@ class WikibaseService(client: Client[IO])
       *    Returns a JSON object with the array of languages supported.
       *    See [[WikibaseOperationResult]]
       */
-    POST / `api` / `verb` / "languages" ^ jsonOf[
+    POST / `verb` / "languages" ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { body: WikibaseOperationInput =>
@@ -152,7 +151,7 @@ class WikibaseService(client: Client[IO])
       *
       * Query examples in [[https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples]]
       */
-    POST / `api` / `verb` / "query" ^ jsonOf[
+    POST / `verb` / "query" ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { body: WikibaseOperationInput =>
@@ -167,7 +166,7 @@ class WikibaseService(client: Client[IO])
       *    Returns a JSON object with the extracted schema:
       *    (see [[WikibaseOperationResult]])
       */
-    POST / `api` / `verb` / "extract" ^ jsonOf[
+    POST / `verb` / "extract" ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { body: WikibaseOperationInput =>
@@ -187,7 +186,7 @@ class WikibaseService(client: Client[IO])
       *    Returns a JSON object with the extracted schema:
       *    (see [[WikibaseOperationResult]])
       */
-    POST / `api` / `verb` / "shexer" ^ jsonOf[
+    POST / `verb` / "shexer" ^ jsonOf[
       IO,
       WikibaseOperationInput
     ] |>> { body: WikibaseOperationInput =>
@@ -205,7 +204,7 @@ class WikibaseService(client: Client[IO])
       * (see [[WikibaseOperationResult]] and
       * [[SchemaValidate.encodeSchemaValidateOperation]])
       */
-    POST / `api` / `verb` / "validate" ^ jsonOf[
+    POST / `verb` / "validate" ^ jsonOf[
       IO,
       WikibaseValidateInput
     ] |>> { body: WikibaseValidateInput =>

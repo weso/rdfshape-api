@@ -1,7 +1,6 @@
 package es.weso.rdfshape.server.api.routes.api.service
 
 import cats.effect._
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
@@ -18,7 +17,7 @@ class BaseService(client: Client[IO]) extends Http4sDsl[IO] with ApiService {
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
-    GET / `api` / "health" |>> { () =>
+    GET / "health" |>> { () =>
       Ok("Healthy")
     }
   }

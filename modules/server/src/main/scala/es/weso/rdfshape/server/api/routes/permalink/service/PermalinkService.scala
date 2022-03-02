@@ -2,7 +2,6 @@ package es.weso.rdfshape.server.api.routes.permalink.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.routes.permalink.logic.Permalink
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
@@ -70,7 +69,7 @@ class PermalinkService(client: Client[IO])
       *
       * @note QueryParser already checks for the validity of the URL
       */
-    GET / `api` / `verb` / "generate" +? param[URL](UrlParameter.name) |>> {
+    GET / `verb` / "generate" +? param[URL](UrlParameter.name) |>> {
       (urlObj: URL) =>
         // Extract the relevant info from the URL
         val urlPath = extractUrlPathAndQuery(urlObj)
@@ -103,7 +102,7 @@ class PermalinkService(client: Client[IO])
       *  - urlCode [Long]: code to be checked
       *    Returns the permalink target (if present in the database) in the response body
       */
-    GET / `api` / `verb` / "get" +? param[Long](UrlCodeParameter.name) |>> {
+    GET / `verb` / "get" +? param[Long](UrlCodeParameter.name) |>> {
       urlCode: Long =>
         // Fetch document in database
         for {
