@@ -28,6 +28,7 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
 
 /** API Service to handle RDF data
   *
@@ -45,135 +46,114 @@ class DataService(client: Client[IO])
     */
   val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
-    /** Returns a JSON array with the accepted input RDF data formats
-      */
-    GET / `verb` / "formats" / "input" |>> {
-      val formats     = RdfFormat.availableFormats ++ HtmlFormat.availableFormats
-      val formatNames = formats.map(_.name)
-      val json        = Json.fromValues(formatNames.map(Json.fromString))
-      Ok(json)
-    }
+    "Get an array with the accepted input RDF data formats" **
+      GET / `verb` / "formats" / "input" |>> {
+        val formats     = RdfFormat.availableFormats ++ HtmlFormat.availableFormats
+        val formatNames = formats.map(_.name)
+        val json        = Json.fromValues(formatNames.map(Json.fromString))
+        Ok(json)
+      }
 
-    /** Returns a JSON array with the available output RDF data formats
-      */
-    GET / `verb` / "formats" / "output" |>> {
-      val formatNames =
-        RdfFormat.availableFormats.filter(!_.equals(Mixed)).map(_.name)
-      val json = Json.fromValues(formatNames.map(Json.fromString))
-      Ok(json)
-    }
+    "Get an array with the available output RDF data formats" **
+      GET / `verb` / "formats" / "output" |>> {
+        val formatNames =
+          RdfFormat.availableFormats.filter(!_.equals(Mixed)).map(_.name)
+        val json = Json.fromValues(formatNames.map(Json.fromString))
+        Ok(json)
+      }
 
-    /** Returns a JSON array with the available visualization formats
-      */
-    GET / `verb` / "formats" / "visual" |>> {
-      val formats = GraphicFormat.availableFormats.map(_.name)
-      val json    = Json.fromValues(formats.map(Json.fromString))
-      Ok(json)
-    }
+    "Get an array with the available visualization formats" **
+      GET / `verb` / "formats" / "visual" |>> {
+        val formats = GraphicFormat.availableFormats.map(_.name)
+        val json    = Json.fromValues(formats.map(Json.fromString))
+        Ok(json)
+      }
 
-    /** Returns the default RDF format as a raw string
-      */
-    GET / `verb` / "formats" / "default" |>> {
-      val dataFormat = DataFormat.default.name
-      Ok(Json.fromString(dataFormat))
-    }
+    "Get the default RDF format as raw text" **
+      GET / `verb` / "formats" / "default" |>> {
+        Ok(DataFormat.default.name)
+      }
 
-    /** Returns a JSON array with the available inference engines
-      */
-    GET / `verb` / "inferenceEngines" |>> {
-      val inferenceEngines = availableInferenceEngines
-      val json =
-        Json.fromValues(inferenceEngines.map(e => Json.fromString(e.name)))
-      Ok(json)
-    }
+    "Get an array with the available inference engines" **
+      GET / `verb` / "inferenceEngines" |>> {
+        val inferenceEngines = availableInferenceEngines
+        val json =
+          Json.fromValues(inferenceEngines.map(e => Json.fromString(e.name)))
+        Ok(json)
+      }
 
-    /** Returns the default inference engine used as a raw string
-      */
-    GET / `verb` / "inferenceEngines" / "default" |>> {
-      Ok(Json.fromString(defaultInferenceEngine.name))
-    }
+    "Get the default inference engine used as raw text" **
+      GET / `verb` / "inferenceEngines" / "default" |>> {
+        Ok(defaultInferenceEngine.name)
+      }
 
-    /** Returns a JSON array with the valid data sources that the server will accept when sent via [[DataSourceParameter]]
-      */
-    GET / `verb` / "sources" |>> {
-      val json = Json.arr(
-        Json.fromString(DataSource.TEXT),
-        Json.fromString(DataSource.URL),
-        Json.fromString(DataSource.FILE)
-      )
-      Ok(json)
-    }
+    s"""Get an array with the valid data sources that the server will
+       | accept when sent via '${SourceParameter.name}' parameter""".stripMargin **
+      GET / `verb` / "sources" |>> {
+        val json = Json.arr(
+          Json.fromString(DataSource.TEXT),
+          Json.fromString(DataSource.URL),
+          Json.fromString(DataSource.FILE)
+        )
+        Ok(json)
+      }
 
-    /** Obtain information about an RDF source.
-      * Receives a JSON object with the input RDF information
-      * Returns a JSON object with the operation results. See [[DataInfo.encodeDataInfoOperation]]
-      */
-    POST / `verb` / "info" ^ jsonOf[IO, DataInfoInput] |>> {
-      body: DataInfoInput =>
-        DataInfo
-          .dataInfo(body.data)
-          .flatMap(info => Ok(info.asJson))
-          .handleErrorWith(err => {
-            // Legacy code may return exceptions with "null" messages
-            val errorMessage =
-              if(err.getMessage != null) err.getMessage
-              else DataServiceError.couldNotParseData
-            InternalServerError(errorMessage)
-          })
-    }
+    s"""Obtain information about an RDF data instance: 
+       | number of statements, prefix map and predicates
+       |""".stripMargin **
+      POST / `verb` / "info" ^ jsonOf[IO, DataInfoInput] |>> {
+        body: DataInfoInput =>
+          DataInfo
+            .dataInfo(body.data)
+            .flatMap(info => Ok(info.asJson))
+            .handleErrorWith(err => {
+              // Legacy code may return exceptions with "null" messages
+              val errorMessage =
+                if(err.getMessage != null) err.getMessage
+                else DataServiceError.couldNotParseData
+              InternalServerError(errorMessage)
+            })
+      }
 
-    /** Convert an RDF source into another format/syntax.
-      * Receives a JSON object with the input RDF information:
-      * Returns a JSON object with the operation results. See [[DataConvert.encodeDataConversionOperation]].
-      *
-      * @note The "convert" endpoint is invoked for data visualizations too,
-      *       since these are just conversions to JSON, DOT, etc. later
-      *       interpreted by the web client
-      */
-    POST / `verb` / "convert" ^ jsonOf[IO, DataConvertInput] |>> {
-      body: DataConvertInput =>
-        DataConvert
-          .dataConvert(body.data, body.targetFormat)
-          .flatMap(conversion => Ok(conversion.asJson))
-          .handleErrorWith(err => {
-            // Legacy code may return exceptions with "null" messages
-            val errorMessage =
-              if(err.getMessage != null) err.getMessage
-              else DataServiceError.couldNotParseData
-            InternalServerError(errorMessage)
-          })
-    }
+    "Convert RDF data into another formats" **
+      POST / `verb` / "convert" ^ jsonOf[IO, DataConvertInput] |>> {
+        body: DataConvertInput =>
+          DataConvert
+            .dataConvert(body.data, body.targetFormat)
+            .flatMap(conversion => Ok(conversion.asJson))
+            .handleErrorWith(err => {
+              // Legacy code may return exceptions with "null" messages
+              val errorMessage =
+                if(err.getMessage != null) err.getMessage
+                else DataServiceError.couldNotParseData
+              InternalServerError(errorMessage)
+            })
+      }
 
-    /** Perform a SPARQL query on RDF data.
-      * Receives a JSON object with the input RDF and query information
-      * Returns a JSON object with the query inputs and results (see [[DataQuery.encodeDataQueryOperation]]).
-      */
-    POST / `verb` / "query" ^ jsonOf[IO, DataQueryInput] |>> {
-      body: DataQueryInput =>
-        DataQuery
-          .dataQuery(body.data, body.query)
-          .flatMap(result => Ok(result.asJson))
-          .handleErrorWith(err => InternalServerError(err.getMessage))
-    }
+    "Perform a SPARQL query on RDF data" **
+      POST / `verb` / "query" ^ jsonOf[IO, DataQueryInput] |>> {
+        body: DataQueryInput =>
+          DataQuery
+            .dataQuery(body.data, body.query)
+            .flatMap(result => Ok(result.asJson))
+            .handleErrorWith(err => InternalServerError(err.getMessage))
+      }
 
-    /** Attempt to extract a schema from an RDF source.
-      * Receives a JSON object with the input RDF information
-      * Returns a JSON object with the extraction information (see [[DataExtract.encodeDataExtractOperation]]
-      */
-    POST / `verb` / "extract" ^ jsonOf[IO, DataExtractInput] |>> {
-      body: DataExtractInput =>
-        DataExtract
-          .dataExtract(
-            body.data,
-            body.nodeSelector,
-            Option(ShExSchema.empty),
-            Option(ShExC),
-            body.label,
-            relativeBase = None
-          )
-          .flatMap(result => Ok(result.asJson))
-          .handleErrorWith(err => InternalServerError(err.getMessage))
-    }
+    "Attempt to extract a ShEx schema from an RDF source" **
+      POST / `verb` / "extract" ^ jsonOf[IO, DataExtractInput] |>> {
+        body: DataExtractInput =>
+          DataExtract
+            .dataExtract(
+              body.data,
+              body.nodeSelector,
+              Option(ShExSchema.empty),
+              Option(ShExC),
+              body.label,
+              relativeBase = None
+            )
+            .flatMap(result => Ok(result.asJson))
+            .handleErrorWith(err => InternalServerError(err.getMessage))
+      }
   }
 
 }
@@ -189,6 +169,8 @@ object DataService {
     new DataService(client)
 }
 
+/** Compendium of additional text constants used on service errors
+  */
 private object DataServiceError extends Enumeration {
   type DataServiceError = String
   val couldNotParseData: DataServiceError =

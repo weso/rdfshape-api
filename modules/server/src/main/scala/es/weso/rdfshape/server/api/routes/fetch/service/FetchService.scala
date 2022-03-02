@@ -9,6 +9,7 @@ import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
 
 import java.net.URL
 
@@ -19,18 +20,13 @@ class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
   val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
-
-    /** Query a given URL and return the response.
-      * Receives the URL to be queried:
-      *  - url [String]: URL to be queried
-      *    Returns the URL contents (response body)
-      */
-    GET / `verb` +? param[URL](UrlParameter.name) |>> { (url: URL) =>
-      getUrlContents(url) match {
-        case Left(err)      => InternalServerError(err)
-        case Right(content) => Ok(content)
+    "Query a given URL and return the response, acting as a proxy" **
+      GET / `verb` +? param[URL](UrlParameter.name) |>> { (url: URL) =>
+        getUrlContents(url) match {
+          case Left(err)      => InternalServerError(err)
+          case Right(content) => Ok(content)
+        }
       }
-    }
   }
 
   case class RequestData(domain: String, url: String)

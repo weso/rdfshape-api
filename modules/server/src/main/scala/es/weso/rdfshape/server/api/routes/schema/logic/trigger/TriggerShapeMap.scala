@@ -9,7 +9,7 @@ import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerModeType.TriggerModeType
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.ShapeMapParameter
 import es.weso.schema.{ShapeMapTrigger, ValidationTrigger}
 import es.weso.shapemaps.{ShapeMap => ShapeMapW}
 import io.circe._
@@ -60,6 +60,7 @@ private[api] object TriggerShapeMap
     (cursor: HCursor) => {
       for {
         maybeShapeMap <- cursor
+          .downField(ShapeMapParameter.name)
           .as[Either[String, ShapeMap]]
 
         // Get the prefix maps from data and schema, the shapeMap needs them
@@ -111,64 +112,4 @@ private[api] object TriggerShapeMap
         ("data", tsm.data.asJson),
         ("schema", tsm.schema.asJson)
       )
-
-  /** Given a request's parameters, try to extract a TriggerMode instance from them
-    *
-    * @param partsMap Request's parameters
-    * @return Either the trigger mode or an error message
-    */
-  def mkTriggerMode(
-      partsMap: PartsMap,
-      data: Option[Data],
-      schema: Option[Schema]
-  ): IO[Either[String, TriggerShapeMap]] = {
-    // Get data prefix map, if possible
-    val dataPrefixMap: Option[PrefixMap] = data
-      .map(data =>
-        for {
-          rdf <- data.toRdf()
-          pm  <- rdf.use(_.getPrefixMap)
-        } yield pm
-      )
-      .map(
-        _.handleErrorWith(_ =>
-          IO.raiseError(
-            new RuntimeException("Could not process the data provided")
-          )
-        )
-          .unsafeRunSync()
-      )
-
-    // Get schema prefix map, if possible
-    val schemaPrefixMap: Option[PrefixMap] = schema
-      .map(schema =>
-        for {
-          schemaModel <- schema.getSchema
-          pm = schemaModel.map(_.pm).toOption
-        } yield pm
-      )
-      .flatMap(
-        _.handleErrorWith(_ =>
-          IO.raiseError(
-            new RuntimeException("Could not process the schema provided")
-          )
-        ).unsafeRunSync()
-      )
-
-    // Form the shapemap and complete the trigger instance
-    for {
-      // Get companion shapemap from params
-      maybeShapeMap <- ShapeMap.mkShapeMap(
-        partsMap,
-        nodesPrefixMap = dataPrefixMap,
-        shapesPrefixMap = schemaPrefixMap
-      )
-
-      // Create TriggerMode instance
-      maybeTriggerMode = maybeShapeMap.map(shapeMap =>
-        TriggerShapeMap(shapeMap, data, schema)
-      )
-
-    } yield maybeTriggerMode
-  }
 }

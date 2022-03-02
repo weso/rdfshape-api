@@ -3,18 +3,16 @@ package es.weso.rdfshape.server.api.routes.endpoint.service
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.ApiService
-import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.{getEndpointAsRDFReader, getEndpointInfo}
+import es.weso.rdfshape.server.api.routes.endpoint.logic.Endpoint.getEndpointInfo
 import es.weso.rdfshape.server.api.routes.endpoint.logic.Outgoing._
-import es.weso.rdfshape.server.api.routes.endpoint.logic.{Endpoint, Outgoing}
-import es.weso.rdfshape.server.api.routes.endpoint.service.operations.EndpointOutgoingInput
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.implicits.query_parsers.urlQueryParser
-import es.weso.utils.IOUtils.io2es
 import io.circe.syntax.EncoderOps
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl._
 import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
 
 import java.net.URL
 
@@ -33,54 +31,14 @@ class EndpointService(client: Client[IO])
     */
   def routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
-    /** Check the existence of an endpoint and get its response, if any
-     * Receives a JSON object with the input endpoint:
-     *  - endpoint [URL]: Target endpoint
-     *  - query [String]: User query with content and source
-     * Returns a JSON object with the results (see [[Endpoint.encoder]]).
-     */
-    POST / `verb` / "info" ^ jsonOf[
-      IO,
-      EndpointOutgoingInput
-    ] |>> { (body: EndpointOutgoingInput) =>
-      body match {
-        case EndpointOutgoingInput(endpointUrl, queryObject) =>
-
-          val ioResponse = for {
-            endpoint <- getEndpointAsRDFReader(endpointUrl)
-            _ = logger.debug(s"Query to \"$endpointUrl\": \"${queryObject.raw}\"")
-            queryResponse  <- io2es(endpoint.queryAsJson(queryObject.raw))
-          } yield queryResponse
-
-          ioResponse.value.flatMap {
-            case Left(err) => InternalServerError(err)
-            case Right(json) => Ok(json)
-          }
-      }
-    }
-
-    /** Perform a SPARQL query targeted to a specific endpoint.
-      * Receives a JSON object with the input endpoint query:
-      *  - endpoint [URL]: Query target endpoint
-      *  - query [String]: User query with content and source
-      *    Returns a JSON object with the query results:
-      *    - head [Object]: Query metadata
-      *      - vars: [Array]: Query variables
-      *    - results [Object]: Query results
-      *      - bindings: [Array]: Query results, each item being an object mapping each variable to its value
-      */
-    /**
-      */
-    GET / `verb` / "info" +?
+    "Check the existence of an endpoint and get its response, if any" **
+      GET / `verb` / "info" +?
       param[URL](EndpointParameter.name) |>> { (endpointUrl: URL) =>
-      Ok(getEndpointInfo(endpointUrl).asJson)
-    }
+        Ok(getEndpointInfo(endpointUrl).asJson)
+      }
 
-    /** Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it.
-      * Receives a JSON object with the input endpoint, node and limits
-      *    Returns a JSON object with the endpoint response (see [[Outgoing.encode]])
-      */
-    GET / `verb` / "outgoing" +?
+    "Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it" **
+      GET / `verb` / "outgoing" +?
       param[URL](EndpointParameter.name) &
       param[String](NodeParameter.name) &
       param[Option[Int]](LimitParameter.name) |>> {

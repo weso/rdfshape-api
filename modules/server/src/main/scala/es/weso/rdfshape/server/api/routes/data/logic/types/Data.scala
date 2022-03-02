@@ -8,11 +8,7 @@ import es.weso.rdf.{PrefixMap, RDFReasoner}
 import es.weso.rdfshape.server.api.format.dataFormats.DataFormat
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource._
 import es.weso.rdfshape.server.api.routes.data.logic.types.merged.DataCompound
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
-  CompoundDataParameter,
-  SourceParameter
-}
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.SourceParameter
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 
 /** Common trait to all data, whichever its nature (single, compound, endpoint...)
@@ -94,22 +90,6 @@ object Data extends DataCompanion[Data] {
         case _                 => DecodingFailure(s"Invalid data source '$source'", Nil).asLeft
       }
     } yield decoded
-
-  /** General implementation delegating on subclasses
-    */
-  override def mkData(partsMap: PartsMap): IO[Either[String, Data]] = for {
-    // 1. Make some checks on the parameters to distinguish between Data types
-    compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
-
-    // 2. Delegate on the correct sub-class for creating the Data
-    maybeData <- {
-      // 1. Compound data
-      if(compoundData.isDefined) DataCompound.mkData(partsMap)
-      // 2. Simple data or unknown
-      else DataSingle.mkData(partsMap)
-    }
-
-  } yield maybeData
 }
 
 /** Static utilities to be used with [[Data]] representations
@@ -125,11 +105,4 @@ private[data] trait DataCompanion[D <: Data] extends LazyLogging {
   /** Decoder used to extract [[Data]] instances from JSON values
     */
   implicit val decode: Decoder[Either[String, D]]
-
-  /** Given a request's parameters, try to extract an instance of [[Data]] (type [[D]]) from them
-    *
-    * @param partsMap Request's parameters
-    * @return Either the [[Data]] instance or an error message
-    */
-  def mkData(partsMap: PartsMap): IO[Either[String, D]]
 }

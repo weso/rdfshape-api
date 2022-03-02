@@ -7,8 +7,9 @@ package object other {
 
   /** Given a decoding operation whose result may contain an error, map the
     * erroring result to a [[DecodingFailure]] containing it as message
-    *  If a native decoding failure occurred, leave it as is, else if an error
+    * If a native decoding failure occurred, leave it as is, else if an error
     * occurred return it as a decoding failure , else return the value
+    *
     * @param input Either resulting of a Circe decode operation
     * @tparam L Left type of input either
     * @tparam R Right type of input Either

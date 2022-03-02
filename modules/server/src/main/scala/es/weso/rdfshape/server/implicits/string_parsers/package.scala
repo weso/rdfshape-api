@@ -31,7 +31,8 @@ package object string_parsers {
         case Success(schema) => SuccessResponse(schema)
       }
 
-      override def typeTag: Some[universe.TypeTag[SchemaW]] = Some(
+      // Use String type tag
+      override def typeTag: Option[universe.TypeTag[SchemaW]] = Some(
         implicitly[universe.TypeTag[SchemaW]]
       )
     }

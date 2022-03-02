@@ -14,11 +14,7 @@ import es.weso.rdfshape.server.api.routes.data.logic.types.{
   DataCompanion,
   DataSingle
 }
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
-  CompoundDataParameter,
-  ContentParameter
-}
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.ContentParameter
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
@@ -89,22 +85,6 @@ case class DataCompound(elements: List[Data]) extends Data with LazyLogging {
 private[api] object DataCompound
     extends DataCompanion[DataCompound]
     with LazyLogging {
-
-  override def mkData(partsMap: PartsMap): IO[Either[String, DataCompound]] = {
-    for {
-      // Parse params
-      compoundData <- partsMap.optPartValue(CompoundDataParameter.name)
-      // Try to create data
-      maybeData: Either[String, DataCompound] =
-        if(compoundData.isDefined) {
-          DataCompound
-            .fromJsonString(compoundData.get)
-            .leftMap(err => s"Could not read compound data.\n $err")
-        } else Left("No compound data provided")
-      /* Check if the created data is empty, then an error occurred when merging
-       * the elements */
-    } yield maybeData.flatMap(_.fetchedContents.flatMap(_ => maybeData))
-  }
 
   /** Encoder used to transform CompoundData instances to JSON values
     */

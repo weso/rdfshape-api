@@ -15,6 +15,7 @@ import mongo4cats.collection.operations.{Filter, Update}
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
 
 import java.net.URL
 
@@ -62,15 +63,10 @@ class PermalinkService(client: Client[IO])
     */
   val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
-    /** Create a permalink to another resource.
-      * Receives the URL to be linked:
-      *  - url [String]: URL to be linked
-      *    Returns the permalink unique code in the response body
-      *
-      * @note QueryParser already checks for the validity of the URL
-      */
-    GET / `verb` / "generate" +? param[URL](UrlParameter.name) |>> {
-      (urlObj: URL) =>
+    "Get a permalink to a resource" **
+      GET / `verb` / "generate" +? param[URL](
+        PermalinkServiceDescriptions.Url.name
+      ) |>> { (urlObj: URL) =>
         // Extract the relevant info from the URL
         val urlPath = extractUrlPathAndQuery(urlObj)
         for {
@@ -95,33 +91,29 @@ class PermalinkService(client: Client[IO])
               }
           }
         } yield response
-    }
+      }
 
-    /** Retrieve a URL to a resource given its permalink code.
-      * Receives the permalink code to be checked:
-      *  - urlCode [Long]: code to be checked
-      *    Returns the permalink target (if present in the database) in the response body
-      */
-    GET / `verb` / "get" +? param[Long](UrlCodeParameter.name) |>> {
-      urlCode: Long =>
-        // Fetch document in database
-        for {
-          optExistingPermalink <- getPermalinkByCode(urlCode)
-          response <- optExistingPermalink match {
-            // Exists, return its code
-            case Some(pm) =>
-              logger.info(
-                s"Retrieved original url: ${pm.urlCode} => ${pm.longUrl}"
-              )
-              Ok(pm.longUrl)
-            // Does not exist, return error
-            case None =>
-              val msg = s"Could not find the permalink with code: $urlCode"
-              logger.warn(msg)
-              NotFound(msg)
-          }
-        } yield response
-    }
+    "Retrieve a resource given its permalink code" **
+      GET / `verb` / "get" +? param[Long](UrlCodeParameter.name) |>> {
+        urlCode: Long =>
+          // Fetch document in database
+          for {
+            optExistingPermalink <- getPermalinkByCode(urlCode)
+            response <- optExistingPermalink match {
+              // Exists, return its code
+              case Some(pm) =>
+                logger.info(
+                  s"Retrieved original url: ${pm.urlCode} => ${pm.longUrl}"
+                )
+                Ok(pm.longUrl)
+              // Does not exist, return error
+              case None =>
+                val msg = s"Could not find the permalink with code: $urlCode"
+                logger.warn(msg)
+                NotFound(msg)
+            }
+          } yield response
+      }
   }
 
   /** @param url URL object used as input
@@ -242,4 +234,15 @@ object PermalinkService {
     * @return A new Permalink Service
     */
   def apply(client: Client[IO]): PermalinkService = new PermalinkService(client)
+}
+
+/** Compendium of additional text constants used to describe inline parameters
+  * (query and path parameters) in Swagger
+  */
+private object PermalinkServiceDescriptions {
+  case object Url {
+    val name: String = UrlParameter.name
+    val description =
+      s"Valid URL to be shortened into a permalink."
+  }
 }

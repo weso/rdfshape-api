@@ -1,14 +1,11 @@
 package es.weso.rdfshape.server.api.routes.shapemap.logic
 
-import cats.effect.IO
 import cats.implicits.{catsSyntaxEitherId, toBifunctorOps}
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.PrefixMap
-import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.format.dataFormats.ShapeMapFormat
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMapSource.ShapeMapSource
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import es.weso.shapemaps.{ShapeMap => ShapeMapW}
 import io.circe.syntax.EncoderOps
@@ -148,42 +145,4 @@ private[api] object ShapeMap extends LazyLogging {
           } yield shapeMap
       }
     }
-
-  /** Given a request's parameters, try to extract a shapemap from them
-    *
-    * @param partsMap Request's parameters
-    * @return Either the shapemap or an error message
-    */
-  def mkShapeMap(
-      partsMap: PartsMap,
-      nodesPrefixMap: Option[PrefixMap] = None,
-      shapesPrefixMap: Option[PrefixMap] = None
-  ): IO[Either[String, ShapeMap]] = {
-    for {
-      // Get data sent in que query
-      paramShapeMap <- partsMap.optPartValue(ShapeMapParameter.name)
-
-      paramFormat <- ShapeMapFormat.fromRequestParams(
-        ShapeMapFormatParameter.name,
-        partsMap
-      )
-
-      paramSource <- partsMap.optPartValue(
-        ShapemapSourceParameter.name
-      )
-
-      _ = logger.debug(
-        s"Getting ShapeMap from params. ShapeMap tab: $paramSource"
-      )
-
-      // Create the shapemap instance
-      shapeMap = ShapeMap(
-        content = paramShapeMap.getOrElse(""),
-        nodesPrefixMap = nodesPrefixMap.getOrElse(PrefixMap.empty),
-        shapesPrefixMap = shapesPrefixMap.getOrElse(PrefixMap.empty),
-        format = paramFormat.getOrElse(ApiDefaults.defaultShapeMapFormat),
-        source = paramSource.getOrElse(ShapeMapSource.default)
-      )
-    } yield shapeMap.innerShapeMap.map(_ => shapeMap)
-  }
 }

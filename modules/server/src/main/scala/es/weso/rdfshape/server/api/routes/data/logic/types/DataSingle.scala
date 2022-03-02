@@ -6,13 +6,11 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.jena._
 import es.weso.rdf.nodes.IRI
 import es.weso.rdf.{InferenceEngine, NONE}
-import es.weso.rdfshape.server.api.definitions.ApiDefaults
 import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, RdfFormat}
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.aux.InferenceCodecs._
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.html2rdf.HtmlToRdf
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import io.circe._
@@ -134,10 +132,11 @@ private[api] object DataSingle
           .downField(FormatParameter.name)
           .as[Either[String, RdfFormat]]
 
+        // If missing, use none
         inference <-
           cursor
             .downField(InferenceParameter.name)
-            .as[InferenceEngine]
+            .as[Option[InferenceEngine]]
 
         source <- cursor
           .downField(SourceParameter.name)
@@ -152,53 +151,11 @@ private[api] object DataSingle
           for {
             format <- maybeFormat
             data <- Try {
-              DataSingle(content, format, inference, source)
+              DataSingle(content, format, inference.getOrElse(NONE), source)
             }.toEither.leftMap(err =>
               s"Could not build the schema from user data:\n ${err.getMessage}"
             )
           } yield data
       }
     }
-
-  override def mkData(partsMap: PartsMap): IO[Either[String, DataSingle]] =
-    for {
-      // Data param as sent by client
-      paramData <- partsMap
-        .optPartValue(DataParameter.name)
-        .map(_.getOrElse(""))
-      paramFormat <- DataFormat.fromRequestParams(
-        DataFormatParameter.name,
-        partsMap
-      )
-
-      paramInference <- partsMap.optPartValue(InferenceParameter.name)
-
-      paramDataSource <- partsMap.optPartValue(DataSourceParameter.name)
-
-      // Confirm final format and inference
-      inference = getInference(paramInference).getOrElse(NONE)
-      format    = paramFormat.getOrElse(ApiDefaults.defaultDataFormat)
-
-      // Check the client's selected source
-      dataSource = paramDataSource.getOrElse(DataSource.default)
-      _          = logger.debug(s"RDF Data received - Source: $dataSource")
-
-      // Create the data instance
-      data = DataSingle(
-        content = paramData,
-        format = format,
-        inference = inference,
-        source = dataSource
-      )
-
-    } yield data.fetchedContents.map(_ => data)
-
-  /** @param inferenceStr String representing the inference value
-    * @return Optionally, the inference contained in a given data string
-    */
-  private def getInference(
-      inferenceStr: Option[String]
-  ): Option[InferenceEngine] = {
-    inferenceStr.flatMap(InferenceEngine.fromString(_).toOption)
-  }
 }

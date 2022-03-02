@@ -298,8 +298,7 @@ object IncomingRequestParameters {
 
   /** Parameter expected to contain a payload for later use querying wikibase's API
     */
-  object WikibasePayloadParameter
-      extends QueryParamDecoderMatcher[String](payload) {
+  object PayloadParameter extends QueryParamDecoderMatcher[String](payload) {
     val name: String = payload
   }
 
@@ -377,14 +376,6 @@ object IncomingRequestParameters {
   object ContinueParameter
       extends OptionalQueryParamDecoderMatcher[String](continue) {
     val name: String = continue
-  }
-
-  /** Parameter expected to contain the format requested to wikibase when
-    * searching for data
-    */
-  object WikibaseFormatParameter
-      extends OptionalQueryParamDecoderMatcher[String](wbFormat) {
-    val name: String = wbFormat
   }
 
 }

@@ -1,16 +1,12 @@
 package es.weso.rdfshape.server.api.routes.endpoint.logic.query
 
-import cats.effect.IO
 import cats.implicits.toBifunctorOps
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.endpoint.logic.query.SparqlQuerySource.SparqlQuerySource
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   ContentParameter,
-  QueryParameter,
-  QuerySourceParameter,
   SourceParameter
 }
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
 import io.circe._
 import io.circe.syntax.EncoderOps
@@ -99,51 +95,4 @@ private[api] object SparqlQuery extends LazyLogging {
           )
       }
     }
-
-  /** Given a request's parameters, try to extract a SPARQL query from them
-    *
-    * @param partsMap Request's parameters
-    * @return Either the SPARQL query or an error message
-    */
-  def mkSparqlQuery(
-      partsMap: PartsMap
-  ): IO[Either[String, SparqlQuery]] =
-    for {
-      paramQuery     <- partsMap.optPartValue(QueryParameter.name)
-      activeQueryTab <- partsMap.optPartValue(QuerySourceParameter.name)
-
-      _ = logger.debug(
-        s"Getting SPARQL from params. Query tab: $activeQueryTab"
-      )
-
-      maybeQuery <- mkSparqlQuery(
-        paramQuery,
-        activeQueryTab
-      )
-
-    } yield maybeQuery
-
-  /** Create a SparqlQuery instance, given its source and data
-    *
-    * @param queryStr          Optionally, the contents of the query not processed by their source
-    * @param activeQuerySource Optionally, the indicator of the query source (raw, url or file)
-    * @return
-    */
-  private def mkSparqlQuery(
-      queryStr: Option[String],
-      activeQuerySource: Option[SparqlQuerySource]
-  ): IO[Either[String, SparqlQuery]] =
-    for {
-      query <- IO {
-        SparqlQuery(
-          content = queryStr.getOrElse(""),
-          source = activeQuerySource.getOrElse(SparqlQuerySource.default)
-        )
-      }
-    } yield query.fetchedContents.fold(
-      // If the query text built is blank, an error occurred
-      err => Left(err),
-      _ => Right(query)
-    )
-
 }

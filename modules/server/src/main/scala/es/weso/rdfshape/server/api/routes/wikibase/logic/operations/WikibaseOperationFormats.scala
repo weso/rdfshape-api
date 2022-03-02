@@ -8,13 +8,13 @@ import es.weso.rdfshape.server.utils.other.MyEnum
   * @see [[https://www.mediawiki.org/wiki/Wikibase/API#Request_Format]]
   */
 private[api] object WikibaseOperationFormats extends MyEnum[String] {
-  type WikibaseQueryFormat = String
+  type WikibaseOperationFormats = String
 
   val JSON    = "json"
   val JSON_FM = "jsonfm"
   val XML     = "xml"
   val XML_FM  = "xmlfm"
 
-  val values                       = Set(JSON, JSON_FM, XML, XML_FM)
-  val default: WikibaseQueryFormat = JSON
+  val values                            = Set(JSON, JSON_FM, XML, XML_FM)
+  val default: WikibaseOperationFormats = JSON
 }

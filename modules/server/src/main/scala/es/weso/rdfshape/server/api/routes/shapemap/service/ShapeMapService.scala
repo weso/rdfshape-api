@@ -12,6 +12,7 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
 
 /** API service to handle shapemap-related operations
   *
@@ -28,24 +29,21 @@ class ShapeMapService(client: Client[IO])
     */
   val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
-    /** Returns a JSON array with the accepted shapeMap formats.
-      */
-    GET / `verb` / "formats" |>> {
-      val formats = ApiDefinitions.availableShapeMapFormats
-      val json    = Json.fromValues(formats.map(f => Json.fromString(f.name)))
-      Ok(json)
-    }
+    "GET an array with the accepted ShapeMap formats" **
+      GET / `verb` / "formats" |>> {
+        val formats = ApiDefinitions.availableShapeMapFormats
+        val json    = Json.fromValues(formats.map(f => Json.fromString(f.name)))
+        Ok(json)
+      }
 
-    /** Obtain information about a shapeMap.
-      * Returns a JSON object with the query inputs and results (see [[ShapeMapInfo.encodeShapeMapInfoOperation]]).
-      */
-    POST / `verb` / "info" ^ jsonOf[IO, ShapeMapInfoInput] |>> {
-      body: ShapeMapInfoInput =>
-        ShapeMapInfo
-          .shapeMapInfo(body.shapeMap)
-          .flatMap(info => Ok(info.asJson))
-          .handleErrorWith(err => InternalServerError(err.getMessage))
-    }
+    "Obtain information about a ShapeMap: number of associations, prefixes, model" **
+      POST / `verb` / "info" ^ jsonOf[IO, ShapeMapInfoInput] |>> {
+        body: ShapeMapInfoInput =>
+          ShapeMapInfo
+            .shapeMapInfo(body.shapeMap)
+            .flatMap(info => Ok(info.asJson))
+            .handleErrorWith(err => InternalServerError(err.getMessage))
+      }
   }
 
 }

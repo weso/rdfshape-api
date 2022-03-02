@@ -13,17 +13,13 @@ import es.weso.rdfshape.server.api.routes.schema.logic.operations.{
   SchemaInfo,
   SchemaValidate
 }
-import es.weso.rdfshape.server.api.routes.schema.logic.trigger.{
-  TriggerMode,
-  TriggerShapeMap
-}
 import es.weso.rdfshape.server.api.routes.schema.service.operations.SchemaConvertInput.decoder
 import es.weso.rdfshape.server.api.routes.schema.service.operations.{
   SchemaConvertInput,
   SchemaInfoInput,
   SchemaValidateInput
 }
-import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.SchemaEngineParameter
 import es.weso.rdfshape.server.implicits.string_parsers.instances.schemaEngineParser
 import es.weso.schema.{
   JenaShacl,
@@ -39,6 +35,7 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
 
 /** API service to handle schema-related operations
   *
@@ -55,113 +52,98 @@ class SchemaService(client: Client[IO])
     */
   val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
 
-    /** Returns a JSON array with the accepted schema engines a given schema type (ShEx or Shacl)
-      */
-    GET / `verb` / "engines" / pathVar[String] |>> { `type`: String =>
-      val engines = `type`.toLowerCase match {
-        case "shex" => List(Schemas.shEx)
-        case "shacl" =>
-          List(Schemas.shaclex, Schemas.jenaShacl, Schemas.shaclTQ)
+    s"""Get an array with the accepted schema engines 
+       | given an schema type (${SchemaServiceDescriptions.SchemaType.schemaTypes
+      .mkString(" or ")})""".stripMargin **
+      GET / `verb` / "engines" / pathVar[String](
+        SchemaServiceDescriptions.SchemaType.name,
+        SchemaServiceDescriptions.SchemaType.description
+      ) |>> { `type`: String =>
+        val engines = `type`.toLowerCase match {
+          case "shex" => List(Schemas.shEx)
+          case "shacl" =>
+            List(Schemas.shaclex, Schemas.jenaShacl, Schemas.shaclTQ)
+        }
+        val json = Json.fromValues(
+          engines.map(_.name).map(str => Json.fromString(str))
+        )
+        Ok(json)
       }
-      val json = Json.fromValues(
-        engines.map(_.name).map(str => Json.fromString(str))
-      )
-      Ok(json)
-    }
 
-    /** Returns the default schema engine as a raw string
-      */
-    GET / `verb` / "engines" / "default" |>> {
-      val json = Json.fromString(Schemas.defaultSchema.name)
-      Ok(json)
-    }
+    "Get the default schema engine as a raw string" **
+      GET / `verb` / "engines" / "default" |>> {
+        val json = Json.fromString(Schemas.defaultSchema.name)
+        Ok(Schemas.defaultSchema.name)
+      }
 
-    /** Returns the default schema format for a given engine as a raw string
-      */
-    GET / `verb` / "formats" / "default" / pathVar[SchemaW] |>> {
-      engine: SchemaW =>
+    "Get the default schema format for a given schema engine as a raw string" **
+      GET / `verb` / "formats" / "default" / pathVar[SchemaW](
+        SchemaServiceDescriptions.SchemaEngine.name,
+        SchemaServiceDescriptions.SchemaEngine.description
+      ) |>> { engine: SchemaW =>
         val defaultFormat = engine match {
           case ShExSchema(_) => ShExFormat.default
           case JenaShacl(_) | ShaclTQ(_) | ShaclexSchema(_) =>
             ShaclFormat.default
         }
-        val json = Json.fromString(defaultFormat.name)
-        Ok(json)
-    }
-
-    /** Returns a JSON array with the accepted schema formats.
-      * Accepts an optional query parameter specifying the schema engine:
-      * - schemaEngine [String]: schema engine for which we are listing the formats
-      */
-    GET / `verb` / "formats" / pathVar[SchemaW] |>> { engine: SchemaW =>
-      val formats = engine match {
-        case ShExSchema(_) => ShExFormat.availableFormats
-        case JenaShacl(_) | ShaclTQ(_) | ShaclexSchema(_) =>
-          ShaclFormat.availableFormats
+        Ok(defaultFormat.name)
       }
-      val json = Json.fromValues(formats.map(f => Json.fromString(f.name)))
-      Ok(json)
-    }
 
-    /** Returns a JSON array with the accepted Trigger Modes
-      */
-    GET / `verb` / "triggerModes" |>> {
-      val json = Json.fromValues(
-        ApiDefinitions.availableTriggerModes.map(
-          Json.fromString
-        )
-      )
-      Ok(json)
-    }
+    "Get an array with the accepted schema formats for a given schema engine" **
+      GET / `verb` / "formats" / pathVar[SchemaW](
+        SchemaServiceDescriptions.SchemaEngine.name,
+        SchemaServiceDescriptions.SchemaEngine.description
+      ) |>> { engine: SchemaW =>
+        val formats = engine match {
+          case ShExSchema(_) => ShExFormat.availableFormats
+          case JenaShacl(_) | ShaclTQ(_) | ShaclexSchema(_) =>
+            ShaclFormat.availableFormats
+        }
+        val json = Json.fromValues(formats.map(f => Json.fromString(f.name)))
+        Ok(json)
+      }
 
-    /** Obtain information about an schema.
-      * Receives a JSON object with the input schema information
-      * Returns a JSON object with the operation results. See
-      * [[SchemaInfo.encodeSchemaInfoOperation]].
-      */
-    POST / `verb` / "info" ^ jsonOf[IO, SchemaInfoInput] |>> {
-      body: SchemaInfoInput =>
-        SchemaInfo
-          .schemaInfo(body.schema)
-          .flatMap(info => Ok(info.asJson))
-          .handleErrorWith(err => InternalServerError(err.getMessage))
-
-    }
-
-    /** Convert a given schema to another accepted format (this includes
-      * graphic formats for visualizations).
-      * Receives a JSON object with the input schema information
-      * Returns a JSON object with the operation results. See
-      * [[SchemaConvert.encodeSchemaConvertOperation]].
-      */
-    POST / `verb` / "convert" ^ jsonOf[IO, SchemaConvertInput] |>> {
-      body: SchemaConvertInput =>
-        SchemaConvert
-          .schemaConvert(
-            body.schema,
-            body.targetFormat,
-            body.targetEngine
+    "Get an array with the accepted Trigger Modes for validations" **
+      GET / `verb` / "triggerModes" |>> {
+        val json = Json.fromValues(
+          ApiDefinitions.availableTriggerModes.map(
+            Json.fromString
           )
-          .flatMap(result => Ok(result.asJson))
-          .handleErrorWith(err => InternalServerError(err.getMessage))
-    }
+        )
+        Ok(json)
+      }
 
-    /** Validates RDF data against a given schema-shapemap.
-      * Receives a JSON object with the input data, schema and shapemap
-      * information
-      * Returns a JSON object with the operation results. See
-      * [[SchemaValidate.encodeSchemaValidateOperation]]
-      * @note When obtaining the trigger mode from the parameters,
-      *       if the [[TriggerMode]] is shapeMap, the corresponding [[ShapeMap]]
-      *       object will be embedded in the resulting [[TriggerShapeMap]]
-      */
-    POST / `verb` / "validate" ^ jsonOf[IO, SchemaValidateInput] |>> {
-      body: SchemaValidateInput =>
-        SchemaValidate
-          .schemaValidate(body.data, body.schema, body.triggerMode)
-          .flatMap(result => Ok(result.asJson))
-          .handleErrorWith(err => InternalServerError(err.getMessage))
-    }
+    "Obtain information about an schema: list of shapes and prefix map" **
+      POST / `verb` / "info" ^ jsonOf[IO, SchemaInfoInput] |>> {
+        body: SchemaInfoInput =>
+          SchemaInfo
+            .schemaInfo(body.schema)
+            .flatMap(info => Ok(info.asJson))
+            .handleErrorWith(err => InternalServerError(err.getMessage))
+
+      }
+
+    "Convert a given schema to another format (this includes graphic formats for visualizations)" **
+      POST / `verb` / "convert" ^ jsonOf[IO, SchemaConvertInput] |>> {
+        body: SchemaConvertInput =>
+          SchemaConvert
+            .schemaConvert(
+              body.schema,
+              body.targetFormat,
+              body.targetEngine
+            )
+            .flatMap(result => Ok(result.asJson))
+            .handleErrorWith(err => InternalServerError(err.getMessage))
+      }
+
+    "Validates RDF data against a given schema" **
+      POST / `verb` / "validate" ^ jsonOf[IO, SchemaValidateInput] |>> {
+        body: SchemaValidateInput =>
+          SchemaValidate
+            .schemaValidate(body.data, body.schema, body.triggerMode)
+            .flatMap(result => Ok(result.asJson))
+            .handleErrorWith(err => InternalServerError(err.getMessage))
+      }
   }
 
 }
@@ -177,8 +159,27 @@ object SchemaService {
     new SchemaService(client)
 }
 
-private object SchemaServiceError extends Enumeration {
-  type SchemaServiceError = String
-  val couldNotValidateData: SchemaServiceError =
+/** Compendium of additional text constants used on service errors
+  */
+private object SchemaServiceError {
+  val couldNotValidateData =
     "Unknown error validating the data provided. Check the inputs."
+}
+
+/** Compendium of additional text constants used to describe inline parameters
+  * (query and path parameters) in Swagger
+  */
+private object SchemaServiceDescriptions {
+  case object SchemaEngine {
+    val name: String = SchemaEngineParameter.name
+    val description =
+      s"Engine in which the validation schema is redacted. One of: ${ApiDefinitions.availableSchemaEngines.map(_.name).mkString(", ")}"
+  }
+
+  case object SchemaType {
+    val schemaTypes = List("ShEx", "SHACL")
+    val name        = "SchemaType"
+    val description =
+      s"Type of the validation schema. One of: ${schemaTypes.mkString(", ")}"
+  }
 }

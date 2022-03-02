@@ -9,7 +9,6 @@ import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.SchemaFormat
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource
 import es.weso.rdfshape.server.api.routes.schema.logic.SchemaSource.SchemaSource
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.SourceParameter
-import es.weso.rdfshape.server.api.utils.parameters.PartsMap
 import es.weso.schema.{Schema => SchemaW}
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 
@@ -96,17 +95,6 @@ object Schema extends SchemaCompanion[Schema] {
       } yield decoded
 
     }
-
-  /** Build a [[Schema]] from request parameters
-    *
-    * @param partsMap Request parameters
-    * @note General implementation delegating on subclasses
-    */
-  override def mkSchema(partsMap: PartsMap): IO[Either[String, Schema]] = for {
-    // 1. Make some checks on the parameters to distinguish between Schema types
-    // 2. Delegate on the correct sub-class for creating the Schema
-    maybeSchema <- SchemaSimple.mkSchema(partsMap)
-  } yield maybeSchema
 }
 
 /** Static utilities to be used with [[Schema]] representations
@@ -124,11 +112,4 @@ private[schema] trait SchemaCompanion[S <: Schema] extends LazyLogging {
     * in the decoding process
     */
   implicit val decodeSchema: Decoder[Either[String, S]]
-
-  /** Given a request's parameters, try to extract an instance of [[Schema]] (type [[S]]) from them
-    *
-    * @param partsMap Request's parameters
-    * @return Either the [[Schema]] instance or an error message
-    */
-  def mkSchema(partsMap: PartsMap): IO[Either[String, S]]
 }
