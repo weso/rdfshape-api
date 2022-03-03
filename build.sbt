@@ -1,3 +1,4 @@
+import java.net.URL
 import scala.language.postfixOps
 // Centralized control of the application's core settings
 // See version in version.sbt
@@ -162,27 +163,26 @@ lazy val publishSettings = Seq(
       "scm:git:git@github.com:weso/rdfshape-api.git"
     )
   ),
-  pomExtra := <developers>
-    <developer>
-      <id>WESO</id>
-      <name>WESO Research Group</name>
-      <url>https://github.com/weso</url>
-    </developer>
-    <developer>
-      <id>labra</id>
-      <name>Jose Emilio Labra Gayo</name>
-      <url>http://www.example.com/jdoe</url>
-      <organization>WESO</organization>
-      <organizationUrl>https://github.com/weso</organizationUrl>
-    </developer>
-    <developer>
-      <id>ulitol</id>
-      <name>Eduardo Ulibarri Toledo</name>
-      <url>http://www.example.com/jdoe</url>
-      <organization>WESO</organization>
-      <organizationUrl>https://github.com/weso</organizationUrl>
-    </developer>
-  </developers>,
+  developers := List(
+    Developer(
+      "WESO",
+      "WESO Research Group",
+      "info@weso.es",
+      new URL("https://github.com/weso")
+    ),
+    Developer(
+      "labra",
+      "Jose Emilio Labra Gayo",
+      "labra@uniovi.es",
+      new URL("https://labra.weso.es/")
+    ),
+    Developer(
+      "ulitol",
+      "Eduardo Ulibarri Toledo",
+      "eduulitol@protonmail.com",
+      new URL("https://github.com/ulitol97")
+    )
+  ),
   publishMavenStyle := true // generate POM, not ivy
 )
 // Aggregate resolver settings passed down to modules to resolve dependencies
