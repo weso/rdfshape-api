@@ -18,7 +18,7 @@ sealed case class TriggerTargetDeclarations private (
 ) extends TriggerMode
     with LazyLogging {
 
-  override val _type: TriggerModeType =
+  override val `type`: TriggerModeType =
     TriggerModeType.TARGET_DECLARATIONS
 
   override def getValidationTrigger: ValidationTrigger =
@@ -38,7 +38,7 @@ private[api] object TriggerTargetDeclarations
   override implicit val encode: Encoder[TriggerTargetDeclarations] =
     (tsm: TriggerTargetDeclarations) =>
       Json.obj(
-        ("type", tsm._type.asJson),
+        ("type", tsm.`type`.asJson),
         ("data", tsm.data.asJson),
         ("schema", tsm.schema.asJson)
       )
