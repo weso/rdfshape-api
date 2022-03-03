@@ -1,6 +1,6 @@
-import {customFields} from "./docusaurus.config"
-
-const {scalaDocUrl, apiDocsUrl} = customFields
+// Cannot be imported outside of module
+const scalaDocUrl = "https://www.weso.es/rdfshape-api/api/es/weso/rdfshape/"
+const apiDocsUrl = "https://app.swaggerhub.com/apis-docs/weso/RDFShape/"
 
 module.exports = {
   // Generate a sidebar from the docs folder structure
