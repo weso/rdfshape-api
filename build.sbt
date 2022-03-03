@@ -7,8 +7,8 @@ Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
 Global / scalaVersion := scala213
 
-lazy val scala212               = "2.12.13"
-lazy val scala213               = "2.13.6"
+lazy val scala212               = "2.12.15"
+lazy val scala213               = "2.13.8"
 lazy val supportedScalaVersions = List(scala213)
 
 // Lint-excluded keys
@@ -24,7 +24,7 @@ Global / excludeLintKeys ++= Set(
 
 // "sbt-github-actions" plugin settings
 val JavaCIVersion  = "adopt@1.11"
-val ScalaCIVersion = "2.13.6"
+val ScalaCIVersion = "2.13.8"
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
 ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 
@@ -309,7 +309,7 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* ------------------------------------------------------------------------- */
 
 /* DEPENDENCY versions */
-lazy val http4sVersion       = "1.0.0-M21"
+lazy val http4sVersion       = "1.0.0-M30"
 lazy val catsVersion         = "2.5.0"
 lazy val mongodbVersion      = "4.1.1"
 lazy val any23Version        = "2.2"
@@ -324,9 +324,9 @@ lazy val plantumlVersion     = "1.2021.5"
 lazy val scalajVersion       = "2.4.2"
 lazy val scalatagsVersion    = "0.7.0"
 // WESO dependencies
-lazy val shaclexVersion    = "0.1.91"
-lazy val umlShaclexVersion = "0.0.82"
-lazy val wesoUtilsVersion  = "0.1.98"
+lazy val shaclexVersion    = "0.2.0"
+lazy val umlShaclexVersion = "0.0.83-SNAPSHOT"
+lazy val wesoUtilsVersion  = "0.2.4"
 
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
