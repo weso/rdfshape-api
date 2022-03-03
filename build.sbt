@@ -101,7 +101,8 @@ lazy val mdocSettings = Seq(
     "CLIENT_NAME"            -> "RDFShape Client",
     "CLIENT_REPO"            -> "https://github.com/weso/rdfshape-client/",
     "CLIENT_URL"             -> "https://rdfshape.weso.es/",
-    "WESOLOCAL_URL"          -> "https://github.com/weso/wesolocal/wiki/RDFShape"
+    "WESOLOCAL_URL"          -> "https://github.com/weso/wesolocal/wiki/RDFShape",
+    "API-DOCS_URL"           -> "https://app.swaggerhub.com/apis-docs/weso/RDFShape"
   ),
   mdocExtraArguments := Seq("--no-link-hygiene"),
   /* When creating/publishing the docusaurus site, update the dynamic mdoc and
@@ -262,6 +263,7 @@ lazy val server = project
       http4sBlazeClient,
       http4sEmberClient,
       http4sCirce,
+      rho_swagger,
       umlShaclex,
       shexs,
       shaclex,
@@ -274,7 +276,8 @@ lazy val server = project
       scalaj,
       wesoUtils   % Test,
       munitEffect % Test,
-      mongodb
+      mongo4catsCore,
+      mongo4catsCirce
     )
   )
 
@@ -302,9 +305,11 @@ lazy val docs = project
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 /* DEPENDENCY versions */
 lazy val http4sVersion = "1.0.0-M30"
+lazy val rhoVersion    = "0.23.0-M1"
 lazy val catsVersion   = "2.7.0"
 /* ------------------------------------------------------------------------- */
-lazy val mongodbVersion      = "4.4.0"
+lazy val mongodbVersion      = "4.4.1"
+lazy val mongo4catsVersion   = "0.4.5"
 lazy val any23Version        = "2.4"
 lazy val rdf4jVersion        = "3.7.4"
 lazy val graphvizJavaVersion = "0.18.1"
@@ -328,11 +333,16 @@ lazy val http4sBlazeClient =
 lazy val http4sEmberClient =
   "org.http4s" %% "http4s-ember-client" % http4sVersion
 lazy val http4sCirce = "org.http4s"        %% "http4s-circe"       % http4sVersion
+lazy val rho_swagger = "org.http4s"        %% "rho-swagger"        % rhoVersion
 lazy val catsCore    = "org.typelevel"     %% "cats-core"          % catsVersion
 lazy val catsKernel  = "org.typelevel"     %% "cats-kernel"        % catsVersion
 lazy val mongodb     = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVersion
-lazy val any23_core  = "org.apache.any23"   % "apache-any23-core"  % any23Version
-lazy val any23_api   = "org.apache.any23"   % "apache-any23-api"   % any23Version
+lazy val mongo4catsCore =
+  "io.github.kirill5k" %% "mongo4cats-core" % mongo4catsVersion
+lazy val mongo4catsCirce =
+  "io.github.kirill5k" %% "mongo4cats-circe" % mongo4catsVersion
+lazy val any23_core = "org.apache.any23" % "apache-any23-core" % any23Version
+lazy val any23_api  = "org.apache.any23" % "apache-any23-api"  % any23Version
 lazy val any23_scraper =
   "org.apache.any23.plugins" % "apache-any23-html-scraper" % "2.3"
 lazy val rdf4j_runtime = "org.eclipse.rdf4j" % "rdf4j-runtime" % rdf4jVersion

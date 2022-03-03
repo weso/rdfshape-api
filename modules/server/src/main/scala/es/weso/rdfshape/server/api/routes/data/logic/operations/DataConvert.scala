@@ -40,8 +40,6 @@ private[api] object DataConvert extends LazyLogging {
   private lazy val rdfDataFormatNames: immutable.Seq[String] =
     RDFAsJenaModel.availableFormats.map(_.toUpperCase)
 
-  private val successMessage = "Conversion successful"
-
   /** Convert a [[DataConvert]] to its JSON representation
     *
     * @return JSON representation of the conversion result
@@ -57,6 +55,7 @@ private[api] object DataConvert extends LazyLogging {
         )
       )
     }
+  private val successMessage = "Conversion successful"
 
   /** Perform the actual conversion operation between RDF text formats
     *
@@ -87,21 +86,18 @@ private[api] object DataConvert extends LazyLogging {
             case JsonFormat =>
               IO {
                 DataSingle(
-                  dataPre = Option(sgraph.toJson.spaces2),
-                  dataFormat = JsonFormat,
-                  inference = targetInference,
-                  dataSource = inputData.dataSource
+                  content = sgraph.toJson.spaces2,
+                  format = JsonFormat,
+                  inference = targetInference
                 )
               }
 
             case Dot =>
               IO {
                 DataSingle(
-                  dataPre =
-                    Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)),
-                  dataFormat = Dot,
-                  inference = targetInference,
-                  dataSource = inputData.dataSource
+                  content = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs),
+                  format = Dot,
+                  inference = targetInference
                 )
               }
             case _ if RdfFormat.availableFormats.contains(targetFormat) =>
@@ -109,20 +105,17 @@ private[api] object DataConvert extends LazyLogging {
                 .serialize(targetFormat.name)
                 .map(data => {
                   DataSingle(
-                    dataPre = Option(data),
-                    dataFormat = targetFormat,
-                    inference = targetInference,
-                    dataSource = inputData.dataSource
+                    content = data,
+                    format = targetFormat,
+                    inference = targetInference
                   )
                 })
             case _ if GraphicFormat.availableFormats.contains(targetFormat) =>
               IO {
                 DataSingle(
-                  dataPre =
-                    Option(sgraph.toDot(RDFDotPreferences.defaultRDFPrefs)),
-                  dataFormat = targetFormat,
-                  inference = targetInference,
-                  dataSource = inputData.dataSource
+                  content = sgraph.toDot(RDFDotPreferences.defaultRDFPrefs),
+                  format = targetFormat,
+                  inference = targetInference
                 )
               }
             case t =>

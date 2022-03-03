@@ -1,10 +1,10 @@
 package es.weso.rdfshape.server
 
 import cats.effect._
-import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server._
-import es.weso.rdfshape.server.api.routes.api.service.APIService
+import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
+import es.weso.rdfshape.server.api.routes.api.service.BaseService
 import es.weso.rdfshape.server.api.routes.data.service.DataService
 import es.weso.rdfshape.server.api.routes.endpoint.service.EndpointService
 import es.weso.rdfshape.server.api.routes.fetch.service.FetchService
@@ -12,6 +12,7 @@ import es.weso.rdfshape.server.api.routes.permalink.service.PermalinkService
 import es.weso.rdfshape.server.api.routes.schema.service.SchemaService
 import es.weso.rdfshape.server.api.routes.shapemap.service.ShapeMapService
 import es.weso.rdfshape.server.api.routes.wikibase.service.WikibaseService
+import es.weso.rdfshape.server.api.swagger.swaggerMiddleware
 import es.weso.rdfshape.server.utils.error.exceptions.SSLContextCreationException
 import es.weso.rdfshape.server.utils.error.{ExitCodes, SysUtils}
 import es.weso.rdfshape.server.utils.secure.SSLHelper
@@ -20,6 +21,7 @@ import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.client.Client
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
+import org.http4s.server.Router
 import org.http4s.server.middleware.{CORS, CORSPolicy, Logger}
 import org.http4s.{HttpApp, HttpRoutes}
 
@@ -126,9 +128,11 @@ private class Server(
     *
     * @param client Http4s' client in charge of the application
     * @return Http4s' application with the given client and a request-logging middleware
+    * @note All application services are mounted behind the "api/" prefix
     */
   private def createApp(client: Client[IO]): HttpApp[IO] = {
-    val app = routesService(client).orNotFound
+    // Mount all routes behind "api/"
+    val app = Router(`api` -> routesService(client)).orNotFound
     // Http4s logger middleware settings
     Logger.httpApp(logHeaders = true, logBody = false)(app)
   }
@@ -190,18 +194,23 @@ object Server {
     s.main(Array.empty[String])
   }
 
-  /** Configure the http4s application to use the specified sources as API routes
+  /** Application's global service composed of all routes and CORS configuration
     */
   private def routesService(client: Client[IO]): HttpRoutes[IO] = {
-    corsConfiguration.apply(
-      APIService(client).routes <+>
-        DataService(client).routes <+>
-        SchemaService(client).routes <+>
-        ShapeMapService(client).routes <+>
-        WikibaseService(client).routes <+>
-        EndpointService(client).routes <+>
-        PermalinkService(client).routes <+>
-        FetchService(client).routes
-    )
+    corsConfiguration.apply(allRoutes(client))
   }
+
+  /** All Rho route functions composed into one with swagger middleware
+    */
+  private def allRoutes(client: Client[IO]): HttpRoutes[IO] =
+    (BaseService(client).routes and
+      DataService(client).routes and
+      SchemaService(client).routes and
+      ShapeMapService(client).routes and
+      WikibaseService(client).routes and
+      PermalinkService(client).routes and
+      EndpointService(client).routes and
+      FetchService(client).routes)
+      .toRoutes(swaggerMiddleware)
+
 }

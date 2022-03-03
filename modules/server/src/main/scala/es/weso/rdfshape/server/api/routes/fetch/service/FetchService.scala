@@ -2,14 +2,16 @@ package es.weso.rdfshape.server.api.routes.fetch.service
 
 import cats.effect._
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.definitions.ApiDefinitions.api
 import es.weso.rdfshape.server.api.routes.ApiService
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.UrlParameter
-import es.weso.rdfshape.server.utils.json.JsonUtils.errorResponseJson
+import es.weso.rdfshape.server.implicits.query_parsers.urlQueryParser
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils.getUrlContents
-import org.http4s._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
+import org.http4s.rho.RhoRoutes
+import org.http4s.rho.swagger.syntax.io._
+
+import java.net.URL
 
 class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
 
@@ -17,18 +19,13 @@ class FetchService() extends Http4sDsl[IO] with ApiService with LazyLogging {
 
   /** Describe the API routes handled by this service and the actions performed on each of them
     */
-  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
-
-    /** Query a given URL and return the response.
-      * Receives the URL to be queried:
-      *  - url [String]: URL to be queried
-      *    Returns the URL contents (response body)
-      */
-    case GET -> Root / `api` / `verb` :?
-        UrlParameter(url) =>
-      getUrlContents(url) match {
-        case Left(err)      => errorResponseJson(err, InternalServerError)
-        case Right(content) => Ok(content)
+  val routes: RhoRoutes[IO] = new RhoRoutes[IO] {
+    "Query a given URL and return the response, acting as a proxy" **
+      GET / `verb` +? param[URL](UrlParameter.name) |>> { (url: URL) =>
+        getUrlContents(url) match {
+          case Left(err)      => InternalServerError(err)
+          case Right(content) => Ok(content)
+        }
       }
   }
 

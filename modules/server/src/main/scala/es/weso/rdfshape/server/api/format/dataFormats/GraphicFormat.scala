@@ -20,7 +20,7 @@ object GraphicFormat extends FormatCompanion[GraphicFormat] {
 
   override lazy val availableFormats: List[GraphicFormat] =
     List(Svg, Png, PS)
-  override val defaultFormat: GraphicFormat = Svg
+  override val default: GraphicFormat = Svg
 
 }
 

@@ -47,6 +47,10 @@ private[wikibase] abstract class WikibaseSearchOperation(
         "language",
         operationData.searchLanguage.getOrElse(defaultSearchLanguage)
       )
+      .withQueryParam(
+        "uselang",
+        operationData.searchLanguage.getOrElse(defaultSearchLanguage)
+      )
       .withQueryParam("limit", operationData.limit.getOrElse(defaultLimit))
       .withQueryParam(
         "continue",

@@ -45,7 +45,7 @@ case object ApiDefinitions {
     ShapeMap.formats
       .map(f => ShapeMapFormat.fromString(f))
       .filter(_.isRight)
-      .map(_.getOrElse(ShapeMapFormat.defaultFormat))
+      .map(_.getOrElse(ShapeMapFormat.default))
 
   /** [[List]] of [[TriggerMode]]s accepted by the application, by name
     *

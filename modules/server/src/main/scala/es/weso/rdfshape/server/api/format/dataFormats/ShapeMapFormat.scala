@@ -22,7 +22,7 @@ object ShapeMapFormat extends FormatCompanion[ShapeMapFormat] {
       Compact,
       new ShapeMapFormat(Json)
     )
-  override val defaultFormat: ShapeMapFormat = Compact
+  override val default: ShapeMapFormat = Compact
 }
 
 /** Represents the mime-type "text/shex"

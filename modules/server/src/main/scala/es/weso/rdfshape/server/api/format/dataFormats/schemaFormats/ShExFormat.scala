@@ -23,7 +23,7 @@ object ShExFormat extends FormatCompanion[ShExFormat] {
       ShExC,
       ShExJ
     )
-  override val defaultFormat: ShExFormat = ShExC
+  override val default: ShExFormat = ShExC
 }
 
 /** Represents the mime-type "text/shexc"

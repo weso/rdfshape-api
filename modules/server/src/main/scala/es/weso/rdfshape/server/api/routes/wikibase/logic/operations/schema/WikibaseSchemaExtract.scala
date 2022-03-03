@@ -96,7 +96,7 @@ private[wikibase] case class WikibaseSchemaExtract(
             result = Json.fromFields(
               List(
                 ("entity", Json.fromString(entityUri)),
-                ("result", Json.fromString(shExCStr))
+                ("schema", Json.fromString(shExCStr))
               )
             )
           )

@@ -19,7 +19,7 @@ object HtmlFormat extends FormatCompanion[HtmlFormat] {
       HtmlRdfa11,
       HtmlMicrodata
     )
-  override val defaultFormat: HtmlFormat = HtmlRdfa11
+  override val default: HtmlFormat = HtmlRdfa11
 }
 
 /** Represents the mime-type "text/html" when used along rdfa11

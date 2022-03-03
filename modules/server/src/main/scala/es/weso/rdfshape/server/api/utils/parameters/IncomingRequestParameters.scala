@@ -20,7 +20,7 @@ object IncomingRequestParameters {
   lazy val schemaEngine       = "schemaEngine"
   lazy val targetSchemaFormat = "schemaTargetFormat"
   lazy val targetSchemaEngine = "schemaTargetEngine"
-  lazy val dataInference      = "dataInference"
+  lazy val inference          = "inference"
   lazy val triggerMode        = "triggerMode"
 
   lazy val shape        = "shape"
@@ -35,6 +35,18 @@ object IncomingRequestParameters {
 
   lazy val endpoint = "endpoint"
 
+  lazy val content = "content"
+
+  lazy val format = "format"
+
+  lazy val engine = "engine"
+
+  lazy val `type` = "type"
+
+  lazy val targetFormat = "targetFormat"
+  lazy val targetEngine = "targetEngine"
+
+  lazy val source         = "source"
   lazy val dataSource     = "dataSource"
   lazy val schemaSource   = "schemaSource"
   lazy val shapeMapSource = "shapeMapSource"
@@ -54,9 +66,52 @@ object IncomingRequestParameters {
   lazy val languages   = "languages"
   lazy val label       = "label"
   lazy val limit       = "limit"
-  lazy val format      = "wbFormat"
+  lazy val wbFormat    = "wbFormat"
   lazy val continue    = "continue"
   lazy val withDot     = "withDot"
+
+  /** Parameter expected to contain the content inputted by the user for a certain
+    * operation
+    *
+    * @note These contents may be raw data, a URL/File with the contents...
+    *       The source of the query is therefore specified in other [[SourceParameter]]
+    */
+  object ContentParameter
+      extends OptionalQueryParamDecoderMatcher[String](content) {
+    val name: String = content
+  }
+
+  /** Parameter expected to contain the format of the content inputted by the user for a certain
+    * operation
+    */
+  object FormatParameter
+      extends OptionalQueryParamDecoderMatcher[String](format) {
+    val name: String = format
+  }
+
+  /** Parameter expected to contain the target data format for a certain
+    * conversion operation
+    */
+  object TargetFormatParameter
+      extends OptionalQueryParamDecoderMatcher[String](targetFormat) {
+    val name: String = targetFormat
+  }
+
+  /** Parameter expected to contain the target schema engine for a certain
+    * conversion operation
+    */
+  object TargetEngineParameter
+      extends OptionalQueryParamDecoderMatcher[String](targetEngine) {
+    val name: String = targetEngine
+  }
+
+  /** Parameter expected to contain the engine of the schema inputted by the user for a certain
+    * operation
+    */
+  object EngineParameter
+      extends OptionalQueryParamDecoderMatcher[String](engine) {
+    val name: String = engine
+  }
 
   /** Parameter expected to contain RDF data contents (URL encoded)
     *
@@ -129,8 +184,8 @@ object IncomingRequestParameters {
   /** Parameter expected to contain the inference applied in data validations
     */
   object InferenceParameter
-      extends OptionalQueryParamDecoderMatcher[String](dataInference) {
-    val name: String = dataInference
+      extends OptionalQueryParamDecoderMatcher[String](inference) {
+    val name: String = inference
   }
 
   /** Parameter expected to contain the trigger mode present applied in data validations
@@ -201,6 +256,14 @@ object IncomingRequestParameters {
     val name: String = endpoint
   }
 
+  /** Parameter expected to contain a valid identifier of the source of the data sent by the client
+    * for any operation
+    */
+  object SourceParameter
+      extends OptionalQueryParamDecoderMatcher[String](source) {
+    val name: String = source
+  }
+
   /** Parameter expected to contain a valid identifier of the source of the data sent by the client (currently raw data, a URL or a file)
     * in data-related operations
     */
@@ -235,8 +298,7 @@ object IncomingRequestParameters {
 
   /** Parameter expected to contain a payload for later use querying wikibase's API
     */
-  object WikibasePayloadParameter
-      extends QueryParamDecoderMatcher[String](payload) {
+  object PayloadParameter extends QueryParamDecoderMatcher[String](payload) {
     val name: String = payload
   }
 
@@ -301,20 +363,19 @@ object IncomingRequestParameters {
     val name: String = limit
   }
 
+  /** Flexible parameter expected to contain the type of a given item in a given operation
+    */
+  object TypeParameter
+      extends OptionalQueryParamDecoderMatcher[String](`type`) {
+    val name: String = `type`
+  }
+
   /** Parameter expected to contain a positive numeric value to serve as the offset where to continue a search operation, normally
     * in wikibase-related operations
     */
   object ContinueParameter
       extends OptionalQueryParamDecoderMatcher[String](continue) {
     val name: String = continue
-  }
-
-  /** Parameter expected to contain the format requested to wikibase when
-    * searching for data
-    */
-  object WikibaseFormatParameter
-      extends OptionalQueryParamDecoderMatcher[String](format) {
-    val name: String = format
   }
 
 }

@@ -31,19 +31,19 @@ case object ApiDefaults {
 
   /** [[DataFormat]] used when the format can be omitted or is needed but none was provided
     */
-  val defaultDataFormat: DataFormat = DataFormat.defaultFormat
+  val defaultDataFormat: DataFormat = DataFormat.default
 
   /** [[RdfFormat]] used when the format can be omitted or is needed but none was provided
     */
-  val defaultRdfFormat: RdfFormat = RdfFormat.defaultFormat
+  val defaultRdfFormat: RdfFormat = RdfFormat.default
 
   /** [[SchemaFormat]] used when the format can be omitted or is needed but none was provided
     */
-  val defaultSchemaFormat: SchemaFormat = ShaclFormat.defaultFormat
+  val defaultSchemaFormat: SchemaFormat = ShaclFormat.default
 
   /** [[ShapeMapFormat]] used when the format can be omitted or is needed but none was provided
     */
-  val defaultShapeMapFormat: ShapeMapFormat = ShapeMapFormat.defaultFormat
+  val defaultShapeMapFormat: ShapeMapFormat = ShapeMapFormat.default
 
   /** Schema engined ([[SchemaW]]) used when the engine can be omitted or is needed but none was provided
     */
@@ -61,17 +61,17 @@ case object ApiDefaults {
 
   /** [[DataSource]] used when the source can be omitted or is needed but none was provided
     */
-  val defaultDataSource: DataSource = DataSource.defaultDataSource
+  val defaultDataSource: DataSource = DataSource.default
 
   /** [[SchemaSource]] used when the source can be omitted or is needed but none was provided
     */
   val defaultSchemaSource: SchemaSource =
-    SchemaSource.defaultSchemaSource
+    SchemaSource.default
 
   /** [[ShapeMapSource]] used when the source can be omitted or is needed but none was provided
     */
   val defaultShapeMapSource: ShapeMapSource =
-    ShapeMapSource.defaultShapeMapSource
+    ShapeMapSource.default
 
   /** [[IRI]] used when the shape label can be omitted or is needed but none was provided
     */

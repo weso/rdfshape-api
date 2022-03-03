@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api.format.dataFormats
 
 import es.weso.rdfshape.server.api.format.FormatCompanion
+import es.weso.rdfshape.server.api.routes.data.logic.types.merged.DataCompound
 import org.http4s.MediaType
 
 /** Dummy class to differentiate RDF formats from the more generic DataFormat
@@ -22,9 +23,10 @@ object RdfFormat extends FormatCompanion[RdfFormat] {
       Trig,
       JsonLd,
       RdfXml,
-      RdfJson
+      RdfJson,
+      Mixed
     )
-  override val defaultFormat: RdfFormat = Turtle
+  override val default: RdfFormat = Turtle
 }
 
 /** Represents the mime-type "text/turtle"
@@ -81,4 +83,12 @@ case object RdfJson
     extends RdfFormat(
       formatName = "RDF/JSON",
       formatMimeType = MediaType.application.json
+    )
+
+/** Fictional format used in [[DataCompound]] instances
+  */
+case object Mixed
+    extends RdfFormat(
+      formatName = "mixed",
+      formatMimeType = new MediaType("application", "mixed")
     )

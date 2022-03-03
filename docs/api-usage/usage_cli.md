@@ -9,10 +9,10 @@ title: Command Line Interface
 
 @APP_NAME@'s CLI currently supports the following launch-arguments:
 
-- `--https` Attempt to serve the API via HTTPS (defaults to false), searching for certificates as specified in the
-  current environment.
-- `-p, --port`  Port in which the API will listen for requests. Values must be in range 1-65535 (defaults to 8080).
-- `-v, --verbose` Show additional logging information (use cumulative times for additional info, like: `-vvv`)
+- `--https` Attempt to serve the API via HTTPS (default is false), searching for certificates as specified in the current environment.
+- `-p, --port`  Port in which the API will listen for requests. Values must be in range 1-65535 (default is 8080).
+- `-s, --silent`  Enable silent mode in order not to log any output to console (default is false)
+- `-v, --verbose` Show additional logging information (use cumulative times for additional info, like: `-vvv`) 
 - `--version` Print the version of the program
 - `--help` Print the help menu
 

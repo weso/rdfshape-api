@@ -2,13 +2,13 @@ package es.weso.rdfshape.server.api.routes.endpoint.logic
 
 import cats.data.EitherT
 import cats.effect.IO
-import cats.implicits._
 import es.weso.rdf.jena.{Endpoint => EndpointJena}
 import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.rdf.triples.RDFTriple
-import es.weso.rdfshape.server.utils.numeric.NumericUtils
 import es.weso.utils.IOUtils.{ESIO, stream2es}
 import io.circe.{Encoder, Json}
+
+import java.net.URL
 
 case class Outgoing(node: IRI, endpoint: IRI, children: Children)
 
@@ -20,24 +20,18 @@ object Outgoing {
   val noChildren: Children = Children(Map())
 
   def getOutgoing(
-      optEndpoint: Option[String],
-      optNode: Option[String],
-      optLimit: Option[String]
+      endpoint: URL,
+      node: String,
+      optLimit: Option[Int] = Some(1)
   ): EitherT[IO, String, Outgoing] = {
     for {
       endpointIRI <- EitherT.fromEither[IO](
-        Either
-          .fromOption(optEndpoint, "No endpoint provided")
-          .flatMap(IRI.fromString(_))
+        IRI.fromString(endpoint.toString)
       )
       node <- EitherT.fromEither[IO](
-        Either
-          .fromOption(optNode, "No node provided")
-          .flatMap(IRI.fromString(_))
+        IRI.fromString(node)
       )
-      limit <- EitherT.fromEither[IO](
-        NumericUtils.parseInt(optLimit.getOrElse("1"))
-      )
+      limit = optLimit.getOrElse(1)
       o <- outgoing(endpointIRI, node, limit)
     } yield o
   }
