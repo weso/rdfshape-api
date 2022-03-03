@@ -101,7 +101,8 @@ lazy val mdocSettings = Seq(
     "CLIENT_NAME"            -> "RDFShape Client",
     "CLIENT_REPO"            -> "https://github.com/weso/rdfshape-client/",
     "CLIENT_URL"             -> "https://rdfshape.weso.es/",
-    "WESOLOCAL_URL"          -> "https://github.com/weso/wesolocal/wiki/RDFShape"
+    "WESOLOCAL_URL"          -> "https://github.com/weso/wesolocal/wiki/RDFShape",
+    "API-DOCS_URL"           -> "https://app.swaggerhub.com/apis-docs/weso/RDFShape"
   ),
   mdocExtraArguments := Seq("--no-link-hygiene"),
   /* When creating/publishing the docusaurus site, update the dynamic mdoc and
