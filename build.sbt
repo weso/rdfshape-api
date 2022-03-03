@@ -8,8 +8,8 @@ Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
 Global / scalaVersion := scala213
 
-lazy val scala212               = "2.12.13"
-lazy val scala213               = "2.13.6"
+lazy val scala212               = "2.12.15"
+lazy val scala213               = "2.13.8"
 lazy val supportedScalaVersions = List(scala213)
 
 // Lint-excluded keys
@@ -239,6 +239,11 @@ lazy val rdfshape = project
     libraryDependencies ++= Seq(
       logbackClassic,
       scalaLogging
+    ),
+    excludeDependencies ++= Seq(
+      // Exclude slf4j backend if present in other dependencies to avoid
+      // warnings/conflicts with logback
+      ExclusionRule("org.slf4j", "slf4j-simple")
     )
   )
 // Server project in /modules: server
@@ -283,7 +288,7 @@ lazy val server = project
 
 // "sbt-github-actions" plugin settings
 lazy val JavaCIVersion  = "adopt@1.11"
-lazy val ScalaCIVersion = "2.13.6"
+lazy val ScalaCIVersion = scala213
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
 ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
 
@@ -320,10 +325,10 @@ lazy val munitEffectVersion  = "1.0.7"
 lazy val plantumlVersion     = "1.2021.14"
 lazy val scalajVersion       = "2.4.2"
 // WESO dependencies
-lazy val shaclexVersion    = "0.1.103-ult_0"
-lazy val shexsVersion      = "0.1.108-ult_0"
+lazy val shaclexVersion    = "0.2.0"
+lazy val shexsVersion      = "0.2.0"
 lazy val umlShaclexVersion = "0.0.82"
-lazy val wesoUtilsVersion  = "0.2.2"
+lazy val wesoUtilsVersion  = "0.2.4"
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 lazy val http4sBlazeServer =
