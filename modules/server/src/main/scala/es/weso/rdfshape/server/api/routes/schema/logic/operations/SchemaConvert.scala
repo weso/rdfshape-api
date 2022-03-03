@@ -150,7 +150,7 @@ private[api] object SchemaConvert extends LazyLogging {
               content = rawOutputSchema.trim,
               format = targetFormat,
               engine = schemaOut,
-              source = inputSchema.source
+              source = SchemaSource.TEXT
             )
           } yield SchemaConvert(
             inputSchema = inputSchema,
