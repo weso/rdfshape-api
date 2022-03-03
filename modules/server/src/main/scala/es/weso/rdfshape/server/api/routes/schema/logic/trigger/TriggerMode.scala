@@ -17,7 +17,7 @@ trait TriggerMode {
 
   /** Corresponding type of this adapter inside [[ValidationTrigger]]
     */
-  val _type: TriggerModeType
+  val `type`: TriggerModeType
 
   /** Optionally, the [[Data]] being validated in the validation using this trigger
     */

@@ -111,7 +111,7 @@ private[api] object SchemaValidate extends LazyLogging {
         case other =>
           IO.raiseError(
             new RuntimeException(
-              s"Unexpected validation trigger (${other._type})"
+              s"Unexpected validation trigger (${other.`type`})"
             )
           )
       }

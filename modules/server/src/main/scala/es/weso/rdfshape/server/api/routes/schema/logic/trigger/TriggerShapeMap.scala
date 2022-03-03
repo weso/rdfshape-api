@@ -35,7 +35,7 @@ sealed case class TriggerShapeMap(
     * @return A ShapeMap instance used by WESO libraries in validation
     */
   lazy val innerShapeMap: Either[String, ShapeMapW] = shapeMap.innerShapeMap
-  override val _type: TriggerModeType               = TriggerModeType.SHAPEMAP
+  override val `type`: TriggerModeType              = TriggerModeType.SHAPEMAP
 
   // Fetched shapeMap successfully
   assume(
@@ -107,7 +107,7 @@ private[api] object TriggerShapeMap
   override implicit val encode: Encoder[TriggerShapeMap] =
     (tsm: TriggerShapeMap) =>
       Json.obj(
-        ("type", tsm._type.asJson),
+        ("type", tsm.`type`.asJson),
         ("shapeMap", tsm.shapeMap.asJson),
         ("data", tsm.data.asJson),
         ("schema", tsm.schema.asJson)

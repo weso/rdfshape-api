@@ -114,7 +114,7 @@ package object swagger {
     ),
     host = "api.rdfshape.weso.es".some,
     basePath = s"/$api".some, // All routes are prefixed by "/api"
-    schemes = List(Scheme.HTTPS),
+    schemes = List(Scheme.HTTP, Scheme.HTTPS),
     consumes = List("application/json"),
     produces = List("text/plain; charset=utf-8", "application/json")
   )
