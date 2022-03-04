@@ -1,0 +1,1420 @@
+---
+swagger: "2.0"
+info:
+  description: "\n RDFShape is web API for semantic data analysis and validation\n implemented in Scala using http4s (https://http4s.org/) and \n documented with Rho (https://github.com/http4s/rho)\n"
+  version: 0.2.4
+  title: RDFShape API
+  contact:
+    name: WESO Research group
+    url: https://www.weso.es/#contact
+    email: info@weso.es
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+host: api.rdfshape.weso.es
+basePath: /api
+schemes:
+- https
+consumes:
+- application/json
+produces:
+- text/plain; charset=utf-8
+- application/json
+paths:
+  /wikibase/search/{type}:
+    post:
+      tags:
+      - wikibase
+      summary: |-
+        Search for entities in a wikibase using MediaWiki's API.
+         Search based on item/property/lexeme labels
+      operationId: postWikibaseSearch-type-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - name: type
+        in: path
+        description: "Type of search being made in Wikibase. One of: item, property, lexeme"
+        required: true
+        type: string
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /wikibase/validate:
+    post:
+      tags:
+      - wikibase
+      summary: Validate entities in wikidata using a given schema
+      operationId: postWikibaseValidate-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseValidateInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseValidateInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /schema/info:
+    post:
+      tags:
+      - schema
+      summary: "Obtain information about an schema: list of shapes and prefix map"
+      operationId: postSchemaInfo-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: SchemaInfoInput
+        required: true
+        schema:
+          $ref: '#/definitions/SchemaInfoInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /schema/formats/default/{schemaEngine}:
+    get:
+      tags:
+      - schema
+      summary: Get the default schema format for a given schema engine as a raw string
+      operationId: getSchemaFormatsDefault-schemaEngine
+      produces:
+      - text/plain
+      parameters:
+      - name: schemaEngine
+        in: path
+        description: "Engine in which the validation schema is redacted. One of: ShEx, SHACLex, JenaSHACL, SHACL_TQ"
+        required: true
+        type: string
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+  /wikibase/extract:
+    post:
+      tags:
+      - wikibase
+      summary: Attempt to extract an schema (ShEx) from a given entity present in wikidata
+      operationId: postWikibaseExtract-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /data/info:
+    post:
+      tags:
+      - data
+      summary: "Obtain information about an RDF data instance: \n number of statements, prefix map and predicates\n"
+      operationId: postDataInfo-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: DataInfoInput
+        required: true
+        schema:
+          $ref: '#/definitions/DataInfoInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /schema/triggerModes:
+    get:
+      tags:
+      - schema
+      summary: Get an array with the accepted Trigger Modes for validations
+      operationId: getSchemaTriggerModes
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /data/inferenceEngines/default:
+    get:
+      tags:
+      - data
+      summary: Get the default inference engine used as raw text
+      operationId: getDataInferenceEnginesDefault
+      produces:
+      - text/plain
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+  /schema/formats/{schemaEngine}:
+    get:
+      tags:
+      - schema
+      summary: Get an array with the accepted schema formats for a given schema engine
+      operationId: getSchemaFormats-schemaEngine
+      produces:
+      - application/json
+      parameters:
+      - name: schemaEngine
+        in: path
+        description: "Engine in which the validation schema is redacted. One of: ShEx, SHACLex, JenaSHACL, SHACL_TQ"
+        required: true
+        type: string
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /fetch:
+    get:
+      tags:
+      - fetch
+      summary: "Query a given URL and return the response, acting as a proxy"
+      operationId: getFetch-url
+      produces:
+      - text/plain
+      parameters:
+      - name: url
+        in: query
+        required: true
+        type: string
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /shapemap/formats:
+    get:
+      tags:
+      - shapemap
+      summary: GET an array with the accepted ShapeMap formats
+      operationId: getShapemapFormats
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /schema/engines/default:
+    get:
+      tags:
+      - schema
+      summary: Get the default schema engine as a raw string
+      operationId: getSchemaEnginesDefault
+      produces:
+      - text/plain
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+  /data/formats/output:
+    get:
+      tags:
+      - data
+      summary: Get an array with the available output RDF data formats
+      operationId: getDataFormatsOutput
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /data/sources:
+    get:
+      tags:
+      - data
+      summary: |-
+        Get an array with the valid data sources that the server will
+         accept when sent via 'source' parameter
+      operationId: getDataSources
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /wikibase/query:
+    post:
+      tags:
+      - wikibase
+      summary: Execute a given SPARQL query against a given SPARQL endpoint of a wikibase instance
+      operationId: postWikibaseQuery-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /shapemap/info:
+    post:
+      tags:
+      - shapemap
+      summary: "Obtain information about a ShapeMap: number of associations, prefixes, model"
+      operationId: postShapemapInfo-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: ShapeMapInfoInput
+        required: true
+        schema:
+          $ref: '#/definitions/ShapeMapInfoInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /endpoint/outgoing:
+    get:
+      tags:
+      - endpoint
+      summary: Attempt to contact a wikibase endpoint and return the data (triplets) about a node in it
+      operationId: getEndpointOutgoing-endpoint-node-limit
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - name: endpoint
+        in: query
+        required: true
+        type: string
+      - name: node
+        in: query
+        required: true
+        type: string
+      - name: limit
+        in: query
+        required: false
+        type: integer
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /wikibase/shexer:
+    post:
+      tags:
+      - wikibase
+      summary: |-
+        Attempt to extract an schema (ShEx) from a given entity present
+        in wikidata using SheXer (https://github.com/DaniFdezAlvarez/shexer)
+      operationId: postWikibaseShexer-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /permalink/generate:
+    get:
+      tags:
+      - permalink
+      summary: Get a permalink to a resource
+      operationId: getPermalinkGenerate-url
+      produces:
+      - text/plain
+      parameters:
+      - name: url
+        in: query
+        required: true
+        type: string
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "201":
+          description: Created
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /health:
+    get:
+      tags:
+      - health
+      summary: Perform a request to check if the API is up and running
+      operationId: getHealth
+      produces:
+      - text/plain
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+  /wikibase/schemaContent:
+    post:
+      tags:
+      - wikibase
+      summary: Search for wikidata schemas using MediaWiki's API. Search based on lexeme labels
+      operationId: postWikibaseSchemaContent-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /schema/validate:
+    post:
+      tags:
+      - schema
+      summary: Validates RDF data against a given schema
+      operationId: postSchemaValidate-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: SchemaValidateInput
+        required: true
+        schema:
+          $ref: '#/definitions/SchemaValidateInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /data/query:
+    post:
+      tags:
+      - data
+      summary: Perform a SPARQL query on RDF data
+      operationId: postDataQuery-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: DataQueryInput
+        required: true
+        schema:
+          $ref: '#/definitions/DataQueryInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /data/formats/visual:
+    get:
+      tags:
+      - data
+      summary: Get an array with the available visualization formats
+      operationId: getDataFormatsVisual
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /endpoint/info:
+    get:
+      tags:
+      - endpoint
+      summary: "Check the existence of an endpoint and get its response, if any"
+      operationId: getEndpointInfo-endpoint
+      produces:
+      - application/json
+      parameters:
+      - name: endpoint
+        in: query
+        required: true
+        type: string
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /schema/engines/{SchemaType}:
+    get:
+      tags:
+      - schema
+      summary: "Get an array with the accepted schema engines \n given an schema type (ShEx or SHACL)"
+      operationId: getSchemaEngines-SchemaType
+      produces:
+      - application/json
+      parameters:
+      - name: SchemaType
+        in: path
+        description: "Type of the validation schema. One of: ShEx, SHACL"
+        required: true
+        type: string
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /permalink/get:
+    get:
+      tags:
+      - permalink
+      summary: Retrieve a resource given its permalink code
+      operationId: getPermalinkGet-urlCode
+      produces:
+      - text/plain
+      parameters:
+      - name: urlCode
+        in: query
+        required: true
+        type: integer
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+  /data/formats/input:
+    get:
+      tags:
+      - data
+      summary: Get an array with the accepted input RDF data formats
+      operationId: getDataFormatsInput
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /data/inferenceEngines:
+    get:
+      tags:
+      - data
+      summary: Get an array with the available inference engines
+      operationId: getDataInferenceEngines
+      produces:
+      - application/json
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+  /wikibase/entityLabel:
+    post:
+      tags:
+      - wikibase
+      summary: Search for wikidata objects and return their labels in the given languages
+      operationId: postWikibaseEntityLabel-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /wikibase/languages:
+    post:
+      tags:
+      - wikibase
+      summary: Search for all the languages used in a wikibase instance
+      operationId: postWikibaseLanguages-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: WikibaseOperationInput
+        required: true
+        schema:
+          $ref: '#/definitions/WikibaseOperationInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /data/formats/default:
+    get:
+      tags:
+      - data
+      summary: Get the default RDF format as raw text
+      operationId: getDataFormatsDefault
+      produces:
+      - text/plain
+      parameters: []
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+  /data/convert:
+    post:
+      tags:
+      - data
+      summary: Convert RDF data into another formats
+      operationId: postDataConvert-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: DataConvertInput
+        required: true
+        schema:
+          $ref: '#/definitions/DataConvertInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /schema/convert:
+    post:
+      tags:
+      - schema
+      summary: Convert a given schema to another format (this includes graphic formats for visualizations)
+      operationId: postSchemaConvert-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: SchemaConvertInput
+        required: true
+        schema:
+          $ref: '#/definitions/SchemaConvertInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+  /data/extract:
+    post:
+      tags:
+      - data
+      summary: Attempt to extract a ShEx schema from an RDF source
+      operationId: postDataExtract-body
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/plain
+      parameters:
+      - in: body
+        name: body
+        description: DataExtractInput
+        required: true
+        schema:
+          $ref: '#/definitions/DataExtractInput'
+      deprecated: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Json'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+definitions:
+  SchemaInfoInput:
+    type: object
+    required:
+    - schema
+    properties:
+      schema:
+        $ref: '#/definitions/Schema'
+    description: SchemaInfoInput
+  IRI:
+    type: object
+    required:
+    - uri
+    properties:
+      uri:
+        type: string
+        description: java.net.URI
+    description: IRI
+  JNull:
+    allOf:
+    - $ref: '#/definitions/Json'
+    - type: object
+      description: JNull
+    description: JNull
+  JsonFloat:
+    allOf:
+    - $ref: '#/definitions/JsonNumber'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: number
+          format: float
+      description: JsonFloat
+    description: JsonFloat
+  DataConvertInput:
+    type: object
+    required:
+    - data
+    - targetFormat
+    properties:
+      data:
+        $ref: '#/definitions/Data'
+      targetFormat:
+        type: string
+        description: DataFormat in which the input is redacted
+        title: DataFormat
+        enum:
+        - DOT
+        - PNG
+        - html-rdfa11
+        - RDF/XML
+        - N-Triples
+        - html-microdata
+        - JSON-LD
+        - Compact
+        - TriG
+        - Turtle
+        - ShExC
+        - PS
+        - RDF/JSON
+        - JSON
+        - mixed
+        - ShExJ
+        - N-Quads
+        - SVG
+        default: JSON
+    description: DataConvertInput
+  TriggerMode:
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        type: string
+        description: "Type of the trigger, used to know how to process the validation"
+        title: Type
+        enum:
+        - ShapeMap
+        - TargetDecls
+        default: ShapeMap
+      data:
+        description: "The data being processed in the validation where this trigger mode appears. If the data was already sent in the request, it is not necessary to embed it here"
+        title: Data
+        $ref: '#/definitions/Data'
+      schema:
+        description: "The schema being used in the validation where this trigger mode appears. If the schema was already sent in the request, it is not necessary to embed it here"
+        title: Schema
+        $ref: '#/definitions/Schema'
+      shapeMap:
+        description: The schema being used in the validation where this trigger mode appears. Only required in ShEx validations
+        title: ShapeMap
+        $ref: '#/definitions/ShapeMap'
+    description: "Trigger mode used in data validations, might contain a shapeMap for ShEx validations"
+  DataInfoInput:
+    type: object
+    required:
+    - data
+    properties:
+      data:
+        $ref: '#/definitions/Data'
+    description: DataInfoInput
+  JsonBiggerDecimal:
+    allOf:
+    - $ref: '#/definitions/BiggerDecimalJsonNumber'
+    - type: object
+      required:
+      - input
+      - value
+      properties:
+        value:
+          type: string
+          description: io.circe.numbers.BiggerDecimal
+        input:
+          type: string
+      description: JsonBiggerDecimal
+    description: JsonBiggerDecimal
+  JBoolean:
+    allOf:
+    - $ref: '#/definitions/Json'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: boolean
+      description: JBoolean
+    description: JBoolean
+  JArray:
+    allOf:
+    - $ref: '#/definitions/Json'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: array
+          items:
+            $ref: '#/definitions/Json'
+      description: JArray
+    description: JArray
+  WikibaseOperationInput:
+    type: object
+    required:
+    - operationDetails
+    properties:
+      operationDetails:
+        $ref: '#/definitions/WikibaseOperationDetails'
+    description: WikibaseOperationInput
+  JsonDouble:
+    allOf:
+    - $ref: '#/definitions/JsonNumber'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: number
+          format: double
+      description: JsonDouble
+    description: JsonDouble
+  ShapeMapInfoInput:
+    type: object
+    required:
+    - shapeMap
+    properties:
+      shapeMap:
+        $ref: '#/definitions/ShapeMap'
+    description: ShapeMapInfoInput
+  URL:
+    type: string
+    externalDocs:
+      description: RFC 1738 - Uniform Resource Locators (URL)
+      url: https://datatracker.ietf.org/doc/html/rfc1738
+    description: "Representation of a valid URL (including protocol, host, port... as needed)"
+    example: https://www.wikidata.org
+  JNumber:
+    allOf:
+    - $ref: '#/definitions/Json'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          $ref: '#/definitions/JsonNumber'
+      description: JNumber
+    description: JNumber
+  JString:
+    allOf:
+    - $ref: '#/definitions/Json'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: string
+      description: JString
+    description: JString
+  SchemaValidateInput:
+    type: object
+    required:
+    - data
+    - schema
+    - triggerMode
+    properties:
+      data:
+        $ref: '#/definitions/Data'
+      schema:
+        $ref: '#/definitions/Schema'
+      triggerMode:
+        $ref: '#/definitions/TriggerMode'
+    description: SchemaValidateInput
+  SchemaConvertInput:
+    type: object
+    required:
+    - schema
+    - targetEngine
+    - targetFormat
+    properties:
+      schema:
+        $ref: '#/definitions/Schema'
+      targetFormat:
+        type: string
+        description: DataFormat in which the input is redacted
+        title: DataFormat
+        enum:
+        - DOT
+        - PNG
+        - html-rdfa11
+        - RDF/XML
+        - N-Triples
+        - html-microdata
+        - JSON-LD
+        - Compact
+        - TriG
+        - Turtle
+        - ShExC
+        - PS
+        - RDF/JSON
+        - JSON
+        - mixed
+        - ShExJ
+        - N-Quads
+        - SVG
+        default: JSON
+      targetEngine:
+        type: string
+        description: Engine in which the schema is redacted (ShEx or any other SHACL engine)
+        title: Engine
+        enum:
+        - ShEx
+        - SHACLex
+        - JenaSHACL
+        - SHACL_TQ
+        default: ShEx
+    description: SchemaConvertInput
+  BiggerDecimalJsonNumber:
+    allOf:
+    - $ref: '#/definitions/JsonNumber'
+    - type: object
+      required:
+      - input
+      properties:
+        input:
+          type: string
+      description: BiggerDecimalJsonNumber
+    description: BiggerDecimalJsonNumber
+  JsonBigDecimal:
+    allOf:
+    - $ref: '#/definitions/JsonNumber'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: number
+          format: double
+      description: JsonBigDecimal
+    description: JsonBigDecimal
+  ShapeMap:
+    type: object
+    required:
+    - content
+    - format
+    - source
+    properties:
+      content:
+        type: string
+        description: "ShapeMap contents, as inputted by the user"
+        title: Contents
+        pattern: (<Node>@<Shape>)+
+        default: <http://example.org/Alice>@<http://example.org/User>
+      format:
+        type: string
+        description: ShapeMapFormat in which the input is redacted
+        title: ShapeMapFormat
+        enum:
+        - Compact
+        - JSON
+        default: Compact
+      source:
+        type: string
+        description: "Source of the shapeMap content, used to know how to access it"
+        title: Source
+        enum:
+        - byText
+        - byUrl
+        - byFile
+        default: byText
+    externalDocs:
+      description: W3C Draft - ShapeMap Structure and Language
+      url: https://shex.io/shape-map/
+    description: ShapeMap matching nodes with shapes
+  DataQueryInput:
+    type: object
+    required:
+    - data
+    - query
+    properties:
+      data:
+        $ref: '#/definitions/Data'
+      query:
+        $ref: '#/definitions/SparqlQuery'
+    description: DataQueryInput
+  JObject:
+    allOf:
+    - $ref: '#/definitions/Json'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: string
+          description: io.circe.JsonObject
+      description: JObject
+    description: JObject
+  JsonLong:
+    allOf:
+    - $ref: '#/definitions/JsonNumber'
+    - type: object
+      required:
+      - value
+      properties:
+        value:
+          type: integer
+          format: int64
+      description: JsonLong
+    description: JsonLong
+  JsonNumber:
+    type: object
+    required:
+    - type
+    discriminator: type
+    properties:
+      type:
+        type: string
+        enum:
+        - JsonDouble
+        - BiggerDecimalJsonNumber
+        - JsonBigDecimal
+        - JsonFloat
+        - JsonLong
+    description: JsonNumber
+    x-discriminator-is-enum: true
+  WikibaseValidateInput:
+    type: object
+    required:
+    - operationDetails
+    - schema
+    properties:
+      operationDetails:
+        $ref: '#/definitions/WikibaseOperationDetails'
+      schema:
+        $ref: '#/definitions/Schema'
+    description: WikibaseValidateInput
+  DataExtractInput:
+    type: object
+    required:
+    - data
+    - nodeSelector
+    properties:
+      data:
+        $ref: '#/definitions/Data'
+      nodeSelector:
+        type: string
+      label:
+        $ref: '#/definitions/IRI'
+    description: DataExtractInput
+  WikibaseOperationDetails:
+    type: object
+    required:
+    - payload
+    properties:
+      format:
+        type: string
+        description: Format in which results are requested
+        title: Format
+        enum:
+        - json
+        - jsonfm
+        - xml
+        - xmlfm
+      payload:
+        type: string
+        description: Data accompanying the request to the wikibase
+        title: Payload
+      endpoint:
+        description: URL pointing to the wikibase instance root or SPARQL query endpoint. Defaults to Wikidata.
+        title: Endpoint
+        $ref: '#/definitions/URL'
+      limit:
+        type: string
+        description: Maximum amount of results queried in search operations
+        title: Limit
+        pattern: Number >= 0
+      continue:
+        type: string
+        description: Offset where to continue a search operation
+        title: Continue
+        pattern: Number >= 0
+      languages:
+        type: array
+        description: Filter the languages returned in GET queries with internationalized results (empty list returns all available languages)
+        title: Result language
+        items:
+          type: string
+          default: en
+      language:
+        type: string
+        description: "Language to be used in a wikibase search operation, as well as the language for the returned results"
+        title: Search language
+        default: en
+    description: Set of parameters required to perform operations on a Wikibase instance
+  Schema:
+    type: object
+    required:
+    - content
+    - engine
+    - format
+    - source
+    properties:
+      content:
+        type: string
+        description: "Schema contents, as inputted by the user"
+        title: Contents
+        default: "PREFIX : <http://example.org/> PREFIX schema: <http://schema.org/>  PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#> :User { schema:name xsd:string }"
+      format:
+        type: string
+        description: SchemaFormat in which the input is redacted
+        title: SchemaFormat
+        enum:
+        - RDF/XML
+        - N-Triples
+        - JSON-LD
+        - ShExJ
+        - N-Quads
+        - TriG
+        - Turtle
+        - ShExC
+        default: ShExC
+      engine:
+        type: string
+        description: Engine in which the schema is redacted (ShEx or any other SHACL engine)
+        title: Engine
+        enum:
+        - ShEx
+        - SHACLex
+        - JenaSHACL
+        - SHACL_TQ
+        default: ShEx
+      source:
+        type: string
+        description: "Source of the schema, used to know how to access it"
+        title: Source
+        enum:
+        - byText
+        - byUrl
+        - byFile
+        default: byText
+    externalDocs:
+      description: Validating RDF Data - Comparing ShEx and SHACL
+      url: https://book.validatingrdf.com/bookHtml013.html
+    description: Schema instance to be processed by the API (Shape Expressions or SHACL)
+  SparqlQuery:
+    type: object
+    required:
+    - content
+    - source
+    properties:
+      content:
+        type: string
+        description: "Query contents, as inputted by the user"
+        title: Contents
+        default: "SELECT ?a ?b ?c WHERE { ?a ?b ?c } LIMIT 1"
+      source:
+        type: string
+        description: "Source of the query contents, used to know how to access it"
+        title: Source
+        enum:
+        - byText
+        - byUrl
+        - byFile
+        default: byText
+    externalDocs:
+      description: W3C - SPARQL query language for RDF
+      url: https://www.w3.org/TR/rdf-sparql-query/
+    description: SPARQL query used to query RDF data
+  JsonDecimal:
+    allOf:
+    - $ref: '#/definitions/BiggerDecimalJsonNumber'
+    - type: object
+      required:
+      - input
+      properties:
+        input:
+          type: string
+      description: JsonDecimal
+    description: JsonDecimal
+  Data:
+    type: object
+    required:
+    - content
+    - format
+    - source
+    properties:
+      content:
+        type: string
+        description: "RDF data contents, as inputted by the user"
+        title: Contents
+        default: "@prefix : <http://example.org/> . :alice a :item ."
+      format:
+        type: string
+        description: RdfFormat in which the input is redacted
+        title: RdfFormat
+        enum:
+        - RDF/XML
+        - RDF/JSON
+        - N-Triples
+        - JSON-LD
+        - mixed
+        - N-Quads
+        - TriG
+        - Turtle
+        default: Turtle
+      inference:
+        type: string
+        description: Inference to be applied on the data
+        title: Inference
+        enum:
+        - NONE
+        - RDFS
+        - OWL
+        default: NONE
+      source:
+        type: string
+        description: "Source of the RDF data, used to know how to access it"
+        title: Source
+        enum:
+        - byText
+        - byUrl
+        - byFile
+        - byCompound
+        default: byText
+    externalDocs:
+      description: W3C - Resource Description Framework (RDF)
+      url: https://www.w3.org/RDF/
+    description: RDF data instance to be processed by the API
+  Json:
+    type: object
+    required:
+    - type
+    discriminator: type
+    properties:
+      type:
+        type: string
+        enum:
+        - JArray
+        - JNull
+        - JObject
+        - JBoolean
+        - JNumber
+        - JString
+    description: Json
+    x-discriminator-is-enum: true
