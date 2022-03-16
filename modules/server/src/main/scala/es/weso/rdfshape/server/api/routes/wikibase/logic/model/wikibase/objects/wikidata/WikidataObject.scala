@@ -1,34 +1,25 @@
 package es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata
 
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.WikibaseObject
-import es.weso.rdfshape.server.utils.networking.NetworkingUtils
 import org.http4s.Uri
 
 import scala.util.matching.Regex
 
-/** Abstract class representing any object (entity, schema...) living in
-  * Wikidata
+/** Trait defining several utilities and guidelines for wikibase items
+  * residing in Wikidata
   */
-abstract class WikidataObject(
-    override val entityUri: Uri
-) extends WikibaseObject(entityUri) {
+trait WikidataObject {
 
-  /** Either the raw contents of this object or the error
-    * occurred while retrieving them
+  /** Uri unique to the wikidata object being identified
     */
-  lazy val contents: Either[String, String] =
-    NetworkingUtils.getUrlContents(contentUri.renderString)
-
-  /** Short name or identifier of the entity, e.g.: Q123,
-    * normally this is the last part of [[entityUri]]
-    */
-  val localName: String
+  val entityUri: Uri
 
   /** URL where the entity data can be found in raw form
     */
   val contentUri: Uri
 
   /** Regular expression used to recognize wikidata objects of the required type
+    * When using Wikidata, we know the format of the URIs we expect, so we can
+    * define a regex to notice if the input URI is a valid Wikidata item or not
     */
   val wikidataRegex: Regex
 
@@ -39,4 +30,5 @@ abstract class WikidataObject(
     wikidataRegex.matches(entityUri.renderString),
     s"Uri '${entityUri.renderString}' does not comply with '${wikidataRegex.regex}'"
   )
+
 }

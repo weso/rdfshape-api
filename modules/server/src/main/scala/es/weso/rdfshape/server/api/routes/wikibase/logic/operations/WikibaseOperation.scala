@@ -121,7 +121,7 @@ private[operations] object WikibaseOperation {
     * of any wikibase instance
     */
   val wikidataOnlyMessage =
-    "Cannot extract schemas from wikibase instances other than Wikidata"
+    "Cannot perform this operation on wikibase instances other than Wikidata"
 
   /** Dummy success message
     */

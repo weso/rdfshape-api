@@ -33,6 +33,18 @@ private[api] case class Wikibase(
     */
   def schemaEntityUri(schema: String): Uri =
     baseUrl / "wiki" / "Special:EntitySchemaText" / schema
+
+  /** Return whether if tow wikibase instances are the same or not
+    *
+    * @param other Other item being compared
+    * @return True if the wikibase instances share a base URL, false otherwise
+    */
+  override def equals(other: Any): Boolean = {
+    other match {
+      case wb: Wikibase => baseUrl == wb.baseUrl
+      case _            => false
+    }
+  }
 }
 
 object Wikibase {

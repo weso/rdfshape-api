@@ -68,7 +68,7 @@ private[wikibase] abstract class WikibaseSearchOperation(
     for {
       eitherResponse <- super.performRequest[Json]()
       result <- eitherResponse.flatMap(convertEntities) match {
-        case Left(err) => IO.raiseError(WikibaseServiceException(err))
+        case Left(err) => IO.raiseError(new WikibaseServiceException(err))
         case Right(jsonResults) =>
           IO {
             WikibaseOperationResult(
