@@ -17,8 +17,8 @@ import es.weso.rdfshape.server.api.routes.shapemap.logic.{
   ShapeMapSource
 }
 import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikibase.WikibaseEntity
 import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata.WikidataEntity
-import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.WikibaseOperation.wikidataOnlyMessage
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.{
   WikibaseOperation,
   WikibaseOperationDetails,
@@ -61,92 +61,93 @@ private[wikibase] case class WikibaseSchemaValidate(
 
     val entityUris = operationData.payload.split(entitiesSeparator)
 
-    // Raise error if target is not Wikidata
-    if(targetWikibase != Wikidata)
-      IO.raiseError(WikibaseServiceException(wikidataOnlyMessage))
-    else {
-      val tryResult = for {
-        // Get the Wikidata items info from the URI submitted as payload
-        wdEntities <- Try {
+    // Attempt the validation even if the target is not Wikidata
+
+    val tryResult = for {
+      // Get the Wikidata items info from the URI submitted as payload
+      wdEntities <- Try {
+        if(targetWikibase == Wikidata)
           entityUris.map(it => WikidataEntity(Uri.unsafeFromString(it)))
-        }
-        // Create the data to be validated, using Wikidata to get the URL
-        // to the Turtle contents
-        /* Data will be a compound of several simple data fetched from each
-         * entity */
+        else
+          entityUris.map(it =>
+            new WikibaseEntity(targetWikibase, Uri.unsafeFromString(it))
+          )
+      }
+      // Create the data to be validated, using Wikidata to get the URL
+      // to the Turtle contents
+      /* Data will be a compound of several simple data fetched from each entity */
 
-        inputData = DataCompound(
-          wdEntities
-            .map(entity =>
-              DataSingle(
-                content = entity.contentUri.renderString,
-                format = Turtle,
-                inference = NONE,
-                source = DataSource.URL
-              )
+      inputData = DataCompound(
+        wdEntities
+          .map(entity =>
+            DataSingle(
+              content = entity.contentUri.renderString,
+              format = Turtle,
+              inference = NONE,
+              source = DataSource.URL
             )
-            .toList
+          )
+          .toList
+      )
+
+      /* Get the schema model needed for validation: already passed to the class */
+
+      // Perform validation
+      eitherValidationResults = for {
+        // Create your trigger mode: ShEx with basic Shapemap
+        // For each entity, add a start point
+        shapeMapModel <- wdEntities.foldLeft(ShapeMapW.empty.asRight[String])(
+          (sm, entity) => {
+            val entityUri = IRI(entity.entityUri.renderString)
+            sm.flatMap(_.add(entityUri, Start))
+          }
         )
-
-        /* Get the schema model needed for validation: already passed to the
-         * class */
-
-        // Perform validation
-        eitherValidationResults = for {
-          // Create your trigger mode: ShEx with basic Shapemap
-          // For each entity, add a start point
-          shapeMapModel <- wdEntities.foldLeft(ShapeMapW.empty.asRight[String])(
-            (sm, entity) => {
-              val entityUri = IRI(entity.entityUri.renderString)
-              sm.flatMap(_.add(entityUri, Start))
-            }
-          )
-          shapeMapFinalModel <- shapeMapModel.serialize(Compact.name)
-          trigger = TriggerShapeMap(
-            shapeMap = ShapeMap(
-              content = shapeMapFinalModel,
-              nodesPrefixMap = shapeMapModel.nodesPrefixMap.addPrefixMap(
-                Wikidata.wikidataPrefixMap
-              ),
-              shapesPrefixMap = shapeMapModel.shapesPrefixMap.addPrefixMap(
-                Wikidata.wikidataPrefixMap
-              ),
-              format = Compact,
-              source = ShapeMapSource.TEXT
+        shapeMapFinalModel <- shapeMapModel.serialize(Compact.name)
+        trigger = TriggerShapeMap(
+          shapeMap = ShapeMap(
+            content = shapeMapFinalModel,
+            nodesPrefixMap = shapeMapModel.nodesPrefixMap.addPrefixMap(
+              Wikidata.wikidataPrefixMap
             ),
-            data = Some(inputData),
-            schema = Some(schema)
-          )
-          result = SchemaValidate.schemaValidate(
-            inputData,
-            schema,
-            trigger
-          )
-        } yield result
-      } yield eitherValidationResults match {
-        case Left(err)    => IO.raiseError(WikibaseServiceException(err))
-        case Right(value) => value
-      }
+            shapesPrefixMap = shapeMapModel.shapesPrefixMap.addPrefixMap(
+              Wikidata.wikidataPrefixMap
+            ),
+            format = Compact,
+            source = ShapeMapSource.TEXT
+          ),
+          data = Some(inputData),
+          schema = Some(schema)
+        )
+        result = SchemaValidate.schemaValidate(
+          inputData,
+          schema,
+          trigger
+        )
+      } yield result
+    } yield eitherValidationResults match {
+      case Left(err)    => IO.raiseError(new WikibaseServiceException(err))
+      case Right(value) => value
+    }
 
-      // Return an error or the contained value wrapped into a Result object
-      tryResult match {
-        case Failure(exception) =>
-          IO.raiseError(WikibaseServiceException(exception.getMessage))
-        case Success(value) =>
-          value.map(validationResults =>
-            WikibaseOperationResult(
-              operationData = operationData,
-              wikibase = targetWikibase,
-              result = Json.fromFields(
-                List(
-                  ("entity", entityUris.asJson),
-                  ("result", validationResults.asJson)
-                )
+    // Return an error or the contained value wrapped into a Result object
+    tryResult match {
+      case Failure(exception) =>
+        IO.raiseError(new WikibaseServiceException(exception))
+      case Success(value) =>
+        value.map(validationResults =>
+          WikibaseOperationResult(
+            operationData = operationData,
+            wikibase = targetWikibase,
+            result = Json.fromFields(
+              List(
+                ("entity", entityUris.asJson),
+                ("result", validationResults.asJson)
               )
             )
           )
-      }
+        )
     }
+
   }
 }
 

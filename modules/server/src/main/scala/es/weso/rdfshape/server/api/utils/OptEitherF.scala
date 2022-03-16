@@ -4,7 +4,6 @@ import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import es.weso.rdfshape.server.utils.error.exceptions.WikibaseServiceException
 
 /** Static utility methods to help work with Optional, Either or IO types
   */
@@ -58,7 +57,7 @@ object OptEitherF {
     * @return IO wrapping the Either value if right, an IO error if left
     */
   def ioFromEither[A](either: Either[String, A]): IO[A] = {
-    either.fold(err => IO.raiseError(WikibaseServiceException(err)), IO.pure)
+    either.fold(err => IO.raiseError(new RuntimeException(err)), IO.pure)
   }
 
 }

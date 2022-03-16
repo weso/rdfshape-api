@@ -7,6 +7,7 @@ import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, Turtle}
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
 import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikibase.WikibaseEntity
 import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata.WikidataEntity
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.schema.WikibaseSheXerExtract.ShexerParams.{
   wikidataNamespaceQualifiers,
@@ -32,6 +33,8 @@ import org.http4s.client.Client
 import org.http4s.headers.{`Content-Type` => ContentType}
 import org.http4s.implicits.http4sLiteralsSyntax
 
+import scala.util.{Failure, Success, Try}
+
 /** Given an input [[WikibaseOperationDetails]], attempt to extract an schema (ShEx)
   * from a given entity using SheXer.
   *
@@ -56,18 +59,20 @@ private[wikibase] case class WikibaseSheXerExtract(
   override lazy val targetUri: Uri = uri"" // unused
 
   override def performOperation: IO[WikibaseOperationResult] = {
-    // Raise error if target is not Wikidata
-    if(targetWikibase != Wikidata)
-      IO.raiseError(
-        WikibaseServiceException(
-          "Cannot extract schemas from wikibase instances other tha Wikidata"
-        )
-      )
-    else {
+    val entityUri = operationData.payload
 
-      // Make the SheXer params by scanning the data sent by the client
-      val wdEntity = WikidataEntity(Uri.unsafeFromString(operationData.payload))
-      val shexerParams = ShexerParams(
+    val tryResult = for {
+      // Try to extract even from wikibase instances different from wikidata
+      // Get the Wikibase item info from the URI submitted as payload
+      wdEntity <- Try {
+        val schemaUri = Uri.unsafeFromString(entityUri)
+        // Build the target wikibase, as sent by the user
+        if(targetWikibase == Wikidata) WikidataEntity(schemaUri)
+        else new WikibaseEntity(targetWikibase, schemaUri)
+      }
+
+      // Make the SheXer params by scanning the entity sent by the client
+      shexerParams = ShexerParams(
         graph = wdEntity.contentUri.renderString,
         graphSource = DataSource.URL,
         endpointGraph = targetWikibase.queryUrl,
@@ -75,22 +80,26 @@ private[wikibase] case class WikibaseSheXerExtract(
       )
 
       // Make the request to SheXer
-      val finalRequest = request.withEntity[Json](shexerParams.asJson)
-      val eitherResponse: IO[Either[String, Json]] = for {
-        response <- performRequest[Json](finalRequest)
-      } yield response
+      shexerRequest  = request.withEntity[Json](shexerParams.asJson)
+      shexerResponse = performRequest[Json](shexerRequest)
 
-      eitherResponse.flatMap({
-        case Left(err) => IO.raiseError(WikibaseServiceException(err))
-        case Right(shexerResponse) =>
-          IO {
-            WikibaseOperationResult(
-              operationData = operationData,
-              wikibase = targetWikibase,
-              result = shexerResponse
-            )
-          }
-      })
+    } yield shexerResponse
+
+    // Pattern match errors
+    tryResult match {
+      case Failure(err) => IO.raiseError(new WikibaseServiceException(err))
+      case Success(eitherResult) =>
+        eitherResult.flatMap {
+          case Left(err) => IO.raiseError(new WikibaseServiceException(err))
+          case Right(shexerResponse) =>
+            IO {
+              WikibaseOperationResult(
+                operationData = operationData,
+                wikibase = targetWikibase,
+                result = shexerResponse
+              )
+            }
+        }
     }
 
   }
@@ -121,7 +130,7 @@ private[wikibase] object WikibaseSheXerExtract {
     * @return
     */
   def mkShexerShapemap(
-      entity: WikidataEntity,
+      entity: WikibaseEntity,
       varName: String = "userEntity"
   ): String =
     s"SPARQL 'SELECT DISTINCT ?$varName WHERE { VALUES ?$varName { wd:${entity.localName} } }'@<$varName> "
@@ -218,22 +227,6 @@ private[wikibase] object WikibaseSheXerExtract {
   //noinspection HttpUrlsUsage
   object ShexerParams {
 
-    /** [[Uri]] representing the property "rdf:type"
-      */
-    private val rdfTypeProp =
-      uri"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-
-    /** [[Uri]] representing Wikidata's "instance of" property
-      *
-      * @see [[https://www.wikidata.org/wiki/Property:P31]]
-      */
-    private val wikidataProp31: Uri =
-      uri"http://www.wikidata.org/prop/direct/P31"
-
-    private val wikidataNamespaceQualifiers = List(
-      uri"http://www.wikidata.org/prop/"
-    )
-
     /** Encoder to transform [[ShexerParams]] instances to JSON to be sent
       * in requests
       */
@@ -320,6 +313,21 @@ private[wikibase] object WikibaseSheXerExtract {
         // Return final params as JSON object
         Json.fromFields(baseParams).deepDropNullValues
       }
+
+    /** [[Uri]] representing the property "rdf:type"
+      */
+    private val rdfTypeProp =
+      uri"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+
+    /** [[Uri]] representing Wikidata's "instance of" property
+      *
+      * @see [[https://www.wikidata.org/wiki/Property:P31]]
+      */
+    private val wikidataProp31: Uri =
+      uri"http://www.wikidata.org/prop/direct/P31"
+    private val wikidataNamespaceQualifiers = List(
+      uri"http://www.wikidata.org/prop/"
+    )
 
   }
 }

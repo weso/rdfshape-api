@@ -6,7 +6,12 @@ import scala.util.control.NoStackTrace
   *
   * @param message Reason/explanation of why the exception occurred
   */
-final case class WikibaseServiceException(
+final class WikibaseServiceException(
     private val message: String
 ) extends RuntimeException(message)
-    with NoStackTrace
+    with NoStackTrace {
+
+  def this(throwable: Throwable) = {
+    this(throwable.getMessage)
+  }
+}

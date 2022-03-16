@@ -60,7 +60,7 @@ class WikibaseService(client: Client[IO])
         IO,
         WikibaseOperationInput
       ] |>> { body: WikibaseOperationInput =>
-        val op = WikibaseGetLabels(body.operationDetails, client)
+        val op = WikibaseGetLabels(body.operationDetails, redirectClient)
         op.performOperation
           .flatMap(results => Ok(results.asJson))
           .handleErrorWith(err => InternalServerError(err.getMessage))
@@ -71,7 +71,7 @@ class WikibaseService(client: Client[IO])
         IO,
         WikibaseOperationInput
       ] |>> { body: WikibaseOperationInput =>
-        val op = WikibaseSchemaContent(body.operationDetails, client)
+        val op = WikibaseSchemaContent(body.operationDetails, redirectClient)
         op.performOperation
           .flatMap(results => Ok(results.asJson))
           .handleErrorWith(err => InternalServerError(err.getMessage))
@@ -89,21 +89,21 @@ class WikibaseService(client: Client[IO])
       ) ^ jsonOf[
         IO,
         WikibaseOperationInput
-      ] |>> { (searchType: String, body: WikibaseOperationInput) =>
+      ] |>> { (searchType: WikibaseSearchTypes, body: WikibaseOperationInput) =>
         // Check for invalid search parameter
         if(!WikibaseSearchTypes.basicValues.contains(searchType))
           BadRequest(
             s"Invalid search type '$searchType'. Required one of: ${WikibaseSearchTypes.basicValues.mkString(", ")}"
           )
         else {
-          // Create the corresponding operations and perform it
+          // Create the corresponding operation and perform it
           val searchOperation = searchType match {
             case WikibaseSearchTypes.ENTITY =>
-              WikibaseSearchEntity(body.operationDetails, client)
+              WikibaseSearchEntity(body.operationDetails, redirectClient)
             case WikibaseSearchTypes.PROPERTY =>
-              WikibaseSearchProperty(body.operationDetails, client)
+              WikibaseSearchProperty(body.operationDetails, redirectClient)
             case WikibaseSearchTypes.LEXEME =>
-              WikibaseSearchLexeme(body.operationDetails, client)
+              WikibaseSearchLexeme(body.operationDetails, redirectClient)
           }
 
           searchOperation.performOperation
@@ -118,7 +118,7 @@ class WikibaseService(client: Client[IO])
         IO,
         WikibaseOperationInput
       ] |>> { body: WikibaseOperationInput =>
-        val op = WikibaseLanguages(body.operationDetails, client)
+        val op = WikibaseLanguages(body.operationDetails, redirectClient)
         op.performOperation
           .flatMap(results => Ok(results.asJson))
           .handleErrorWith(err => InternalServerError(err.getMessage))
@@ -129,7 +129,7 @@ class WikibaseService(client: Client[IO])
         IO,
         WikibaseOperationInput
       ] |>> { body: WikibaseOperationInput =>
-        val op = WikibaseQueryOperation(body.operationDetails, client)
+        val op = WikibaseQueryOperation(body.operationDetails, redirectClient)
         op.performOperation
           .flatMap(results => Ok(results.asJson))
           .handleErrorWith(err => InternalServerError(err.getMessage))
@@ -165,7 +165,11 @@ class WikibaseService(client: Client[IO])
         WikibaseValidateInput
       ] |>> { body: WikibaseValidateInput =>
         val op =
-          WikibaseSchemaValidate(body.operationDetails, client, body.schema)
+          WikibaseSchemaValidate(
+            body.operationDetails,
+            redirectClient,
+            body.schema
+          )
         op.performOperation
           .flatMap(results => Ok(results.asJson))
           .handleErrorWith(err => InternalServerError(err.getMessage))
