@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase
+package es.weso.rdfshape.server.api.routes.wikibase.logic.model
 
 import es.weso.rdf.PrefixMap
 import es.weso.rdf.nodes.IRI

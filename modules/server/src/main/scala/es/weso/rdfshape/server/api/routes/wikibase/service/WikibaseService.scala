@@ -14,12 +14,7 @@ import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.schema.{
   WikibaseSheXerExtract
 }
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.search.WikibaseSearchTypes.WikibaseSearchTypes
-import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.search.{
-  WikibaseSearchEntity,
-  WikibaseSearchLexeme,
-  WikibaseSearchProperty,
-  WikibaseSearchTypes
-}
+import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.search._
 import es.weso.rdfshape.server.api.routes.wikibase.service.operations.{
   WikibaseOperationInput,
   WikibaseValidateInput
@@ -104,6 +99,10 @@ class WikibaseService(client: Client[IO])
               WikibaseSearchProperty(body.operationDetails, redirectClient)
             case WikibaseSearchTypes.LEXEME =>
               WikibaseSearchLexeme(body.operationDetails, redirectClient)
+            // SCHEMA is a non-standard search case, we implemented our own
+            // schema search mechanism but that is transparent to clients
+            case WikibaseSearchTypes.SCHEMA =>
+              WikibaseSearchSchema(body.operationDetails, redirectClient)
           }
 
           searchOperation.performOperation

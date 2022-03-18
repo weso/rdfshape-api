@@ -6,9 +6,9 @@ import es.weso.rdf.PrefixMap
 import es.weso.rdfshape.server.api.format.dataFormats.{DataFormat, Turtle}
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource
 import es.weso.rdfshape.server.api.routes.data.logic.DataSource.DataSource
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikibase.WikibaseEntity
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata.WikidataEntity
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.Wikidata
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikibase.WikibaseEntity
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikidata.WikidataEntity
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.schema.WikibaseSheXerExtract.ShexerParams.{
   wikidataNamespaceQualifiers,
   wikidataProp31
