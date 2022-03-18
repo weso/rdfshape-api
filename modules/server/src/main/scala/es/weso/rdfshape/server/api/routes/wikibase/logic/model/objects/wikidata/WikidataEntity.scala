@@ -1,7 +1,7 @@
-package es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata
+package es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikidata
 
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikibase.WikibaseEntity
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.Wikidata
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikibase.WikibaseEntity
 import org.http4s.Uri
 
 import scala.util.matching.Regex

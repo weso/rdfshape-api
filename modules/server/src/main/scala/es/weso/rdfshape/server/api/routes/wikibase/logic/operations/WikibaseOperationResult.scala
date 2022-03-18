@@ -1,6 +1,6 @@
 package es.weso.rdfshape.server.api.routes.wikibase.logic.operations
 
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikibase
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.Wikibase
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 

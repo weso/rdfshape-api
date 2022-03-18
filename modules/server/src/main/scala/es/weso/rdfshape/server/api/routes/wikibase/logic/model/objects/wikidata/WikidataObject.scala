@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata
+package es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikidata
 
 import org.http4s.Uri
 

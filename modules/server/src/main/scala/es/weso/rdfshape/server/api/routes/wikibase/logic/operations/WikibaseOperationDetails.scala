@@ -2,7 +2,7 @@ package es.weso.rdfshape.server.api.routes.wikibase.logic.operations
 
 import cats.implicits.{catsSyntaxEitherId, toBifunctorOps}
 import com.typesafe.scalalogging.LazyLogging
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.Wikidata
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.WikibaseOperationFormats.WikibaseOperationFormats
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import es.weso.rdfshape.server.implicits.codecs.{decodeUri, encodeUri}

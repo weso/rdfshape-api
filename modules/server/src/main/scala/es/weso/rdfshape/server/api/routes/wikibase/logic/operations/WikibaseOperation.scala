@@ -2,8 +2,7 @@ package es.weso.rdfshape.server.api.routes.wikibase.logic.operations
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxEitherId
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.{
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.{
   Wikibase,
   Wikidata
 }
@@ -29,7 +28,7 @@ private[operations] abstract class WikibaseOperation(
 
   /** Wikibase instance to be queried by this operation
     * Given the data needed for the wikibase operation, configure the target wikibase instance.
-    * Pattern match along all possible operations and set the target's [[Wikibase.baseUrl]] and/or [[wikibase.Wikibase.queryUrl]]
+    * Pattern match along all possible operations and set the target's [[Wikibase.baseUrl]] and/or [[Wikibase.queryUrl]]
     * as needed for each operation.
     *
     * For instance: a [[WikibaseSearchOperation]] operation will include the wikibase's base URL
@@ -68,6 +67,10 @@ private[operations] abstract class WikibaseOperation(
     */
   val defaultContinue = 0
 
+  /** Default language to use when required but not specified
+    */
+  val defaultLanguage = "en"
+
   /** Base request object that will be executed when performing the operation.
     * Meant to be overridden or complemented with additional configurations
     */
@@ -98,8 +101,7 @@ private[operations] abstract class WikibaseOperation(
             .fold(
               decodeErr => decodeErr.message,
               rawResponse =>
-                s"Request $request failed with status ${failedResponse.status.code} " +
-                  s"and body $rawResponse"
+                s"Request $request failed with status ${failedResponse.status.code}"
             )
             .map(_.asLeft[R])
       }

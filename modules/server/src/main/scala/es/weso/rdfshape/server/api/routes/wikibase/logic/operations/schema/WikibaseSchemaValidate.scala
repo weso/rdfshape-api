@@ -16,9 +16,9 @@ import es.weso.rdfshape.server.api.routes.shapemap.logic.{
   ShapeMap,
   ShapeMapSource
 }
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikidata
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikibase.WikibaseEntity
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata.WikidataEntity
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.Wikidata
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikibase.WikibaseEntity
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikidata.WikidataEntity
 import es.weso.rdfshape.server.api.routes.wikibase.logic.operations.{
   WikibaseOperation,
   WikibaseOperationDetails,

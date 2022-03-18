@@ -1,7 +1,7 @@
-package es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikibase
+package es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikibase
 
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.Wikibase
-import es.weso.rdfshape.server.api.routes.wikibase.logic.model.wikibase.objects.wikidata.WikidataObject
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.Wikibase
+import es.weso.rdfshape.server.api.routes.wikibase.logic.model.objects.wikidata.WikidataObject
 import es.weso.rdfshape.server.utils.networking.NetworkingUtils
 import org.http4s.Uri
 
