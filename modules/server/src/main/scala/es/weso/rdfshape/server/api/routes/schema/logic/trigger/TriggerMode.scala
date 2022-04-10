@@ -11,7 +11,7 @@ import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 
 import scala.language.implicitConversions
 
-/** Common trait to all schemas, whichever its nature
+/** Common trait to all validation triggers, whichever its nature
   */
 trait TriggerMode {
 

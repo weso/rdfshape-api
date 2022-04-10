@@ -72,7 +72,6 @@ class SchemaService(client: Client[IO])
 
     "Get the default schema engine as a raw string" **
       GET / `verb` / "engines" / "default" |>> {
-        val json = Json.fromString(Schemas.defaultSchema.name)
         Ok(Schemas.defaultSchema.name)
       }
 
