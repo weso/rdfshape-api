@@ -17,8 +17,8 @@ import scala.util.Try
   *
   * @note Invalid initial data is accepted, but may cause exceptions when operating with it (like converting to JSON).
   * @param content         Shapemap contents, as received before being processed depending on the [[source]]
-  * @param nodesPrefixMap  Prefix mappings of the data referenced in the shapemap
-  * @param shapesPrefixMap Prefix mappings of the ShEx schema referenced in the shapemap
+  * @param nodesPrefixMap  Prefix mappings of the data referenced in the shapeMap
+  * @param shapesPrefixMap Prefix mappings of the ShEx schema referenced in the shapeMap
   * @param format          Shapemap format
   * @param source          Active source, used to know which source the shapemap comes from
   */
