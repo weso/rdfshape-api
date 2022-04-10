@@ -23,6 +23,7 @@ import org.http4s.client.Client
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.Router
 import org.http4s.server.middleware.{CORS, CORSPolicy, Logger}
+import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.{HttpApp, HttpRoutes}
 
 import java.util.concurrent.TimeUnit
@@ -116,7 +117,11 @@ private class Server(
       .bindHttp(port, ip)
       .withIdleTimeout(idleTimeout.minutes)
       .withResponseHeaderTimeout(requestTimeout.minute)
-      .withHttpApp(createApp(client))
+      /* WebSocketBuilder was deprecated and must be obtained here, from the
+       * server builder */
+      .withHttpWebSocketApp((wsBuilder: WebSocketBuilder[IO]) =>
+        createApp(client)
+      )
 
     sslContext match {
       case None          => baseServer
