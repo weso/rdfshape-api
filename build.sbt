@@ -8,10 +8,6 @@ Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
 Global / scalaVersion := scala213
 
-lazy val scala212               = "2.12.15"
-lazy val scala213               = "2.13.8"
-lazy val supportedScalaVersions = List(scala213)
-
 // Lint-excluded keys
 Global / excludeLintKeys ++= Set(
   name,
@@ -261,7 +257,6 @@ lazy val server = project
     moduleName := s"${(Global / packageName).value}-server",
     run / fork := false,
     testFrameworks += MUnitFramework,
-    crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       http4sDsl,
       http4sBlazeServer,
@@ -287,10 +282,12 @@ lazy val server = project
   )
 
 // "sbt-github-actions" plugin settings
-lazy val JavaCIVersion  = "adopt@1.11"
-lazy val ScalaCIVersion = scala213
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
-ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
+lazy val scala212    = "2.12.15"
+lazy val scala213    = "2.13.8"
+lazy val java11adopt = "adopt@1.11"
+
+ThisBuild / githubWorkflowJavaVersions := Seq(java11adopt)
+ThisBuild / githubWorkflowScalaVersions := Seq(scala213)
 
 /* ------------------------------------------------------------------------- */
 // Documentation project, for MDoc + Docusaurus documentation
