@@ -41,9 +41,6 @@ was followed. However, minor issues occurred:
 
 1. The _package.json_ had to be modified to include the script `publish-gh-pages`.
 2. The [Docusaurus config file](https://github.com/weso/rdfshape-api/blob/master/website/docusaurus.config.js) had to be
-   modified to indicate what the location of t2.
-   The [Docusaurus config file](https://github.com/weso/rdfshape-api/blob/master/website/docusaurus.config.js) had to be
-   modified to indicate what the location of the markdown files with the web docs is.he markdown files with the web docs
-   is.
+   modified to indicate what the location of the markdown files with the web docs is.
 3. The [sidebar configuration file](https://github.com/weso/rdfshape-api/blob/master/website/sidebars.js) was modified
    to customize the sidebar that is used as navigation when browsing the web docs.
