@@ -8,10 +8,6 @@ Global / cancelable := true
 Global / apiURL := Some(url("https://github.com/weso/rdfshape-api"))
 Global / scalaVersion := scala213
 
-lazy val scala212               = "2.12.15"
-lazy val scala213               = "2.13.8"
-lazy val supportedScalaVersions = List(scala213)
-
 // Lint-excluded keys
 Global / excludeLintKeys ++= Set(
   name,
@@ -85,7 +81,8 @@ lazy val scaladocSettings: Seq[Def.Setting[_]] = Seq(
     // Other settings
     "-diagrams",
     "-implicits",
-    "-private"
+    "-private",
+    "-no-link-warnings"
   ),
   // Need to generate docs to publish to oss
   Compile / packageDoc / publishArtifact := true
@@ -116,7 +113,7 @@ lazy val mdocSettings = Seq(
       .dependsOn(Compile / unidoc)
       .value
 )
-// Unidoc settings, mirroring scaladoc settings
+// Unidoc settings
 lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
   // Generate docs for the root project and the server module
   ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(rdfshape, server),
@@ -124,31 +121,8 @@ lazy val unidocSettings: Seq[Def.Setting[_]] = Seq(
   ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
   // When cleaning, remove unidoc generated docs as well
   cleanFiles += (ScalaUnidoc / unidoc / target).value,
-  // Scalac options
-  ScalaUnidoc / unidoc / scalacOptions ++= Seq(
-    // Base source path
-    "-sourcepath",
-    (LocalRootProject / baseDirectory).value.getAbsolutePath,
-    // Link to GitHub source
-    "-doc-source-url",
-    scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
-    // Page title
-    "-doc-title",
-    "RDFShape API - Docs",
-    // Docs version
-    "-doc-version",
-    version.value,
-    // Docs footer
-    "-doc-footer",
-    "WESO Research Group - University of Oviedo",
-    // Skip unnecessary source
-    "-skip-packages",
-    "org:buildinfo",
-    // Other settings
-    "-diagrams",
-    "-implicits",
-    "-private"
-  )
+  // Scalac options, mirroring scaladoc settings
+  ScalaUnidoc / unidoc / scalacOptions ++= (Compile / doc / scalacOptions).value
 )
 // Shared publish settings for all modules.
 lazy val publishSettings = Seq(
@@ -189,8 +163,9 @@ lazy val publishSettings = Seq(
 // Helper to resolve dependencies from GitHub packages
 lazy val resolverSettings = Seq(
   resolvers ++= Seq(
-    Resolver.DefaultMavenRepository,
-    Resolver.sonatypeRepo("snapshots")
+    Resolver.DefaultMavenRepository, // maven
+    Opts.resolver.sonatypeSnapshots, // sonatype
+    Opts.resolver.sonatypeReleases
   )
 )
 // Shared settings for the BuildInfo Plugin
@@ -261,7 +236,6 @@ lazy val server = project
     moduleName := s"${(Global / packageName).value}-server",
     run / fork := false,
     testFrameworks += MUnitFramework,
-    crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       http4sDsl,
       http4sBlazeServer,
@@ -269,6 +243,7 @@ lazy val server = project
       http4sEmberClient,
       http4sCirce,
       rho_swagger,
+      comet,
       umlShaclex,
       shexs,
       shaclex,
@@ -287,10 +262,12 @@ lazy val server = project
   )
 
 // "sbt-github-actions" plugin settings
-lazy val JavaCIVersion  = "adopt@1.11"
-lazy val ScalaCIVersion = scala213
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaCIVersion)
-ThisBuild / githubWorkflowScalaVersions := Seq(ScalaCIVersion)
+lazy val scala212    = "2.12.15"
+lazy val scala213    = "2.13.8"
+lazy val java11adopt = "adopt@1.11"
+
+ThisBuild / githubWorkflowJavaVersions := Seq(java11adopt)
+ThisBuild / githubWorkflowScalaVersions := Seq(scala213)
 
 /* ------------------------------------------------------------------------- */
 // Documentation project, for MDoc + Docusaurus documentation
@@ -312,10 +289,11 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 lazy val http4sVersion = "1.0.0-M30"
 lazy val rhoVersion    = "0.23.0-M1"
 lazy val catsVersion   = "2.7.0"
+lazy val cometVersion  = "0.1.1"
 /* ------------------------------------------------------------------------- */
-lazy val mongodbVersion      = "4.5.1"
+lazy val mongodbVersion      = "4.6.0"
 lazy val mongo4catsVersion   = "0.4.7"
-lazy val any23Version        = "2.6"
+lazy val any23Version        = "2.7"
 lazy val rdf4jVersion        = "3.7.6"
 lazy val graphvizJavaVersion = "0.18.1"
 lazy val logbackVersion      = "1.2.11"
@@ -337,11 +315,12 @@ lazy val http4sBlazeClient =
   "org.http4s" %% "http4s-blaze-client" % http4sVersion
 lazy val http4sEmberClient =
   "org.http4s" %% "http4s-ember-client" % http4sVersion
-lazy val http4sCirce = "org.http4s"        %% "http4s-circe"       % http4sVersion
-lazy val rho_swagger = "org.http4s"        %% "rho-swagger"        % rhoVersion
-lazy val catsCore    = "org.typelevel"     %% "cats-core"          % catsVersion
-lazy val catsKernel  = "org.typelevel"     %% "cats-kernel"        % catsVersion
-lazy val mongodb     = "org.mongodb.scala" %% "mongo-scala-driver" % mongodbVersion
+lazy val http4sCirce = "org.http4s"         %% "http4s-circe"       % http4sVersion
+lazy val rho_swagger = "org.http4s"         %% "rho-swagger"        % rhoVersion
+lazy val catsCore    = "org.typelevel"      %% "cats-core"          % catsVersion
+lazy val catsKernel  = "org.typelevel"      %% "cats-kernel"        % catsVersion
+lazy val comet       = "io.github.ulitol97" %% "comet"              % cometVersion
+lazy val mongodb     = "org.mongodb.scala"  %% "mongo-scala-driver" % mongodbVersion
 lazy val mongo4catsCore =
   "io.github.kirill5k" %% "mongo4cats-core" % mongo4catsVersion
 lazy val mongo4catsCirce =
