@@ -3,6 +3,9 @@ const baseUrl = "/rdfshape-api/"
 const scalaDocUrl = `${deployUrl}${baseUrl}api/es/weso/rdfshape/`
 const apiDocsUrl = "https://app.swaggerhub.com/apis-docs/weso/RDFShape/"
 
+const lightCodeTheme = require("prism-react-renderer/themes/github");
+const darkCodeTheme = require("prism-react-renderer/themes/dracula");
+
 /** @type {import("@docusaurus/types").DocusaurusConfig} */
 module.exports = {
   title: "RDFShape API",
@@ -19,17 +22,13 @@ module.exports = {
     scalaDocUrl, apiDocsUrl
   },
   themeConfig: {
-    image: "img/preview.png", hideableSidebar: false, colorMode: {
+    image: "img/preview.png",
+    colorMode: {
       defaultMode: "light",
       disableSwitch: false,
-      respectPrefersColorScheme: true,
-      switchConfig: {
-        darkIcon: "🌙",
-        lightIcon: "\u2600",
-        darkIconStyle: {marginLeft: "2px"},
-        lightIconStyle: {marginLeft: "1px"}
-      }
-    }, navbar: {
+      respectPrefersColorScheme: true
+    },
+    navbar: {
       title: "RDFShape API", logo: {
         alt: "RDFShape API - WESO", src: "img/logo-weso.png"
       }, items: [// Web docs
@@ -76,6 +75,10 @@ module.exports = {
         }]
       }],
       copyright: `Copyright © ${new Date().getFullYear()} WESO Research Group`
+    },
+    prism: {
+      theme: lightCodeTheme,
+      darkTheme: darkCodeTheme
     }
   },
   presets: [["@docusaurus/preset-classic", {
