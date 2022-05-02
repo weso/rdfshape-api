@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrdfshape_api_webdocs=self.webpackChunkrdfshape_api_webdocs||[]).push([[357],{8232:function(e,a,s){s.r(a);var c=s(7294),r=s(6775),t=s(4996);a.default=function(){var e=(0,t.Z)("/docs/home");return c.createElement(r.l_,{to:e})}}}]);
