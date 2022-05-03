@@ -164,7 +164,7 @@ class SchemaService(client: Client[IO], wsBuilder: WebSocketBuilder[IO])
       }
 
     "WebSockets endpoint meant for streaming validations" **
-      GET / `verb` / "ws" |>> {
+      GET / `verb` / "validate" / "stream" |>> {
         /* Stream validations are done via WebSockets. The basic flow goes as
          * follows:
          * 1. The client starts a WebSocket connection.
@@ -192,7 +192,44 @@ class SchemaService(client: Client[IO], wsBuilder: WebSocketBuilder[IO])
           .flatMap { queue =>
             // Stream of messages from the server to the client
             val toClient: Stream[IO, WebSocketFrame] =
-              Stream.fromQueueNoneTerminated(queue)
+              Stream
+                .fromQueueNoneTerminated(queue)
+                // Force an error
+                .evalMap(_ =>
+                  IO.raiseError(new RuntimeException("Testing errors"))
+                )
+                // Handle the error emitting an informational frame and
+                // a final closing frame
+                /* Beware of close codes:
+                 * https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#parameters */
+                .handleErrorWith(error => {
+                  Stream.evals {
+                    val closingFrames: Seq[WebSocketFrame] = Seq(
+                      // Informational frame
+                      WebSocketFrame
+                        .Text(s"An error occurred: ${error.getMessage}"),
+                      /* Closing frame, if it fails to be created, resort to an
+                       * empty one */
+                      WebSocketFrame
+                        .Close(1000, s"Reason: ${error.getMessage}")
+                        .getOrElse(WebSocketFrame.Close())
+                    )
+                    IO(closingFrames)
+                  }
+                })
+            /* Mapping [WebSocketFrame => JSON]: conversion that checks we
+             * received text and parses it to a JSON object. */
+            /* Mapping [JSON => SchemaValidateStreamInput]: conversion that
+             * extracts all needed data from that JSON, using available decoders */
+            /* Pipe[IO, SchemaValidateStreamInput, comet.ValidationResult]:
+             * pipe that creates the comet validation stream from the info and
+             * invokes it */
+            /* Mapping [comet.ValidationResult => WebSocketFrame]: conversion
+             * that converts comet results to WebSocketFrames with JSON text
+             * that are be sent back to the client */
+            /* Remember to catch all possible errors (decoding, halting, etc.)
+             * using FS2's API */
+
             /* Pipe for processing the stream of messages from the client to the
              * server */
             val fromClient: Pipe[IO, WebSocketFrame, Unit] =

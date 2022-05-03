@@ -2,12 +2,20 @@ package es.weso.rdfshape.server.api.routes.schema.logic.trigger
 
 import cats.implicits.catsSyntaxEitherId
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.format.dataFormats.Compact
 import es.weso.rdfshape.server.api.routes.data.logic.types.Data
+import es.weso.rdfshape.server.api.routes.schema.logic.trigger
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerModeType._
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.TypeParameter
 import es.weso.schema.ValidationTrigger
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
+import org.ragna.comet.trigger.{
+  ShapeMapFormat => ShapeMapFormatComet,
+  TriggerShapeMap => TriggerShapeMapComet,
+  TriggerTargetDeclarations => TriggerTargetDeclarationsComet,
+  ValidationTrigger => TriggerModeComet
+}
 
 import scala.language.implicitConversions
 
@@ -89,6 +97,30 @@ private[schema] trait TriggerModeCompanion[T <: TriggerMode]
       data: Option[Data],
       schema: Option[Schema]
   ): Decoder[Either[String, T]]
+
+  implicit class TriggerModeOps(triggerMode: TriggerMode) {
+
+    /** Given an RDFShape-domain trigger, attempt to convert it to a trigger
+      * used in the streaming validation library
+      *
+      * @return The equivalent of the input trigger mode in the stream-validation
+      *         library, if available
+      */
+    def toStreamingTriggerMode: TriggerModeComet = {
+      triggerMode match {
+        case trigger.TriggerShapeMap(shapeMap, _, _) =>
+          TriggerShapeMapComet(
+            shapeMap.raw,
+            shapeMap.format match {
+              case Compact => ShapeMapFormatComet.COMPACT
+              case _       => ShapeMapFormatComet.JSON
+            }
+          )
+        case trigger.TriggerTargetDeclarations(_, _) =>
+          TriggerTargetDeclarationsComet()
+      }
+    }
+  }
 
   /** Encoder used to transform [[TriggerMode]] instances to JSON values
     */
