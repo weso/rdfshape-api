@@ -15,7 +15,6 @@ import io.circe.{Decoder, HCursor}
 import org.ragna.comet.data.{DataFormat => DataFormatComet}
 import org.ragna.comet.stream.extractors.StreamExtractor
 
-import scala.concurrent.duration._
 import scala.util.Try
 
 /** Minor configuration class, containing the information required for a
@@ -23,15 +22,15 @@ import scala.util.Try
   *
   * Everything but the data format is optional or has a default value
   *
-  * Timeout is interpreted in milliseconds
+  * Extractor timeout is configured by the server to avoid abusing
+  * the API
   *
   * @see [[StreamExtractor]]
   */
 final case class StreamValidationExtractorConfiguration(
     dataFormat: DataFormat,
     dataInference: Option[InferenceEngine],
-    concurrentItems: Option[Int],
-    timeout: Option[FiniteDuration]
+    concurrentItems: Option[Int]
 ) {
   // Pre-requisites:
   // 1. The data format supplied is available in the streaming library
@@ -73,15 +72,10 @@ object StreamValidationExtractorConfiguration {
         optConcurrentItems <- cursor
           .downField(ConcurrentItemsParameter.name)
           .as[Option[Int]]
-
-        optTimeoutMillis <- cursor
-          .downField(ConcurrentItemsParameter.name)
-          .as[Option[Long]]
       } yield (
         maybeDataFormat,
         optInference,
-        optConcurrentItems,
-        optTimeoutMillis
+        optConcurrentItems
       )
 
       configInfo.map {
@@ -90,8 +84,7 @@ object StreamValidationExtractorConfiguration {
         case (
               maybeDataFormat,
               optInference,
-              optConcurrentItems,
-              optTimeoutMillis
+              optConcurrentItems
             ) =>
           for {
             dataFormat <- maybeDataFormat
@@ -99,8 +92,7 @@ object StreamValidationExtractorConfiguration {
               StreamValidationExtractorConfiguration(
                 dataFormat,
                 optInference,
-                optConcurrentItems,
-                optTimeoutMillis.map(FiniteDuration(_, MILLISECONDS))
+                optConcurrentItems
               )
             }.toEither.leftMap(err =>
               s"Could not build the extractor configuration from user data:\n ${err.getMessage}"

@@ -58,16 +58,18 @@ object TriggerMode extends TriggerModeCompanion[TriggerMode] {
           .downField(TypeParameter.name)
           .as[TriggerModeType]
 
-        decoded <- triggerType match {
-          case SHAPEMAP => TriggerShapeMap.decode(data, schema)(cursor)
-          case TARGET_DECLARATIONS =>
+        decoded <-
+          if(triggerType.equalsIgnoreCase(SHAPEMAP))
+            TriggerShapeMap.decode(data, schema)(cursor)
+          else if(triggerType.equalsIgnoreCase(TARGET_DECLARATIONS))
             TriggerTargetDeclarations.decode(data, schema)(cursor)
-          case _ =>
+          else
             DecodingFailure(
-              s"Invalid trigger mode type '$triggerType'",
+              s"Invalid trigger mode type '$triggerType': use one of '${TriggerModeType.values
+                .mkString(", ")}'",
               Nil
             ).asLeft
-        }
+
       } yield decoded
     }
 
@@ -89,7 +91,7 @@ object TriggerMode extends TriggerModeCompanion[TriggerMode] {
 private[schema] trait TriggerModeCompanion[T <: TriggerMode]
     extends LazyLogging {
 
-  /** @param data Optional data accompanying the ShapeMap
+  /** @param data  Optional data accompanying the ShapeMap
     * @param schema Optional schema accompanying the ShapeMap
     * @return Decoding function used to extract [[TriggerMode]] instances from JSON values
     */

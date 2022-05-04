@@ -26,12 +26,7 @@ final case class StreamValidationValidatorConfiguration(
     haltOnInvalid: Option[Boolean],
     haltOnErrored: Option[Boolean],
     concurrentItems: Option[Int]
-) {
-  // Pre-requisites:
-
-  // 1. A SHAclEX can be built from the Schema model formed from user data
-
-}
+)
 
 object StreamValidationValidatorConfiguration {
 

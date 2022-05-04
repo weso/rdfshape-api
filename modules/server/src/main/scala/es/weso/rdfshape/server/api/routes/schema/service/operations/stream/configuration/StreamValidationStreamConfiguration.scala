@@ -28,9 +28,7 @@ final case class StreamValidationStreamConfiguration(
     port: Option[Int],
     topic: String,
     groupId: Option[String]
-) {
-  // Pre-requisites: None
-}
+)
 
 object StreamValidationStreamConfiguration {
 

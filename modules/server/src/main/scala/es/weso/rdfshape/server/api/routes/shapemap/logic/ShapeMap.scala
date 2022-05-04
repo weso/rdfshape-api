@@ -58,6 +58,10 @@ sealed case class ShapeMap private (
   /** Inner shapemap structure of the data in this instance
     *
     * @return A ShapeMap instance used by WESO libraries in validation
+    *
+    * @note If no data prefix map is given (for example, in streaming
+    *       validations where data has not arrived yet), resort to
+    *       the schema's prefix map instead
     */
   lazy val innerShapeMap: Either[String, ShapeMapW] = {
     if(raw.isBlank) "Cannot extract the ShapeMap from an empty instance".asLeft
@@ -67,11 +71,12 @@ sealed case class ShapeMap private (
           raw,
           format.name,
           base = None,
-          nodesPrefixMap,
+          if(nodesPrefixMap.isEmpty) shapesPrefixMap else nodesPrefixMap,
           shapesPrefixMap
         ) match {
         case Left(errorList) => errorList.toList.mkString("\n").asLeft
         case Right(shapeMap) => shapeMap.asRight
+
       }
   }
 

@@ -6,7 +6,7 @@ import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   ValidatorParameter
 }
 import es.weso.rdfshape.server.utils.other.mapEitherToDecodeResult
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, Error, HCursor}
 
 /** Broad configuration class containing all the child configurations required to
   * perform a Stream validation with Comet
@@ -65,4 +65,19 @@ object StreamValidationConfiguration {
     */
   private[configuration] val unknownErrorMessage: String =
     "Unknown error creating the configuration for stream validation"
+
+  /** Error message used when a valid configuration can not be extracted from
+    * the provided JSON data
+    *
+    * @param reason Error why the JSON decoding of the configuration failed
+    * @return An informational text message containing some context and the
+    *         provided error
+    */
+  private[schema] def invalidStreamValidationConfigurationReceived(
+      reason: Option[Error]
+  ) = {
+    val formattedReasonText =
+      reason.map(r => s": ${r.getMessage}").getOrElse("")
+    s"Invalid configuration received for the stream validation$formattedReasonText"
+  }
 }

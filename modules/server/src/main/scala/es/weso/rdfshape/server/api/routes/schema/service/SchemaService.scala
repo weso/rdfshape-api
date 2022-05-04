@@ -14,7 +14,12 @@ import es.weso.rdfshape.server.api.routes.schema.logic.operations.{
   SchemaInfo,
   SchemaValidate
 }
+import es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations.CometTransformations.toValidationStream
+import es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations.ValidationResultTransformations.ValidationResultOps
+import es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations.WebSocketTransformations.encoder
+import es.weso.rdfshape.server.api.routes.schema.service.WebSocketClosures._
 import es.weso.rdfshape.server.api.routes.schema.service.operations.SchemaConvertInput.decoder
+import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.SchemaValidateStreamInput
 import es.weso.rdfshape.server.api.routes.schema.service.operations.{
   SchemaConvertInput,
   SchemaInfoInput,
@@ -30,8 +35,8 @@ import es.weso.schema.{
   ShaclexSchema,
   Schema => SchemaW
 }
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.circe.{DecodingFailure, Json, ParsingFailure}
 import fs2._
 import org.http4s.circe._
 import org.http4s.client.Client
@@ -40,8 +45,12 @@ import org.http4s.rho.RhoRoutes
 import org.http4s.rho.swagger.syntax.io._
 import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
-
-import scala.language.postfixOps
+import org.ragna.comet.exception.stream.timed.StreamTimeoutException
+import org.ragna.comet.exception.stream.validations.{
+  StreamErroredItemException,
+  StreamInvalidItemException,
+  StreamValidationException
+}
 
 /** API service to handle schema-related operations
   *
@@ -165,6 +174,7 @@ class SchemaService(client: Client[IO], wsBuilder: WebSocketBuilder[IO])
 
     "WebSockets endpoint meant for streaming validations" **
       GET / `verb` / "validate" / "stream" |>> {
+
         /* Stream validations are done via WebSockets. The basic flow goes as
          * follows:
          * 1. The client starts a WebSocket connection.
@@ -178,12 +188,10 @@ class SchemaService(client: Client[IO], wsBuilder: WebSocketBuilder[IO])
          * message to start generating output messages).
          *
          * Therefore, we use a Queue scoped to each request, as follows:
-         * 1. Each client incoming message in enqueued.
+         * 1. Each client incoming message is enqueued.
          * 2. The server dequeues the message in search for instructions to
-         * validate data:
-         * 2.1 If not found, an error response is returned
-         * 2.2 If found, the server starts to validate the data as requested
-         * (interrupting the current validation, if any) */
+         * validate data, errors are handled at the end of the stream and cause
+         * the connection to close (error reason is attached) */
 
         /* Inspired by the examples in:
          * https://github.com/http4s/http4s/blob/756c8940ca0161e940b691adc5ea59060d444417/examples/blaze/src/main/scala/com/example/http4s/blaze/BlazeWebSocketExample.scala */
@@ -193,45 +201,68 @@ class SchemaService(client: Client[IO], wsBuilder: WebSocketBuilder[IO])
             // Stream of messages from the server to the client
             val toClient: Stream[IO, WebSocketFrame] =
               Stream
+                /* 0. Get input data stream.
+                 * Poll the queue to see if new messages arrived from the client */
                 .fromQueueNoneTerminated(queue)
-                // Force an error
-                .evalMap(_ =>
-                  IO.raiseError(new RuntimeException("Testing errors"))
-                )
-                // Handle the error emitting an informational frame and
-                // a final closing frame
-                /* Beware of close codes:
-                 * https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#parameters */
-                .handleErrorWith(error => {
-                  Stream.evals {
-                    val closingFrames: Seq[WebSocketFrame] = Seq(
-                      // Informational frame
-                      WebSocketFrame
-                        .Text(s"An error occurred: ${error.getMessage}"),
-                      /* Closing frame, if it fails to be created, resort to an
-                       * empty one */
-                      WebSocketFrame
-                        .Close(1000, s"Reason: ${error.getMessage}")
-                        .getOrElse(WebSocketFrame.Close())
-                    )
-                    IO(closingFrames)
-                  }
+                /* 1. WebSocketFrame => JSON.
+                 * Mapping: attempt to parse JSON out of the client message */
+                .map(_.asJson)
+                /* 2. JSON => SchemaValidateStreamInput.
+                 * Mapping: attempt to get the validation settings from the
+                 * client's JSON message.
+                 * If decoding errors arise: throw */
+                .evalMap(_.as[SchemaValidateStreamInput] match {
+                  case Left(err)    => IO.raiseError(err)
+                  case Right(value) => IO.pure(value)
                 })
-            /* Mapping [WebSocketFrame => JSON]: conversion that checks we
-             * received text and parses it to a JSON object. */
-            /* Mapping [JSON => SchemaValidateStreamInput]: conversion that
-             * extracts all needed data from that JSON, using available decoders */
-            /* Pipe[IO, SchemaValidateStreamInput, comet.ValidationResult]:
-             * pipe that creates the comet validation stream from the info and
-             * invokes it */
-            /* Mapping [comet.ValidationResult => WebSocketFrame]: conversion
-             * that converts comet results to WebSocketFrames with JSON text
-             * that are be sent back to the client */
-            /* Remember to catch all possible errors (decoding, halting, etc.)
-             * using FS2's API */
+                /* 3. Stream[IO, SchemaValidateStreamInput] =>
+                 * Stream[IO,ValidationResult].
+                 * Pipe: create a comet validation stream from the parsed
+                 * configuration.
+                 * If the validation begins, a stream of results will be
+                 * returned */
+                .through(toValidationStream)
+                /* 4. ValidationResult => WebSocketFrame.
+                 * Mapping: convert each validation result to a WebSocketFrame
+                 * object containing the results in its text */
+                .map(_.toWebSocketFrame)
+                /* 5. Error processing.
+                 * Catch all known exceptions and generate a closing frame
+                 * depending on the error.
+                 * Close the WebSockets stream with custom error codes. */
+                .handleErrorWith(err =>
+                  Stream.eval(IO {
+                    // Print debug info
+                    println(err)
+                    err.printStackTrace()
+                    err match {
+                      case _: ParsingFailure =>
+                        invalidJsonClosure.closingFrame
+                      case _: DecodingFailure =>
+                        invalidConfigurationClosure.closingFrame
+                      case sve: StreamValidationException =>
+                        sve match {
+                          case _: StreamInvalidItemException =>
+                            invalidItemClosure.closingFrame
+                          case _: StreamErroredItemException =>
+                            erroredItemClosure.closingFrame
+                        }
+                      case _: StreamTimeoutException =>
+                        timeoutClosure.closingFrame
+                      // Other, unknown error
+                      case _ =>
+                        unknownErrorClosure.closingFrame
+                    }
+                  })
+                /* 6. Graceful stop.
+                 * If the validations stream comes to an end, concatenate a
+                 * graceful closing frame */
+                ) ++ Stream.eval(IO(standardClosure.closingFrame))
 
             /* Pipe for processing the stream of messages from the client to the
-             * server */
+             * server:
+             * - Put all incoming client messages into the queue so that the
+             * server processes them */
             val fromClient: Pipe[IO, WebSocketFrame, Unit] =
               _.enqueueNoneTerminated(queue)
 
@@ -260,14 +291,121 @@ object SchemaService {
 /** Compendium of additional text constants used on service errors
   */
 private object SchemaServiceError {
+
+  /** Placeholder error message used when an unknown error occurred
+    * in a data validation
+    */
   val couldNotValidateData =
     "Unknown error validating the data provided. Check the inputs."
 
+  /** Error message used when the WebSockets endpoint is contacted with a
+    * non-websockets request
+    */
   val nonWebSocketRequestError =
     "A request was received but it was not a valid WebSocket request."
 
+  /** Error message used when the WebSockets handshake fails
+    */
   val nonWebSocketHandshakeError =
     "An error occurred during the WebSockets handshake process."
+}
+
+/** Set of constants/utils used for closing connections
+  * in the WebSockets service endpoint
+  */
+private object WebSocketClosures {
+
+  /** Generate a closing frame with the default code for success
+    * and an informational message
+    */
+  def standardClosure: WebSocketClosure =
+    WebSocketClosure(1000, "Connection finished")
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when data sent by the client was not readable as JSON
+    */
+  def invalidJsonClosure: WebSocketClosure =
+    WebSocketClosure(3000, "The client message did not contain valid JSON data")
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when data sent by the client was readable but its contents
+    * were not valid
+    */
+  def invalidConfigurationClosure: WebSocketClosure =
+    WebSocketClosure(
+      3001,
+      "The client message did not contain a valid configuration"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when the validation stopped because an item was invalid
+    * and was configured to do so
+    */
+  def invalidItemClosure: WebSocketClosure =
+    WebSocketClosure(
+      3002,
+      "Connection closed because an item was invalid"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when the validation stopped because an item validation
+    * threw an error and was configured to do so
+    */
+  def erroredItemClosure: WebSocketClosure =
+    WebSocketClosure(
+      3003,
+      "Connection closed because an error occurred while validating an item"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when the validation stopped because no items were
+    * validated for some time
+    */
+  def timeoutClosure: WebSocketClosure =
+    WebSocketClosure(
+      3004,
+      "Connection closed because no items were received for a while"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when an unexpected error occurred
+    */
+  def unknownErrorClosure: WebSocketClosure =
+    WebSocketClosure(
+      4999,
+      "Connection closed due to an unknown error"
+    )
+
+  /** Data required to create a WebSocket closing frame, specially used for
+    * erroring connection closures
+    *
+    * @param code   Code sent when closing the connection
+    * @param reason Reason why the connection is closed
+    * @note [[reason]] should be kept as short as possible due to size limitations
+    * @see [[https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#parameters]]
+    */
+  case class WebSocketClosure(code: Int, reason: String) {
+
+    /** Create a WebSocket closing frame with this instance's code and reason.
+      *
+      * In case of errors, resort to the default closing frame.
+      */
+    lazy val closingFrame: WebSocketFrame.Close = WebSocketFrame
+      .Close(code, reason)
+      .getOrElse(WebSocketFrame.Close())
+  }
 }
 
 /** Compendium of additional text constants used to describe inline parameters
