@@ -289,7 +289,7 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 lazy val http4sVersion = "1.0.0-M30"
 lazy val rhoVersion    = "0.23.0-M1"
 lazy val catsVersion   = "2.7.0"
-lazy val cometVersion  = "0.1.5"
+lazy val cometVersion  = "0.1.6"
 /* ------------------------------------------------------------------------- */
 lazy val mongodbVersion      = "4.6.0"
 lazy val mongo4catsVersion   = "0.4.7"

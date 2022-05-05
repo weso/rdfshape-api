@@ -1,6 +1,10 @@
 package es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations
 
-import io.circe.generic.auto.exportEncoder
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  ContentParameter,
+  TypeParameter
+}
+import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.http4s.websocket.WebSocketFrame
 import org.ragna.comet.validation.result.ValidationResult
@@ -19,11 +23,18 @@ object ValidationResultTransformations {
 
     /** From a given comet validation result, generate its JSON representation
       * and form a WebSocket frame containing it as text
+      *
       * @return A textual [[WebSocketFrame]] with the JSON representation of
       *         a [[ValidationResult]]
       */
     def toWebSocketFrame: WebSocketFrame.Text = {
-      WebSocketFrame.Text(validationResult.asJson.spaces2)
+      val messageJson = Json.fromFields(
+        List(
+          (TypeParameter.name, "result".asJson),
+          (ContentParameter.name, validationResult.asJson)
+        )
+      )
+      WebSocketFrame.Text(messageJson.spaces2)
     }
 
   }

@@ -37,6 +37,10 @@ object IncomingRequestParameters {
 
   lazy val content = "content"
 
+  lazy val message = "message"
+
+  lazy val reason = "reason"
+
   lazy val format = "format"
 
   lazy val engine = "engine"
@@ -95,6 +99,20 @@ object IncomingRequestParameters {
   object ContentParameter
       extends OptionalQueryParamDecoderMatcher[String](content) {
     val name: String = content
+  }
+
+  /** Parameter expected to contain a generic message
+    */
+  object MessageParameter
+      extends OptionalQueryParamDecoderMatcher[String](message) {
+    val name: String = message
+  }
+
+  /** Parameter expected to contain the reason or an explanation of something
+    */
+  object ReasonParameter
+      extends OptionalQueryParamDecoderMatcher[String](reason) {
+    val name: String = reason
   }
 
   /** Parameter expected to contain the format of the content inputted by the user for a certain
