@@ -85,13 +85,21 @@ object Schema extends SchemaCompanion[Schema] {
         source <- cursor
           .downField(SourceParameter.name)
           .as[SchemaSource]
+          .map(_.toLowerCase)
 
-        decoded <- source match {
-          case _ if SchemaSource.values.contains(source) =>
-            SchemaSimple.decodeSchema(cursor)
-          case _ =>
-            DecodingFailure(s"Invalid schema source '$source'", Nil).asLeft
-        }
+        decoded <-
+          if(
+            SchemaSource.values
+              .map(_.toLowerCase)
+              .contains(source.toLowerCase)
+          ) SchemaSimple.decodeSchema(cursor)
+          else
+            DecodingFailure(
+              s"Invalid schema source '$source': use one of '${SchemaSource.values
+                .mkString(", ")}'",
+              Nil
+            ).asLeft
+
       } yield decoded
 
     }

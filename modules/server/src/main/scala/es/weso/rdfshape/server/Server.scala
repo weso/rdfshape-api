@@ -120,7 +120,7 @@ private class Server(
       /* WebSocketBuilder was deprecated and must be obtained here, from the
        * server builder */
       .withHttpWebSocketApp((wsBuilder: WebSocketBuilder[IO]) =>
-        createApp(client)
+        createApp(client, wsBuilder)
       )
 
     sslContext match {
@@ -132,12 +132,17 @@ private class Server(
   /** Create an http4s application object
     *
     * @param client Http4s' client in charge of the application
+    * @param wsBuilder WebSocket builder to allow the underlying services
+    *                  to establish websocket connections
     * @return Http4s' application with the given client and a request-logging middleware
     * @note All application services are mounted behind the "api/" prefix
     */
-  private def createApp(client: Client[IO]): HttpApp[IO] = {
+  private def createApp(
+      client: Client[IO],
+      wsBuilder: WebSocketBuilder[IO]
+  ): HttpApp[IO] = {
     // Mount all routes behind "api/"
-    val app = Router(`api` -> routesService(client)).orNotFound
+    val app = Router(`api` -> routesService(client, wsBuilder)).orNotFound
     // Http4s logger middleware settings
     Logger.httpApp(logHeaders = true, logBody = false)(app)
   }
@@ -201,16 +206,22 @@ object Server {
 
   /** Application's global service composed of all routes and CORS configuration
     */
-  private def routesService(client: Client[IO]): HttpRoutes[IO] = {
-    corsConfiguration.apply(allRoutes(client))
+  private def routesService(
+      client: Client[IO],
+      wsBuilder: WebSocketBuilder[IO]
+  ): HttpRoutes[IO] = {
+    corsConfiguration.apply(allRoutes(client, wsBuilder))
   }
 
   /** All Rho route functions composed into one with swagger middleware
     */
-  private def allRoutes(client: Client[IO]): HttpRoutes[IO] =
+  private def allRoutes(
+      client: Client[IO],
+      wsBuilder: WebSocketBuilder[IO]
+  ): HttpRoutes[IO] =
     (BaseService(client).routes and
       DataService(client).routes and
-      SchemaService(client).routes and
+      SchemaService(client, wsBuilder).routes and
       ShapeMapService(client).routes and
       WikibaseService(client).routes and
       PermalinkService(client).routes and

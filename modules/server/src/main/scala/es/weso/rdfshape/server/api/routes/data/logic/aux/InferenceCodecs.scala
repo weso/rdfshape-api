@@ -8,7 +8,7 @@ import io.circe.{Decoder, Encoder, HCursor, Json}
 /** Implicit encoders and decoders for [[es.weso.rdf.InferenceEngine]] instances,
   * used when encoding and decoding [[Data]] instances
   */
-private[data] object InferenceCodecs {
+private[api] object InferenceCodecs {
 
   /** Auxiliary encoder for data inference.
     */

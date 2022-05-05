@@ -100,7 +100,8 @@ lazy val mdocSettings = Seq(
     "CLIENT_REPO"            -> "https://github.com/weso/rdfshape-client/",
     "CLIENT_URL"             -> "https://rdfshape.weso.es/",
     "WESOLOCAL_URL"          -> "https://github.com/weso/wesolocal/wiki/RDFShape",
-    "API-DOCS_URL"           -> "https://app.swaggerhub.com/apis-docs/weso/RDFShape"
+    "API-DOCS_URL"           -> "https://app.swaggerhub.com/apis-docs/weso/RDFShape",
+    "STREAMING_APP_NAME"     -> "Comet"
   ),
   mdocExtraArguments := Seq("--no-link-hygiene"),
   /* When creating/publishing the docusaurus site, update the dynamic mdoc and
@@ -289,12 +290,12 @@ lazy val MUnitFramework = new TestFramework("munit.Framework")
 lazy val http4sVersion = "1.0.0-M30"
 lazy val rhoVersion    = "0.23.0-M1"
 lazy val catsVersion   = "2.7.0"
-lazy val cometVersion  = "0.1.1"
+lazy val cometVersion  = "0.1.7"
 /* ------------------------------------------------------------------------- */
 lazy val mongodbVersion      = "4.6.0"
 lazy val mongo4catsVersion   = "0.4.7"
 lazy val any23Version        = "2.7"
-lazy val rdf4jVersion        = "3.7.6"
+lazy val rdf4jVersion        = "4.0.0"
 lazy val graphvizJavaVersion = "0.18.1"
 lazy val logbackVersion      = "1.2.11"
 lazy val scalaLoggingVersion = "3.9.4"

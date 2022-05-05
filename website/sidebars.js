@@ -24,7 +24,7 @@ module.exports = {
     {
       type: "category",
       label: "API Usage",
-      items: ["api-usage/usage_cli"],
+      items: ["api-usage/usage_cli", "api-usage/streaming"],
       collapsed: false
     },
     
@@ -38,11 +38,12 @@ module.exports = {
     
     /* Category: documentation */
     {
-      type: "category", label: "Additional documentation", items: [{
-        type: "link", label: "Scaladoc", href: scalaDocUrl
-      }, {
-        type: "link", label: "API Docs (Swagger Hub)", href: apiDocsUrl
-      }], collapsed: false
+      type: "category", label: "Additional documentation", items: [
+        {
+          type: "link", label: "Scaladoc", href: scalaDocUrl
+        }, {
+          type: "link", label: "API Docs (Swagger Hub)", href: apiDocsUrl
+        }], collapsed: false
     },
     
     /* Webpage information */

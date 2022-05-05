@@ -37,6 +37,10 @@ object IncomingRequestParameters {
 
   lazy val content = "content"
 
+  lazy val message = "message"
+
+  lazy val reason = "reason"
+
   lazy val format = "format"
 
   lazy val engine = "engine"
@@ -51,6 +55,22 @@ object IncomingRequestParameters {
   lazy val schemaSource   = "schemaSource"
   lazy val shapeMapSource = "shapeMapSource"
   lazy val querySource    = "querySource"
+
+  lazy val configuration = "configuration"
+
+  lazy val validator       = "validator"
+  lazy val haltOnInvalid   = "haltOnInvalid"
+  lazy val haltOnErrored   = "haltOnErrored"
+  lazy val concurrentItems = "concurrentItems"
+
+  lazy val extractor = "extractor"
+  lazy val timeout   = "timeout"
+
+  lazy val stream  = "stream"
+  lazy val server  = "server"
+  lazy val port    = "port"
+  lazy val topic   = "topic"
+  lazy val groupId = "groupId"
 
   lazy val wdEntity = "wdEntity"
   lazy val wdSchema = "wdSchema"
@@ -79,6 +99,20 @@ object IncomingRequestParameters {
   object ContentParameter
       extends OptionalQueryParamDecoderMatcher[String](content) {
     val name: String = content
+  }
+
+  /** Parameter expected to contain a generic message
+    */
+  object MessageParameter
+      extends OptionalQueryParamDecoderMatcher[String](message) {
+    val name: String = message
+  }
+
+  /** Parameter expected to contain the reason or an explanation of something
+    */
+  object ReasonParameter
+      extends OptionalQueryParamDecoderMatcher[String](reason) {
+    val name: String = reason
   }
 
   /** Parameter expected to contain the format of the content inputted by the user for a certain
@@ -376,6 +410,97 @@ object IncomingRequestParameters {
   object ContinueParameter
       extends OptionalQueryParamDecoderMatcher[String](continue) {
     val name: String = continue
+  }
+
+  /** Parameter expected to contain a nested configuration object
+    */
+  object ConfigurationParameter
+      extends OptionalQueryParamDecoderMatcher[String](configuration) {
+    val name: String = configuration
+  }
+
+  /** Parameter expected to contain a validator information in stream validations
+    */
+  object ValidatorParameter
+      extends OptionalQueryParamDecoderMatcher[String](validator) {
+    val name: String = validator
+  }
+
+  /** Parameter expected to contain whether if stream validations should halt
+    * when an item turns out invalid
+    */
+  object HaltOnInvalidParameter
+      extends OptionalQueryParamDecoderMatcher[Boolean](haltOnInvalid) {
+    val name: String = haltOnInvalid
+  }
+
+  /** Parameter expected to contain whether if stream validations should halt
+    * when an error occurs during item validation
+    */
+  object HaltOnErroredParameter
+      extends OptionalQueryParamDecoderMatcher[Boolean](haltOnErrored) {
+    val name: String = haltOnErrored
+  }
+
+  /** Parameter expected to contain how many items should be processed in parallel
+    * in stream validations
+    */
+  object ConcurrentItemsParameter
+      extends OptionalQueryParamDecoderMatcher[Int](concurrentItems) {
+    val name: String = concurrentItems
+  }
+
+  /** Parameter expected to contain a extractor information in stream validations
+    */
+  object ExtractorParameter
+      extends OptionalQueryParamDecoderMatcher[String](extractor) {
+    val name: String = extractor
+  }
+
+  /** Parameter expected to contain a numeric amount of time expressing a timeout
+    */
+  object TimeoutParameter
+      extends OptionalQueryParamDecoderMatcher[String](extractor) {
+    val name: String = extractor
+  }
+
+  /** Parameter expected to contain the input stream information in stream validations
+    */
+  object StreamParameter
+      extends OptionalQueryParamDecoderMatcher[String](stream) {
+    val name: String = stream
+  }
+
+  /** Parameter expected to contain a server address/hostname
+    */
+  object ServerParameter
+      extends OptionalQueryParamDecoderMatcher[String](server) {
+    val name: String = server
+  }
+
+  /** Parameter expected to contain a server port
+    */
+  object PortParameter extends OptionalQueryParamDecoderMatcher[Int](port) {
+    val name: String = port
+  }
+
+  /** Parameter expected to contain a certain topic
+    *
+    * In stream validations, defines the topic in which data is expected to come
+    * from
+    */
+  object TopicParameter extends OptionalQueryParamDecoderMatcher[Int](topic) {
+    val name: String = topic
+  }
+
+  /** Parameter expected to contain a certain group identifier
+    *
+    * In stream validations, defines the group in which data is expected to be
+    * consumed
+    */
+  object GroupIdParameter
+      extends OptionalQueryParamDecoderMatcher[Int](groupId) {
+    val name: String = groupId
   }
 
 }
