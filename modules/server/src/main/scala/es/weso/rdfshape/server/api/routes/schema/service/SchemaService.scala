@@ -162,7 +162,7 @@ class SchemaService(client: Client[IO], wsBuilder: WebSocketBuilder[IO])
             .handleErrorWith(err => InternalServerError(err.getMessage))
       }
 
-    "WebSockets endpoint meant for streaming validations" **
+    "WebSockets endpoint meant for streaming validations (see more at https://www.weso.es/rdfshape-api/docs/api-usage/streaming/)" **
       GET / `verb` / "validate" / "stream" |>> {
 
         /* Stream validations are done via WebSockets. The basic flow goes as

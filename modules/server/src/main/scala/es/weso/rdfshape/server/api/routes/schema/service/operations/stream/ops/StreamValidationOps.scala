@@ -75,7 +75,7 @@ object StreamValidationOps {
        * 2. A closing frame with code and reason dependant on the error. */
       .handleErrorWith(err => {
         Stream.evalSeq(IO {
-          List(mkReasonFrame(err), mkClosingFrame(err))
+          List(mkErrorFrame(err), mkClosingFrame(err))
         })
         /* 6. Graceful stop.
          * If the validations stream comes to an end, concatenate a graceful
@@ -93,7 +93,7 @@ object StreamValidationOps {
     * @note If the error is a [[StreamInvalidItemException]], we try to include
     *       the invalid validation report instead of a generic message
     */
-  private def mkReasonFrame(error: Throwable): WebSocketFrame.Text = {
+  private def mkErrorFrame(error: Throwable): WebSocketFrame.Text = {
 
     val contentJson: Json = Json
       .obj(
@@ -119,7 +119,7 @@ object StreamValidationOps {
 
     val messageJson = Json.fromFields(
       List(
-        (TypeParameter.name, "reason".asJson),
+        (TypeParameter.name, "error".asJson),
         (ContentParameter.name, contentJson)
       )
     )
