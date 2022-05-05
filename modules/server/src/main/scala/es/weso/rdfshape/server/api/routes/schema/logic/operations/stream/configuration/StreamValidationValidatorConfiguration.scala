@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema.service.operations.stream.configuration
+package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration
 
 import cats.effect.unsafe.implicits.global
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerMode

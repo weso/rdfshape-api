@@ -1,22 +1,22 @@
-package es.weso.rdfshape.server.api.routes.schema.service.operations.stream.ops
+package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream
 
 import cats.effect.IO
 import cats.effect.std.Queue
-import es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations.CometTransformations.toValidationStream
-import es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations.ValidationResultTransformations.ValidationResultOps
-import es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations.WebSocketTransformations.encoder
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.StreamValidation.WebSocketClosures._
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations.CometTransformations.toValidationStream
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations.ValidationResultTransformations.ValidationResultOps
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations.WebSocketTransformations.encoder
 import es.weso.rdfshape.server.api.routes.schema.service.SchemaService
-import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.SchemaValidateStreamInput
-import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.ops.StreamValidationOps.WebSocketClosures._
+import es.weso.rdfshape.server.api.routes.schema.service.operations.SchemaValidateStreamInput
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   ContentParameter,
   MessageParameter,
   ReasonParameter,
   TypeParameter
 }
+import fs2.Stream
 import io.circe.syntax.EncoderOps
 import io.circe.{DecodingFailure, Json, ParsingFailure}
-import fs2._
 import org.apache.kafka.common.KafkaException
 import org.http4s.websocket.WebSocketFrame
 import org.ragna.comet.exception.stream.timed.StreamTimeoutException
@@ -27,7 +27,7 @@ import org.ragna.comet.exception.stream.validations.{
 }
 import org.ragna.comet.validation.result.ValidationResult
 
-object StreamValidationOps {
+object StreamValidation {
 
   /** Given an input queue with WebSocket messages, parse these messages in search
     * for instructions to validate data and, if available, start running a

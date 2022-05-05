@@ -1,7 +1,7 @@
-package es.weso.rdfshape.server.api.routes.schema.service.operations.stream
+package es.weso.rdfshape.server.api.routes.schema.service.operations
 
 import es.weso.rdfshape.server.api.ServiceRouteOperation
-import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.configuration.StreamValidationConfiguration
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration.StreamValidationConfiguration
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters._
 import io.circe.{Decoder, HCursor}
 

@@ -9,13 +9,13 @@ import es.weso.rdfshape.server.api.format.dataFormats.schemaFormats.{
   ShaclFormat
 }
 import es.weso.rdfshape.server.api.routes.ApiService
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.StreamValidation.mkValidationStream
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.{
   SchemaConvert,
   SchemaInfo,
   SchemaValidate
 }
 import es.weso.rdfshape.server.api.routes.schema.service.operations.SchemaConvertInput.decoder
-import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.ops.StreamValidationOps.mkValidationStream
 import es.weso.rdfshape.server.api.routes.schema.service.operations.{
   SchemaConvertInput,
   SchemaInfoInput,

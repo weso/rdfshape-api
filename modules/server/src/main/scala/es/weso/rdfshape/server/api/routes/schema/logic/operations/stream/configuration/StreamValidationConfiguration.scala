@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema.service.operations.stream.configuration
+package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration
 
 import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
   ExtractorParameter,

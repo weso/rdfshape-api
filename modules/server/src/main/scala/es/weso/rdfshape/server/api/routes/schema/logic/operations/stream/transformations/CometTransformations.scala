@@ -1,12 +1,12 @@
-package es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations
+package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations
 
 import cats.effect.IO
-import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.SchemaValidateStreamInput
-import es.weso.rdfshape.server.api.routes.schema.service.operations.stream.configuration.{
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration.{
   StreamValidationExtractorConfiguration,
   StreamValidationStreamConfiguration,
   StreamValidationValidatorConfiguration
 }
+import es.weso.rdfshape.server.api.routes.schema.service.operations.SchemaValidateStreamInput
 import fs2.Pipe
 import org.ragna.comet.exception.stream.timed.StreamTimeoutException
 import org.ragna.comet.implicits.RDFElementImplicits._

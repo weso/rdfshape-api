@@ -1,4 +1,4 @@
-package es.weso.rdfshape.server.api.routes.schema.logic.stream.transformations
+package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations
 
 import es.weso.rdfshape.server.utils.error.exceptions.UnexpectedWebSocketFrameException
 import io.circe.{Encoder, Json, ParsingFailure, parser}
