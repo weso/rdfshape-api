@@ -2,7 +2,8 @@ package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream
 
 import cats.effect.IO
 import cats.effect.std.Queue
-import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.StreamValidation.WebSocketClosures._
+import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.WebSocketClosures._
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations.CometTransformations.toValidationStream
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations.ValidationResultTransformations.ValidationResultOps
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations.WebSocketTransformations.encoder
@@ -27,7 +28,7 @@ import org.ragna.comet.exception.stream.validations.{
 }
 import org.ragna.comet.validation.result.ValidationResult
 
-object StreamValidation {
+object StreamValidation extends LazyLogging {
 
   /** Given an input queue with WebSocket messages, parse these messages in search
     * for instructions to validate data and, if available, start running a
@@ -35,6 +36,8 @@ object StreamValidation {
     *
     * This is the core of the [[SchemaService]] stream validation service and
     * further info can be found there.
+    *
+    * Log messages are registered along the way.
     *
     * @param queue Queue structure from which this stream will read WebSocket
     *              messages
@@ -49,6 +52,9 @@ object StreamValidation {
       /* 0. Get input data stream.
        * Poll the queue to see if new messages arrived from the client */
       .fromQueueNoneTerminated(queue)
+      .evalTap(_ =>
+        IO(logger.info("Begun streaming validation through WebSockets"))
+      )
       /* 1. WebSocketFrame => JSON.
        * Mapping: attempt to parse JSON out of the client message */
       .map(_.asJson)
@@ -60,6 +66,9 @@ object StreamValidation {
         case Left(err)    => IO.raiseError(err)
         case Right(value) => IO.pure(value)
       })
+      .evalTap(_ =>
+        IO(logger.debug("Decoded client's streaming validation request"))
+      )
       /* 3. Stream[IO, SchemaValidateStreamInput] =>
        * Stream[IO,ValidationResult].
        * Pipe: create a comet validation stream from the parsed configuration.
@@ -75,12 +84,17 @@ object StreamValidation {
        * 2. A closing frame with code and reason dependant on the error. */
       .handleErrorWith(err => {
         Stream.evalSeq(IO {
+          logger.debug(s"Interrupted streaming validation due to err: $err")
           List(mkErrorFrame(err), mkClosingFrame(err))
         })
         /* 6. Graceful stop.
          * If the validations stream comes to an end, concatenate a graceful
          * closing frame */
-      }) ++ Stream.eval(IO(standardClosure.closingFrame))
+      }) ++ Stream
+      .eval(IO(standardClosure.closingFrame))
+      .onFinalize(
+        IO(logger.info("Ended streaming validation through WebSockets"))
+      )
   }
 
   /** Given an error/exception, produce a WebSockets frame explaining it
@@ -157,121 +171,120 @@ object StreamValidation {
       case _ =>
         unknownErrorClosure.closingFrame
     }
+}
 
-  /** Set of constants/utils used for closing connections
-    * in the WebSockets streaming validation
+/** Set of constants/utils used for closing connections
+  * in the WebSockets streaming validation
+  */
+private[stream] object WebSocketClosures {
+
+  /** Generate a closing frame with the default code for success
+    * and an informational message
     */
-  private[stream] object WebSocketClosures {
+  def standardClosure: WebSocketClosure =
+    WebSocketClosure(1000, "Connection finished")
 
-    /** Generate a closing frame with the default code for success
-      * and an informational message
-      */
-    def standardClosure: WebSocketClosure =
-      WebSocketClosure(1000, "Connection finished")
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when data sent by the client was not readable as JSON
+    */
+  def invalidJsonClosure: WebSocketClosure =
+    WebSocketClosure(3000, "The message did not contain valid JSON data")
 
-    /** Generate a closing frame with an assigned error code,
-      * and an informational message
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when data sent by the client was readable but its contents
+    * were not valid
+    */
+  def invalidConfigurationClosure: WebSocketClosure =
+    WebSocketClosure(
+      3001,
+      "The message did not contain a valid configuration"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when the validation stopped because an item was invalid
+    * and was configured to do so
+    */
+  def invalidItemClosure: WebSocketClosure =
+    WebSocketClosure(
+      3002,
+      "An item was invalid"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when the validation stopped because an item validation
+    * threw an error and was configured to do so
+    */
+  def erroredItemClosure: WebSocketClosure =
+    WebSocketClosure(
+      3003,
+      "An error occurred while validating an item"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when the validation stopped because no items were
+    * validated for some time
+    */
+  def timeoutClosure: WebSocketClosure =
+    WebSocketClosure(
+      3004,
+      "No items were received for a while"
+    )
+
+  def illegalArgumentClosure: WebSocketClosure =
+    WebSocketClosure(
+      3005,
+      "The configuration contained invalid values"
+    )
+
+  def assertionClosure: WebSocketClosure =
+    WebSocketClosure(
+      3006,
+      "An invalid value was provided to the server"
+    )
+
+  def kafkaClosure: WebSocketClosure =
+    WebSocketClosure(
+      3007,
+      "An error occurred connecting to the Kafka stream"
+    )
+
+  /** Generate a closing frame with an assigned error code,
+    * and an informational message
+    *
+    * Meant to be used when an unexpected error occurred
+    */
+  def unknownErrorClosure: WebSocketClosure =
+    WebSocketClosure(
+      4999,
+      "Connection closed due to an unknown error"
+    )
+
+  /** Data required to create a WebSocket closing frame, specially used for
+    * erroring connection closures
+    *
+    * @param code   Code sent when closing the connection
+    * @param reason Reason why the connection is closed
+    * @note [[reason]] should be kept as short as possible due to size limitations
+    * @see [[https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#parameters]]
+    */
+  case class WebSocketClosure(code: Int, reason: String) {
+
+    /** Create a WebSocket closing frame with this instance's code and reason.
       *
-      * Meant to be used when data sent by the client was not readable as JSON
+      * In case of errors, resort to the default closing frame.
       */
-    def invalidJsonClosure: WebSocketClosure =
-      WebSocketClosure(3000, "The message did not contain valid JSON data")
-
-    /** Generate a closing frame with an assigned error code,
-      * and an informational message
-      *
-      * Meant to be used when data sent by the client was readable but its contents
-      * were not valid
-      */
-    def invalidConfigurationClosure: WebSocketClosure =
-      WebSocketClosure(
-        3001,
-        "The message did not contain a valid configuration"
-      )
-
-    /** Generate a closing frame with an assigned error code,
-      * and an informational message
-      *
-      * Meant to be used when the validation stopped because an item was invalid
-      * and was configured to do so
-      */
-    def invalidItemClosure: WebSocketClosure =
-      WebSocketClosure(
-        3002,
-        "An item was invalid"
-      )
-
-    /** Generate a closing frame with an assigned error code,
-      * and an informational message
-      *
-      * Meant to be used when the validation stopped because an item validation
-      * threw an error and was configured to do so
-      */
-    def erroredItemClosure: WebSocketClosure =
-      WebSocketClosure(
-        3003,
-        "An error occurred while validating an item"
-      )
-
-    /** Generate a closing frame with an assigned error code,
-      * and an informational message
-      *
-      * Meant to be used when the validation stopped because no items were
-      * validated for some time
-      */
-    def timeoutClosure: WebSocketClosure =
-      WebSocketClosure(
-        3004,
-        "No items were received for a while"
-      )
-
-    def illegalArgumentClosure: WebSocketClosure =
-      WebSocketClosure(
-        3005,
-        "The configuration contained invalid values"
-      )
-
-    def assertionClosure: WebSocketClosure =
-      WebSocketClosure(
-        3006,
-        "An invalid value was provided to the server"
-      )
-
-    def kafkaClosure: WebSocketClosure =
-      WebSocketClosure(
-        3007,
-        "An error occurred connecting to the Kafka stream"
-      )
-
-    /** Generate a closing frame with an assigned error code,
-      * and an informational message
-      *
-      * Meant to be used when an unexpected error occurred
-      */
-    def unknownErrorClosure: WebSocketClosure =
-      WebSocketClosure(
-        4999,
-        "Connection closed due to an unknown error"
-      )
-
-    /** Data required to create a WebSocket closing frame, specially used for
-      * erroring connection closures
-      *
-      * @param code   Code sent when closing the connection
-      * @param reason Reason why the connection is closed
-      * @note [[reason]] should be kept as short as possible due to size limitations
-      * @see [[https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#parameters]]
-      */
-    case class WebSocketClosure(code: Int, reason: String) {
-
-      /** Create a WebSocket closing frame with this instance's code and reason.
-        *
-        * In case of errors, resort to the default closing frame.
-        */
-      lazy val closingFrame: WebSocketFrame.Close = WebSocketFrame
-        .Close(code, reason)
-        .getOrElse(WebSocketFrame.Close())
-    }
+    lazy val closingFrame: WebSocketFrame.Close = WebSocketFrame
+      .Close(code, reason)
+      .getOrElse(WebSocketFrame.Close())
   }
-
 }
