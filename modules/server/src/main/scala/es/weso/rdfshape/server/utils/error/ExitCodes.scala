@@ -7,6 +7,10 @@ case object ExitCodes {
 
   /** Exit code on successful program execution */
   val SUCCESS = 0
+  // CLOSING SIGNAL
+  /** Exit code on received signal: SIGINT, SIGTERM
+    */
+  val SIGNAL_RECEIVED = 8
   // CLI ERRORS
   /** Exit code on CLI argument parsing error
     */

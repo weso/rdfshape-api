@@ -1,6 +1,7 @@
 package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transformations
 
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration.{
   StreamValidationExtractorConfiguration,
   StreamValidationStreamConfiguration,
@@ -43,7 +44,7 @@ import scala.language.postfixOps
   *       halted when no items are received (even if the client does not disconnect),
   *       thus server resources are not wasted
   */
-private[schema] object CometTransformations {
+private[schema] object CometTransformations extends LazyLogging {
 
   /** Time that the server will wait without receiving any items for the input
     * stream before raising a [[StreamTimeoutException]]
@@ -61,6 +62,7 @@ private[schema] object CometTransformations {
   def toValidationStream
       : Pipe[IO, SchemaValidateStreamInput, ValidationResult] =
     _.flatMap { streamValidationInput =>
+      logger.info("Creating a stream of validation results")
       // 0. De-structure the required configurations from client input
       val baseConfig = streamValidationInput.configuration
       // 1. Build comet kafka extractor
