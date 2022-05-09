@@ -28,7 +28,7 @@ object IncomingRequestParameters {
   lazy val node         = "node"
   lazy val nodeSelector = "nodeSelector"
 
-  lazy val shapeMap       = "shapeMap"
+  lazy val shapeMap       = "shape-map"
   lazy val shapeMapFormat = "shapeMapFormat"
 
   lazy val query = "query"
