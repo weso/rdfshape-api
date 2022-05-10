@@ -293,7 +293,7 @@ lazy val catsVersion   = "2.7.0"
 lazy val cometVersion  = "0.1.7"
 /* ------------------------------------------------------------------------- */
 lazy val mongodbVersion      = "4.6.0"
-lazy val mongo4catsVersion   = "0.4.7"
+lazy val mongo4catsVersion   = "0.4.8"
 lazy val any23Version        = "2.7"
 lazy val rdf4jVersion        = "4.0.0"
 lazy val graphvizJavaVersion = "0.18.1"

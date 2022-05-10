@@ -78,6 +78,9 @@ the validation should be performed, including:
         - _port_ (Optional): Port from which the Kafka server is streaming data.
           Default: `9092`.
         - _topic_: Topic on which the Kafka server is streaming data.
+        - _groupId_ (Optional): Group that the Kafka consumer shall identify
+          with. Useful to resume validations where they left off. Default:
+          string with the name of the app: (`appName-appVersion`).
 
 ```json title="Example client message requesting a streaming validation"
 {
@@ -92,7 +95,7 @@ the validation should be performed, including:
         "source": "byText"
       },
       "triggerMode": {
-        "shapeMap": {
+        "shape-map": {
           "content": "ex:reading@ex:ValidReading",
           "format": "Compact",
           "source": "byText"
@@ -109,7 +112,8 @@ the validation should be performed, including:
     "stream": {
       "server": "localhost",
       "port": 9092,
-      "topic": "rdf"
+      "topic": "rdf",
+      "groupId": "myGroup"
     }
   }
 }

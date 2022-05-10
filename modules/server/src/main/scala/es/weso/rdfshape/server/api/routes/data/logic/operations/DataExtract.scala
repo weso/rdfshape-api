@@ -13,6 +13,10 @@ import es.weso.rdfshape.server.api.routes.data.logic.operations.DataExtract.{
   successMessage
 }
 import es.weso.rdfshape.server.api.routes.data.logic.types.Data
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  SchemaParameter,
+  ShapeMapParameter
+}
 import es.weso.schema.Schema
 import es.weso.schemaInfer.{InferOptions, PossiblePrefixes, SchemaInfer}
 import es.weso.shapemaps.{NodeSelector, ResultShapeMap}
@@ -76,14 +80,17 @@ private[api] object DataExtract extends LazyLogging {
       Json.fromFields(
         List(
           (
-            "schema",
+            SchemaParameter.name,
             Json.fromString(
               dataExtract.schema
                 .serialize(dataExtract.targetSchemaFormat.name)
                 .unsafeRunSync()
             )
           ),
-          ("shapeMap", Json.fromString(dataExtract.shapeMap.toString))
+          (
+            ShapeMapParameter.name,
+            Json.fromString(dataExtract.shapeMap.toString)
+          )
         )
       )
 

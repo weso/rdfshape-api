@@ -5,6 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.PrefixMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
 import es.weso.rdfshape.server.api.routes.shapemap.logic.operations.ShapeMapInfo.ShapeMapInfoResult
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.ShapeMapParameter
 import es.weso.rdfshape.server.utils.json.JsonUtils.prefixMap2JsonArray
 import es.weso.shapemaps.{ShapeMap => ShapeMapW}
 import io.circe.syntax.EncoderOps
@@ -97,7 +98,7 @@ private[api] object ShapeMapInfo extends LazyLogging {
       Json.fromFields(
         List(
           ("message", Json.fromString(shapeMapInfo.successMessage)),
-          ("shapeMap", shapeMapInfo.inputShapeMap.asJson),
+          (ShapeMapParameter.name, shapeMapInfo.inputShapeMap.asJson),
           ("result", shapeMapInfo.result.asJson)
         )
       )
