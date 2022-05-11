@@ -49,7 +49,7 @@ private[schema] object CometTransformations extends LazyLogging {
   /** Time that the server will wait without receiving any items for the input
     * stream before raising a [[StreamTimeoutException]]
     */
-  private lazy val timeout = 1.5 minutes
+  private lazy val timeout = 1 minute
 
   /** Stream transformation pipe:
     * 1. Use the configuration to a stream validation operation as input
