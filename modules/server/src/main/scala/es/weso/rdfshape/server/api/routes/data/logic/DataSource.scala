@@ -14,7 +14,7 @@ private[api] object DataSource extends MyEnum[String] {
   val FILE     = "byFile"
   val COMPOUND = "byCompound"
 
-  val values =
+  val values: Set[DataSource] =
     Set(TEXT, URL, FILE, COMPOUND)
   val default: DataSource = TEXT
 }

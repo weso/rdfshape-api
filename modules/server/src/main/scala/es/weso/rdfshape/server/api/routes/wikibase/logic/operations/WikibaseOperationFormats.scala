@@ -15,6 +15,6 @@ private[api] object WikibaseOperationFormats extends MyEnum[String] {
   val XML     = "xml"
   val XML_FM  = "xmlfm"
 
-  val values                            = Set(JSON, JSON_FM, XML, XML_FM)
-  val default: WikibaseOperationFormats = JSON
+  val values: Set[WikibaseOperationFormats] = Set(JSON, JSON_FM, XML, XML_FM)
+  val default: WikibaseOperationFormats     = JSON
 }
