@@ -14,6 +14,6 @@ private[api] object SparqlQuerySource extends MyEnum[String] {
   val URL  = "byUrl"
   val FILE = "byFile"
 
-  val values                     = Set(TEXT, URL, FILE)
-  val default: SparqlQuerySource = TEXT
+  val values: Set[SparqlQuerySource] = Set(TEXT, URL, FILE)
+  val default: SparqlQuerySource     = TEXT
 }

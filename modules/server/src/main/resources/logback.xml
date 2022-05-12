@@ -87,6 +87,8 @@
     <!--  ............................................  -->
     <!--  LOGGERS AND ASSOCIATED APPENDERS  -->
 
+    <!-- Silence Kafka's abusive logs while attempting to connect -->
+    <logger name="org.apache.kafka" level="OFF"/>
     <!-- 
     Root logger:
     - Show console messages

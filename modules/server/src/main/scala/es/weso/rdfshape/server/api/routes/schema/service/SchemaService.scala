@@ -253,8 +253,8 @@ private object SchemaServiceDescriptions {
   }
 
   case object SchemaType {
-    val schemaTypes = List("ShEx", "SHACL")
-    val name        = "SchemaType"
+    val schemaTypes: List[String] = List("ShEx", "SHACL")
+    val name                      = "SchemaType"
     val description =
       s"Type of the validation schema. One of: ${schemaTypes.mkString(", ")}"
   }

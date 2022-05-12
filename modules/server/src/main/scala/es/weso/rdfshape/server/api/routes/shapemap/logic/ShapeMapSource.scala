@@ -14,6 +14,6 @@ private[api] object ShapeMapSource extends MyEnum[String] {
   val URL  = "byUrl"
   val FILE = "byFile"
 
-  val values                  = Set(TEXT, URL, FILE)
-  val default: ShapeMapSource = TEXT
+  val values: Set[ShapeMapSource] = Set(TEXT, URL, FILE)
+  val default: ShapeMapSource     = TEXT
 }

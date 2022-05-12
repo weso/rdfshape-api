@@ -9,7 +9,12 @@ import es.weso.rdfshape.server.api.routes.data.logic.types.Data
 import es.weso.rdfshape.server.api.routes.schema.logic.trigger.TriggerModeType.TriggerModeType
 import es.weso.rdfshape.server.api.routes.schema.logic.types.Schema
 import es.weso.rdfshape.server.api.routes.shapemap.logic.ShapeMap
-import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.ShapeMapParameter
+import es.weso.rdfshape.server.api.utils.parameters.IncomingRequestParameters.{
+  DataParameter,
+  SchemaParameter,
+  ShapeMapParameter,
+  TypeParameter
+}
 import es.weso.schema.{ShapeMapTrigger, ValidationTrigger}
 import es.weso.shapemaps.{ShapeMap => ShapeMapW}
 import io.circe._
@@ -107,9 +112,9 @@ private[api] object TriggerShapeMap
   override implicit val encode: Encoder[TriggerShapeMap] =
     (tsm: TriggerShapeMap) =>
       Json.obj(
-        ("type", tsm.`type`.asJson),
-        ("shapeMap", tsm.shapeMap.asJson),
-        ("data", tsm.data.asJson),
-        ("schema", tsm.schema.asJson)
+        (TypeParameter.name, tsm.`type`.asJson),
+        (ShapeMapParameter.name, tsm.shapeMap.asJson),
+        (DataParameter.name, tsm.data.asJson),
+        (SchemaParameter.name, tsm.schema.asJson)
       )
 }

@@ -19,7 +19,9 @@ private[api] object WikibaseSearchTypes extends MyEnum[String] {
   val SENSE    = "sense"
   val SCHEMA   = "schema"
 
-  val values                       = Set(ENTITY, PROPERTY, LEXEME, FORM, SENSE)
-  val basicValues                  = Set(ENTITY, PROPERTY, LEXEME, SCHEMA)
+  val values: Set[WikibaseSearchTypes] =
+    Set(ENTITY, PROPERTY, LEXEME, FORM, SENSE)
+  val basicValues: Set[WikibaseSearchTypes] =
+    Set(ENTITY, PROPERTY, LEXEME, SCHEMA)
   val default: WikibaseSearchTypes = ENTITY
 }

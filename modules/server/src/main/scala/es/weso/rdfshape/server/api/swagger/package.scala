@@ -48,6 +48,16 @@ import java.net.URL
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.typeOf
 
+/** @note For the streaming validations endpoint, remember to add some responses
+  *       information manually into the generated swagger-file, e.g.:
+  *       responses:
+  *        '200':
+  *          description: Dummy response, a WebSockets connection should start
+  *        '400':
+  *          description: A non-WebSockets request was received
+  *        '500':
+  *          description: Handshake failed
+  */
 package object swagger {
   // Import all models
 

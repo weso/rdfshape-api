@@ -33,7 +33,7 @@ object HtmlToRdf extends LazyLogging {
 
   /** List of all available RDF data extractors
     */
-  val availableExtractors =
+  val availableExtractors: List[Extractor] =
     List(RDFA11, Microdata)
 
   /** List of the names of all available RDF data extractors
