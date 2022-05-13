@@ -46,7 +46,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     required = false,
     validate = p => p > 0 && p <= 65535,
     descr =
-      s"""Port in which the API will listen for requests. Values must be in range 1-65535 (default is ${Server.defaultPort})"""
+      s"""Port in which the API will listen for requests. Values must be in range 1-65535 (default is ${Server.defaultPort})."""
   )
 
   /** Configuration of the CLI argument setting whether the server should try to use HTTPS or not
@@ -57,7 +57,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     default = Some(Server.defaultHttps),
     required = true,
     descr =
-      s"""Attempt to serve the API via HTTPS (default is ${Server.defaultHttps})"""
+      s"""Attempt to serve the API via HTTPS (default is ${Server.defaultHttps})."""
   )
 
   /** Configuration of the CLI argument setting the application's verbosity
@@ -67,7 +67,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     noshort = false,
     short = 'v',
     descr =
-      s"""Show additional logging information (use cumulative times for additional info, like: "-vvv")"""
+      s"""Show additional logging information (use cumulative times for additional info, like: "-vvv")."""
   )
 
   /** Configuration of the CLI argument setting off all console output
@@ -78,7 +78,20 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
     default = Some(false),
     required = false,
     descr =
-      s"""Enable silent mode in order not to log any output to console (default is ${false})"""
+      s"""Enable silent mode in order not to log any output to console (default is ${false})."""
+  )
+
+  /** Configuration of the CLI argument setting the server's exposed port
+    */
+  val streamTimeout: ScallopOption[Int] = opt[Int](
+    name = "stream-timeout",
+    short = 't',
+    default = Some(Server.defaultStreamTimeout),
+    required = false,
+    validate = t => t > 1 && t <= 1800,
+    descr =
+      s"""Seconds that the server will wait before closing a streaming validation for which no data is received.
+         |Values must be in range 1-1800 (default is ${Server.defaultStreamTimeout}).""".stripMargin
   )
 
   /** Configuration of the CLI argument triggering the application's help menu
@@ -86,7 +99,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
   // Override the short forms of help and version arguments.
   val help: ScallopOption[Boolean] = opt[Boolean](
     noshort = true,
-    descr = s"""Print help menu and exit"""
+    descr = s"""Print help menu and exit."""
   )
 
   /** Configuration of the CLI argument triggering the application's version
@@ -94,7 +107,7 @@ class CliManager(arguments: Array[String]) extends ScallopConf(arguments) {
   val version: ScallopOption[Boolean] = opt[Boolean](
     noshort = true,
     descr =
-      s"""Print the program version along with other related information and exit"""
+      s"""Print the program version along with other related information and exit."""
   )
 
   /** Error behaviour on wrong arguments or terminating arguments(those who do not launch

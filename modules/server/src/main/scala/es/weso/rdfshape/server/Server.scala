@@ -47,7 +47,8 @@ private class Server(
     val port: Int,
     val https: Boolean,
     val requestTimeout: Int = defaultRequestTimeout,
-    val idleTimeout: Int = defaultIdleTimeout
+    val idleTimeout: Int = defaultIdleTimeout,
+    val streamTimeout: Int = defaultStreamTimeout
 ) extends IOApp
     with LazyLogging {
 
@@ -157,6 +158,11 @@ object Server {
     */
   val defaultPort = 8080
 
+  /** Application's default wait time before cancelling a streaming validation
+    * for which no items are received
+    */
+  val defaultStreamTimeout = 40
+
   /** Application's default HTTPS requirement, used if none is specified
     */
   val defaultHttps = false
@@ -172,6 +178,11 @@ object Server {
   /** Application's default port used if none is specified
     */
   val defaultVerbosity = 0
+
+  /** System property checked by the app to know how long to keep waiting for
+    * items coming via stream
+    */
+  val systemPropertyStreamTimeout = "rdfshape.api.stream.timeout"
 
   // Always serve on localhost
   /** Application's default host IP address, equal to serving on localhost

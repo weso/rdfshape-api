@@ -33,6 +33,8 @@ ENV PATH="/app/rdfshape/bin:${PATH}"
 # Port for the app to run
 ENV PORT=8080
 EXPOSE $PORT
+# Timeout for streaming validations (seconds)
+ENV STREAM_TIMEOUT=40
 # Non-priviledged user to run the app
 RUN addgroup --system rdfshape && adduser --system --shell /bin/false --ingroup rdfshape rdfshape
 RUN chown -R rdfshape:rdfshape /app
@@ -43,7 +45,7 @@ ENV SSL_FIX="-Djdk.tls.client.protocols=TLSv1.2"
 
 # Define commands to launch RDFShape
 ENV HTTPS_CLI_ARG="--https"
-ENV RDFSHAPE_CMD_HTTP="rdfshape $SSL_FIX --port $PORT -s"
+ENV RDFSHAPE_CMD_HTTP="rdfshape $SSL_FIX --port $PORT --stream-timeout $STREAM_TIMEOUT -s"
 ENV RDFSHAPE_CMD_HTTPS="$RDFSHAPE_CMD_HTTP $HTTPS_CLI_ARG"
 
 CMD bash -c "if [[ ! -z '$USE_HTTPS' ]]; then $RDFSHAPE_CMD_HTTPS; else $RDFSHAPE_CMD_HTTP; fi"
