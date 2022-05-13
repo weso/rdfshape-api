@@ -179,6 +179,11 @@ object Server {
     */
   val defaultVerbosity = 0
 
+  /** Environment variable checked by the app to know how long to keep waiting for
+    * items coming via stream
+    */
+  val envVarStreamTimeout = "STREAM_TIMEOUT"
+
   /** System property checked by the app to know how long to keep waiting for
     * items coming via stream
     */
