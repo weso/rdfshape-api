@@ -9,16 +9,20 @@ sealed case class ArgumentsData(
     port: Int,
     https: Boolean,
     verbosity: Int,
-    silent: Boolean
+    silent: Boolean,
+    streamTimeout: Int
 )
 
 object ArgumentsData {
-  def unapply(argumentsData: ArgumentsData): (Int, Boolean, Int, Boolean) = {
+  def unapply(
+      argumentsData: ArgumentsData
+  ): (Int, Boolean, Int, Boolean, Int) = {
     (
       argumentsData.port,
       argumentsData.https,
       argumentsData.verbosity,
-      argumentsData.silent
+      argumentsData.silent,
+      argumentsData.streamTimeout
     )
   }
 }

@@ -2,6 +2,10 @@ package es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.transf
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import es.weso.rdfshape.server.Server.{
+  defaultStreamTimeout,
+  systemPropertyStreamTimeout
+}
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration.{
   StreamValidationExtractorConfiguration,
   StreamValidationStreamConfiguration,
@@ -48,8 +52,17 @@ private[schema] object CometTransformations extends LazyLogging {
 
   /** Time that the server will wait without receiving any items for the input
     * stream before raising a [[StreamTimeoutException]]
+    *
+    * Retrieved from a system property which can be overridden by CLI args.
     */
-  private lazy val timeout = 1 minute
+  private lazy val timeout = {
+    val timeoutFromSystemProp =
+      Integer
+        .getInteger(systemPropertyStreamTimeout, defaultStreamTimeout)
+        .toLong
+
+    FiniteDuration(timeoutFromSystemProp, SECONDS)
+  }
 
   /** Stream transformation pipe:
     * 1. Use the configuration to a stream validation operation as input

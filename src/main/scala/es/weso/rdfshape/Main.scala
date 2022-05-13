@@ -6,6 +6,7 @@ import es.weso.rdfshape.cli.{ArgumentsData, CliManager}
 import es.weso.rdfshape.logging.LoggingManager
 import es.weso.rdfshape.logging.LoggingManager.systemPropertyVerbosity
 import es.weso.rdfshape.server.Server
+import es.weso.rdfshape.server.Server.systemPropertyStreamTimeout
 
 object Main extends App with LazyLogging {
 
@@ -17,10 +18,12 @@ object Main extends App with LazyLogging {
     */
   private def run(args: Array[String]): Unit = {
     // Parse arguments
-    val argumentsData                    = parseArguments(args)
-    val (port, https, verbosity, silent) = unapply(argumentsData)
+    val argumentsData                                   = parseArguments(args)
+    val (port, https, verbosity, silent, streamTimeout) = unapply(argumentsData)
     // Set up the logging framework depending on the verbose argument
     setUpLogger(verbosity, silent)
+    // Set up timeout for streaming validations
+    setUpStreamTimeout(streamTimeout)
     // Start the server module
     CliManager.showBanner()
     Server(port, https)
@@ -37,11 +40,12 @@ object Main extends App with LazyLogging {
       port = cliManager.port.apply(),
       https = cliManager.https.apply(),
       verbosity = cliManager.verbose.apply(),
-      silent = cliManager.silent.apply()
+      silent = cliManager.silent.apply(),
+      streamTimeout = cliManager.streamTimeout.apply()
     )
   }
 
-  /** Let {@linkplain es.weso.rdfshape.logging.LoggingManager LoggingManager} prepare the logging framework according to the user's CLI arguments and inform the user
+  /** Let [[LoggingManager]] prepare the logging framework according to the user's CLI arguments and inform the user
     * @param verbosity Verbosity level introduced by the user
     */
   private def setUpLogger(verbosity: Int, silent: Boolean = false): Unit = {
@@ -50,5 +54,17 @@ object Main extends App with LazyLogging {
       logger.info(
         s"Console logging filter set to ${System.getProperty(systemPropertyVerbosity)}"
       )
+  }
+
+  /** Set up the system property storing the stream timeout
+    * @param timeout Timeout in seconds
+    */
+  private def setUpStreamTimeout(
+      timeout: Int
+  ): Unit = {
+    System.setProperty(
+      systemPropertyStreamTimeout,
+      timeout.toString
+    )
   }
 }
