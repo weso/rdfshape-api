@@ -4,6 +4,7 @@ import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdfshape.server.Server.{
   defaultStreamTimeout,
+  envVarStreamTimeout,
   systemPropertyStreamTimeout
 }
 import es.weso.rdfshape.server.api.routes.schema.logic.operations.stream.configuration.{
@@ -56,10 +57,19 @@ private[schema] object CometTransformations extends LazyLogging {
     * Retrieved from a system property which can be overridden by CLI args.
     */
   private lazy val timeout = {
-    val timeoutFromSystemProp =
-      Integer
-        .getInteger(systemPropertyStreamTimeout, defaultStreamTimeout)
-        .toLong
+    val timeoutFromSystemProp = {
+      // Try to fetch in env vars
+      Option(System.getenv(envVarStreamTimeout))
+        .flatMap(_.toIntOption)
+        .map(_.toLong)
+        // Else fetch from system properties, resorting to the default value
+        // if none is found/parseable
+        .getOrElse(
+          Integer
+            .getInteger(systemPropertyStreamTimeout, defaultStreamTimeout)
+            .toLong
+        )
+    }
 
     FiniteDuration(timeoutFromSystemProp, SECONDS)
   }
