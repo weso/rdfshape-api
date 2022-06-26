@@ -71,7 +71,7 @@ the validation should be performed, including:
           to have.
             - _format_: Format of the incoming RDF data (Turtle, JSONLD, etc.).
             - _inference (Optional)_: Inference to be applied on the incoming
-              RDF data (turtle, JSONLD, etc.). Default: `NONE`.
+              RDF data (RDFS, OWL, etc.). Default: `NONE`.
     - _stream_: Information for @STREAMING_APP_NAME@ to consume an incoming
       Kafka stream.
         - _server_: Hostname/IP address of the Kafka server streaming RDF data.
