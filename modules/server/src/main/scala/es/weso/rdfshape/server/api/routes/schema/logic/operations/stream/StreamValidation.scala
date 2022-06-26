@@ -213,7 +213,7 @@ private[stream] object WebSocketClosures {
   def invalidItemClosure: WebSocketClosure =
     WebSocketClosure(
       3002,
-      "An item was invalid"
+      "An validation item was invalid"
     )
 
   /** Generate a closing frame with an assigned error code,

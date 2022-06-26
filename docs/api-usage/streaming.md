@@ -174,7 +174,16 @@ In the event of closure, two WebSocket frames are sent to the client:
           cause is not-validating RDF data, in which case the validation report
           will be included here.
 2. A closing WebSocket frame, with a short description of the closure reason and
-   its corresponding close code.
+   its corresponding close code:
+   - **3000**: The client's request did not contain valid JSON data.
+   - **3001**: The client's request did not contain a valid configuration.
+   - **3002**: A validation item was invalid.
+   - **3003**: An error occurred while validating an item.
+   - **3004**: No items were received for a while.
+   - **3005**: The configuration contained invalid values.
+   - **3006**: An invalid value was provided to the server.
+   - **3007**: An error occurred connecting to the Kafka stream.
+   - **4999**: Connection closed due to an unknown error.
 
 ```json title="Example last server response before closure"
 {

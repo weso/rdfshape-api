@@ -41,5 +41,5 @@ The logs written to the files:
 ### Adding custom functionality
 
 The project is already configured to work as explained above. For further configuration, check
-the [logback.groovy](https://github.com/weso/rdfshape-api/blob/master/src/main/resources/logback-configurations/logback.groovy)
+the [logback.xml](https://github.com/weso/rdfshape-api/blob/master/modules/server/src/main/resources/logback.xml)
 configuration file or the documentation of each respective library.
