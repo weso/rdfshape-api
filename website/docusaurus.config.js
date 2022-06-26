@@ -39,7 +39,7 @@ module.exports = {
           href: scalaDocUrl, label: "Scaladoc", position: "left"
         }, // API Docs in SwaggerHub
         {
-          href: "https://github.com/weso/rdfshape-api",
+          href: "https://app.swaggerhub.com/apis-docs/weso/RDFShape",
           label: "SwaggerHub",
           position: "right"
         }, // Link to repo

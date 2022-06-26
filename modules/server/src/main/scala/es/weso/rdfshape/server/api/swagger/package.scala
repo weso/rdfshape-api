@@ -110,7 +110,7 @@ package object swagger {
       description = s"""
            | RDFShape is web API for semantic data analysis and validation
            | implemented in Scala using http4s (https://http4s.org/) and 
-           | documented with Rho (https://github.com/http4s/rho)
+           | documented with Rho (https://github.com/http4s/rho).
            |""".stripMargin.some,
       contact = Contact(
         name = "WESO Research group",
