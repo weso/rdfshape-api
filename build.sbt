@@ -263,11 +263,12 @@ lazy val server = project
   )
 
 // "sbt-github-actions" plugin settings
-lazy val scala212    = "2.12.15"
-lazy val scala213    = "2.13.8"
-lazy val java11adopt = "adopt@1.11"
+lazy val scala212    = "2.12.17"
+lazy val scala213    = "2.13.10"
 
-ThisBuild / githubWorkflowJavaVersions := Seq(java11adopt)
+lazy val Java11 = JavaSpec.temurin("11") 
+
+ThisBuild / githubWorkflowJavaVersions := Seq(Java11)
 ThisBuild / githubWorkflowScalaVersions := Seq(scala213)
 
 /* ------------------------------------------------------------------------- */
@@ -304,10 +305,10 @@ lazy val munitEffectVersion  = "1.0.7"
 lazy val plantumlVersion     = "1.2021.14"
 lazy val scalajVersion       = "2.4.2"
 // WESO dependencies
-lazy val shaclexVersion    = "0.2.2"
-lazy val shexsVersion      = "0.2.2"
-lazy val umlShaclexVersion = "0.0.82"
-lazy val wesoUtilsVersion  = "0.2.4"
+lazy val shaclexVersion    = "0.2.4"
+lazy val shexsVersion      = "0.2.33"
+lazy val umlShaclexVersion = "0.1.1"
+lazy val wesoUtilsVersion  = "0.2.25"
 // Dependency modules
 lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 lazy val http4sBlazeServer =
